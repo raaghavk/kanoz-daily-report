@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { Factory, TrendingUp, Truck, AlertTriangle, Plus, FileText, Package, ChevronRight } from 'lucide-react'
 import Modal from '../components/Modal'
 
 export default function Home() {
@@ -12,11 +11,12 @@ export default function Home() {
   const [showProductionModal, setShowProductionModal] = useState(false)
   const [showTrucksModal, setShowTrucksModal] = useState(false)
   const [showIssuesModal, setShowIssuesModal] = useState(false)
-  const [todayReport, setTodayReport] = useState(null)
+  const [todayReports, setTodayReports] = useState([])
   const [handoverNotes, setHandoverNotes] = useState(null)
 
   const today = new Date().toISOString().split('T')[0]
-  const greeting = new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 17 ? 'Good Afternoon' : 'Good Evening'
+  const currentShift = new Date().getHours() < 18 ? 'A' : 'B'
+  const shiftTime = currentShift === 'A' ? '06:00–18:00' : '18:00–06:00'
 
   useEffect(() => {
     if (plant?.id) fetchDashboardData()
@@ -24,7 +24,6 @@ export default function Home() {
 
   async function fetchDashboardData() {
     try {
-      // Fetch today's shift reports
       const { data: reports } = await supabase
         .from('shift_reports')
         .select('*, machine_production(*), issues(*)')
@@ -35,10 +34,9 @@ export default function Home() {
         const totalProd = reports.reduce((sum, r) => sum + (parseFloat(r.pellet_production_mt) || 0), 0)
         const totalIssues = reports.reduce((sum, r) => sum + (r.issues?.length || 0), 0)
         setStats(prev => ({ ...prev, production: totalProd, issues: totalIssues }))
-        setTodayReport(reports[0])
+        setTodayReports(reports)
       }
 
-      // Fetch today's dispatches
       const { data: dispatches } = await supabase
         .from('vehicle_dispatches')
         .select('*, shift_reports!inner(*)')
@@ -49,7 +47,6 @@ export default function Home() {
         setStats(prev => ({ ...prev, trucks: dispatches.length }))
       }
 
-      // Fetch handover from last shift
       const { data: lastReport } = await supabase
         .from('shift_reports')
         .select('handover_notes, shift, date')
@@ -67,156 +64,186 @@ export default function Home() {
     }
   }
 
+  const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+
   return (
-    <div className="pb-2">
-      {/* Header */}
-      <div className="bg-kanoz-green px-5 pt-12 pb-6 rounded-b-3xl">
-        <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col min-h-full">
+      {/* Dark App Bar */}
+      <div className="flex-shrink-0 pt-[env(safe-area-inset-top)]" style={{ background: '#0F2418' }}>
+        <div className="px-4 py-3 flex items-center justify-between">
           <div>
-            <p className="text-white/70 text-xs">{greeting}</p>
-            <h1 className="text-white text-lg font-extrabold">{employee?.name || 'Supervisor'}</h1>
-          </div>
-          <div className="text-right">
-            <div className="text-white/70 text-xs">{plant?.name || 'Plant'}</div>
-            <div className="text-white text-xs font-medium">{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
-          </div>
-        </div>
-
-        {/* Stat Cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <button onClick={() => setShowProductionModal(true)} className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
-            <TrendingUp size={18} className="mx-auto text-white/80 mb-1" />
-            <div className="text-white text-xl font-extrabold">{stats.production.toFixed(1)}</div>
-            <div className="text-white/60 text-[10px]">Production MT</div>
-          </button>
-          <button onClick={() => setShowTrucksModal(true)} className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
-            <Truck size={18} className="mx-auto text-white/80 mb-1" />
-            <div className="text-white text-xl font-extrabold">{stats.trucks}</div>
-            <div className="text-white/60 text-[10px]">Trucks Out</div>
-          </button>
-          <button onClick={() => setShowIssuesModal(true)} className="bg-white/15 rounded-xl p-3 text-center backdrop-blur-sm">
-            <AlertTriangle size={18} className="mx-auto text-white/80 mb-1" />
-            <div className="text-white text-xl font-extrabold">{stats.issues}</div>
-            <div className="text-white/60 text-[10px]">Issues</div>
-          </button>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="px-4 -mt-3">
-        <div className="bg-kanoz-card rounded-xl shadow-sm border border-kanoz-border p-4">
-          <div className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">Quick Actions</div>
-          <div className="grid grid-cols-3 gap-3">
-            <button
-              onClick={() => navigate('/shift/new')}
-              className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-kanoz-green-light/30 hover:bg-kanoz-green-light/50 transition-colors"
-            >
-              <div className="w-10 h-10 bg-kanoz-green rounded-xl flex items-center justify-center">
-                <Plus size={20} className="text-white" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-[10px] flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #1B7A45, #145C34)' }}>
+                <svg viewBox="0 0 48 48" width="18" height="18">
+                  <path fill="white" d="M24 4C16 4 8 12 8 24c0 8 4 14 8 17 1-4 3-8 8-12 5 4 7 8 8 12 4-3 8-9 8-17C40 12 32 4 24 4zm0 8c3 0 6 4 6 10s-3 10-6 10-6-4-6-10 3-10 6-10z"/>
+                  <circle cx="24" cy="22" r="3" fill="white"/>
+                </svg>
               </div>
-              <span className="text-[11px] font-semibold text-kanoz-text">New Report</span>
-            </button>
-            <button
-              onClick={() => navigate('/dispatch/new')}
-              className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              <div className="w-10 h-10 bg-kanoz-accent rounded-xl flex items-center justify-center">
-                <Truck size={20} className="text-white" />
-              </div>
-              <span className="text-[11px] font-semibold text-kanoz-text">Dispatch</span>
-            </button>
-            <button
-              onClick={() => navigate('/purchase/new')}
-              className="flex flex-col items-center gap-1.5 p-3 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              <div className="w-10 h-10 bg-kanoz-blue rounded-xl flex items-center justify-center">
-                <Package size={20} className="text-white" />
-              </div>
-              <span className="text-[11px] font-semibold text-kanoz-text">Purchase</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Handover Notes */}
-      {handoverNotes && (
-        <div className="px-4 mt-3">
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText size={14} className="text-amber-600" />
-              <span className="text-xs font-bold text-amber-800 uppercase">Handover from Previous Shift</span>
+              <span className="text-white font-bold text-[17px]">Kanoz Report</span>
             </div>
-            <p className="text-sm text-amber-900">{handoverNotes.handover_notes}</p>
-            <div className="text-[10px] text-amber-600 mt-2">
-              Shift {handoverNotes.shift} &bull; {handoverNotes.date}
+            <div className="text-white/50 text-[11px] mt-0.5 ml-10">
+              {plant?.name || 'Plant'} &bull; Shift {currentShift} &bull; {dateStr}, {shiftTime}
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Recent Reports */}
-      <div className="px-4 mt-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider">Today's Reports</span>
-          <button onClick={() => navigate('/reports')} className="text-xs text-kanoz-green font-medium flex items-center gap-0.5">
-            View All <ChevronRight size={12} />
-          </button>
-        </div>
-        {todayReport ? (
           <button
-            onClick={() => navigate(`/reports/${todayReport.id}`)}
-            className="w-full bg-kanoz-card rounded-xl border border-kanoz-border p-4 text-left"
+            onClick={() => navigate('/settings')}
+            className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white"
+            style={{ background: 'rgba(255,255,255,0.12)', border: '2px solid rgba(255,255,255,0.2)' }}
           >
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-bold text-sm">Shift {todayReport.shift}</span>
-              <span className="text-xs text-kanoz-text-tertiary">
-                {todayReport.start_time?.slice(0, 5)} – {todayReport.end_time?.slice(0, 5)}
-              </span>
-            </div>
-            <div className="text-xs text-kanoz-text-secondary">
-              Production: {todayReport.pellet_production_mt || 0} MT
-            </div>
+            {employee?.name?.charAt(0) || 'U'}
           </button>
-        ) : (
-          <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-6 text-center">
-            <Factory size={28} className="mx-auto text-kanoz-text-tertiary mb-2" />
-            <p className="text-sm text-kanoz-text-secondary">No reports yet today</p>
-            <button
-              onClick={() => navigate('/shift/new')}
-              className="mt-3 px-4 py-2 bg-kanoz-green text-white text-xs font-bold rounded-lg"
-            >
-              Start Shift Report
-            </button>
+        </div>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-4">
+        {/* Handover Notes */}
+        {handoverNotes && (
+          <div className="rounded-xl p-3.5 mb-3.5" style={{ background: '#FFF8E6', border: '1px solid #F0D98C' }}>
+            <h4 className="text-[12px] font-bold uppercase tracking-[0.5px] mb-1" style={{ color: '#D4960A' }}>
+              Shift {handoverNotes.shift === 'A' ? 'B' : 'A'} Handover
+            </h4>
+            <p className="text-[13px] leading-relaxed" style={{ color: '#5A6B62' }}>
+              {handoverNotes.handover_notes}
+            </p>
           </div>
         )}
+
+        {/* Stat Cards */}
+        <div className="flex gap-2 mb-3.5">
+          <button
+            onClick={() => setShowProductionModal(true)}
+            className="flex-1 rounded-xl p-3 text-center transition-all"
+            style={{ background: '#fff', border: '1px solid #E2E8E4' }}
+          >
+            <div className="text-[26px] font-extrabold" style={{ color: '#1B7A45' }}>
+              {stats.production.toFixed(1)}
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.3px] mt-0.5" style={{ color: '#8A9B92' }}>
+              Production MT
+            </div>
+          </button>
+          <button
+            onClick={() => setShowTrucksModal(true)}
+            className="flex-1 rounded-xl p-3 text-center transition-all"
+            style={{ background: '#fff', border: '1px solid #E2E8E4' }}
+          >
+            <div className="text-[26px] font-extrabold" style={{ color: '#D4960A' }}>
+              {stats.trucks}
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.3px] mt-0.5" style={{ color: '#8A9B92' }}>
+              Trucks Out
+            </div>
+          </button>
+          <button
+            onClick={() => setShowIssuesModal(true)}
+            className="flex-1 rounded-xl p-3 text-center transition-all"
+            style={{ background: '#fff', border: '1px solid #E2E8E4' }}
+          >
+            <div className="text-[26px] font-extrabold" style={{ color: '#E53E3E' }}>
+              {stats.issues}
+            </div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.3px] mt-0.5" style={{ color: '#8A9B92' }}>
+              Issues
+            </div>
+          </button>
+        </div>
+
+        {/* Action Buttons */}
+        <button
+          onClick={() => navigate('/shift/new')}
+          className="w-full flex items-center justify-center gap-2 py-4 rounded-xl text-white text-[16px] font-semibold mb-2 active:scale-[0.98] transition-transform"
+          style={{ background: '#1B7A45' }}
+        >
+          + New Shift Report
+        </button>
+        <button
+          onClick={() => navigate('/dispatch/new')}
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[15px] font-semibold mb-2 active:scale-[0.98] transition-transform"
+          style={{ background: 'transparent', border: '2px solid #1B7A45', color: '#1B7A45' }}
+        >
+          Quick Vehicle Dispatch
+        </button>
+        <button
+          onClick={() => navigate('/purchase/new')}
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-[15px] font-semibold mb-1 active:scale-[0.98] transition-transform"
+          style={{ background: '#F5F7F6', border: '1px solid #E2E8E4', color: '#1A1A2E' }}
+        >
+          Raw Material Purchase
+        </button>
+
+        {/* Recent Reports */}
+        <div className="mt-5 mb-2">
+          <div className="text-[11px] font-bold uppercase tracking-[1px] mb-2" style={{ color: '#8A9B92' }}>
+            Recent Reports
+          </div>
+
+          {todayReports.length > 0 ? (
+            todayReports.map(report => (
+              <button
+                key={report.id}
+                onClick={() => navigate(`/reports/${report.id}`)}
+                className="w-full flex items-center gap-3 py-3.5 transition-all"
+                style={{ borderBottom: '1px solid #F0F3F1' }}
+              >
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                  style={{ background: '#E8F5EE' }}>
+                  📊
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="text-sm font-semibold" style={{ color: '#1A1A2E' }}>
+                    Shift {report.shift} — {report.date}
+                  </div>
+                  <div className="text-xs mt-0.5" style={{ color: '#8A9B92' }}>
+                    {report.pellet_production_mt || 0} MT &bull; {report.start_time?.slice(0,5)}–{report.end_time?.slice(0,5)}
+                  </div>
+                </div>
+                <span className="text-[16px] flex-shrink-0" style={{ color: '#8A9B92' }}>›</span>
+              </button>
+            ))
+          ) : (
+            <div className="rounded-xl p-6 text-center" style={{ background: '#fff', border: '1px solid #E2E8E4' }}>
+              <div className="text-2xl mb-2">📊</div>
+              <p className="text-sm" style={{ color: '#5A6B62' }}>No reports yet today</p>
+              <button
+                onClick={() => navigate('/shift/new')}
+                className="mt-3 px-5 py-2 rounded-lg text-white text-xs font-bold"
+                style={{ background: '#1B7A45' }}
+              >
+                Start Shift Report
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Production Modal */}
-      <Modal isOpen={showProductionModal} onClose={() => setShowProductionModal(false)} title="Today's Production">
+      <Modal isOpen={showProductionModal} onClose={() => setShowProductionModal(false)} title="Production Breakdown">
         <div className="text-center py-4">
-          <div className="text-3xl font-extrabold text-kanoz-green">{stats.production.toFixed(1)} MT</div>
-          <div className="text-xs text-kanoz-text-tertiary mt-1">Total production today</div>
+          <div className="text-3xl font-extrabold" style={{ color: '#1B7A45' }}>{stats.production.toFixed(1)} MT</div>
+          <div className="text-xs mt-1" style={{ color: '#8A9B92' }}>Total production today</div>
         </div>
-        <p className="text-sm text-kanoz-text-secondary text-center">Detailed machine-wise breakdown will appear here once reports are submitted.</p>
-        <button onClick={() => setShowProductionModal(false)} className="w-full mt-4 py-2.5 bg-gray-100 rounded-xl text-sm font-medium">Close</button>
+        <p className="text-sm text-center" style={{ color: '#5A6B62' }}>Machine-wise breakdown will appear once reports are submitted.</p>
+        <button onClick={() => setShowProductionModal(false)} className="w-full mt-4 py-2.5 rounded-xl text-sm font-medium" style={{ background: '#F5F7F6', border: '1px solid #E2E8E4' }}>Close</button>
       </Modal>
 
       {/* Trucks Modal */}
-      <Modal isOpen={showTrucksModal} onClose={() => setShowTrucksModal(false)} title="Trucks Dispatched">
+      <Modal isOpen={showTrucksModal} onClose={() => setShowTrucksModal(false)} title="Today's Dispatches">
         <div className="text-center py-4">
-          <div className="text-3xl font-extrabold text-kanoz-accent">{stats.trucks}</div>
-          <div className="text-xs text-kanoz-text-tertiary mt-1">Trucks dispatched today</div>
+          <div className="text-3xl font-extrabold" style={{ color: '#D4960A' }}>{stats.trucks}</div>
+          <div className="text-xs mt-1" style={{ color: '#8A9B92' }}>Trucks dispatched today</div>
         </div>
-        <button onClick={() => { setShowTrucksModal(false); navigate('/dispatch') }} className="w-full mt-4 py-2.5 bg-kanoz-green text-white rounded-xl text-sm font-bold">View All Dispatches</button>
+        <button onClick={() => { setShowTrucksModal(false); navigate('/dispatch') }} className="w-full mt-4 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: '#1B7A45' }}>View All Dispatches</button>
       </Modal>
 
       {/* Issues Modal */}
       <Modal isOpen={showIssuesModal} onClose={() => setShowIssuesModal(false)} title="Issues Reported">
         <div className="text-center py-4">
-          <div className="text-3xl font-extrabold text-kanoz-red">{stats.issues}</div>
-          <div className="text-xs text-kanoz-text-tertiary mt-1">Issues reported today</div>
+          <div className="text-3xl font-extrabold" style={{ color: '#E53E3E' }}>{stats.issues}</div>
+          <div className="text-xs mt-1" style={{ color: '#8A9B92' }}>Issues reported today</div>
         </div>
-        <button onClick={() => setShowIssuesModal(false)} className="w-full mt-4 py-2.5 bg-gray-100 rounded-xl text-sm font-medium">Close</button>
+        <button onClick={() => setShowIssuesModal(false)} className="w-full mt-4 py-2.5 rounded-xl text-sm font-medium" style={{ background: '#F5F7F6', border: '1px solid #E2E8E4' }}>Close</button>
       </Modal>
     </div>
   )

@@ -26,157 +26,127 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-kanoz-bg">
-      <div className="w-full max-w-md">
-        {/* Card Container */}
-        <div className="bg-kanoz-card rounded-3xl shadow-lg p-8 space-y-6">
-          {/* Logo Section */}
-          <div className="text-center space-y-3">
-            {/* Leaf Icon */}
-            <div className="flex justify-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-kanoz-green to-kanoz-green-dark rounded-2xl flex items-center justify-center">
-                <svg
-                  viewBox="0 0 48 48"
-                  width="32"
-                  height="32"
-                  className="text-white"
-                >
-                  {/* Leaf shape */}
-                  <g fill="white">
-                    <path d="M24 4C24 4 16 12 16 22C16 30 19 36 24 38C29 36 32 30 32 22C32 12 24 4 24 4Z" />
-                    <path d="M22 14C22 14 20 18 20 22C20 26 21 28 24 29C27 28 28 26 28 22C28 18 26 14 24 14" fill="#15803d" />
-                  </g>
-                </svg>
-              </div>
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-kanoz-text">Kanoz Bio Energy</h1>
-              <p className="text-sm text-kanoz-text-secondary mt-1">Daily Report System</p>
-            </div>
+    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(165deg, #0a0a14 0%, #141428 50%, #145C34 100%)' }}>
+      {/* Status bar area */}
+      <div className="h-14 flex-shrink-0" />
+
+      {/* Center content */}
+      <div className="flex-1 flex flex-col items-center justify-center px-7">
+        {/* Logo */}
+        <div className="w-[88px] h-[88px] rounded-[22px] flex items-center justify-center mb-5"
+          style={{ background: 'linear-gradient(135deg, #1B7A45, #145C34)', boxShadow: '0 8px 28px rgba(27,122,69,0.4)' }}>
+          <svg viewBox="0 0 48 48" width="48" height="48">
+            <path fill="white" d="M24 4C16 4 8 12 8 24c0 8 4 14 8 17 1-4 3-8 8-12 5 4 7 8 8 12 4-3 8-9 8-17C40 12 32 4 24 4zm0 8c3 0 6 4 6 10s-3 10-6 10-6-4-6-10 3-10 6-10z"/>
+            <circle cx="24" cy="22" r="3" fill="white"/>
+          </svg>
+        </div>
+
+        {/* Brand */}
+        <h1 className="text-2xl font-extrabold text-white mb-0.5">Kanoz Bio Energy</h1>
+        <p className="text-xs text-white/40 uppercase tracking-[2px] mb-9">Daily Report System</p>
+
+        {/* Error */}
+        {error && (
+          <div className="w-full rounded-xl p-3 mb-4 border" style={{ background: 'rgba(229,62,62,0.15)', borderColor: 'rgba(229,62,62,0.3)' }}>
+            <p className="text-sm font-semibold text-red-400">Error</p>
+            <p className="text-xs text-red-300/80 mt-0.5">{error}</p>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="w-full space-y-3.5">
+          <div>
+            <label className="block text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              Email <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="supervisor@kanoz.in"
+              className="w-full px-3.5 py-3 rounded-[10px] text-[15px] text-white"
+              style={{
+                border: '1.5px solid rgba(255,255,255,0.12)',
+                background: 'rgba(255,255,255,0.06)',
+              }}
+              required
+            />
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-1">
-              <p className="text-sm font-semibold text-kanoz-red">Error</p>
-              <p className="text-xs text-kanoz-text-secondary">{error}</p>
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email Field */}
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-semibold text-kanoz-text">
-                Email Address
-              </label>
+          <div>
+            <label className="block text-xs font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+              Password <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="supervisor@kanoz.in"
-                className="w-full px-4 py-3 rounded-xl border border-kanoz-border bg-white text-sm text-kanoz-text placeholder-kanoz-text-tertiary focus:outline-none focus:ring-2 focus:ring-kanoz-green focus:border-transparent transition-all"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="w-full px-3.5 py-3 rounded-[10px] text-[15px] text-white pr-10"
+                style={{
+                  border: '1.5px solid rgba(255,255,255,0.12)',
+                  background: 'rgba(255,255,255,0.06)',
+                }}
                 required
               />
-            </div>
-
-            {/* Password Field */}
-            <div className="space-y-2">
-              <label htmlFor="password" className="block text-sm font-semibold text-kanoz-text">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="w-full px-4 py-3 rounded-xl border border-kanoz-border bg-white text-sm text-kanoz-text placeholder-kanoz-text-tertiary focus:outline-none focus:ring-2 focus:ring-kanoz-green focus:border-transparent transition-all pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-kanoz-text-secondary hover:text-kanoz-text transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    // Eye icon (open)
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                      <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                  ) : (
-                    // Eye off icon (closed)
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.26 3.64m-5.88-2.12a3 3 0 1 1-4.24-4.24"></path>
-                      <line x1="1" y1="1" x2="23" y2="23"></line>
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Sign In Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-kanoz-green text-white font-semibold rounded-xl text-sm hover:bg-kanoz-green-dark disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 mt-6"
-            >
-              {loading ? (
-                <>
-                  <svg
-                    className="w-4 h-4 animate-spin"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2"
+                style={{ color: 'rgba(255,255,255,0.4)' }}
+              >
+                {showPassword ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
                   </svg>
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-kanoz-border"></div>
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="px-2 bg-kanoz-card text-kanoz-text-tertiary">or</span>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.26 3.64m-5.88-2.12a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Help Text */}
-          <p className="text-xs text-center text-kanoz-text-secondary">
-            Need help? Contact your administrator
-          </p>
-        </div>
+          {/* Remember + Forgot */}
+          <div className="flex items-center justify-between pt-1">
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: 'rgba(255,255,255,0.4)' }}>
+              <input type="checkbox" className="w-3.5 h-3.5 rounded" style={{ accentColor: '#1B7A45' }} />
+              Remember me
+            </label>
+            <span className="text-xs" style={{ color: '#1B7A45' }}>Forgot password?</span>
+          </div>
 
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-xs text-kanoz-text-tertiary">
-            © 2026 Kanoz Bio Energy Pvt. Ltd.
-          </p>
-        </div>
+          {/* Sign In */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-[15px] rounded-xl text-white text-[16px] font-bold disabled:opacity-60 flex items-center justify-center gap-2 mt-2"
+            style={{
+              background: '#1B7A45',
+              boxShadow: '0 4px 16px rgba(27,122,69,0.35)',
+            }}
+          >
+            {loading ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                </svg>
+                Signing in...
+              </>
+            ) : 'Sign In'}
+          </button>
+        </form>
+      </div>
+
+      {/* Footer */}
+      <div className="text-center pb-8 pt-4">
+        <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+          Kanoz Bio Energy Pvt. Ltd.
+        </p>
       </div>
     </div>
   )

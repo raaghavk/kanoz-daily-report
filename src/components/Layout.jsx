@@ -7,8 +7,8 @@ export default function Layout() {
   const hideNav = location.pathname === '/login'
 
   return (
-    <div className="h-full flex flex-col bg-kanoz-bg">
-      <div className="flex-1 overflow-y-auto">
+    <div className="h-full flex flex-col" style={{ background: '#F5F7F6' }}>
+      <div className="flex-1 overflow-y-auto flex flex-col">
         <Outlet />
       </div>
       {!hideNav && <BottomNav />}
