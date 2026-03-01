@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import { FileText, ChevronRight, Calendar } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 
 export default function ReportList() {
   const { plant } = useAuth()
@@ -81,14 +82,7 @@ export default function ReportList() {
 
   return (
     <div className="pb-20">
-      {/* Header */}
-      <div className="bg-kanoz-green px-5 pt-12 pb-6 rounded-b-3xl">
-        <div className="flex items-center gap-3 mb-4">
-          <FileText size={24} className="text-white" />
-          <h1 className="text-white text-lg font-extrabold">Shift Reports</h1>
-        </div>
-        <p className="text-white/70 text-xs">View and manage all reports</p>
-      </div>
+      <PageHeader title="Shift Reports" subtitle="View and manage all reports" backTo="/" />
 
       {/* Filter Tabs */}
       <div className="px-4 mt-4 flex gap-2 overflow-x-auto">

@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import { Search, Plus, Phone, MessageSquare, MapPin, ChevronRight, Loader2, AlertCircle } from 'lucide-react'
+import PageHeader from '../../components/PageHeader'
 
 export default function SupplierList() {
   const { plant } = useAuth()
@@ -124,19 +125,19 @@ export default function SupplierList() {
 
   return (
     <div className="pb-20">
-      {/* Header */}
-      <div className="bg-kanoz-green px-5 pt-12 pb-6 rounded-b-3xl">
-        <h1 className="text-white text-lg font-extrabold mb-4">Supplier Database</h1>
+      <PageHeader title="Supplier Database" subtitle="Manage your suppliers" backTo="/purchase" />
 
-        {/* Search Bar */}
+      {/* Search Bar */}
+      <div className="px-4 mt-3">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-kanoz-text-tertiary" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#8A9B92' }} />
           <input
             type="text"
             placeholder="Search by name or mobile..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-white/15 border border-white/30 rounded-xl text-white placeholder-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm focus:outline-none"
+            style={{ background: '#F8FAF9', border: '1.5px solid #E2E8E4', color: '#1A1A2E' }}
           />
         </div>
       </div>

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
-import { ChevronLeft, Calendar, Clock, AlertTriangle, Eye } from 'lucide-react'
+import { Calendar, Clock, AlertTriangle, Eye } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 
 export default function ReportView() {
   const { id } = useParams()
@@ -121,19 +122,7 @@ export default function ReportView() {
 
   return (
     <div className="pb-20">
-      {/* Header Bar */}
-      <div className="sticky top-0 z-20 bg-kanoz-bg border-b border-kanoz-border px-4 py-3 flex items-center gap-3">
-        <button
-          onClick={() => navigate('/reports')}
-          className="p-2 hover:bg-kanoz-card rounded-lg transition-colors"
-        >
-          <ChevronLeft size={20} className="text-kanoz-text" />
-        </button>
-        <div>
-          <h1 className="text-sm font-bold text-kanoz-text">Shift Report</h1>
-          <p className="text-xs text-kanoz-text-tertiary">Shift {report.shift} • {report.date}</p>
-        </div>
-      </div>
+      <PageHeader title="Shift Report" subtitle={`Shift ${report.shift} · ${report.date}`} backTo="/reports" />
 
       {/* Report Header Info */}
       <div className="px-4 mt-4 space-y-4">

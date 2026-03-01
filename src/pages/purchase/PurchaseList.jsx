@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Loader2 } from 'lucide-react'
+import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -104,26 +105,23 @@ export default function PurchaseList() {
 
   return (
     <div className="min-h-screen bg-kanoz-bg pb-20">
-      <div className="sticky top-0 z-20 bg-kanoz-card border-b border-kanoz-border">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold text-kanoz-text mb-4">Raw Material Purchases</h1>
+      <PageHeader title="RM Purchase" subtitle="Raw Material Purchases" backTo="/" />
 
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
-            {['today', 'week', 'month'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setFilterTab(tab)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  filterTab === tab
-                    ? 'bg-kanoz-green text-white'
-                    : 'bg-kanoz-bg border border-kanoz-border text-kanoz-text-secondary'
-                }`}
-              >
-                {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : 'This Month'}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Filter Tabs */}
+      <div className="sticky top-0 z-20 px-4 py-2.5 flex gap-2 overflow-x-auto" style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
+        {['today', 'week', 'month'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setFilterTab(tab)}
+            className="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all"
+            style={filterTab === tab
+              ? { background: '#1B7A45', color: 'white' }
+              : { background: 'white', color: '#1A1A2E', border: '1px solid #E2E8E4' }
+            }
+          >
+            {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : 'This Month'}
+          </button>
+        ))}
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-4">

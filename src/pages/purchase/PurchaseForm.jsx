@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ChevronLeft, Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus } from 'lucide-react'
+import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -274,19 +275,7 @@ export default function PurchaseForm() {
 
   return (
     <div className="min-h-screen bg-kanoz-bg pb-20">
-      <div className="sticky top-0 z-20 bg-kanoz-card border-b border-kanoz-border">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
-          <button
-            onClick={() => navigate('/purchase')}
-            className="text-kanoz-text hover:text-kanoz-green transition-colors"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <h1 className="text-xl font-bold text-kanoz-text">
-            {id ? 'Edit Purchase' : 'New Purchase'}
-          </h1>
-        </div>
-      </div>
+      <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle="Raw Material Purchase Entry" backTo="/purchase" />
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <div className="bg-kanoz-card rounded-xl p-4 border border-kanoz-border">

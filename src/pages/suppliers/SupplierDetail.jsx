@@ -4,7 +4,8 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
-import { ArrowLeft, MapPin, Phone, Edit2, Navigation, Loader2, AlertCircle, Calendar } from 'lucide-react'
+import { MapPin, Phone, Edit2, Navigation, Loader2, AlertCircle, Calendar } from 'lucide-react'
+import PageHeader from '../../components/PageHeader'
 
 export default function SupplierDetail() {
   const { id } = useParams()
@@ -194,24 +195,20 @@ export default function SupplierDetail() {
 
   return (
     <div className="pb-20">
-      {/* Header */}
-      <div className="bg-kanoz-green px-5 pt-4 pb-6">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={() => navigate('/suppliers')}
-            className="p-2 -ml-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <ArrowLeft size={20} className="text-white" />
-          </button>
-          <h1 className="text-white text-lg font-extrabold">{supplier.name}</h1>
+      <PageHeader
+        title={supplier.name}
+        subtitle="Supplier Details"
+        backTo="/suppliers"
+        rightAction={
           <button
             onClick={() => setShowEditModal(true)}
-            className="p-2 -mr-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center transition-all"
+            style={{ background: 'rgba(255,255,255,0.1)' }}
           >
-            <Edit2 size={20} className="text-white" />
+            <Edit2 size={16} color="white" />
           </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className="px-4 mt-4 space-y-4">
         {/* Supplier Info Card */}

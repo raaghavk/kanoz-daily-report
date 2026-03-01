@@ -5,6 +5,7 @@ import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
 import { Truck, Phone, Plus, X, ChevronLeft } from 'lucide-react'
+import PageHeader from '../../components/PageHeader'
 
 export default function DispatchForm() {
   const { employee, plant } = useAuth()
@@ -265,14 +266,7 @@ export default function DispatchForm() {
 
   return (
     <div className="pb-20">
-      {/* Header */}
-      <div className="bg-kanoz-green px-5 pt-12 pb-6 rounded-b-3xl">
-        <div className="flex items-center gap-3 mb-4">
-          <Truck size={24} className="text-white" />
-          <h1 className="text-white text-lg font-extrabold">Vehicle Dispatch</h1>
-        </div>
-        <p className="text-white/70 text-xs">Quick dispatch entry for today</p>
-      </div>
+      <PageHeader title="Vehicle Dispatch" subtitle="Quick dispatch entry for today" backTo="/" />
 
       {/* Warning if no shift report */}
       {shiftWarning && (

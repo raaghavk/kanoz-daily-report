@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Stepper from '../../components/Stepper'
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
+import PageHeader from '../../components/PageHeader'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
 import Step3Production from './Step3Production'
@@ -162,18 +163,11 @@ export default function ShiftWizard() {
 
   return (
     <div className="h-full flex flex-col bg-kanoz-bg">
-      {/* App Bar */}
-      <div className="flex-shrink-0 bg-kanoz-card border-b border-kanoz-border px-4 pt-10 pb-3">
-        <div className="flex items-center gap-3">
-          <button onClick={() => step === 1 ? navigate('/') : setStep(step - 1)} className="text-kanoz-text-secondary">
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h2 className="text-base font-bold">Step {step}: {STEPS[step - 1].title}</h2>
-            <div className="text-[10px] text-kanoz-text-tertiary">{plant?.name} &bull; Shift {reportData.shift}</div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title={STEPS[step - 1].title}
+        subtitle={`Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
+        onBack={() => step === 1 ? navigate('/') : setStep(step - 1)}
+      />
 
       <Stepper currentStep={step} onStepClick={setStep} />
 
