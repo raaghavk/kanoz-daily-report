@@ -25,38 +25,40 @@ export default function Step3Production({ data, updateData }) {
   const totalMT = data.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-kanoz-text-secondary">Multiple entries per machine allowed.</p>
-        <div className="text-xs font-bold text-kanoz-green">Total: {totalMT.toFixed(1)} MT</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <p style={{ fontSize: 12, color: '#5A6B62' }}>Multiple entries per machine allowed.</p>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#1B7A45' }}>Total: {totalMT.toFixed(1)} MT</div>
       </div>
 
       {data.production.map((entry, idx) => (
-        <div key={entry.id} className="bg-kanoz-card rounded-xl border border-kanoz-border p-4 relative">
+        <div key={entry.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16, position: 'relative' }}>
           <button
             onClick={() => removeEntry(idx)}
-            className="absolute top-3 right-3 text-kanoz-red/50 hover:text-kanoz-red"
+            style={{ position: 'absolute', top: 12, right: 12, color: 'rgba(229, 62, 62, 0.5)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            onMouseEnter={(e) => e.target.style.color = '#E53E3E'}
+            onMouseLeave={(e) => e.target.style.color = 'rgba(229, 62, 62, 0.5)'}
           >
             <Trash2 size={16} />
           </button>
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
-              <label className="block text-[10px] font-semibold text-kanoz-text-tertiary mb-1">MACHINE</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>MACHINE</label>
               <select
                 value={entry.machine_id}
                 onChange={e => updateEntry(idx, 'machine_id', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               >
                 <option value="">Select...</option>
                 {data.machines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-kanoz-text-tertiary mb-1">PELLET TYPE</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>PELLET TYPE</label>
               <select
                 value={entry.pellet_type}
                 onChange={e => updateEntry(idx, 'pellet_type', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               >
                 <option value="">Select...</option>
                 {data.pelletStock.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
@@ -64,14 +66,14 @@ export default function Step3Production({ data, updateData }) {
             </div>
           </div>
           <div>
-            <label className="block text-[10px] font-semibold text-kanoz-text-tertiary mb-1">QUANTITY (MT)</label>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>QUANTITY (MT)</label>
             <input
               type="number"
               step="0.1"
               value={entry.quantity}
               onChange={e => updateEntry(idx, 'quantity', e.target.value)}
               placeholder="0.0"
-              className="w-full px-3 py-2 rounded-lg border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
             />
           </div>
         </div>
@@ -79,7 +81,9 @@ export default function Step3Production({ data, updateData }) {
 
       <button
         onClick={addEntry}
-        className="w-full py-3 border-2 border-dashed border-kanoz-green-light rounded-xl text-sm font-semibold text-kanoz-green flex items-center justify-center gap-2 hover:bg-kanoz-green-light/20 transition-colors"
+        style={{ width: '100%', padding: '12px 0', border: '2px dashed #C6F6D5', borderRadius: 12, fontSize: 14, fontWeight: 600, color: '#1B7A45', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', cursor: 'pointer', transition: 'background-color 0.3s' }}
+        onMouseEnter={(e) => e.target.style.background = 'rgba(198, 246, 213, 0.2)'}
+        onMouseLeave={(e) => e.target.style.background = 'transparent'}
       >
         <Plus size={18} /> Add Production Entry
       </button>

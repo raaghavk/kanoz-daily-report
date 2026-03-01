@@ -27,17 +27,17 @@ export default function Toast() {
     info: <Info size={18} />,
   }
 
-  const colors = {
-    success: 'bg-kanoz-green text-white',
-    error: 'bg-kanoz-red text-white',
-    info: 'bg-kanoz-blue text-white',
+  const bgColors = {
+    success: '#1B7A45',
+    error: '#E53E3E',
+    info: '#2563EB',
   }
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] animate-bounce-in">
-      <div className={`flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg ${colors[toast.type]}`}>
+    <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 999 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', background: bgColors[toast.type], color: 'white' }}>
         {icons[toast.type]}
-        <span className="text-sm font-medium">{toast.message}</span>
+        <span style={{ fontSize: 14, fontWeight: 500 }}>{toast.message}</span>
       </div>
     </div>
   )

@@ -7,13 +7,13 @@ export default function Step7PelletStock({ data, updateData }) {
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs text-kanoz-text-secondary">Production and dispatch auto-fill from previous steps. Only enter wastage.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <p style={{ fontSize: 12, color: '#5A6B62' }}>Production and dispatch auto-fill from previous steps. Only enter wastage.</p>
 
       {data.pelletStock.map((ps, idx) => (
-        <div key={ps.id} className="bg-kanoz-card rounded-xl border border-kanoz-border p-4">
-          <div className="font-bold text-sm mb-3 text-kanoz-text">{ps.name}</div>
-          <div className="grid grid-cols-5 gap-1.5">
+        <div key={ps.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, color: '#1A1A2E' }}>{ps.name}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
             {[
               { key: 'opening', label: 'OPEN', auto: true },
               { key: 'production', label: 'PROD', auto: true },
@@ -22,11 +22,9 @@ export default function Step7PelletStock({ data, updateData }) {
               { key: 'closing', label: 'CLOSE', auto: true, highlight: true },
             ].map(col => (
               <div key={col.key}>
-                <label className={`block text-[8px] font-semibold mb-1 text-center ${col.highlight ? 'text-kanoz-green' : 'text-kanoz-text-tertiary'}`}>{col.label}</label>
+                <label style={{ display: 'block', fontSize: 8, fontWeight: 600, marginBottom: 4, textAlign: 'center', color: col.highlight ? '#1B7A45' : '#C5CFC8' }}>{col.label}</label>
                 {col.auto ? (
-                  <div className={`px-1 py-2 rounded-lg text-center text-xs font-medium ${
-                    col.highlight ? 'bg-kanoz-green-light/30 border border-kanoz-green-light text-kanoz-green font-bold' : 'bg-kanoz-bg border border-kanoz-border'
-                  }`}>
+                  <div style={{ padding: '8px 4px', borderRadius: 8, textAlign: 'center', fontSize: 12, fontWeight: col.highlight ? 700 : 500, background: col.highlight ? '#E8F5EE' : '#F5F7F6', border: col.highlight ? '1px solid #C6F6D5' : '1px solid #E2E8E4', color: col.highlight ? '#1B7A45' : '#1A1A2E' }}>
                     {ps[col.key]?.toFixed?.(1) || '0.0'}
                   </div>
                 ) : (
@@ -36,7 +34,7 @@ export default function Step7PelletStock({ data, updateData }) {
                     value={ps[col.key] || ''}
                     onChange={e => updateStock(idx, col.key, e.target.value)}
                     placeholder="0"
-                    className="w-full px-1 py-2 rounded-lg border border-kanoz-border text-center text-xs focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                    style={{ width: '100%', padding: '10px 4px', borderRadius: 8, border: '1.5px solid #E2E8E4', textAlign: 'center', fontSize: 12, outline: 'none' }}
                   />
                 )}
               </div>

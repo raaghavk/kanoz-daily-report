@@ -21,10 +21,10 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
 
   return (
     <div>
-      {label && <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">{label}</label>}
+      {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#5A6B62", marginBottom: 6 }}>{label}</label>}
       <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
       {preview ? (
-        <div className="relative rounded-xl overflow-hidden border border-kanoz-border">
+        <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid #E2E8E4" }}>
           <img src={preview} alt="Upload" className="w-full h-32 object-cover" />
           <button
             onClick={clear}
@@ -36,7 +36,7 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
       ) : (
         <button
           onClick={() => inputRef.current?.click()}
-          className="w-full py-6 rounded-xl border-2 border-dashed border-kanoz-border flex flex-col items-center gap-1.5 text-kanoz-text-tertiary hover:border-kanoz-green hover:text-kanoz-green transition-colors"
+          style={{ width: "100%", padding: "24px 16px", borderRadius: 12, border: "2px dashed #E2E8E4", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "#C5CFC8", cursor: "pointer", transition: "all 0.3s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#1B7A45"; e.currentTarget.style.color = "#1B7A45"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8E4"; e.currentTarget.style.color = "#C5CFC8"; }}
         >
           <Camera size={28} />
           <span className="text-xs">Take photo or upload</span>

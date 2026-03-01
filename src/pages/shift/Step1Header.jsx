@@ -20,39 +20,57 @@ export default function Step1Header({ data, updateData }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div>
-        <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
-          Report Date <span className="text-kanoz-red">*</span>
+        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+          Report Date <span style={{ color: '#E53E3E' }}>*</span>
         </label>
-        <div className="relative">
-          <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-kanoz-text-tertiary" />
+        <div style={{ position: 'relative' }}>
+          <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8' }} />
           <input
             type="date"
             value={data.date}
             onChange={e => { updateData('date', e.target.value); updateData('shift_start_date', e.target.value) }}
-            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+            style={{ width: '100%', paddingLeft: 36, paddingRight: 12, padding: '10px 12px 10px 36px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
-          Shift <span className="text-kanoz-red">*</span>
+        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+          Shift <span style={{ color: '#E53E3E' }}>*</span>
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           {['A', 'B'].map(s => (
             <button
               key={s}
               onClick={() => handleShiftChange(s)}
-              className={`py-3 rounded-xl text-sm font-bold border-2 transition-all ${
-                data.shift === s
-                  ? 'border-kanoz-green bg-kanoz-green-light/30 text-kanoz-green'
-                  : 'border-kanoz-border text-kanoz-text-secondary'
-              }`}
+              style={data.shift === s ? {
+                padding: '12px 0',
+                borderRadius: 12,
+                fontSize: 14,
+                fontWeight: 700,
+                border: '2px solid #1B7A45',
+                background: '#E8F5EE',
+                color: '#1B7A45',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              } : {
+                padding: '12px 0',
+                borderRadius: 12,
+                fontSize: 14,
+                fontWeight: 700,
+                border: '2px solid #E2E8E4',
+                background: 'white',
+                color: '#5A6B62',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              }}
             >
               Shift {s}
-              <div className="text-[10px] font-normal mt-0.5">
+              <div style={{ fontSize: 10, fontWeight: 400, marginTop: 4 }}>
                 {s === 'A' ? '06:00 – 18:00 (Day)' : '18:00 – 06:00 (Night)'}
               </div>
             </button>
@@ -60,34 +78,34 @@ export default function Step1Header({ data, updateData }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
-          <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">Start Time</label>
-          <div className="relative">
-            <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-kanoz-text-tertiary" />
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>Start Time</label>
+          <div style={{ position: 'relative' }}>
+            <Clock size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8' }} />
             <input
               type="time"
               value={data.start_time}
               onChange={e => updateData('start_time', e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+              style={{ width: '100%', paddingLeft: 36, paddingRight: 12, padding: '10px 12px 10px 36px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
             />
           </div>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">End Time</label>
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>End Time</label>
           <input
             type="time"
             value={data.end_time}
             onChange={e => updateData('end_time', e.target.value)}
-            className="w-full px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
           />
         </div>
       </div>
 
       {data.shift === 'B' && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-          <div className="text-xs font-bold text-amber-800 mb-1">Overnight Shift</div>
-          <div className="text-xs text-amber-700">
+        <div style={{ background: '#FFF8E6', border: '1.5px solid #F0D98C', borderRadius: 14, padding: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#956C03', marginBottom: 4 }}>Overnight Shift</div>
+          <div style={{ fontSize: 12, color: '#A0790A' }}>
             Starts: {new Date(data.shift_start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at {data.start_time}
             <br />
             Ends: {new Date(data.shift_end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at {data.end_time}
@@ -95,9 +113,9 @@ export default function Step1Header({ data, updateData }) {
         </div>
       )}
 
-      <div className="bg-kanoz-bg rounded-xl p-3 border border-kanoz-border">
-        <div className="text-[10px] font-bold text-kanoz-text-tertiary uppercase tracking-wider mb-1">Auto-filled</div>
-        <div className="text-xs text-kanoz-text-secondary">
+      <div style={{ background: '#F5F7F6', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 12 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, color: '#C5CFC8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>Auto-filled</div>
+        <div style={{ fontSize: 12, color: '#5A6B62' }}>
           <div>Plant: <strong>{data.plant?.name || 'Prayagraj'}</strong></div>
           <div>Supervisor: <strong>{data.employee?.name || 'Auto-detected'}</strong></div>
         </div>

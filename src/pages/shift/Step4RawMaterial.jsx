@@ -8,38 +8,38 @@ export default function Step4RawMaterial({ data, updateData }) {
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs text-kanoz-text-secondary">Opening stock auto-carries from previous shift. Purchased auto-fills from Purchase app.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <p style={{ fontSize: 12, color: '#5A6B62' }}>Opening stock auto-carries from previous shift. Purchased auto-fills from Purchase app.</p>
 
       {data.rawMaterials.map((rm, idx) => (
-        <div key={rm.id} className="bg-kanoz-card rounded-xl border border-kanoz-border p-4">
-          <div className="font-bold text-sm mb-3 text-kanoz-text">{rm.name}</div>
-          <div className="grid grid-cols-4 gap-2">
+        <div key={rm.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, color: '#1A1A2E' }}>{rm.name}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
             <div>
-              <label className="block text-[9px] font-semibold text-kanoz-text-tertiary mb-1 text-center">OPENING</label>
-              <div className="px-2 py-2 rounded-lg bg-kanoz-bg border border-kanoz-border text-center text-xs font-medium">
+              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center' }}>OPENING</label>
+              <div style={{ padding: '8px 4px', borderRadius: 8, background: '#F5F7F6', border: '1px solid #E2E8E4', textAlign: 'center', fontSize: 12, fontWeight: 500 }}>
                 {rm.opening}
               </div>
             </div>
             <div>
-              <label className="block text-[9px] font-semibold text-kanoz-text-tertiary mb-1 text-center">PURCHASED</label>
-              <div className="px-2 py-2 rounded-lg bg-kanoz-bg border border-kanoz-border text-center text-xs font-medium">
+              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center' }}>PURCHASED</label>
+              <div style={{ padding: '8px 4px', borderRadius: 8, background: '#F5F7F6', border: '1px solid #E2E8E4', textAlign: 'center', fontSize: 12, fontWeight: 500 }}>
                 {rm.purchased}
               </div>
             </div>
             <div>
-              <label className="block text-[9px] font-semibold text-kanoz-text-tertiary mb-1 text-center">USED</label>
+              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center' }}>USED</label>
               <input
                 type="number"
                 value={rm.used || ''}
                 onChange={e => updateRM(idx, 'used', e.target.value)}
                 placeholder="0"
-                className="w-full px-2 py-2 rounded-lg border border-kanoz-border text-center text-xs focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '8px 8px', borderRadius: 8, border: '1px solid #E2E8E4', fontSize: 12, outline: 'none', textAlign: 'center' }}
               />
             </div>
             <div>
-              <label className="block text-[9px] font-semibold text-kanoz-green mb-1 text-center">CLOSING</label>
-              <div className="px-2 py-2 rounded-lg bg-kanoz-green-light/30 border border-kanoz-green-light text-center text-xs font-bold text-kanoz-green">
+              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#1B7A45', marginBottom: 4, textAlign: 'center' }}>CLOSING</label>
+              <div style={{ padding: '8px 4px', borderRadius: 8, background: '#E8F5EE', border: '1px solid #C6F6D5', textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#1B7A45' }}>
                 {rm.closing}
               </div>
             </div>

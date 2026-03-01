@@ -22,59 +22,59 @@ export default function Step2Machines({ data, updateData }) {
 
   if (!data.machines.length) {
     return (
-      <div className="text-center py-8">
-        <AlertCircle size={32} className="mx-auto text-kanoz-text-tertiary mb-2" />
-        <p className="text-sm text-kanoz-text-secondary">No machines found for this plant.</p>
-        <p className="text-xs text-kanoz-text-tertiary mt-1">Ask admin to add machines in Settings.</p>
+      <div style={{ textAlign: 'center', paddingY: 32 }}>
+        <AlertCircle size={32} style={{ margin: '0 auto', color: '#C5CFC8', marginBottom: 8 }} />
+        <p style={{ fontSize: 14, color: '#5A6B62' }}>No machines found for this plant.</p>
+        <p style={{ fontSize: 12, color: '#C5CFC8', marginTop: 4 }}>Ask admin to add machines in Settings.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs text-kanoz-text-secondary">Enter runtime for each machine this shift.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <p style={{ fontSize: 12, color: '#5A6B62' }}>Enter runtime for each machine this shift.</p>
       {data.machines.map((m, idx) => (
-        <div key={m.id} className="bg-kanoz-card rounded-xl border border-kanoz-border p-4">
-          <div className="font-bold text-sm mb-3 flex items-center gap-2">
-            <div className="w-8 h-8 bg-kanoz-green-light/50 rounded-lg flex items-center justify-center text-kanoz-green text-xs font-extrabold">
+        <div key={m.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 32, height: 32, background: 'rgba(198, 246, 213, 0.5)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1B7A45', fontSize: 12, fontWeight: 800 }}>
               {idx + 1}
             </div>
             {m.name}
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
-              <label className="block text-[10px] font-semibold text-kanoz-text-tertiary mb-1">FROM</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>FROM</label>
               <input
                 type="time"
                 value={m.from_time}
                 onChange={e => updateMachine(idx, 'from_time', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-kanoz-text-tertiary mb-1">TO</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>TO</label>
               <input
                 type="time"
                 value={m.to_time}
                 onChange={e => updateMachine(idx, 'to_time', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label className="block text-[10px] font-semibold text-kanoz-text-tertiary mb-1">BREAKDOWN (min)</label>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>BREAKDOWN (min)</label>
               <input
                 type="number"
                 value={m.breakdown_min || ''}
                 onChange={e => updateMachine(idx, 'breakdown_min', e.target.value)}
                 placeholder="0"
-                className="w-full px-3 py-2 rounded-lg border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               />
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-kanoz-text-tertiary mb-1">PROD. HOURS</label>
-              <div className="px-3 py-2 rounded-lg bg-kanoz-green-light/20 border border-kanoz-green-light text-sm font-bold text-kanoz-green">
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>PROD. HOURS</label>
+              <div style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(198, 246, 213, 0.2)', border: '1.5px solid #C6F6D5', fontSize: 14, fontWeight: 700, color: '#1B7A45' }}>
                 {m.production_hours || 0} hrs
               </div>
             </div>

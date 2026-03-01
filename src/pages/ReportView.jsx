@@ -131,7 +131,7 @@ export default function ReportView() {
             <div>
               <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Date</div>
               <div className="flex items-center gap-2" style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
-                <Calendar size={16} className="text-kanoz-green" />
+                <Calendar size={16} style={{ color: '#1B7A45' }} />
                 {new Date(report.date).toLocaleDateString('en-IN')}
               </div>
             </div>
@@ -144,7 +144,7 @@ export default function ReportView() {
             <div>
               <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Time</div>
               <div className="flex items-center gap-2" style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
-                <Clock size={16} className="text-kanoz-blue" />
+                <Clock size={16} style={{ color: '#1E3A5F' }} />
                 {report.start_time?.slice(0, 5)} → {report.end_time?.slice(0, 5)}
               </div>
             </div>
@@ -385,7 +385,7 @@ export default function ReportView() {
               <div key={issue.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 12 }}>
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5">
-                    <AlertTriangle size={16} className="text-kanoz-red" />
+                    <AlertTriangle size={16} style={{ color: '#E53E3E' }} />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
@@ -404,7 +404,7 @@ export default function ReportView() {
                     </div>
                     <p style={{ fontSize: 12, color: '#5A6B62', marginTop: 4 }}>{issue.description}</p>
                     {issue.photo_url && (
-                      <div className="mt-2 flex items-center gap-1 text-kanoz-blue text-[10px] font-medium">
+                      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 4, color: "#1E3A5F", fontSize: 10, fontWeight: 500 }}>
                         <Eye size={12} /> Photo attached
                       </div>
                     )}
@@ -429,7 +429,7 @@ export default function ReportView() {
       {/* Status Badge */}
       <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16 }}>
         <div className="flex items-center justify-center gap-2" style={{ padding: '12px 0', background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4' }}>
-          <div className={`w-2 h-2 rounded-full ${report.status === 'submitted' ? 'bg-kanoz-green' : 'bg-amber-500'}`} />
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: report.status === "submitted" ? "#1B7A45" : "#F59E0B" }} />
           <span style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase' }}>
             {report.status === 'submitted' ? 'Submitted' : 'Draft'}
           </span>

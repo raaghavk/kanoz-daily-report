@@ -20,35 +20,35 @@ export default function Step5Diesel({ data, updateData }) {
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-xs text-kanoz-text-secondary">Track diesel usage for each equipment.</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <p style={{ fontSize: 12, color: '#5A6B62' }}>Track diesel usage for each equipment.</p>
 
       {data.diesel.map((entry, idx) => (
-        <div key={entry.id} className="bg-kanoz-card rounded-xl border border-kanoz-border p-4 relative">
-          <button onClick={() => removeEntry(idx)} className="absolute top-3 right-3 text-kanoz-red/50 hover:text-kanoz-red">
+        <div key={entry.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16, position: 'relative' }}>
+          <button onClick={() => removeEntry(idx)} style={{ position: 'absolute', top: 12, right: 12, color: '#E53E3E', opacity: 0.5, background: 'none', border: 'none', cursor: 'pointer' }}>
             <Trash2 size={16} />
           </button>
-          <div className="mb-3">
-            <label className="block text-[10px] font-semibold text-kanoz-text-tertiary mb-1">EQUIPMENT</label>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>EQUIPMENT</label>
             <select
               value={entry.equipment_name}
               onChange={e => updateEntry(idx, 'equipment_name', e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
             >
               <option value="">Select...</option>
               {equipment.map(eq => <option key={eq} value={eq}>{eq}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-4 gap-2 mb-2">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
             {['opening', 'added', 'closing', 'hours'].map(field => (
               <div key={field}>
-                <label className="block text-[9px] font-semibold text-kanoz-text-tertiary mb-1 text-center uppercase">{field === 'hours' ? 'HRS' : field}</label>
+                <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center', textTransform: 'uppercase' }}>{field === 'hours' ? 'HRS' : field}</label>
                 <input
                   type="number"
                   value={entry[field] || ''}
                   onChange={e => updateEntry(idx, field, e.target.value)}
                   placeholder="0"
-                  className="w-full px-2 py-2 rounded-lg border border-kanoz-border text-center text-xs focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                  style={{ width: '100%', padding: '8px 8px', borderRadius: 8, border: '1px solid #E2E8E4', fontSize: 12, textAlign: 'center', outline: 'none' }}
                 />
               </div>
             ))}
@@ -56,7 +56,7 @@ export default function Step5Diesel({ data, updateData }) {
         </div>
       ))}
 
-      <button onClick={addEntry} className="w-full py-3 border-2 border-dashed border-kanoz-green-light rounded-xl text-sm font-semibold text-kanoz-green flex items-center justify-center gap-2 hover:bg-kanoz-green-light/20 transition-colors">
+      <button onClick={addEntry} style={{ width: '100%', padding: '12px 0', border: '2px dashed #C6F6D5', borderRadius: 14, fontSize: 14, fontWeight: 600, color: '#1B7A45', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', cursor: 'pointer' }}>
         <Plus size={18} /> Add Equipment
       </button>
     </div>

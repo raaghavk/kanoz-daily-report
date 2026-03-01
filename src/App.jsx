@@ -16,10 +16,10 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-kanoz-bg">
-        <div className="text-center">
-          <div className="w-10 h-10 border-4 border-kanoz-green border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-kanoz-text-secondary">Loading...</p>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F7F6' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 40, height: 40, border: '4px solid #1B7A45', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
+          <p style={{ fontSize: 14, color: '#5A6B62' }}>Loading...</p>
         </div>
       </div>
     )
@@ -65,16 +65,16 @@ export default function App() {
 function SettingsPage() {
   const { employee, plant, signOut } = useAuth()
   return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-lg font-bold">Settings</h2>
-      <div className="bg-kanoz-card rounded-xl p-4 space-y-2">
-        <div className="text-sm"><span className="text-kanoz-text-secondary">Name:</span> {employee?.name}</div>
-        <div className="text-sm"><span className="text-kanoz-text-secondary">Plant:</span> {plant?.name}</div>
-        <div className="text-sm"><span className="text-kanoz-text-secondary">Role:</span> {employee?.role}</div>
+    <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <h2 style={{ fontSize: 18, fontWeight: 700 }}>Settings</h2>
+      <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 14 }}><span style={{ color: '#5A6B62' }}>Name:</span> {employee?.name}</div>
+        <div style={{ fontSize: 14 }}><span style={{ color: '#5A6B62' }}>Plant:</span> {plant?.name}</div>
+        <div style={{ fontSize: 14 }}><span style={{ color: '#5A6B62' }}>Role:</span> {employee?.role}</div>
       </div>
       <button
         onClick={signOut}
-        className="w-full py-3 bg-kanoz-red text-white rounded-xl text-sm font-bold"
+        style={{ width: '100%', padding: '14px 0', background: '#E53E3E', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
       >
         Sign Out
       </button>
