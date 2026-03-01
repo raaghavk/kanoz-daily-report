@@ -2,19 +2,36 @@ import { Check } from 'lucide-react'
 
 export default function Stepper({ currentStep, totalSteps = 9, onStepClick }) {
   return (
-    <div className="flex items-center px-4 py-2.5 overflow-x-auto flex-shrink-0"
-      style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      padding: '10px 16px',
+      overflowX: 'auto',
+      flexShrink: 0,
+      background: '#F5F7F6',
+      borderBottom: '1px solid #E2E8E4',
+    }}>
       {Array.from({ length: totalSteps }, (_, i) => {
         const step = i + 1
         const isDone = step < currentStep
         const isCurrent = step === currentStep
         return (
-          <div key={step} className="flex items-center">
+          <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
             <button
               onClick={() => onStepClick?.(step)}
-              className="flex items-center justify-center flex-shrink-0 text-[11px] font-bold transition-all"
               style={{
-                width: 30, height: 30, borderRadius: '50%',
+                width: 30,
+                height: 30,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                fontSize: 11,
+                fontWeight: 700,
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
                 ...(isDone
                   ? { background: '#1B7A45', color: 'white' }
                   : isCurrent
@@ -26,9 +43,12 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick }) {
               {isDone ? <Check size={14} strokeWidth={3} /> : step}
             </button>
             {step < totalSteps && (
-              <div className="h-0.5 flex-shrink-0" style={{
-                width: 4, minWidth: 4,
-                background: isDone ? '#1B7A45' : '#E2E8E4'
+              <div style={{
+                width: 4,
+                minWidth: 4,
+                height: 2,
+                flexShrink: 0,
+                background: isDone ? '#1B7A45' : '#E2E8E4',
               }} />
             )}
           </div>
