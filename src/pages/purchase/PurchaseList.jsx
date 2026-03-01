@@ -108,16 +108,22 @@ export default function PurchaseList() {
       <PageHeader title="RM Purchase" subtitle="Raw Material Purchases" backTo="/" />
 
       {/* Filter Tabs */}
-      <div className="sticky top-0 z-20 flex gap-2 overflow-x-auto" style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4', padding: '10px 20px' }}>
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 20,
+        display: 'flex', gap: 8, overflowX: 'auto',
+        background: '#F5F7F6', borderBottom: '1px solid #E2E8E4', padding: '10px 20px',
+      }}>
         {['today', 'week', 'month'].map(tab => (
           <button
             key={tab}
             onClick={() => setFilterTab(tab)}
-            className="px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all"
-            style={filterTab === tab
-              ? { background: '#1B7A45', color: 'white' }
-              : { background: 'white', color: '#1A1A2E', border: '1px solid #E2E8E4' }
-            }
+            style={{
+              padding: '8px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700,
+              whiteSpace: 'nowrap', transition: 'all 0.2s', border: 'none', cursor: 'pointer',
+              ...(filterTab === tab
+                ? { background: '#1B7A45', color: 'white' }
+                : { background: 'white', color: '#1A1A2E', border: '1.5px solid #E2E8E4' })
+            }}
           >
             {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : 'This Month'}
           </button>
@@ -126,12 +132,12 @@ export default function PurchaseList() {
 
       <div style={{ padding: '16px 20px' }}>
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={32} className="animate-spin" style={{ color: '#1B7A45' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+            <Loader2 size={32} style={{ color: '#1B7A45', animation: 'spin 1s linear infinite' }} />
           </div>
         ) : dateKeys.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="text-4xl mb-2">📋</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', textAlign: 'center' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
             <p style={{ color: '#5A6B62', fontWeight: 500 }}>No purchases found</p>
             <p style={{ color: '#C5CFC8', fontSize: 13, marginTop: 4 }}>Start by adding your first raw material purchase</p>
           </div>
@@ -147,11 +153,10 @@ export default function PurchaseList() {
                     <button
                       key={purchase.id}
                       onClick={() => navigate(`/purchase/${purchase.id}`)}
-                      className="w-full text-left"
-                      style={{ background: '#fff', border: '1.5px solid #E2E8E4', borderRadius: 14, padding: 16 }}
+                      style={{ background: '#fff', border: '1.5px solid #E2E8E4', borderRadius: 14, padding: 16, width: '100%', textAlign: 'left', cursor: 'pointer' }}
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div style={{ flex: 1 }}>
                           <div style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>{purchase.suppliers?.name || 'Unknown Supplier'}</div>
                           <div style={{ fontSize: 12, color: '#C5CFC8', marginTop: 2 }}>{purchase.raw_material_types?.name || 'N/A'}</div>
                         </div>
@@ -164,7 +169,7 @@ export default function PurchaseList() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
                         <div>
                           <div style={{ color: '#C5CFC8' }}>Quantity</div>
                           <div style={{ fontWeight: 700, color: '#1A1A2E' }}>{(purchase.final_quantity || 0).toFixed(2)} t</div>
@@ -189,8 +194,13 @@ export default function PurchaseList() {
 
       <button
         onClick={() => navigate('/purchase/new')}
-        className="fixed flex items-center justify-center"
-        style={{ bottom: 96, right: 16, width: 56, height: 56, borderRadius: '50%', background: '#1B7A45', color: 'white', boxShadow: '0 4px 14px rgba(27,122,69,0.3)' }}
+        style={{
+          position: 'fixed', bottom: 96, right: 16, width: 56, height: 56,
+          borderRadius: '50%', background: '#1B7A45', color: 'white',
+          boxShadow: '0 4px 14px rgba(27,122,69,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: 'none', cursor: 'pointer',
+        }}
         aria-label="New purchase"
       >
         <Plus size={28} />

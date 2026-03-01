@@ -267,8 +267,8 @@ export default function PurchaseForm() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center" style={{ minHeight: '100vh' }}>
-        <Loader2 size={40} className="animate-spin" style={{ color: '#1B7A45' }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <Loader2 size={40} style={{ color: '#1B7A45', animation: 'spin 1s linear infinite' }} />
       </div>
     )
   }
@@ -290,12 +290,12 @@ export default function PurchaseForm() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #E2E8E4' }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 8 }}>
               Supplier <span style={{ color: '#E53E3E' }}>*</span>
             </label>
-            <div className="flex gap-2">
+            <div style={{ display: 'flex', gap: 8 }}>
               <select
                 value={formData.supplier_id}
                 onChange={e => handleFieldChange('supplier_id', e.target.value)}
@@ -308,8 +308,7 @@ export default function PurchaseForm() {
               </select>
               <button
                 onClick={() => setShowAddSupplier(true)}
-                style={{ padding: '10px 12px', background: '#1B7A45', color: 'white', borderRadius: 8 }}
-                className="flex items-center gap-1"
+                style={{ padding: '10px 12px', background: '#1B7A45', color: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, border: 'none', cursor: 'pointer' }}
               >
                 <Plus size={16} />
               </button>
@@ -333,7 +332,7 @@ export default function PurchaseForm() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #E2E8E4' }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 8 }}>Vehicle Number</label>
             <input
@@ -348,7 +347,7 @@ export default function PurchaseForm() {
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #E2E8E4' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 16 }}>Weight Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 8 }}>
                 Gross Weight (kg) <span style={{ color: '#E53E3E' }}>*</span>
@@ -388,7 +387,7 @@ export default function PurchaseForm() {
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #E2E8E4' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 16 }}>Moisture & Deduction</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 8 }}>Moisture %</label>
               <input
@@ -426,7 +425,7 @@ export default function PurchaseForm() {
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #E2E8E4' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 16 }}>Pricing</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 8 }}>
                 Rate per kg (₹) <span style={{ color: '#E53E3E' }}>*</span>
@@ -454,7 +453,7 @@ export default function PurchaseForm() {
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #E2E8E4' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 16 }}>Charges</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 8 }}>Loading (₹)</label>
               <input
@@ -491,19 +490,19 @@ export default function PurchaseForm() {
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #E2E8E4' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 16 }}>Summary</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div className="flex justify-between items-center" style={{ padding: '10px 0', borderBottom: '1px solid #E2E8E4' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #E2E8E4' }}>
               <span style={{ fontSize: 13, color: '#5A6B62' }}>RM Amount</span>
               <span style={{ fontWeight: 700, color: '#1A1A2E' }}>₹{(parseFloat(formData.rm_amount) || 0).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center" style={{ padding: '10px 0', borderBottom: '1px solid #E2E8E4' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #E2E8E4' }}>
               <span style={{ fontSize: 13, color: '#5A6B62' }}>Total Charges</span>
               <span style={{ fontWeight: 700, color: '#1A1A2E' }}>₹{((parseFloat(formData.loading_charges) || 0) + (parseFloat(formData.unloading_charges) || 0) + (parseFloat(formData.transport_charges) || 0)).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center" style={{ padding: '12px', background: '#E8F5EE', borderRadius: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#E8F5EE', borderRadius: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>Total Amount</span>
               <span style={{ fontSize: 18, fontWeight: 800, color: '#1B7A45' }}>₹{(parseFloat(formData.total_amount) || 0).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between items-center" style={{ padding: '10px 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0' }}>
               <span style={{ fontSize: 13, color: '#5A6B62' }}>Avg Cost per kg</span>
               <span style={{ fontWeight: 700, color: '#1A1A2E' }}>₹{(parseFloat(formData.average_cost_per_kg) || 0).toFixed(2)}</span>
             </div>
@@ -518,7 +517,7 @@ export default function PurchaseForm() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #E2E8E4' }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 8 }}>
               Payment Status <span style={{ color: '#E53E3E' }}>*</span>
@@ -548,10 +547,9 @@ export default function PurchaseForm() {
         <button
           onClick={savePurchase}
           disabled={saving}
-          className="flex items-center justify-center gap-2"
-          style={{ width: '100%', padding: '14px 0', borderRadius: 14, background: '#1B7A45', color: 'white', fontWeight: 700, fontSize: 16, opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
+          style={{ width: '100%', padding: '14px 0', borderRadius: 14, background: '#1B7A45', color: 'white', fontWeight: 700, fontSize: 16, opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, border: 'none' }}
         >
-          {saving && <Loader2 size={20} className="animate-spin" />}
+          {saving && <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />}
           {saving ? 'Saving...' : id ? 'Update Purchase' : 'Save Purchase'}
         </button>
       </div>

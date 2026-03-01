@@ -162,7 +162,7 @@ export default function ShiftWizard() {
   const CurrentStep = STEPS[step - 1].component
 
   return (
-    <div className="flex flex-col" style={{ height: '100%', background: '#F5F7F6' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F5F7F6' }}>
       <PageHeader
         title={STEPS[step - 1].title}
         subtitle={`Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
@@ -172,7 +172,7 @@ export default function ShiftWizard() {
       <Stepper currentStep={step} onStepClick={setStep} />
 
       {/* Step Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ padding: '16px 20px' }}>
           <CurrentStep
             data={reportData}
@@ -184,12 +184,11 @@ export default function ShiftWizard() {
       </div>
 
       {/* Navigation */}
-      <div className="flex-shrink-0 flex gap-3" style={{ background: '#fff', borderTop: '1.5px solid #E2E8E4', padding: '16px 20px' }}>
+      <div style={{ flexShrink: 0, display: 'flex', gap: 12, background: '#fff', borderTop: '1.5px solid #E2E8E4', padding: '16px 20px' }}>
         {step > 1 && (
           <button
             onClick={() => setStep(step - 1)}
-            className="flex-1 flex items-center justify-center gap-2"
-            style={{ padding: '14px 0', border: '1.5px solid #E2E8E4', borderRadius: 14, fontSize: 14, fontWeight: 600 }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', border: '1.5px solid #E2E8E4', borderRadius: 14, fontSize: 14, fontWeight: 600, background: '#fff', cursor: 'pointer' }}
           >
             <ArrowLeft size={16} /> Previous
           </button>
@@ -197,8 +196,7 @@ export default function ShiftWizard() {
         {step < 9 ? (
           <button
             onClick={() => setStep(step + 1)}
-            className="flex-1 flex items-center justify-center gap-2"
-            style={{ padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700 }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
           >
             Next <ArrowRight size={16} />
           </button>
@@ -206,10 +204,9 @@ export default function ShiftWizard() {
           <button
             onClick={saveReport}
             disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2"
-            style={{ padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
           >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : null}
+            {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : null}
             Submit Report
           </button>
         )}

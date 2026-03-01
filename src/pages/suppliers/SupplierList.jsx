@@ -124,13 +124,13 @@ export default function SupplierList() {
   }
 
   return (
-    <div className="pb-20">
+    <div style={{ paddingBottom: 80 }}>
       <PageHeader title="Supplier Database" subtitle="Manage your suppliers" backTo="/purchase" />
 
       {/* Search Bar */}
       <div style={{ padding: '0 20px', marginTop: 12 }}>
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#8A9B92' }} />
+        <div style={{ position: 'relative' }}>
+          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8A9B92' }} />
           <input
             type="text"
             placeholder="Search by name or mobile..."
@@ -144,13 +144,13 @@ export default function SupplierList() {
       {/* Content */}
       <div style={{ padding: '0 20px', marginTop: 16 }}>
         {loading ? (
-          <div className="flex flex-col items-center justify-center" style={{ padding: '48px 0' }}>
-            <Loader2 size={32} className="animate-spin" style={{ color: '#1B7A45', marginBottom: 8 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+            <Loader2 size={32} style={{ color: '#1B7A45', marginBottom: 8, animation: 'spin 1s linear infinite' }} />
             <p style={{ fontSize: 13, color: '#5A6B62' }}>Loading suppliers...</p>
           </div>
         ) : filteredSuppliers.length === 0 ? (
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 32, textAlign: 'center' }}>
-            <AlertCircle size={32} className="mx-auto" style={{ color: '#C5CFC8', marginBottom: 8 }} />
+            <AlertCircle size={32} style={{ color: '#C5CFC8', margin: '0 auto 8px' }} />
             <p style={{ fontSize: 14, color: '#5A6B62', marginBottom: 4 }}>
               {searchQuery ? 'No suppliers found' : 'No suppliers added yet'}
             </p>
@@ -176,10 +176,9 @@ export default function SupplierList() {
                 {/* Card Header */}
                 <button
                   onClick={() => navigate(`/suppliers/${supplier.id}`)}
-                  className="w-full text-left"
-                  style={{ marginBottom: 12 }}
+                  style={{ width: '100%', textAlign: 'left', marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
-                  <div className="flex items-start justify-between" style={{ marginBottom: 4 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
                     <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>{supplier.name}</h3>
                     <ChevronRight size={16} style={{ color: '#C5CFC8' }} />
                   </div>
@@ -187,7 +186,7 @@ export default function SupplierList() {
                 </button>
 
                 {/* Materials & Rate */}
-                <div className="grid grid-cols-2 gap-2" style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #E2E8E4' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #E2E8E4' }}>
                   <div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Material</span>
                     <p style={{ fontSize: 12, color: '#1A1A2E', marginTop: 2 }}>{supplier.material_type || 'N/A'}</p>
@@ -201,27 +200,24 @@ export default function SupplierList() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2">
+                <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     onClick={() => handleCall(supplier.mobile)}
-                    className="flex-1 flex items-center justify-center gap-1.5"
-                    style={{ padding: '8px 0', background: '#E8F5EE', borderRadius: 8 }}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#E8F5EE', borderRadius: 8, border: 'none', cursor: 'pointer' }}
                   >
                     <Phone size={14} style={{ color: '#1B7A45' }} />
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#1B7A45' }}>Call</span>
                   </button>
                   <button
                     onClick={() => handleSMS(supplier.mobile)}
-                    className="flex-1 flex items-center justify-center gap-1.5"
-                    style={{ padding: '8px 0', background: '#EEF2FF', borderRadius: 8 }}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#EEF2FF', borderRadius: 8, border: 'none', cursor: 'pointer' }}
                   >
                     <MessageSquare size={14} style={{ color: '#2563EB' }} />
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#2563EB' }}>SMS</span>
                   </button>
                   <button
                     onClick={() => handleMap(supplier)}
-                    className="flex-1 flex items-center justify-center gap-1.5"
-                    style={{ padding: '8px 0', background: '#FFF8E6', borderRadius: 8 }}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#FFF8E6', borderRadius: 8, border: 'none', cursor: 'pointer' }}
                   >
                     <MapPin size={14} style={{ color: '#D4960A' }} />
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#D4960A' }}>Map</span>
@@ -236,10 +232,9 @@ export default function SupplierList() {
       {/* Floating Action Button */}
       <button
         onClick={() => setShowAddModal(true)}
-        className="fixed flex items-center justify-center"
-        style={{ bottom: 96, right: 16, width: 56, height: 56, background: '#1B7A45', borderRadius: '50%', boxShadow: '0 4px 14px rgba(27,122,69,0.3)' }}
+        style={{ position: 'fixed', display: 'flex', alignItems: 'center', justifyContent: 'center', bottom: 96, right: 16, width: 56, height: 56, background: '#1B7A45', borderRadius: '50%', boxShadow: '0 4px 14px rgba(27,122,69,0.3)', border: 'none', cursor: 'pointer' }}
       >
-        <Plus size={24} className="text-white" />
+        <Plus size={24} color="white" />
       </button>
 
       {/* Add Supplier Modal */}
@@ -324,16 +319,16 @@ export default function SupplierList() {
             />
           </div>
 
-          <div className="flex gap-2" style={{ paddingTop: 8 }}>
+          <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <button
               onClick={() => setShowAddModal(false)}
-              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#1A1A2E', borderRadius: 8, fontSize: 14, fontWeight: 600 }}
+              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#1A1A2E', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Cancel
             </button>
             <button
               onClick={handleAddSupplier}
-              style={{ flex: 1, padding: '10px 0', background: '#1B7A45', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600 }}
+              style={{ flex: 1, padding: '10px 0', background: '#1B7A45', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Add Supplier
             </button>

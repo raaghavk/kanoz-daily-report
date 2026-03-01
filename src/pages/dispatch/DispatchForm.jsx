@@ -265,7 +265,7 @@ export default function DispatchForm() {
   }
 
   return (
-    <div className="pb-20">
+    <div style={{ paddingBottom: 80 }}>
       <PageHeader title="Vehicle Dispatch" subtitle="Quick dispatch entry for today" backTo="/" />
 
       {/* Warning if no shift report */}
@@ -278,7 +278,7 @@ export default function DispatchForm() {
 
       {/* Today's Dispatches List */}
       <div style={{ padding: '0 20px', marginTop: 16 }}>
-        <div className="flex items-center justify-between mb-3">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1 }}>Today's Dispatches</h2>
           <span style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E' }}>{dispatches.length}</span>
         </div>
@@ -291,7 +291,7 @@ export default function DispatchForm() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {dispatches.map(dispatch => (
               <div key={dispatch.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 12 }}>
-                <div className="flex items-start justify-between mb-1">
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>
                       Truck {dispatch.truck_number}
@@ -300,7 +300,7 @@ export default function DispatchForm() {
                       {dispatch.customers?.name || 'Unknown Customer'}
                     </div>
                   </div>
-                  <div className="text-right">
+                  <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#1B7A45' }}>
                       {dispatch.total_mt.toFixed(1)} MT
                     </div>
@@ -316,7 +316,7 @@ export default function DispatchForm() {
           </div>
         ) : (
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 24, textAlign: 'center' }}>
-            <Truck size={24} className="mx-auto" style={{ color: '#C5CFC8', marginBottom: 8 }} />
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Truck size={24} style={{ color: '#C5CFC8' }} /></div>
             <p style={{ fontSize: 12, color: '#5A6B62' }}>No dispatches yet</p>
           </div>
         )}
@@ -373,7 +373,7 @@ export default function DispatchForm() {
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                 Customer <span style={{ color: '#D32F2F' }}>*</span>
               </label>
-              <div className="flex gap-2">
+              <div style={{ display: 'flex', gap: 8 }}>
                 <select
                   value={form.customer_id}
                   onChange={e => updateForm('customer_id', e.target.value)}
@@ -386,13 +386,13 @@ export default function DispatchForm() {
                 </select>
                 <button
                   onClick={() => setShowAddCustomer(!showAddCustomer)}
-                  style={{ padding: '10px 12px', background: '#1565C0', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                  style={{ padding: '10px 12px', background: '#1565C0', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Plus size={16} />
                 </button>
               </div>
               {showAddCustomer && (
-                <div className="mt-2 flex gap-2">
+                <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
                   <input
                     type="text"
                     placeholder="New customer name"
@@ -456,7 +456,7 @@ export default function DispatchForm() {
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                 Driver Phone
               </label>
-              <div className="flex gap-2">
+              <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   type="tel"
                   placeholder="Driver phone number"
@@ -467,7 +467,7 @@ export default function DispatchForm() {
                 {form.driver_phone && (
                   <a
                     href={`tel:${form.driver_phone}`}
-                    style={{ padding: '10px 12px', background: '#1B7A45', color: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                    style={{ padding: '10px 12px', background: '#1B7A45', color: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', textDecoration: 'none' }}
                   >
                     <Phone size={16} />
                   </a>
@@ -482,7 +482,7 @@ export default function DispatchForm() {
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {form.pellets.map((pellet, idx) => (
-                  <div key={idx} className="flex gap-2">
+                  <div key={idx} style={{ display: 'flex', gap: 8 }}>
                     <select
                       value={pellet.pellet_type_id}
                       onChange={e => updatePellet(idx, 'pellet_type_id', e.target.value)}
@@ -505,7 +505,7 @@ export default function DispatchForm() {
                     {form.pellets.length > 1 && (
                       <button
                         onClick={() => removePelletRow(idx)}
-                        style={{ padding: '10px 12px', background: '#FFEBEE', color: '#D32F2F', borderRadius: 12, border: 'none', cursor: 'pointer' }}
+                        style={{ padding: '10px 12px', background: '#FFEBEE', color: '#D32F2F', borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       >
                         <X size={16} />
                       </button>
@@ -522,7 +522,7 @@ export default function DispatchForm() {
             </div>
 
             {/* Invoice & Times */}
-            <div className="grid grid-cols-2 gap-3">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                   Invoice Number

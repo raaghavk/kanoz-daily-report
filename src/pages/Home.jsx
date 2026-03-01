@@ -68,16 +68,17 @@ export default function Home() {
   const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 
   return (
-    <div className="flex flex-col min-h-full">
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {/* Dark App Bar */}
-      <div className="flex-shrink-0" style={{ background: '#0F2418', paddingTop: 'env(safe-area-inset-top)' }}>
+      <div style={{ flexShrink: 0, background: '#0F2418', paddingTop: 'env(safe-area-inset-top)' }}>
         <div style={{ padding: '14px 20px' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center" style={{
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{
                 width: 36, height: 36, borderRadius: 11,
                 background: 'linear-gradient(135deg, #1B7A45, #145C34)',
-                boxShadow: '0 2px 8px rgba(27,122,69,0.3)'
+                boxShadow: '0 2px 8px rgba(27,122,69,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 <svg viewBox="0 0 48 48" width="18" height="18">
                   <path fill="white" d="M24 4C16 4 8 12 8 24c0 8 4 14 8 17 1-4 3-8 8-12 5 4 7 8 8 12 4-3 8-9 8-17C40 12 32 4 24 4zm0 8c3 0 6 4 6 10s-3 10-6 10-6-4-6-10 3-10 6-10z"/>
@@ -85,7 +86,7 @@ export default function Home() {
                 </svg>
               </div>
               <div>
-                <div className="text-white font-bold" style={{ fontSize: 18 }}>Kanoz Report</div>
+                <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Kanoz Report</div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
                   {plant?.name || 'Plant'} &bull; Shift {currentShift} &bull; {dateStr}
                 </div>
@@ -93,18 +94,21 @@ export default function Home() {
             </div>
             <button
               onClick={() => navigate('/settings')}
-              className="flex items-center justify-center text-sm font-bold text-white"
               style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 38, height: 38, borderRadius: '50%',
                 background: 'rgba(255,255,255,0.1)',
-                border: '2px solid rgba(255,255,255,0.15)'
+                border: '2px solid rgba(255,255,255,0.15)',
+                fontSize: 14, fontWeight: 700, color: 'white',
+                cursor: 'pointer'
               }}
             >
               {employee?.name?.charAt(0) || 'U'}
             </button>
           </div>
           {/* Shift time bar */}
-          <div className="flex items-center gap-2 mt-3" style={{
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, marginTop: 12,
             background: 'rgba(255,255,255,0.06)',
             borderRadius: 10, padding: '8px 12px'
           }}>
@@ -121,7 +125,7 @@ export default function Home() {
       </div>
 
       {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto" style={{ padding: '16px 20px 20px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 20px' }}>
         {/* Handover Notes */}
         {handoverNotes && (
           <div style={{
@@ -138,13 +142,14 @@ export default function Home() {
         )}
 
         {/* Stat Cards */}
-        <div className="flex gap-3" style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           <button
             onClick={() => setShowProductionModal(true)}
-            className="flex-1 text-center"
             style={{
+              flex: 1, textAlign: 'center',
               background: '#fff', border: '1.5px solid #E2E8E4',
-              borderRadius: 14, padding: '16px 8px'
+              borderRadius: 14, padding: '16px 8px',
+              cursor: 'pointer'
             }}
           >
             <div style={{ fontSize: 28, fontWeight: 800, color: '#1B7A45', lineHeight: 1 }}>
@@ -156,10 +161,11 @@ export default function Home() {
           </button>
           <button
             onClick={() => setShowTrucksModal(true)}
-            className="flex-1 text-center"
             style={{
+              flex: 1, textAlign: 'center',
               background: '#fff', border: '1.5px solid #E2E8E4',
-              borderRadius: 14, padding: '16px 8px'
+              borderRadius: 14, padding: '16px 8px',
+              cursor: 'pointer'
             }}
           >
             <div style={{ fontSize: 28, fontWeight: 800, color: '#D4960A', lineHeight: 1 }}>
@@ -171,10 +177,11 @@ export default function Home() {
           </button>
           <button
             onClick={() => setShowIssuesModal(true)}
-            className="flex-1 text-center"
             style={{
+              flex: 1, textAlign: 'center',
               background: '#fff', border: '1.5px solid #E2E8E4',
-              borderRadius: 14, padding: '16px 8px'
+              borderRadius: 14, padding: '16px 8px',
+              cursor: 'pointer'
             }}
           >
             <div style={{ fontSize: 28, fontWeight: 800, color: '#E53E3E', lineHeight: 1 }}>
@@ -190,12 +197,13 @@ export default function Home() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
           <button
             onClick={() => navigate('/shift/new')}
-            className="flex items-center justify-center gap-2"
             style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '15px 0', borderRadius: 14,
               background: '#1B7A45', color: 'white',
               fontSize: 15, fontWeight: 600,
-              boxShadow: '0 4px 14px rgba(27,122,69,0.25)'
+              boxShadow: '0 4px 14px rgba(27,122,69,0.25)',
+              border: 'none', cursor: 'pointer'
             }}
           >
             <Plus size={18} strokeWidth={2.5} />
@@ -203,12 +211,13 @@ export default function Home() {
           </button>
           <button
             onClick={() => navigate('/dispatch/new')}
-            className="flex items-center justify-center gap-2"
             style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '14px 0', borderRadius: 14,
               background: '#E8F5EE', color: '#1B7A45',
               fontSize: 14, fontWeight: 600,
-              border: '1.5px solid #C3DFCC'
+              border: '1.5px solid #C3DFCC',
+              cursor: 'pointer'
             }}
           >
             <Truck size={16} strokeWidth={2} />
@@ -216,12 +225,13 @@ export default function Home() {
           </button>
           <button
             onClick={() => navigate('/purchase/new')}
-            className="flex items-center justify-center gap-2"
             style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '14px 0', borderRadius: 14,
               background: '#fff', color: '#1A1A2E',
               fontSize: 14, fontWeight: 600,
-              border: '1.5px solid #E2E8E4'
+              border: '1.5px solid #E2E8E4',
+              cursor: 'pointer'
             }}
           >
             <Package size={16} strokeWidth={2} />
@@ -241,17 +251,20 @@ export default function Home() {
                 <button
                   key={report.id}
                   onClick={() => navigate(`/reports/${report.id}`)}
-                  className="w-full flex items-center gap-3 text-left"
                   style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
                     padding: '14px 16px',
-                    borderBottom: idx < todayReports.length - 1 ? '1px solid #F0F3F1' : 'none'
+                    borderBottom: idx < todayReports.length - 1 ? '1px solid #F0F3F1' : 'none',
+                    background: 'transparent', border: 'none', cursor: 'pointer'
                   }}
                 >
-                  <div className="flex items-center justify-center flex-shrink-0"
-                    style={{ width: 44, height: 44, borderRadius: 12, background: '#E8F5EE', fontSize: 20 }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    width: 44, height: 44, borderRadius: 12, background: '#E8F5EE', fontSize: 20
+                  }}>
                     📊
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>
                       Shift {report.shift} — {report.date}
                     </div>
@@ -264,7 +277,8 @@ export default function Home() {
               ))}
             </div>
           ) : (
-            <div className="text-center" style={{
+            <div style={{
+              textAlign: 'center',
               background: '#fff', borderRadius: 14,
               border: '1.5px solid #E2E8E4', padding: '32px 20px'
             }}>
@@ -276,7 +290,8 @@ export default function Home() {
                 style={{
                   padding: '10px 24px', borderRadius: 10,
                   background: '#1B7A45', color: 'white',
-                  fontSize: 13, fontWeight: 600
+                  fontSize: 13, fontWeight: 600,
+                  border: 'none', cursor: 'pointer'
                 }}
               >
                 Start Shift Report
@@ -288,30 +303,30 @@ export default function Home() {
 
       {/* Production Modal */}
       <Modal isOpen={showProductionModal} onClose={() => setShowProductionModal(false)} title="Production Breakdown">
-        <div className="text-center py-4">
-          <div className="text-3xl font-extrabold" style={{ color: '#1B7A45' }}>{stats.production.toFixed(1)} MT</div>
-          <div className="text-xs mt-1" style={{ color: '#8A9B92' }}>Total production today</div>
+        <div style={{ textAlign: 'center', padding: '16px 0' }}>
+          <div style={{ fontSize: 30, fontWeight: 800, color: '#1B7A45' }}>{stats.production.toFixed(1)} MT</div>
+          <div style={{ fontSize: 12, marginTop: 4, color: '#8A9B92' }}>Total production today</div>
         </div>
-        <p className="text-sm text-center" style={{ color: '#5A6B62' }}>Machine-wise breakdown will appear once reports are submitted.</p>
-        <button onClick={() => setShowProductionModal(false)} className="w-full mt-4 py-2.5 rounded-xl text-sm font-medium" style={{ background: '#F5F7F6', border: '1px solid #E2E8E4' }}>Close</button>
+        <p style={{ fontSize: 14, textAlign: 'center', color: '#5A6B62' }}>Machine-wise breakdown will appear once reports are submitted.</p>
+        <button onClick={() => setShowProductionModal(false)} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, background: '#F5F7F6', border: '1px solid #E2E8E4', cursor: 'pointer' }}>Close</button>
       </Modal>
 
       {/* Trucks Modal */}
       <Modal isOpen={showTrucksModal} onClose={() => setShowTrucksModal(false)} title="Today's Dispatches">
-        <div className="text-center py-4">
-          <div className="text-3xl font-extrabold" style={{ color: '#D4960A' }}>{stats.trucks}</div>
-          <div className="text-xs mt-1" style={{ color: '#8A9B92' }}>Trucks dispatched today</div>
+        <div style={{ textAlign: 'center', padding: '16px 0' }}>
+          <div style={{ fontSize: 30, fontWeight: 800, color: '#D4960A' }}>{stats.trucks}</div>
+          <div style={{ fontSize: 12, marginTop: 4, color: '#8A9B92' }}>Trucks dispatched today</div>
         </div>
-        <button onClick={() => { setShowTrucksModal(false); navigate('/dispatch') }} className="w-full mt-4 py-2.5 rounded-xl text-sm font-bold text-white" style={{ background: '#1B7A45' }}>View All Dispatches</button>
+        <button onClick={() => { setShowTrucksModal(false); navigate('/dispatch') }} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 700, color: 'white', background: '#1B7A45', border: 'none', cursor: 'pointer' }}>View All Dispatches</button>
       </Modal>
 
       {/* Issues Modal */}
       <Modal isOpen={showIssuesModal} onClose={() => setShowIssuesModal(false)} title="Issues Reported">
-        <div className="text-center py-4">
-          <div className="text-3xl font-extrabold" style={{ color: '#E53E3E' }}>{stats.issues}</div>
-          <div className="text-xs mt-1" style={{ color: '#8A9B92' }}>Issues reported today</div>
+        <div style={{ textAlign: 'center', padding: '16px 0' }}>
+          <div style={{ fontSize: 30, fontWeight: 800, color: '#E53E3E' }}>{stats.issues}</div>
+          <div style={{ fontSize: 12, marginTop: 4, color: '#8A9B92' }}>Issues reported today</div>
         </div>
-        <button onClick={() => setShowIssuesModal(false)} className="w-full mt-4 py-2.5 rounded-xl text-sm font-medium" style={{ background: '#F5F7F6', border: '1px solid #E2E8E4' }}>Close</button>
+        <button onClick={() => setShowIssuesModal(false)} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, background: '#F5F7F6', border: '1px solid #E2E8E4', cursor: 'pointer' }}>Close</button>
       </Modal>
     </div>
   )

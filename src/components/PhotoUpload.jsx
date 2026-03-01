@@ -22,13 +22,21 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
   return (
     <div>
       {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#5A6B62", marginBottom: 6 }}>{label}</label>}
-      <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+      <input ref={inputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
       {preview ? (
         <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid #E2E8E4" }}>
-          <img src={preview} alt="Upload" className="w-full h-32 object-cover" />
+          <img src={preview} alt="Upload" style={{ width: '100%', height: 128, objectFit: 'cover' }} />
           <button
             onClick={clear}
-            className="absolute top-2 right-2 w-7 h-7 bg-black/50 rounded-full flex items-center justify-center text-white"
+            style={{
+              position: 'absolute', top: 8, right: 8,
+              width: 28, height: 28,
+              background: 'rgba(0,0,0,0.5)',
+              borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'white',
+              border: 'none', cursor: 'pointer'
+            }}
           >
             <X size={14} />
           </button>
@@ -39,7 +47,7 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
           style={{ width: "100%", padding: "24px 16px", borderRadius: 12, border: "2px dashed #E2E8E4", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "#C5CFC8", cursor: "pointer", transition: "all 0.3s" }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#1B7A45"; e.currentTarget.style.color = "#1B7A45"; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#E2E8E4"; e.currentTarget.style.color = "#C5CFC8"; }}
         >
           <Camera size={28} />
-          <span className="text-xs">Take photo or upload</span>
+          <span style={{ fontSize: 12 }}>Take photo or upload</span>
         </button>
       )}
     </div>

@@ -81,11 +81,11 @@ export default function ReportList() {
   ]
 
   return (
-    <div className="pb-20">
+    <div style={{ paddingBottom: 80 }}>
       <PageHeader title="Shift Reports" subtitle="View and manage all reports" backTo="/" />
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 overflow-x-auto" style={{ padding: '16px 20px 0' }}>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '16px 20px 0' }}>
         {filterTabs.map(tab => (
           <button
             key={tab.id}
@@ -106,7 +106,7 @@ export default function ReportList() {
       {/* Reports List */}
       <div style={{ padding: '16px 20px' }}>
         {loading ? (
-          <div className="text-center" style={{ padding: '32px 0' }}>
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: 13, color: '#8A9B92' }}>Loading reports...</div>
           </div>
         ) : reports.length > 0 ? (
@@ -115,15 +115,15 @@ export default function ReportList() {
               <button
                 key={report.id}
                 onClick={() => navigate(`/reports/${report.id}`)}
-                className="w-full text-left"
                 style={{
+                  width: '100%', textAlign: 'left', cursor: 'pointer',
                   background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4',
                   padding: 16, transition: 'all 0.2s'
                 }}
               >
-                <div className="flex items-start justify-between" style={{ marginBottom: 12 }}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 14, fontWeight: 800, color: '#1A1A2E' }}>
                         Shift {report.shift}
                       </span>
@@ -136,7 +136,7 @@ export default function ReportList() {
                         {report.status === 'submitted' ? 'Submitted' : 'Draft'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1" style={{ fontSize: 11, color: '#8A9B92', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#8A9B92', marginBottom: 6 }}>
                       <Calendar size={12} />
                       {formatDate(report.date)}
                     </div>
@@ -144,7 +144,7 @@ export default function ReportList() {
                       Supervisor: {report.employees?.name || 'N/A'}
                     </div>
                   </div>
-                  <div className="text-right flex flex-col items-end gap-2">
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                     <div style={{ fontSize: 15, fontWeight: 800, color: '#1B7A45' }}>
                       {report.total_mt.toFixed(1)} MT
                     </div>
@@ -153,7 +153,8 @@ export default function ReportList() {
                 </div>
 
                 {/* Production Details */}
-                <div className="flex items-center justify-between" style={{
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                   paddingTop: 12, borderTop: '1px solid #F0F3F1', fontSize: 12
                 }}>
                   <div>
@@ -170,10 +171,11 @@ export default function ReportList() {
             ))}
           </div>
         ) : (
-          <div className="text-center" style={{
+          <div style={{
+            textAlign: 'center',
             background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: '32px 20px'
           }}>
-            <FileText size={32} className="mx-auto" style={{ color: '#C5CFC8', marginBottom: 12 }} />
+            <FileText size={32} style={{ color: '#C5CFC8', marginBottom: 12, margin: '0 auto 12px' }} />
             <p style={{ fontSize: 14, fontWeight: 500, color: '#5A6B62', marginBottom: 8 }}>No reports found</p>
             <p style={{ fontSize: 12, color: '#8A9B92', marginBottom: 16 }}>
               {filter === 'today'
@@ -202,7 +204,7 @@ export default function ReportList() {
             <div style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
               Summary
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 10, color: '#8A9B92', marginBottom: 4 }}>Total Reports</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: '#1A1A2E' }}>{reports.length}</div>

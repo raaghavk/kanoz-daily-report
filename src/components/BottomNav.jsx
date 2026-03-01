@@ -14,15 +14,14 @@ export default function BottomNav() {
   const navigate = useNavigate()
 
   return (
-    <nav
-      className="flex-shrink-0 flex pb-[env(safe-area-inset-bottom)]"
-      style={{
-        height: 68,
-        background: '#FFFFFF',
-        borderTop: '1px solid #E2E8E4',
-        paddingBottom: 6,
-      }}
-    >
+    <nav style={{
+      flexShrink: 0,
+      display: 'flex',
+      height: 68,
+      background: '#FFFFFF',
+      borderTop: '1px solid #E2E8E4',
+      paddingBottom: 6,
+    }}>
       {tabs.map(tab => {
         const isActive = location.pathname === tab.path ||
           (tab.path !== '/' && location.pathname.startsWith(tab.path))
@@ -31,11 +30,22 @@ export default function BottomNav() {
           <button
             key={tab.path}
             onClick={() => navigate(tab.path)}
-            className="flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors"
-            style={{ color: isActive ? '#1B7A45' : '#8A9B92' }}
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 2,
+              color: isActive ? '#1B7A45' : '#8A9B92',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'color 0.2s',
+            }}
           >
             <Icon size={22} strokeWidth={isActive ? 2.5 : 1.5} />
-            <span className="text-[10px]" style={{ fontWeight: isActive ? 700 : 600 }}>
+            <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 600 }}>
               {tab.label}
             </span>
           </button>

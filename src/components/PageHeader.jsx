@@ -15,20 +15,44 @@ export default function PageHeader({ title, subtitle, backTo, onBack, rightActio
   }
 
   return (
-    <div className="flex-shrink-0" style={{ background: '#0F2418' }}>
-      <div className="px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+    <div style={{ flexShrink: 0, background: '#0F2418' }}>
+      <div style={{
+        padding: '14px 16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             onClick={handleBack}
-            className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center transition-all"
-            style={{ background: 'rgba(255,255,255,0.1)' }}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             <ArrowLeft size={18} color="white" />
           </button>
           <div>
-            <h2 className="text-[17px] font-bold text-white">{title}</h2>
+            <h2 style={{
+              fontSize: 17,
+              fontWeight: 700,
+              color: 'white',
+              margin: 0,
+              lineHeight: 1.3,
+            }}>{title}</h2>
             {subtitle && (
-              <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              <div style={{
+                fontSize: 11,
+                marginTop: 2,
+                color: 'rgba(255,255,255,0.5)',
+              }}>
                 {subtitle}
               </div>
             )}

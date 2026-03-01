@@ -169,8 +169,8 @@ export default function SupplierDetail() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center" style={{ paddingTop: 80, paddingBottom: 80 }}>
-        <Loader2 size={32} className="animate-spin" style={{ color: '#1B7A45', marginBottom: 8 }} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 80, paddingBottom: 80 }}>
+        <Loader2 size={32} style={{ color: '#1B7A45', marginBottom: 8, animation: 'spin 1s linear infinite' }} />
         <p style={{ fontSize: 14, color: '#5A6B62' }}>Loading supplier...</p>
       </div>
     )
@@ -180,7 +180,7 @@ export default function SupplierDetail() {
     return (
       <div style={{ padding: '0 16px', paddingTop: 48, paddingBottom: 48 }}>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 32, textAlign: 'center' }}>
-          <AlertCircle size={32} className="mx-auto" style={{ color: '#C5CFC8', marginBottom: 8 }} />
+          <AlertCircle size={32} style={{ color: '#C5CFC8', marginBottom: 8, margin: '0 auto 8px' }} />
           <p style={{ fontSize: 14, color: '#5A6B62' }}>Supplier not found</p>
           <button
             onClick={() => navigate('/suppliers')}
@@ -194,7 +194,7 @@ export default function SupplierDetail() {
   }
 
   return (
-    <div className="pb-20">
+    <div style={{ paddingBottom: 80 }}>
       <PageHeader
         title={supplier.name}
         subtitle="Supplier Details"
@@ -202,8 +202,7 @@ export default function SupplierDetail() {
         rightAction={
           <button
             onClick={() => setShowEditModal(true)}
-            className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center transition-all"
-            style={{ background: 'rgba(255,255,255,0.1)' }}
+            style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.1)', border: 'none', cursor: 'pointer', transition: 'all 0.2s' }}
           >
             <Edit2 size={16} color="white" />
           </button>
@@ -216,8 +215,8 @@ export default function SupplierDetail() {
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 12 }}>Supplier Information</h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className="flex items-center gap-3">
-              <Phone size={16} className="flex-shrink-0" style={{ color: '#1B7A45' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Phone size={16} style={{ color: '#1B7A45', flexShrink: 0 }} />
               <div>
                 <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Mobile</p>
                 <a
@@ -230,8 +229,8 @@ export default function SupplierDetail() {
             </div>
 
             {supplier.address && (
-              <div className="flex items-start gap-3">
-                <MapPin size={16} className="flex-shrink-0" style={{ color: '#D4960A', marginTop: 4 }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <MapPin size={16} style={{ color: '#D4960A', marginTop: 4, flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Address</p>
                   <p style={{ fontSize: 13, color: '#1A1A2E', marginTop: 2 }}>{supplier.address}</p>
@@ -266,8 +265,8 @@ export default function SupplierDetail() {
             )}
 
             {supplier.created_at && (
-              <div className="flex items-center gap-3" style={{ paddingTop: 8, borderTop: '1px solid #E2E8E4' }}>
-                <Calendar size={16} className="flex-shrink-0" style={{ color: '#C5CFC8' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 8, borderTop: '1px solid #E2E8E4' }}>
+                <Calendar size={16} style={{ color: '#C5CFC8', flexShrink: 0 }} />
                 <div>
                   <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Registered</p>
                   <p style={{ fontSize: 13, color: '#5A6B62' }}>
@@ -286,7 +285,7 @@ export default function SupplierDetail() {
           {supplier.location_lat && supplier.location_lng ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ background: '#F5F7F6', borderRadius: 8, padding: 12 }}>
-                <div className="grid grid-cols-2 gap-2">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <div>
                     <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8' }}>Latitude</p>
                     <p style={{ fontSize: 13, color: '#1A1A2E', fontFamily: 'monospace', marginTop: 4 }}>{supplier.location_lat.toFixed(6)}</p>
@@ -299,8 +298,7 @@ export default function SupplierDetail() {
               </div>
               <button
                 onClick={handleGetDirections}
-                className="w-full flex items-center justify-center gap-2"
-                style={{ background: '#FFF8E6', borderRadius: 8, padding: '10px 0' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#FFF8E6', borderRadius: 8, padding: '10px 0', border: 'none', cursor: 'pointer' }}
               >
                 <Navigation size={16} style={{ color: '#D4960A' }} />
                 <span style={{ fontSize: 13, fontWeight: 600, color: '#D4960A' }}>Get Directions</span>
@@ -312,12 +310,11 @@ export default function SupplierDetail() {
               <button
                 onClick={handleGetLocation}
                 disabled={gettingLocation}
-                className="w-full flex items-center justify-center gap-2"
-                style={{ background: '#1B7A45', color: 'white', borderRadius: 8, padding: '10px 0', opacity: gettingLocation ? 0.5 : 1, cursor: gettingLocation ? 'not-allowed' : 'pointer' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#1B7A45', color: 'white', borderRadius: 8, padding: '10px 0', opacity: gettingLocation ? 0.5 : 1, cursor: gettingLocation ? 'not-allowed' : 'pointer', border: 'none' }}
               >
                 {gettingLocation ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                     <span style={{ fontSize: 13, fontWeight: 600 }}>Getting Location...</span>
                   </>
                 ) : (
@@ -341,7 +338,7 @@ export default function SupplierDetail() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {purchases.map(purchase => (
                 <div key={purchase.id} style={{ background: '#F5F7F6', borderRadius: 8, padding: 12 }}>
-                  <div className="flex items-start justify-between" style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div>
                       <p style={{ fontSize: 12, color: '#C5CFC8' }}>
                         {new Date(purchase.purchase_date).toLocaleDateString('en-IN')}
@@ -355,7 +352,7 @@ export default function SupplierDetail() {
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2" style={{ fontSize: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
                     <div>
                       <span style={{ color: '#C5CFC8' }}>Quantity</span>
                       <p style={{ fontWeight: 600, color: '#1A1A2E', marginTop: 2 }}>
@@ -446,16 +443,16 @@ export default function SupplierDetail() {
             />
           </div>
 
-          <div className="flex gap-2" style={{ paddingTop: 8 }}>
+          <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <button
               onClick={() => setShowEditModal(false)}
-              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#1A1A2E', borderRadius: 8, fontSize: 14, fontWeight: 600 }}
+              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#1A1A2E', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Cancel
             </button>
             <button
               onClick={handleUpdateSupplier}
-              style={{ flex: 1, padding: '10px 0', background: '#1B7A45', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600 }}
+              style={{ flex: 1, padding: '10px 0', background: '#1B7A45', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Save Changes
             </button>

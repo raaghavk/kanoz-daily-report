@@ -93,7 +93,7 @@ export default function ReportView() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <div style={{ color: '#5A6B62', fontSize: 13 }}>Loading report...</div>
       </div>
     )
@@ -101,7 +101,7 @@ export default function ReportView() {
 
   if (!report) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <div style={{ color: '#5A6B62', fontSize: 13 }}>Report not found</div>
       </div>
     )
@@ -121,16 +121,16 @@ export default function ReportView() {
   }))
 
   return (
-    <div className="pb-20">
+    <div style={{ paddingBottom: 80 }}>
       <PageHeader title="Shift Report" subtitle={`Shift ${report.shift} · ${report.date}`} backTo="/reports" />
 
       {/* Report Header Info */}
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
-          <div className="grid grid-cols-2 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Date</div>
-              <div className="flex items-center gap-2" style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
                 <Calendar size={16} style={{ color: '#1B7A45' }} />
                 {new Date(report.date).toLocaleDateString('en-IN')}
               </div>
@@ -143,7 +143,7 @@ export default function ReportView() {
             </div>
             <div>
               <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Time</div>
-              <div className="flex items-center gap-2" style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
                 <Clock size={16} style={{ color: '#1E3A5F' }} />
                 {report.start_time?.slice(0, 5)} → {report.end_time?.slice(0, 5)}
               </div>
@@ -154,7 +154,7 @@ export default function ReportView() {
                 {report.employees?.name || 'N/A'}
               </div>
             </div>
-            <div className="col-span-2">
+            <div style={{ gridColumn: 'span 2' }}>
               <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Plant</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
                 {report.plants?.name || 'N/A'}
@@ -168,7 +168,7 @@ export default function ReportView() {
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Machine Timings</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
-          <table className="w-full text-xs">
+          <table style={{ width: '100%', fontSize: 12 }}>
             <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Machine</th>
@@ -203,7 +203,7 @@ export default function ReportView() {
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Production</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
-          <table className="w-full text-xs">
+          <table style={{ width: '100%', fontSize: 12 }}>
             <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Machine</th>
@@ -234,7 +234,7 @@ export default function ReportView() {
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Raw Materials</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
-          <table className="w-full text-xs">
+          <table style={{ width: '100%', fontSize: 12 }}>
             <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Material</th>
@@ -269,7 +269,7 @@ export default function ReportView() {
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Equipment & Diesel</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
-          <table className="w-full text-xs">
+          <table style={{ width: '100%', fontSize: 12 }}>
             <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Equipment</th>
@@ -304,7 +304,7 @@ export default function ReportView() {
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Vehicle Dispatches</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
-          <table className="w-full text-xs">
+          <table style={{ width: '100%', fontSize: 12 }}>
             <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Truck</th>
@@ -343,7 +343,7 @@ export default function ReportView() {
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Pellet Stock</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
-          <table className="w-full text-xs">
+          <table style={{ width: '100%', fontSize: 12 }}>
             <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Type</th>
@@ -383,12 +383,12 @@ export default function ReportView() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {issues.map(issue => (
               <div key={issue.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 12 }}>
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5">
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ marginTop: 2 }}>
                     <AlertTriangle size={16} style={{ color: '#E53E3E' }} />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-1">
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: '#1A1A2E', textTransform: 'capitalize' }}>{issue.issue_type}</span>
                       <span style={{
                         fontSize: 10,
@@ -428,7 +428,7 @@ export default function ReportView() {
 
       {/* Status Badge */}
       <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16 }}>
-        <div className="flex items-center justify-center gap-2" style={{ padding: '12px 0', background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 0', background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4' }}>
           <div style={{ width: 8, height: 8, borderRadius: "50%", background: report.status === "submitted" ? "#1B7A45" : "#F59E0B" }} />
           <span style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase' }}>
             {report.status === 'submitted' ? 'Submitted' : 'Draft'}

@@ -3,13 +3,22 @@ export default function Modal({ isOpen, onClose, title, children }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-end"
       onClick={onClose}
-      style={{ background: 'rgba(15,36,24,0.5)' }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-end',
+        background: 'rgba(15,36,24,0.5)',
+      }}
     >
       <div
-        className="w-full max-h-[75%] overflow-y-auto"
         style={{
+          width: '100%',
+          maxHeight: '75%',
+          overflowY: 'auto',
           background: '#FFFFFF',
           borderRadius: '20px 20px 0 0',
           padding: '20px 16px 30px',
@@ -18,9 +27,9 @@ export default function Modal({ isOpen, onClose, title, children }) {
         onClick={e => e.stopPropagation()}
       >
         {/* Handle bar */}
-        <div className="w-10 h-1 rounded-sm mx-auto mb-4" style={{ background: '#E2E8E4' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 2, margin: '0 auto 16px', background: '#E2E8E4' }} />
         {title && (
-          <h3 className="text-[16px] font-bold mb-3" style={{ color: '#1A1A2E' }}>{title}</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#1A1A2E' }}>{title}</h3>
         )}
         {children}
       </div>
