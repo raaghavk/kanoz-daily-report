@@ -31,7 +31,7 @@ export default function Login() {
       <div className="h-14 flex-shrink-0" />
 
       {/* Center content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-7">
+      <div className="flex-1 flex flex-col items-center justify-center px-7 w-full max-w-[400px] mx-auto">
         {/* Logo */}
         <div className="w-[88px] h-[88px] rounded-[22px] flex items-center justify-center mb-5"
           style={{ background: 'linear-gradient(135deg, #1B7A45, #145C34)', boxShadow: '0 8px 28px rgba(27,122,69,0.4)' }}>
@@ -64,7 +64,7 @@ export default function Login() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="supervisor@kanoz.in"
-              className="w-full px-3.5 py-3 rounded-[10px] text-[15px] text-white"
+              className="login-input w-full px-3.5 py-3 rounded-[10px] text-[15px] text-white"
               style={{
                 border: '1.5px solid rgba(255,255,255,0.12)',
                 background: 'rgba(255,255,255,0.06)',
@@ -83,7 +83,7 @@ export default function Login() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder="Enter password"
-                className="w-full px-3.5 py-3 rounded-[10px] text-[15px] text-white pr-10"
+                className="login-input w-full px-3.5 py-3 rounded-[10px] text-[15px] text-white pr-10"
                 style={{
                   border: '1.5px solid rgba(255,255,255,0.12)',
                   background: 'rgba(255,255,255,0.06)',

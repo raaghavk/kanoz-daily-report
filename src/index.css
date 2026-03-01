@@ -49,3 +49,13 @@ input:focus, select:focus, textarea:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(27,122,69,0.12);
 }
+
+/* Dark login input placeholders */
+.login-input::placeholder {
+  color: rgba(255,255,255,0.25);
+}
+.login-input:focus {
+  border-color: #1B7A45 !important;
+  background: rgba(255,255,255,0.1) !important;
+  box-shadow: 0 0 0 3px rgba(27,122,69,0.25) !important;
+}
