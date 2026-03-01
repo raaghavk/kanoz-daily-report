@@ -26,12 +26,12 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'linear-gradient(165deg, #0a0a14 0%, #141428 50%, #145C34 100%)' }}>
+    <div className="min-h-screen flex flex-col items-center" style={{ background: 'linear-gradient(165deg, #0a0a14 0%, #141428 50%, #145C34 100%)' }}>
       {/* Status bar area */}
-      <div className="h-14 flex-shrink-0" />
+      <div className="h-14 flex-shrink-0 w-full" />
 
       {/* Center content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-7 w-full max-w-[400px] mx-auto">
+      <div className="flex-1 flex flex-col items-center justify-center px-7" style={{ width: '100%', maxWidth: 400 }}>
         {/* Logo */}
         <div className="w-[88px] h-[88px] rounded-[22px] flex items-center justify-center mb-5"
           style={{ background: 'linear-gradient(135deg, #1B7A45, #145C34)', boxShadow: '0 8px 28px rgba(27,122,69,0.4)' }}>
