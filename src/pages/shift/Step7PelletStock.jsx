@@ -42,6 +42,42 @@ export default function Step7PelletStock({ data, updateData }) {
           </div>
         </div>
       ))}
+
+      <div style={{ background: '#F5F7F6', borderRadius: 12, padding: 14, marginTop: 8 }}>
+        <p style={{ fontSize: 10, color: '#5A6B62', margin: 0, lineHeight: 1.5 }}>
+          Only Wastage is manual. Open = prev shift • Prod = Step 3 • Disp = Step 6 • Close = Open + Prod - Disp - Waste
+        </p>
+      </div>
+
+      <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16, marginTop: 12 }}>
+        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: '#1A1A2E' }}>Summary</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div style={{ background: '#E8F5EE', borderRadius: 10, padding: 12, border: '1px solid #C6F6D5', textAlign: 'center' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>TOTAL PRODUCTION</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#1B7A45' }}>
+              {data.pelletStock.reduce((sum, ps) => sum + (ps.production || 0), 0).toFixed(1)} MT
+            </div>
+          </div>
+          <div style={{ background: '#FEF5E7', borderRadius: 10, padding: 12, border: '1px solid #F9E79F', textAlign: 'center' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>TOTAL DISPATCH</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#D4960A' }}>
+              {data.pelletStock.reduce((sum, ps) => sum + (ps.dispatch || 0), 0).toFixed(1)} MT
+            </div>
+          </div>
+          <div style={{ background: '#FEE7E7', borderRadius: 10, padding: 12, border: '1px solid #FADBD8', textAlign: 'center' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>NET CHANGE</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: (() => {
+              const netChange = data.pelletStock.reduce((sum, ps) => sum + (ps.production || 0) - (ps.dispatch || 0), 0);
+              return netChange < 0 ? '#E53E3E' : '#1B7A45';
+            })() }}>
+              {(() => {
+                const netChange = data.pelletStock.reduce((sum, ps) => sum + (ps.production || 0) - (ps.dispatch || 0), 0);
+                return (netChange >= 0 ? '+' : '') + netChange.toFixed(1) + ' MT';
+              })()}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

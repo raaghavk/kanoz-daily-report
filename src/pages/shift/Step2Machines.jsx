@@ -17,6 +17,10 @@ export default function Step2Machines({ data, updateData }) {
         machines[idx].production_hours = Math.round(prodHrs * 100) / 100
       }
     }
+    // Handle remarks field
+    if (field === 'remarks') {
+      machines[idx].remarks = value
+    }
     updateData('machines', machines)
   }
 
@@ -40,6 +44,7 @@ export default function Step2Machines({ data, updateData }) {
               {idx + 1}
             </div>
             {m.name}
+            <span style={{ background: '#E8F5EE', color: '#1B7A45', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6, marginLeft: 'auto' }}>Active</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
@@ -61,7 +66,7 @@ export default function Step2Machines({ data, updateData }) {
               />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>BREAKDOWN (min)</label>
               <input
@@ -78,6 +83,16 @@ export default function Step2Machines({ data, updateData }) {
                 {m.production_hours || 0} hrs
               </div>
             </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>REMARKS</label>
+            <input
+              type="text"
+              value={m.remarks || ''}
+              onChange={e => updateMachine(idx, 'remarks', e.target.value)}
+              placeholder="Notes..."
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+            />
           </div>
         </div>
       ))}

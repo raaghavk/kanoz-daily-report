@@ -52,9 +52,15 @@ export default function Step6Dispatch({ data, updateData }) {
               <input type="text" value={d.destination} onChange={e => updateDispatch(idx, 'destination', e.target.value)} placeholder="City" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
             </div>
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>CUSTOMER</label>
-            <input type="text" value={d.customer} onChange={e => updateDispatch(idx, 'customer', e.target.value)} placeholder="Customer name" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>CUSTOMER</label>
+              <input type="text" value={d.customer} onChange={e => updateDispatch(idx, 'customer', e.target.value)} placeholder="Customer name" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>TRANSPORTER</label>
+              <input type="text" value={d.transporter} onChange={e => updateDispatch(idx, 'transporter', e.target.value)} placeholder="Transporter name" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
             <div>
@@ -83,13 +89,49 @@ export default function Step6Dispatch({ data, updateData }) {
               <input type="number" step="0.1" value={p.quantity} onChange={e => updatePellet(idx, pIdx, 'quantity', e.target.value)} placeholder="MT" style={{ padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 12, outline: 'none' }} />
             </div>
           ))}
-          <button onClick={() => addPellet(idx)} style={{ fontSize: 12, color: '#1B7A45', fontWeight: 500, marginTop: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>+ Add pellet type</button>
+          <button onClick={() => addPellet(idx)} style={{ fontSize: 12, color: '#1B7A45', fontWeight: 500, marginTop: 4, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>+ Add pellet type</button>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>INVOICE NO.</label>
+            <input type="text" value={d.invoice_no} onChange={e => updateDispatch(idx, 'invoice_no', e.target.value)} placeholder="INV-XXXX" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
+          </div>
         </div>
       ))}
 
       <button onClick={addDispatch} style={{ width: '100%', padding: '12px 0', border: '2px dashed #C6F6D5', borderRadius: 14, fontSize: 14, fontWeight: 600, color: '#1B7A45', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', cursor: 'pointer' }}>
         <Plus size={18} /> Add Dispatch
       </button>
+
+      {data.dispatches.length > 0 && (
+        <div style={{ background: '#F5F7F6', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#1A1A2E', marginBottom: 12 }}>DISPATCH SUMMARY</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+            {(() => {
+              const pelletTotals = {}
+              let grandTotal = 0
+              data.dispatches.forEach(d => {
+                d.pellets.forEach(p => {
+                  if (p.type && p.quantity) {
+                    const qty = parseFloat(p.quantity) || 0
+                    pelletTotals[p.type] = (pelletTotals[p.type] || 0) + qty
+                    grandTotal += qty
+                  }
+                })
+              })
+              return Object.entries(pelletTotals).map(([type, total]) => (
+                <div key={type} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#1A1A2E' }}>
+                  <span>{type}:</span>
+                  <span style={{ fontWeight: 600 }}>{total.toFixed(1)} MT</span>
+                </div>
+              )).concat(
+                <div key="grand-total" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color: '#1B7A45', paddingTop: 8, borderTop: '1.5px solid #E2E8E4' }}>
+                  <span>GRAND TOTAL:</span>
+                  <span>{grandTotal.toFixed(1)} MT • {data.dispatches.length} truck{data.dispatches.length !== 1 ? 's' : ''}</span>
+                </div>
+              )
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

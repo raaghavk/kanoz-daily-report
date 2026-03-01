@@ -43,10 +43,12 @@ export default function ShiftWizard() {
     end_time: '18:00',
     shift_start_date: new Date().toISOString().split('T')[0],
     shift_end_date: new Date().toISOString().split('T')[0],
+    weather: '',
     machines: [],
     production: [],
     rawMaterials: [],
     diesel: [],
+    diesel_stock: { opening: 0, purchased: 0, purchase_cost: 0, used: 0, closing: 0 },
     dispatches: [],
     pelletStock: [],
     issues: [],
@@ -72,7 +74,7 @@ export default function ShiftWizard() {
 
     if (machinesRes.data) {
       updateData('machines', machinesRes.data.map(m => ({
-        id: m.id, name: m.name, from_time: '', to_time: '', breakdown_min: 0, production_hours: 0,
+        id: m.id, name: m.name, from_time: '', to_time: '', breakdown_min: 0, production_hours: 0, remarks: '',
       })))
     }
     if (materialsRes.data) {
