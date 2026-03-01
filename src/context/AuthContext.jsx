@@ -51,9 +51,15 @@ export function AuthProvider({ children }) {
   }
 
   async function signIn(email, password) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-    return data
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Connection timed out. Supabase may be blocked by your ISP in India. Try using a VPN.')), 8000)
+    )
+    const signInPromise = supabase.auth.signInWithPassword({ email, password })
+      .then(({ data, error }) => {
+        if (error) throw error
+        return data
+      })
+    return Promise.race([signInPromise, timeoutPromise])
   }
 
   async function signOut() {
