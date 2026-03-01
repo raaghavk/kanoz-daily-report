@@ -1,0 +1,11 @@
+{
+  "name": "Kanoz Daily Report",
+  "short_name": "Kanoz",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#16a34a",
+  "icons": [
+    { "src": "/kanoz-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
