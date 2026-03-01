@@ -270,42 +270,42 @@ export default function DispatchForm() {
 
       {/* Warning if no shift report */}
       {shiftWarning && (
-        <div className="mx-4 mt-4 bg-red-50 border border-red-200 rounded-xl p-3">
-          <div className="text-xs font-bold text-red-800">No Active Shift Report</div>
-          <div className="text-xs text-red-700 mt-1">Create a shift report first to add dispatches</div>
+        <div style={{ margin: '16px 20px 0', background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 14, padding: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#991B1B' }}>No Active Shift Report</div>
+          <div style={{ fontSize: 11, color: '#B91C1C', marginTop: 4 }}>Create a shift report first to add dispatches</div>
         </div>
       )}
 
       {/* Today's Dispatches List */}
-      <div className="px-4 mt-4">
+      <div style={{ padding: '0 20px', marginTop: 16 }}>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider">Today's Dispatches</h2>
-          <span className="text-xs font-semibold text-kanoz-text">{dispatches.length}</span>
+          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1 }}>Today's Dispatches</h2>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E' }}>{dispatches.length}</span>
         </div>
 
         {loading ? (
-          <div className="text-center py-8">
-            <div className="text-xs text-kanoz-text-tertiary">Loading...</div>
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <div style={{ fontSize: 12, color: '#C5CFC8' }}>Loading...</div>
           </div>
         ) : dispatches.length > 0 ? (
-          <div className="space-y-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {dispatches.map(dispatch => (
-              <div key={dispatch.id} className="bg-kanoz-card rounded-xl border border-kanoz-border p-3">
+              <div key={dispatch.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 12 }}>
                 <div className="flex items-start justify-between mb-1">
                   <div>
-                    <div className="text-sm font-bold text-kanoz-text">
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>
                       Truck {dispatch.truck_number}
                     </div>
-                    <div className="text-xs text-kanoz-text-secondary mt-0.5">
+                    <div style={{ fontSize: 12, color: '#5A6B62', marginTop: 2 }}>
                       {dispatch.customers?.name || 'Unknown Customer'}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-bold text-kanoz-green">
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1B7A45' }}>
                       {dispatch.total_mt.toFixed(1)} MT
                     </div>
                     {dispatch.dispatch_time && (
-                      <div className="text-[10px] text-kanoz-text-tertiary mt-0.5">
+                      <div style={{ fontSize: 10, color: '#C5CFC8', marginTop: 2 }}>
                         {dispatch.dispatch_time.slice(0, 5)}
                       </div>
                     )}
@@ -315,25 +315,34 @@ export default function DispatchForm() {
             ))}
           </div>
         ) : (
-          <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-6 text-center">
-            <Truck size={24} className="mx-auto text-kanoz-text-tertiary mb-2" />
-            <p className="text-xs text-kanoz-text-secondary">No dispatches yet</p>
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 24, textAlign: 'center' }}>
+            <Truck size={24} className="mx-auto" style={{ color: '#C5CFC8', marginBottom: 8 }} />
+            <p style={{ fontSize: 12, color: '#5A6B62' }}>No dispatches yet</p>
           </div>
         )}
       </div>
 
       {/* Add Dispatch Button */}
-      <div className="px-4 mt-4 mb-4">
+      <div style={{ padding: '0 20px', marginTop: 16, marginBottom: 16 }}>
         <button
           onClick={() => setShowForm(!showForm)}
           disabled={shiftWarning}
-          className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-            shiftWarning
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : showForm
-              ? 'bg-kanoz-accent text-white'
-              : 'bg-kanoz-green text-white hover:bg-kanoz-green/90'
-          }`}
+          style={{
+            width: '100%',
+            padding: '14px 0',
+            borderRadius: 14,
+            fontWeight: 700,
+            fontSize: 14,
+            background: shiftWarning ? '#E5E7EB' : showForm ? '#D4960A' : '#1B7A45',
+            color: shiftWarning ? '#9CA3AF' : 'white',
+            cursor: shiftWarning ? 'not-allowed' : 'pointer',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            transition: 'all 0.2s'
+          }}
         >
           <Plus size={18} />
           {showForm ? 'Cancel' : 'Add Dispatch'}
@@ -342,33 +351,33 @@ export default function DispatchForm() {
 
       {/* Dispatch Form */}
       {showForm && !shiftWarning && (
-        <div className="px-4 pb-4">
-          <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-4 space-y-4">
+        <div style={{ padding: '0 20px', paddingBottom: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Truck Number */}
             <div>
-              <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
-                Truck Number <span className="text-kanoz-red">*</span>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+                Truck Number <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <input
                 type="text"
                 placeholder="e.g., MH-01-AB-1234"
                 value={form.truck_number}
                 onChange={e => updateForm('truck_number', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               />
             </div>
 
             {/* Customer */}
             <div>
-              <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
-                Customer <span className="text-kanoz-red">*</span>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+                Customer <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <div className="flex gap-2">
                 <select
                   value={form.customer_id}
                   onChange={e => updateForm('customer_id', e.target.value)}
-                  className="flex-1 px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                  style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
                 >
                   <option value="">Select customer</option>
                   {customers.map(c => (
@@ -377,7 +386,7 @@ export default function DispatchForm() {
                 </select>
                 <button
                   onClick={() => setShowAddCustomer(!showAddCustomer)}
-                  className="px-3 py-2.5 bg-kanoz-blue text-white rounded-xl text-xs font-bold"
+                  style={{ padding: '10px 12px', background: '#1565C0', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}
                 >
                   <Plus size={16} />
                 </button>
@@ -389,11 +398,11 @@ export default function DispatchForm() {
                     placeholder="New customer name"
                     value={newCustomer}
                     onChange={e => setNewCustomer(e.target.value)}
-                    className="flex-1 px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-blue"
+                    style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
                   />
                   <button
                     onClick={addCustomer}
-                    className="px-3 py-2.5 bg-kanoz-green text-white rounded-xl text-xs font-bold"
+                    style={{ padding: '10px 12px', background: '#1B7A45', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}
                   >
                     Add
                   </button>
@@ -403,7 +412,7 @@ export default function DispatchForm() {
 
             {/* Destination */}
             <div>
-              <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                 Destination
               </label>
               <input
@@ -411,13 +420,13 @@ export default function DispatchForm() {
                 placeholder="Destination address"
                 value={form.destination}
                 onChange={e => updateForm('destination', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               />
             </div>
 
             {/* Transporter */}
             <div>
-              <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                 Transporter
               </label>
               <input
@@ -425,26 +434,26 @@ export default function DispatchForm() {
                 placeholder="Transporter name"
                 value={form.transporter}
                 onChange={e => updateForm('transporter', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               />
             </div>
 
             {/* Driver Info */}
             <div>
-              <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
-                Driver Name <span className="text-kanoz-red">*</span>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+                Driver Name <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <input
                 type="text"
                 placeholder="Driver full name"
                 value={form.driver_name}
                 onChange={e => updateForm('driver_name', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                 Driver Phone
               </label>
               <div className="flex gap-2">
@@ -453,12 +462,12 @@ export default function DispatchForm() {
                   placeholder="Driver phone number"
                   value={form.driver_phone}
                   onChange={e => updateForm('driver_phone', e.target.value)}
-                  className="flex-1 px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                  style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
                 />
                 {form.driver_phone && (
                   <a
                     href={`tel:${form.driver_phone}`}
-                    className="px-3 py-2.5 bg-kanoz-green text-white rounded-xl flex items-center justify-center"
+                    style={{ padding: '10px 12px', background: '#1B7A45', color: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                   >
                     <Phone size={16} />
                   </a>
@@ -468,16 +477,16 @@ export default function DispatchForm() {
 
             {/* Pellets */}
             <div>
-              <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
-                Pellet Details <span className="text-kanoz-red">*</span>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+                Pellet Details <span style={{ color: '#D32F2F' }}>*</span>
               </label>
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {form.pellets.map((pellet, idx) => (
                   <div key={idx} className="flex gap-2">
                     <select
                       value={pellet.pellet_type_id}
                       onChange={e => updatePellet(idx, 'pellet_type_id', e.target.value)}
-                      className="flex-1 px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                      style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
                     >
                       <option value="">Pellet type</option>
                       {pelletTypes.map(pt => (
@@ -491,12 +500,12 @@ export default function DispatchForm() {
                       step="0.1"
                       value={pellet.quantity_mt}
                       onChange={e => updatePellet(idx, 'quantity_mt', e.target.value)}
-                      className="w-20 px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                      style={{ width: 80, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
                     />
                     {form.pellets.length > 1 && (
                       <button
                         onClick={() => removePelletRow(idx)}
-                        className="px-3 py-2.5 bg-red-100 text-kanoz-red rounded-xl"
+                        style={{ padding: '10px 12px', background: '#FFEBEE', color: '#D32F2F', borderRadius: 12, border: 'none', cursor: 'pointer' }}
                       >
                         <X size={16} />
                       </button>
@@ -506,7 +515,7 @@ export default function DispatchForm() {
               </div>
               <button
                 onClick={addPelletRow}
-                className="mt-2 text-xs text-kanoz-green font-bold flex items-center gap-1"
+                style={{ marginTop: 8, fontSize: 12, color: '#1B7A45', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0 }}
               >
                 <Plus size={14} /> Add Pellet Type
               </button>
@@ -515,7 +524,7 @@ export default function DispatchForm() {
             {/* Invoice & Times */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                   Invoice Number
                 </label>
                 <input
@@ -523,31 +532,31 @@ export default function DispatchForm() {
                   placeholder="Invoice #"
                   value={form.invoice_number}
                   onChange={e => updateForm('invoice_number', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                   Loading Time
                 </label>
                 <input
                   type="time"
                   value={form.loading_time}
                   onChange={e => updateForm('loading_time', e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                 Dispatch Time
               </label>
               <input
                 type="time"
                 value={form.dispatch_time}
                 onChange={e => updateForm('dispatch_time', e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
               />
             </div>
 
@@ -561,7 +570,7 @@ export default function DispatchForm() {
 
             {/* Remarks */}
             <div>
-              <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
                 Remarks
               </label>
               <textarea
@@ -569,7 +578,7 @@ export default function DispatchForm() {
                 value={form.remarks}
                 onChange={e => updateForm('remarks', e.target.value)}
                 rows="3"
-                className="w-full px-3 py-2.5 rounded-xl border border-kanoz-border text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green resize-none"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none', resize: 'none' }}
               />
             </div>
 
@@ -577,7 +586,7 @@ export default function DispatchForm() {
             <button
               onClick={handleSave}
               disabled={submitting}
-              className="w-full py-3 bg-kanoz-green text-white rounded-xl font-bold text-sm hover:bg-kanoz-green/90 disabled:bg-gray-300 transition-all"
+              style={{ width: '100%', padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer' }}
             >
               {submitting ? 'Saving...' : 'Save Dispatch'}
             </button>

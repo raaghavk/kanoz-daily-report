@@ -94,7 +94,7 @@ export default function ReportView() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-kanoz-text-secondary">Loading report...</div>
+        <div style={{ color: '#5A6B62', fontSize: 13 }}>Loading report...</div>
       </div>
     )
   }
@@ -102,7 +102,7 @@ export default function ReportView() {
   if (!report) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="text-kanoz-text-secondary">Report not found</div>
+        <div style={{ color: '#5A6B62', fontSize: 13 }}>Report not found</div>
       </div>
     )
   }
@@ -125,38 +125,38 @@ export default function ReportView() {
       <PageHeader title="Shift Report" subtitle={`Shift ${report.shift} · ${report.date}`} backTo="/reports" />
 
       {/* Report Header Info */}
-      <div className="px-4 mt-4 space-y-4">
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-4">
+      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <div className="text-xs text-kanoz-text-secondary font-semibold mb-1">Date</div>
-              <div className="flex items-center gap-2 text-sm font-bold text-kanoz-text">
+              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Date</div>
+              <div className="flex items-center gap-2" style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
                 <Calendar size={16} className="text-kanoz-green" />
                 {new Date(report.date).toLocaleDateString('en-IN')}
               </div>
             </div>
             <div>
-              <div className="text-xs text-kanoz-text-secondary font-semibold mb-1">Shift</div>
-              <div className="text-sm font-bold text-kanoz-text">
+              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Shift</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
                 Shift {report.shift}
               </div>
             </div>
             <div>
-              <div className="text-xs text-kanoz-text-secondary font-semibold mb-1">Time</div>
-              <div className="flex items-center gap-2 text-sm font-bold text-kanoz-text">
+              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Time</div>
+              <div className="flex items-center gap-2" style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
                 <Clock size={16} className="text-kanoz-blue" />
                 {report.start_time?.slice(0, 5)} → {report.end_time?.slice(0, 5)}
               </div>
             </div>
             <div>
-              <div className="text-xs text-kanoz-text-secondary font-semibold mb-1">Supervisor</div>
-              <div className="text-sm font-bold text-kanoz-text">
+              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Supervisor</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
                 {report.employees?.name || 'N/A'}
               </div>
             </div>
             <div className="col-span-2">
-              <div className="text-xs text-kanoz-text-secondary font-semibold mb-1">Plant</div>
-              <div className="text-sm font-bold text-kanoz-text">
+              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Plant</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
                 {report.plants?.name || 'N/A'}
               </div>
             </div>
@@ -165,33 +165,33 @@ export default function ReportView() {
       </div>
 
       {/* Machine Timings Section */}
-      <div className="px-4 mt-6">
-        <h2 className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">Machine Timings</h2>
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border overflow-hidden">
+      <div style={{ padding: '0 20px', marginTop: 24 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Machine Timings</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
           <table className="w-full text-xs">
-            <thead className="bg-kanoz-bg border-b border-kanoz-border">
+            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">Machine</th>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">From</th>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">To</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Hours</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Breakdown</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Machine</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>From</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>To</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Hours</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Breakdown</th>
               </tr>
             </thead>
             <tbody>
               {machineTimings.length > 0 ? (
                 machineTimings.map((m, idx) => (
-                  <tr key={idx} className="border-t border-kanoz-border hover:bg-kanoz-bg transition-colors">
-                    <td className="px-3 py-2.5 font-medium text-kanoz-text">{m.name}</td>
-                    <td className="px-3 py-2.5 text-kanoz-text-secondary">{m.from}</td>
-                    <td className="px-3 py-2.5 text-kanoz-text-secondary">{m.to}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text font-bold">{m.hours}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{m.breakdown_hours}h</td>
+                  <tr key={idx} style={{ borderTop: '1px solid #E2E8E4' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{m.name}</td>
+                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>{m.from}</td>
+                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>{m.to}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{m.hours}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{m.breakdown_hours}h</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-3 py-4 text-center text-kanoz-text-tertiary">No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -200,29 +200,29 @@ export default function ReportView() {
       </div>
 
       {/* Production Section */}
-      <div className="px-4 mt-6">
-        <h2 className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">Production</h2>
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border overflow-hidden">
+      <div style={{ padding: '0 20px', marginTop: 24 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Production</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
           <table className="w-full text-xs">
-            <thead className="bg-kanoz-bg border-b border-kanoz-border">
+            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">Machine</th>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">Pellet Type</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Quantity (MT)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Machine</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Pellet Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Quantity (MT)</th>
               </tr>
             </thead>
             <tbody>
               {machineProduction.length > 0 ? (
                 machineProduction.map(m => (
-                  <tr key={m.id} className="border-t border-kanoz-border hover:bg-kanoz-bg transition-colors">
-                    <td className="px-3 py-2.5 font-medium text-kanoz-text">{m.machines?.name || 'N/A'}</td>
-                    <td className="px-3 py-2.5 text-kanoz-text-secondary">{m.pellet_type || 'N/A'}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text font-bold">{m.quantity_mt || 0}</td>
+                  <tr key={m.id} style={{ borderTop: '1px solid #E2E8E4' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{m.machines?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>{m.pellet_type || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{m.quantity_mt || 0}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" className="px-3 py-4 text-center text-kanoz-text-tertiary">No data</td>
+                  <td colSpan="3" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -231,33 +231,33 @@ export default function ReportView() {
       </div>
 
       {/* Raw Materials Section */}
-      <div className="px-4 mt-6">
-        <h2 className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">Raw Materials</h2>
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border overflow-hidden">
+      <div style={{ padding: '0 20px', marginTop: 24 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Raw Materials</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
           <table className="w-full text-xs">
-            <thead className="bg-kanoz-bg border-b border-kanoz-border">
+            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">Material</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Opening</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Purchased</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Used</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Closing</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Material</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Opening</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Purchased</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Used</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Closing</th>
               </tr>
             </thead>
             <tbody>
               {rawMaterials.length > 0 ? (
                 rawMaterials.map(m => (
-                  <tr key={m.id} className="border-t border-kanoz-border hover:bg-kanoz-bg transition-colors">
-                    <td className="px-3 py-2.5 font-medium text-kanoz-text">{m.raw_materials?.name || 'N/A'}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{m.opening_qty || 0}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{m.purchased_qty || 0}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{m.used_qty || 0}</td>
-                    <td className="px-3 py-2.5 text-right font-bold text-kanoz-text">{m.closing_qty || 0}</td>
+                  <tr key={m.id} style={{ borderTop: '1px solid #E2E8E4' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{m.raw_materials?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{m.opening_qty || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{m.purchased_qty || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{m.used_qty || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{m.closing_qty || 0}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-3 py-4 text-center text-kanoz-text-tertiary">No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -266,33 +266,33 @@ export default function ReportView() {
       </div>
 
       {/* Equipment & Diesel Section */}
-      <div className="px-4 mt-6">
-        <h2 className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">Equipment & Diesel</h2>
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border overflow-hidden">
+      <div style={{ padding: '0 20px', marginTop: 24 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Equipment & Diesel</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
           <table className="w-full text-xs">
-            <thead className="bg-kanoz-bg border-b border-kanoz-border">
+            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">Equipment</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Opening (L)</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Added (L)</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Closing (L)</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Hours</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Equipment</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Opening (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Added (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Closing (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Hours</th>
               </tr>
             </thead>
             <tbody>
               {equipmentDiesel.length > 0 ? (
                 equipmentDiesel.map(e => (
-                  <tr key={e.id} className="border-t border-kanoz-border hover:bg-kanoz-bg transition-colors">
-                    <td className="px-3 py-2.5 font-medium text-kanoz-text">{e.equipment_name || 'N/A'}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{e.opening_litres || 0}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{e.added_litres || 0}</td>
-                    <td className="px-3 py-2.5 text-right font-bold text-kanoz-text">{e.closing_litres || 0}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{e.hours_operated || 0}h</td>
+                  <tr key={e.id} style={{ borderTop: '1px solid #E2E8E4' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{e.equipment_name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{e.opening_litres || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{e.added_litres || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{e.closing_litres || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{e.hours_operated || 0}h</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-3 py-4 text-center text-kanoz-text-tertiary">No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -301,37 +301,37 @@ export default function ReportView() {
       </div>
 
       {/* Dispatches Section */}
-      <div className="px-4 mt-6">
-        <h2 className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">Vehicle Dispatches</h2>
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border overflow-hidden">
+      <div style={{ padding: '0 20px', marginTop: 24 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Vehicle Dispatches</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
           <table className="w-full text-xs">
-            <thead className="bg-kanoz-bg border-b border-kanoz-border">
+            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">Truck</th>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">Customer</th>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">Pellet Type</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Qty (MT)</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Time</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Truck</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Customer</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Pellet Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Qty (MT)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Time</th>
               </tr>
             </thead>
             <tbody>
               {dispatches.length > 0 ? (
                 dispatches.map(d => (
-                  <tr key={d.id} className="border-t border-kanoz-border hover:bg-kanoz-bg transition-colors">
-                    <td className="px-3 py-2.5 font-medium text-kanoz-text">{d.truck_number}</td>
-                    <td className="px-3 py-2.5 text-kanoz-text-secondary">{d.customers?.name || 'N/A'}</td>
-                    <td className="px-3 py-2.5 text-kanoz-text-secondary">
+                  <tr key={d.id} style={{ borderTop: '1px solid #E2E8E4' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{d.truck_number}</td>
+                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>{d.customers?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>
                       {d.dispatch_pellets?.map(p => p.pellet_types?.name).join(', ') || 'N/A'}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text font-bold">
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>
                       {d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0).toFixed(1) || 0}
                     </td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{d.dispatch_time?.slice(0, 5) || '-'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{d.dispatch_time?.slice(0, 5) || '-'}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="px-3 py-4 text-center text-kanoz-text-tertiary">No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -340,35 +340,35 @@ export default function ReportView() {
       </div>
 
       {/* Pellet Stock Section */}
-      <div className="px-4 mt-6">
-        <h2 className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">Pellet Stock</h2>
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border overflow-hidden">
+      <div style={{ padding: '0 20px', marginTop: 24 }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Pellet Stock</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
           <table className="w-full text-xs">
-            <thead className="bg-kanoz-bg border-b border-kanoz-border">
+            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
               <tr>
-                <th className="px-3 py-2.5 text-left font-bold text-kanoz-text">Type</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Opening</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Production</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Dispatch</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Wastage</th>
-                <th className="px-3 py-2.5 text-right font-bold text-kanoz-text">Closing</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Opening</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Production</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Dispatch</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Wastage</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Closing</th>
               </tr>
             </thead>
             <tbody>
               {pelletStock.length > 0 ? (
                 pelletStock.map(p => (
-                  <tr key={p.id} className="border-t border-kanoz-border hover:bg-kanoz-bg transition-colors">
-                    <td className="px-3 py-2.5 font-medium text-kanoz-text">{p.pellet_types?.name || 'N/A'}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{p.opening_mt || 0}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{p.production_mt || 0}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{p.dispatch_mt || 0}</td>
-                    <td className="px-3 py-2.5 text-right text-kanoz-text-secondary">{p.wastage_mt || 0}</td>
-                    <td className="px-3 py-2.5 text-right font-bold text-kanoz-text">{p.closing_mt || 0}</td>
+                  <tr key={p.id} style={{ borderTop: '1px solid #E2E8E4' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{p.pellet_types?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{p.opening_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{p.production_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{p.dispatch_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{p.wastage_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{p.closing_mt || 0}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="px-3 py-4 text-center text-kanoz-text-tertiary">No data</td>
+                  <td colSpan="6" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -378,27 +378,31 @@ export default function ReportView() {
 
       {/* Issues Section */}
       {issues.length > 0 && (
-        <div className="px-4 mt-6">
-          <h2 className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">Issues Reported</h2>
-          <div className="space-y-3">
+        <div style={{ padding: '0 20px', marginTop: 24 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Issues Reported</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {issues.map(issue => (
-              <div key={issue.id} className="bg-kanoz-card rounded-xl border border-kanoz-border p-3">
+              <div key={issue.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 12 }}>
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5">
                     <AlertTriangle size={16} className="text-kanoz-red" />
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-kanoz-text capitalize">{issue.issue_type}</span>
-                      <span className={`text-[10px] font-bold px-2 py-1 rounded ${
-                        issue.severity === 'High' ? 'bg-red-100 text-red-700' :
-                        issue.severity === 'Medium' ? 'bg-amber-100 text-amber-700' :
-                        'bg-blue-100 text-blue-700'
-                      }`}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1A1A2E', textTransform: 'capitalize' }}>{issue.issue_type}</span>
+                      <span style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: '4px 8px',
+                        borderRadius: 4,
+                        ...(issue.severity === 'High' ? { background: '#FEE2E2', color: '#B91C1C' } :
+                           issue.severity === 'Medium' ? { background: '#FEF3C7', color: '#B45309' } :
+                           { background: '#DBEAFE', color: '#1E40AF' })
+                      }}>
                         {issue.severity}
                       </span>
                     </div>
-                    <p className="text-xs text-kanoz-text-secondary">{issue.description}</p>
+                    <p style={{ fontSize: 12, color: '#5A6B62', marginTop: 4 }}>{issue.description}</p>
                     {issue.photo_url && (
                       <div className="mt-2 flex items-center gap-1 text-kanoz-blue text-[10px] font-medium">
                         <Eye size={12} /> Photo attached
@@ -414,19 +418,19 @@ export default function ReportView() {
 
       {/* Handover Notes Section */}
       {report.handover_notes && (
-        <div className="px-4 mt-6">
-          <h2 className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">Handover Notes</h2>
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <p className="text-sm text-amber-900">{report.handover_notes}</p>
+        <div style={{ padding: '0 20px', marginTop: 24 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Handover Notes</h2>
+          <div style={{ background: '#FFF8E6', border: '1.5px solid #F0D98C', borderRadius: 14, padding: 16 }}>
+            <p style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5 }}>{report.handover_notes}</p>
           </div>
         </div>
       )}
 
       {/* Status Badge */}
-      <div className="px-4 mt-6 pb-4">
-        <div className="flex items-center justify-center gap-2 py-3 bg-kanoz-card rounded-xl border border-kanoz-border">
+      <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16 }}>
+        <div className="flex items-center justify-center gap-2" style={{ padding: '12px 0', background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4' }}>
           <div className={`w-2 h-2 rounded-full ${report.status === 'submitted' ? 'bg-kanoz-green' : 'bg-amber-500'}`} />
-          <span className="text-xs font-bold text-kanoz-text-secondary uppercase">
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase' }}>
             {report.status === 'submitted' ? 'Submitted' : 'Draft'}
           </span>
         </div>

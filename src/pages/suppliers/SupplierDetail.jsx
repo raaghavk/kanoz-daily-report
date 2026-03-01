@@ -169,22 +169,22 @@ export default function SupplierDetail() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <Loader2 size={32} className="text-kanoz-green animate-spin mb-2" />
-        <p className="text-sm text-kanoz-text-secondary">Loading supplier...</p>
+      <div className="flex flex-col items-center justify-center" style={{ paddingTop: 80, paddingBottom: 80 }}>
+        <Loader2 size={32} className="animate-spin" style={{ color: '#1B7A45', marginBottom: 8 }} />
+        <p style={{ fontSize: 14, color: '#5A6B62' }}>Loading supplier...</p>
       </div>
     )
   }
 
   if (!supplier) {
     return (
-      <div className="px-4 py-12">
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-8 text-center">
-          <AlertCircle size={32} className="mx-auto text-kanoz-text-tertiary mb-2" />
-          <p className="text-sm text-kanoz-text-secondary">Supplier not found</p>
+      <div style={{ padding: '0 16px', paddingTop: 48, paddingBottom: 48 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 32, textAlign: 'center' }}>
+          <AlertCircle size={32} className="mx-auto" style={{ color: '#C5CFC8', marginBottom: 8 }} />
+          <p style={{ fontSize: 14, color: '#5A6B62' }}>Supplier not found</p>
           <button
             onClick={() => navigate('/suppliers')}
-            className="mt-4 px-4 py-2 bg-kanoz-green text-white text-xs font-bold rounded-lg"
+            style={{ marginTop: 16, padding: '8px 16px', background: '#1B7A45', color: 'white', fontSize: 12, fontWeight: 700, borderRadius: 8 }}
           >
             Back to Suppliers
           </button>
@@ -210,19 +210,19 @@ export default function SupplierDetail() {
         }
       />
 
-      <div className="px-4 mt-4 space-y-4">
+      <div style={{ padding: '0 20px', marginTop: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Supplier Info Card */}
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-4">
-          <h2 className="text-sm font-bold text-kanoz-text mb-3">Supplier Information</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 12 }}>Supplier Information</h2>
 
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="flex items-center gap-3">
-              <Phone size={16} className="text-kanoz-green flex-shrink-0" />
+              <Phone size={16} className="flex-shrink-0" style={{ color: '#1B7A45' }} />
               <div>
-                <p className="text-[10px] font-semibold text-kanoz-text-tertiary uppercase">Mobile</p>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Mobile</p>
                 <a
                   href={`tel:${supplier.mobile}`}
-                  className="text-sm text-kanoz-green font-semibold hover:underline"
+                  style={{ fontSize: 13, color: '#1B7A45', fontWeight: 600, textDecoration: 'none' }}
                 >
                   {supplier.mobile}
                 </a>
@@ -231,46 +231,46 @@ export default function SupplierDetail() {
 
             {supplier.address && (
               <div className="flex items-start gap-3">
-                <MapPin size={16} className="text-kanoz-accent flex-shrink-0 mt-1" />
+                <MapPin size={16} className="flex-shrink-0" style={{ color: '#D4960A', marginTop: 4 }} />
                 <div>
-                  <p className="text-[10px] font-semibold text-kanoz-text-tertiary uppercase">Address</p>
-                  <p className="text-sm text-kanoz-text mt-0.5">{supplier.address}</p>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Address</p>
+                  <p style={{ fontSize: 13, color: '#1A1A2E', marginTop: 2 }}>{supplier.address}</p>
                 </div>
               </div>
             )}
 
             <div>
-              <p className="text-[10px] font-semibold text-kanoz-text-tertiary uppercase mb-1">Material Type</p>
-              <p className="text-sm text-kanoz-text">{supplier.material_type}</p>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase', marginBottom: 4 }}>Material Type</p>
+              <p style={{ fontSize: 13, color: '#1A1A2E' }}>{supplier.material_type}</p>
             </div>
 
             {supplier.rate_offered && (
               <div>
-                <p className="text-[10px] font-semibold text-kanoz-text-tertiary uppercase mb-1">Rate Offered</p>
-                <p className="text-sm font-semibold text-kanoz-green">₹{supplier.rate_offered}</p>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase', marginBottom: 4 }}>Rate Offered</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#1B7A45' }}>₹{supplier.rate_offered}</p>
               </div>
             )}
 
             {supplier.gcv_value && (
               <div>
-                <p className="text-[10px] font-semibold text-kanoz-text-tertiary uppercase mb-1">GCV Value</p>
-                <p className="text-sm text-kanoz-text">{supplier.gcv_value}</p>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase', marginBottom: 4 }}>GCV Value</p>
+                <p style={{ fontSize: 13, color: '#1A1A2E' }}>{supplier.gcv_value}</p>
               </div>
             )}
 
             {supplier.remarks && (
               <div>
-                <p className="text-[10px] font-semibold text-kanoz-text-tertiary uppercase mb-1">Remarks</p>
-                <p className="text-sm text-kanoz-text">{supplier.remarks}</p>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase', marginBottom: 4 }}>Remarks</p>
+                <p style={{ fontSize: 13, color: '#1A1A2E' }}>{supplier.remarks}</p>
               </div>
             )}
 
             {supplier.created_at && (
-              <div className="flex items-center gap-3 pt-2 border-t border-kanoz-border">
-                <Calendar size={16} className="text-kanoz-text-tertiary flex-shrink-0" />
+              <div className="flex items-center gap-3" style={{ paddingTop: 8, borderTop: '1px solid #E2E8E4' }}>
+                <Calendar size={16} className="flex-shrink-0" style={{ color: '#C5CFC8' }} />
                 <div>
-                  <p className="text-[10px] font-semibold text-kanoz-text-tertiary uppercase">Registered</p>
-                  <p className="text-sm text-kanoz-text-secondary">
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Registered</p>
+                  <p style={{ fontSize: 13, color: '#5A6B62' }}>
                     {new Date(supplier.created_at).toLocaleDateString('en-IN')}
                   </p>
                 </div>
@@ -280,48 +280,50 @@ export default function SupplierDetail() {
         </div>
 
         {/* GPS Location Section */}
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-4">
-          <h2 className="text-sm font-bold text-kanoz-text mb-3">Location</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 12 }}>Location</h2>
 
           {supplier.location_lat && supplier.location_lng ? (
-            <div className="space-y-3">
-              <div className="bg-kanoz-bg rounded-lg p-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ background: '#F5F7F6', borderRadius: 8, padding: 12 }}>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="text-[10px] font-semibold text-kanoz-text-tertiary">Latitude</p>
-                    <p className="text-sm text-kanoz-text font-mono mt-1">{supplier.location_lat.toFixed(6)}</p>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8' }}>Latitude</p>
+                    <p style={{ fontSize: 13, color: '#1A1A2E', fontFamily: 'monospace', marginTop: 4 }}>{supplier.location_lat.toFixed(6)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold text-kanoz-text-tertiary">Longitude</p>
-                    <p className="text-sm text-kanoz-text font-mono mt-1">{supplier.location_lng.toFixed(6)}</p>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8' }}>Longitude</p>
+                    <p style={{ fontSize: 13, color: '#1A1A2E', fontFamily: 'monospace', marginTop: 4 }}>{supplier.location_lng.toFixed(6)}</p>
                   </div>
                 </div>
               </div>
               <button
                 onClick={handleGetDirections}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-kanoz-accent/10 hover:bg-kanoz-accent/20 rounded-lg transition-colors"
+                className="w-full flex items-center justify-center gap-2"
+                style={{ background: '#FFF8E6', borderRadius: 8, padding: '10px 0' }}
               >
-                <Navigation size={16} className="text-kanoz-accent" />
-                <span className="text-sm font-semibold text-kanoz-accent">Get Directions</span>
+                <Navigation size={16} style={{ color: '#D4960A' }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#D4960A' }}>Get Directions</span>
               </button>
             </div>
           ) : (
             <div>
-              <p className="text-sm text-kanoz-text-secondary mb-3">No GPS location captured yet</p>
+              <p style={{ fontSize: 13, color: '#5A6B62', marginBottom: 12 }}>No GPS location captured yet</p>
               <button
                 onClick={handleGetLocation}
                 disabled={gettingLocation}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-kanoz-green text-white rounded-lg hover:bg-kanoz-green/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-2"
+                style={{ background: '#1B7A45', color: 'white', borderRadius: 8, padding: '10px 0', opacity: gettingLocation ? 0.5 : 1, cursor: gettingLocation ? 'not-allowed' : 'pointer' }}
               >
                 {gettingLocation ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    <span className="text-sm font-semibold">Getting Location...</span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>Getting Location...</span>
                   </>
                 ) : (
                   <>
                     <MapPin size={16} />
-                    <span className="text-sm font-semibold">Get Current Location</span>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>Get Current Location</span>
                   </>
                 )}
               </button>
@@ -330,45 +332,45 @@ export default function SupplierDetail() {
         </div>
 
         {/* Recent Purchases Section */}
-        <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-4">
-          <h2 className="text-sm font-bold text-kanoz-text mb-3">Recent Purchases</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 12 }}>Recent Purchases</h2>
 
           {purchases.length === 0 ? (
-            <p className="text-sm text-kanoz-text-secondary text-center py-4">No purchases yet</p>
+            <p style={{ fontSize: 13, color: '#5A6B62', textAlign: 'center', padding: '16px 0' }}>No purchases yet</p>
           ) : (
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {purchases.map(purchase => (
-                <div key={purchase.id} className="bg-kanoz-bg rounded-lg p-3">
-                  <div className="flex items-start justify-between mb-2">
+                <div key={purchase.id} style={{ background: '#F5F7F6', borderRadius: 8, padding: 12 }}>
+                  <div className="flex items-start justify-between" style={{ marginBottom: 8 }}>
                     <div>
-                      <p className="text-xs text-kanoz-text-tertiary">
+                      <p style={{ fontSize: 12, color: '#C5CFC8' }}>
                         {new Date(purchase.purchase_date).toLocaleDateString('en-IN')}
                       </p>
-                      <p className="text-sm font-semibold text-kanoz-text mt-0.5">
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginTop: 2 }}>
                         {purchase.material_type}
                       </p>
                     </div>
-                    <p className="text-sm font-bold text-kanoz-green">
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1B7A45' }}>
                       ₹{purchase.amount?.toFixed(2) || '-'}
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="grid grid-cols-3 gap-2" style={{ fontSize: 12 }}>
                     <div>
-                      <span className="text-kanoz-text-tertiary">Quantity</span>
-                      <p className="font-semibold text-kanoz-text mt-0.5">
+                      <span style={{ color: '#C5CFC8' }}>Quantity</span>
+                      <p style={{ fontWeight: 600, color: '#1A1A2E', marginTop: 2 }}>
                         {purchase.quantity} {purchase.unit || 'units'}
                       </p>
                     </div>
                     <div>
-                      <span className="text-kanoz-text-tertiary">Rate</span>
-                      <p className="font-semibold text-kanoz-text mt-0.5">
+                      <span style={{ color: '#C5CFC8' }}>Rate</span>
+                      <p style={{ fontWeight: 600, color: '#1A1A2E', marginTop: 2 }}>
                         ₹{purchase.rate?.toFixed(2) || '-'}
                       </p>
                     </div>
                     <div>
-                      <span className="text-kanoz-text-tertiary">GCV</span>
-                      <p className="font-semibold text-kanoz-text mt-0.5">
+                      <span style={{ color: '#C5CFC8' }}>GCV</span>
+                      <p style={{ fontWeight: 600, color: '#1A1A2E', marginTop: 2 }}>
                         {purchase.gcv_value?.toFixed(2) || '-'}
                       </p>
                     </div>
@@ -382,78 +384,78 @@ export default function SupplierDetail() {
 
       {/* Edit Supplier Modal */}
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Supplier">
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
-            <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">Supplier Name *</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Supplier Name *</label>
             <input
               type="text"
               value={editData.name}
               onChange={e => setEditData({ ...editData, name: e.target.value })}
-              className="w-full px-3 py-2.5 rounded-lg border border-kanoz-border bg-kanoz-bg text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">Mobile Number *</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Mobile Number *</label>
             <input
               type="tel"
               value={editData.mobile}
               onChange={e => setEditData({ ...editData, mobile: e.target.value })}
-              className="w-full px-3 py-2.5 rounded-lg border border-kanoz-border bg-kanoz-bg text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">Address</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Address</label>
             <input
               type="text"
               value={editData.address}
               onChange={e => setEditData({ ...editData, address: e.target.value })}
-              className="w-full px-3 py-2.5 rounded-lg border border-kanoz-border bg-kanoz-bg text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">Material Type *</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Material Type *</label>
             <input
               type="text"
               value={editData.material_type}
               onChange={e => setEditData({ ...editData, material_type: e.target.value })}
-              className="w-full px-3 py-2.5 rounded-lg border border-kanoz-border bg-kanoz-bg text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">Rate (per unit)</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Rate (per unit)</label>
             <input
               type="number"
               value={editData.rate_offered}
               onChange={e => setEditData({ ...editData, rate_offered: e.target.value })}
               step="0.01"
-              className="w-full px-3 py-2.5 rounded-lg border border-kanoz-border bg-kanoz-bg text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-kanoz-text-secondary mb-1.5">Remarks</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Remarks</label>
             <textarea
               value={editData.remarks}
               onChange={e => setEditData({ ...editData, remarks: e.target.value })}
               rows="3"
-              className="w-full px-3 py-2.5 rounded-lg border border-kanoz-border bg-kanoz-bg text-sm focus:outline-none focus:ring-2 focus:ring-kanoz-green resize-none"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none', resize: 'none' }}
             />
           </div>
 
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2" style={{ paddingTop: 8 }}>
             <button
               onClick={() => setShowEditModal(false)}
-              className="flex-1 py-2.5 bg-gray-100 text-kanoz-text rounded-lg text-sm font-semibold hover:bg-gray-200 transition-colors"
+              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#1A1A2E', borderRadius: 8, fontSize: 14, fontWeight: 600 }}
             >
               Cancel
             </button>
             <button
               onClick={handleUpdateSupplier}
-              className="flex-1 py-2.5 bg-kanoz-green text-white rounded-lg text-sm font-semibold hover:bg-kanoz-green/90 transition-colors"
+              style={{ flex: 1, padding: '10px 0', background: '#1B7A45', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600 }}
             >
               Save Changes
             </button>

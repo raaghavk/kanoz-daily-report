@@ -85,16 +85,18 @@ export default function ReportList() {
       <PageHeader title="Shift Reports" subtitle="View and manage all reports" backTo="/" />
 
       {/* Filter Tabs */}
-      <div className="px-4 mt-4 flex gap-2 overflow-x-auto">
+      <div className="flex gap-2 overflow-x-auto" style={{ padding: '16px 20px 0' }}>
         {filterTabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setFilter(tab.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-              filter === tab.id
-                ? 'bg-kanoz-green text-white'
-                : 'bg-kanoz-card text-kanoz-text border border-kanoz-border'
-            }`}
+            style={{
+              padding: '8px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700,
+              whiteSpace: 'nowrap', transition: 'all 0.2s',
+              ...(filter === tab.id
+                ? { background: '#1B7A45', color: 'white' }
+                : { background: '#fff', color: '#1A1A2E', border: '1.5px solid #E2E8E4' })
+            }}
           >
             {tab.label}
           </button>
@@ -102,58 +104,65 @@ export default function ReportList() {
       </div>
 
       {/* Reports List */}
-      <div className="px-4 mt-4">
+      <div style={{ padding: '16px 20px' }}>
         {loading ? (
-          <div className="text-center py-8">
-            <div className="text-kanoz-text-secondary text-sm">Loading reports...</div>
+          <div className="text-center" style={{ padding: '32px 0' }}>
+            <div style={{ fontSize: 13, color: '#8A9B92' }}>Loading reports...</div>
           </div>
         ) : reports.length > 0 ? (
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {reports.map(report => (
               <button
                 key={report.id}
                 onClick={() => navigate(`/reports/${report.id}`)}
-                className="w-full bg-kanoz-card rounded-xl border border-kanoz-border p-4 text-left hover:border-kanoz-green transition-colors group"
+                className="w-full text-left"
+                style={{
+                  background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4',
+                  padding: 16, transition: 'all 0.2s'
+                }}
               >
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between" style={{ marginBottom: 12 }}>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-extrabold text-kanoz-text">
+                    <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: '#1A1A2E' }}>
                         Shift {report.shift}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        report.status === 'submitted'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 20,
+                        ...(report.status === 'submitted'
+                          ? { background: '#DCFCE7', color: '#15803D' }
+                          : { background: '#FEF3C7', color: '#B45309' })
+                      }}>
                         {report.status === 'submitted' ? 'Submitted' : 'Draft'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-kanoz-text-tertiary mb-2">
+                    <div className="flex items-center gap-1" style={{ fontSize: 11, color: '#8A9B92', marginBottom: 6 }}>
                       <Calendar size={12} />
                       {formatDate(report.date)}
                     </div>
-                    <div className="text-xs text-kanoz-text-secondary">
+                    <div style={{ fontSize: 12, color: '#5A6B62' }}>
                       Supervisor: {report.employees?.name || 'N/A'}
                     </div>
                   </div>
                   <div className="text-right flex flex-col items-end gap-2">
-                    <div className="text-sm font-extrabold text-kanoz-green">
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#1B7A45' }}>
                       {report.total_mt.toFixed(1)} MT
                     </div>
-                    <ChevronRight size={16} className="text-kanoz-text-tertiary group-hover:text-kanoz-green transition-colors" />
+                    <ChevronRight size={16} color="#C5CFC8" />
                   </div>
                 </div>
 
                 {/* Production Details */}
-                <div className="pt-3 border-t border-kanoz-border flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between" style={{
+                  paddingTop: 12, borderTop: '1px solid #F0F3F1', fontSize: 12
+                }}>
                   <div>
-                    <span className="text-kanoz-text-tertiary">Time: </span>
-                    <span className="text-kanoz-text font-medium">
+                    <span style={{ color: '#8A9B92' }}>Time: </span>
+                    <span style={{ color: '#1A1A2E', fontWeight: 500 }}>
                       {report.start_time?.slice(0, 5)} – {report.end_time?.slice(0, 5)}
                     </span>
                   </div>
-                  <div className="text-kanoz-text-tertiary">
+                  <div style={{ color: '#8A9B92' }}>
                     {report.status === 'submitted' ? 'Completed' : 'In Progress'}
                   </div>
                 </div>
@@ -161,10 +170,12 @@ export default function ReportList() {
             ))}
           </div>
         ) : (
-          <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-8 text-center">
-            <FileText size={32} className="mx-auto text-kanoz-text-tertiary mb-3" />
-            <p className="text-sm text-kanoz-text-secondary mb-2">No reports found</p>
-            <p className="text-xs text-kanoz-text-tertiary mb-4">
+          <div className="text-center" style={{
+            background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: '32px 20px'
+          }}>
+            <FileText size={32} className="mx-auto" style={{ color: '#C5CFC8', marginBottom: 12 }} />
+            <p style={{ fontSize: 14, fontWeight: 500, color: '#5A6B62', marginBottom: 8 }}>No reports found</p>
+            <p style={{ fontSize: 12, color: '#8A9B92', marginBottom: 16 }}>
               {filter === 'today'
                 ? 'No reports for today yet'
                 : filter === 'week'
@@ -173,7 +184,10 @@ export default function ReportList() {
             </p>
             <button
               onClick={() => navigate('/shift/new')}
-              className="inline-block px-4 py-2 bg-kanoz-green text-white rounded-lg text-xs font-bold hover:bg-kanoz-green/90 transition-all"
+              style={{
+                padding: '10px 20px', background: '#1B7A45', color: 'white',
+                borderRadius: 12, fontSize: 13, fontWeight: 700
+              }}
             >
               Create New Report
             </button>
@@ -183,25 +197,25 @@ export default function ReportList() {
 
       {/* Summary Stats */}
       {reports.length > 0 && (
-        <div className="px-4 mt-6 pb-4">
-          <div className="bg-kanoz-card rounded-xl border border-kanoz-border p-4">
-            <div className="text-xs font-bold text-kanoz-text-secondary uppercase tracking-wider mb-3">
+        <div style={{ padding: '0 20px 16px' }}>
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
               Summary
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <div className="text-[10px] text-kanoz-text-tertiary mb-1">Total Reports</div>
-                <div className="text-lg font-extrabold text-kanoz-text">{reports.length}</div>
+                <div style={{ fontSize: 10, color: '#8A9B92', marginBottom: 4 }}>Total Reports</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#1A1A2E' }}>{reports.length}</div>
               </div>
               <div>
-                <div className="text-[10px] text-kanoz-text-tertiary mb-1">Total Production</div>
-                <div className="text-lg font-extrabold text-kanoz-green">
+                <div style={{ fontSize: 10, color: '#8A9B92', marginBottom: 4 }}>Total Production</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#1B7A45' }}>
                   {reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT
                 </div>
               </div>
               <div>
-                <div className="text-[10px] text-kanoz-text-tertiary mb-1">Submitted</div>
-                <div className="text-lg font-extrabold text-kanoz-blue">
+                <div style={{ fontSize: 10, color: '#8A9B92', marginBottom: 4 }}>Submitted</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#2563EB' }}>
                   {reports.filter(r => r.status === 'submitted').length}
                 </div>
               </div>

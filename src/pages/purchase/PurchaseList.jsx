@@ -104,11 +104,11 @@ export default function PurchaseList() {
   const dateKeys = Object.keys(groupedPurchases).sort((a, b) => new Date(b) - new Date(a))
 
   return (
-    <div className="min-h-screen bg-kanoz-bg pb-20">
+    <div style={{ minHeight: '100vh', background: '#F5F7F6', paddingBottom: 80 }}>
       <PageHeader title="RM Purchase" subtitle="Raw Material Purchases" backTo="/" />
 
       {/* Filter Tabs */}
-      <div className="sticky top-0 z-20 px-4 py-2.5 flex gap-2 overflow-x-auto" style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
+      <div className="sticky top-0 z-20 flex gap-2 overflow-x-auto" style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4', padding: '10px 20px' }}>
         {['today', 'week', 'month'].map(tab => (
           <button
             key={tab}
@@ -124,57 +124,58 @@ export default function PurchaseList() {
         ))}
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-4">
+      <div style={{ padding: '16px 20px' }}>
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 size={32} className="text-kanoz-green animate-spin" />
+            <Loader2 size={32} className="animate-spin" style={{ color: '#1B7A45' }} />
           </div>
         ) : dateKeys.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="text-4xl mb-2">📋</div>
-            <p className="text-kanoz-text-secondary font-medium">No purchases found</p>
-            <p className="text-kanoz-text-tertiary text-sm mt-1">Start by adding your first raw material purchase</p>
+            <p style={{ color: '#5A6B62', fontWeight: 500 }}>No purchases found</p>
+            <p style={{ color: '#C5CFC8', fontSize: 13, marginTop: 4 }}>Start by adding your first raw material purchase</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {dateKeys.map(date => (
               <div key={date}>
-                <div className="text-xs font-bold text-kanoz-text-tertiary uppercase tracking-wider mb-2.5">
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#C5CFC8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
                   {formatDate(date)}
                 </div>
-                <div className="space-y-2">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {groupedPurchases[date].map(purchase => (
                     <button
                       key={purchase.id}
                       onClick={() => navigate(`/purchase/${purchase.id}`)}
-                      className="w-full bg-kanoz-card border border-kanoz-border rounded-xl p-4 text-left hover:border-kanoz-green hover:shadow-md transition-all"
+                      className="w-full text-left"
+                      style={{ background: '#fff', border: '1.5px solid #E2E8E4', borderRadius: 14, padding: 16 }}
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <div className="font-bold text-kanoz-text text-sm">{purchase.suppliers?.name || 'Unknown Supplier'}</div>
-                          <div className="text-xs text-kanoz-text-tertiary mt-0.5">{purchase.raw_material_types?.name || 'N/A'}</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>{purchase.suppliers?.name || 'Unknown Supplier'}</div>
+                          <div style={{ fontSize: 12, color: '#C5CFC8', marginTop: 2 }}>{purchase.raw_material_types?.name || 'N/A'}</div>
                         </div>
-                        <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        <div style={
                           purchase.payment_status === 'Paid'
-                            ? 'bg-kanoz-green/20 text-kanoz-green'
-                            : 'bg-kanoz-red/20 text-kanoz-red'
-                        }`}>
+                            ? { background: '#DCFCE7', color: '#15803D', padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700 }
+                            : { background: '#FEE2E2', color: '#DC2626', padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700 }
+                        }>
                           {purchase.payment_status || 'Pending'}
                         </div>
                       </div>
 
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div>
-                          <div className="text-kanoz-text-tertiary">Quantity</div>
-                          <div className="font-bold text-kanoz-text">{(purchase.final_quantity || 0).toFixed(2)} t</div>
+                          <div style={{ color: '#C5CFC8' }}>Quantity</div>
+                          <div style={{ fontWeight: 700, color: '#1A1A2E' }}>{(purchase.final_quantity || 0).toFixed(2)} t</div>
                         </div>
                         <div>
-                          <div className="text-kanoz-text-tertiary">Rate</div>
-                          <div className="font-bold text-kanoz-text">₹{(purchase.rate_per_kg || 0).toFixed(2)}/kg</div>
+                          <div style={{ color: '#C5CFC8' }}>Rate</div>
+                          <div style={{ fontWeight: 700, color: '#1A1A2E' }}>₹{(purchase.rate_per_kg || 0).toFixed(2)}/kg</div>
                         </div>
                         <div>
-                          <div className="text-kanoz-text-tertiary">Amount</div>
-                          <div className="font-bold text-kanoz-text">{formatCurrency(purchase.total_amount)}</div>
+                          <div style={{ color: '#C5CFC8' }}>Amount</div>
+                          <div style={{ fontWeight: 700, color: '#1A1A2E' }}>{formatCurrency(purchase.total_amount)}</div>
                         </div>
                       </div>
                     </button>
@@ -188,7 +189,8 @@ export default function PurchaseList() {
 
       <button
         onClick={() => navigate('/purchase/new')}
-        className="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-kanoz-green text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+        className="fixed flex items-center justify-center"
+        style={{ bottom: 96, right: 16, width: 56, height: 56, borderRadius: '50%', background: '#1B7A45', color: 'white', boxShadow: '0 4px 14px rgba(27,122,69,0.3)' }}
         aria-label="New purchase"
       >
         <Plus size={28} />
