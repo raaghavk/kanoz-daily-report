@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/supabase/(.*)", "destination": "/api/supabase/$1" },
-    { "source": "/((?!api/).*)", "destination": "/" }
+    { "source": "/supabase/:path*", "destination": "https://coguzmhpfmjkxmuasuoj.supabase.co/:path*" },
+    { "source": "/((?!supabase).*)", "destination": "/" }
   ]
 }
