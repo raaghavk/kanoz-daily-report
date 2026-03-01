@@ -26,7 +26,8 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center" style={{ background: 'linear-gradient(165deg, #0a0a14 0%, #141428 50%, #145C34 100%)' }}>
+    <div className="min-h-screen flex justify-center" style={{ background: '#0a0a14' }}>
+    <div className="min-h-screen flex flex-col items-center" style={{ width: '100%', maxWidth: 430, background: 'linear-gradient(165deg, #0a0a14 0%, #141428 50%, #145C34 100%)' }}>
       {/* Status bar area */}
       <div className="h-14 flex-shrink-0 w-full" />
 
@@ -148,6 +149,7 @@ export default function Login() {
           Kanoz Bio Energy Pvt. Ltd.
         </p>
       </div>
+    </div>
     </div>
   )
 }
