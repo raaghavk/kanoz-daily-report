@@ -1,42 +1,40 @@
-import { Plus, Trash2 } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 
 export default function Step5Diesel({ data, updateData }) {
-  const equipment = ['Generator', 'Tractor', 'Loader', 'JCB']
+  const EQUIPMENT_LIST = ['Generator', 'Tractor-Diwakar', 'Loader', 'JCB']
 
   // Initialize diesel_stock if not exists
   if (!data.diesel_stock) {
-    data.diesel_stock = { opening: 0, purchased: 0, purchase_cost: 0, used: 0, closing: 0 }
+    data.diesel_stock = { opening: 0, purchased: 0, purchase_cost: 0, closing: 0 }
   }
 
-  // Initialize diesel array if not exists
-  if (!data.diesel) {
-    data.diesel = []
+  // Initialize diesel array with all equipment if empty
+  if (!data.diesel || data.diesel.length === 0) {
+    data.diesel = EQUIPMENT_LIST.map(name => ({
+      id: name,
+      equipment_name: name,
+      opening: 0,
+      added: 0,
+      used: 0,
+      closing: 0,
+      hours: 0,
+      avg_per_hr: 0,
+      collapsed: false
+    }))
   }
+
+  // Calculate total used from all equipment
+  const totalUsed = (data.diesel || []).reduce((sum, eq) => sum + (eq.used || 0), 0)
 
   function updateDieselStock(field, value) {
     const numValue = parseFloat(value) || 0
     const stock = { ...data.diesel_stock }
     stock[field] = numValue
 
-    // Auto-calculate closing stock: opening + purchased - used
-    if (field === 'opening' || field === 'purchased' || field === 'used') {
-      stock.closing = (stock.opening || 0) + (stock.purchased || 0) - (stock.used || 0)
-    }
+    // Auto-calculate closing stock: opening + purchased - used (from equipment)
+    stock.closing = (stock.opening || 0) + (stock.purchased || 0) - totalUsed
 
     updateData('diesel_stock', stock)
-  }
-
-  function addEntry() {
-    updateData('diesel', [...data.diesel, {
-      id: Date.now(),
-      equipment_name: '',
-      opening: 0,
-      added: 0,
-      used: 0,
-      closing: 0,
-      hours: 0,
-      avg_per_hr: 0
-    }])
   }
 
   function updateEntry(idx, field, value) {
@@ -58,15 +56,15 @@ export default function Step5Diesel({ data, updateData }) {
     updateData('diesel', entries)
   }
 
-  function removeEntry(idx) {
-    updateData('diesel', data.diesel.filter((_, i) => i !== idx))
+  function toggleCollapse(idx) {
+    const entries = [...data.diesel]
+    entries[idx] = { ...entries[idx], collapsed: !entries[idx].collapsed }
+    updateData('diesel', entries)
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <p style={{ fontSize: 12, color: '#5A6B62' }}>Track diesel usage for each equipment.</p>
-
-      {/* Diesel Stock Summary Card */}
+      {/* Diesel Stock Card */}
       <div style={{
         background: '#FFF8E6',
         borderRadius: 14,
@@ -97,20 +95,20 @@ export default function Step5Diesel({ data, updateData }) {
             </div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ fontSize: 11, color: '#5A6B62', fontWeight: 600, marginBottom: 4 }}>Purch L</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E' }}>
+            <div style={{ fontSize: 11, color: '#5A6B62', fontWeight: 600, marginBottom: 4 }}>+Purch L</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#1B7A45' }}>
               {data.diesel_stock?.purchased || 0}
             </div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ fontSize: 11, color: '#5A6B62', fontWeight: 600, marginBottom: 4 }}>Used L</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E' }}>
-              {data.diesel_stock?.used || 0}
+            <div style={{ fontSize: 11, color: '#5A6B62', fontWeight: 600, marginBottom: 4 }}>-Used L</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#E53E3E' }}>
+              {totalUsed}
             </div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <div style={{ fontSize: 11, color: '#5A6B62', fontWeight: 600, marginBottom: 4 }}>Close L</div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#1A1A2E' }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#D4960A' }}>
               {data.diesel_stock?.closing || 0}
             </div>
           </div>
@@ -120,27 +118,7 @@ export default function Step5Diesel({ data, updateData }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
-              OPENING (L)
-            </label>
-            <input
-              type="number"
-              value={data.diesel_stock?.opening || 0}
-              onChange={e => updateDieselStock('opening', e.target.value)}
-              placeholder="0"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: 8,
-                border: '1.5px solid #E2E8E4',
-                fontSize: 13,
-                outline: 'none',
-                background: '#fff'
-              }}
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
-              PURCHASED (L)
+              DIESEL PURCHASED (L)
             </label>
             <input
               type="number"
@@ -178,26 +156,6 @@ export default function Step5Diesel({ data, updateData }) {
               }}
             />
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
-              USED (L)
-            </label>
-            <input
-              type="number"
-              value={data.diesel_stock?.used || 0}
-              onChange={e => updateDieselStock('used', e.target.value)}
-              placeholder="0"
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: 8,
-                border: '1.5px solid #E2E8E4',
-                fontSize: 13,
-                outline: 'none',
-                background: '#fff'
-              }}
-            />
-          </div>
         </div>
       </div>
 
@@ -207,225 +165,190 @@ export default function Step5Diesel({ data, updateData }) {
           background: '#fff',
           borderRadius: 14,
           border: '1.5px solid #E2E8E4',
-          padding: 16,
-          position: 'relative'
+          padding: 0,
+          overflow: 'hidden'
         }}>
-          <button
-            onClick={() => removeEntry(idx)}
-            style={{
-              position: 'absolute',
-              top: 12,
-              right: 12,
-              color: '#E53E3E',
-              opacity: 0.5,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <Trash2 size={16} />
-          </button>
-
-          {/* Equipment Selection with Status Badge */}
-          <div style={{ marginBottom: 14, paddingRight: 30 }}>
-            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>
-              EQUIPMENT
-            </label>
-            <select
-              value={entry.equipment_name}
-              onChange={e => updateEntry(idx, 'equipment_name', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: 8,
-                border: '1.5px solid #E2E8E4',
-                fontSize: 14,
-                outline: 'none'
-              }}
-            >
-              <option value="">Select...</option>
-              {equipment.map(eq => <option key={eq} value={eq}>{eq}</option>)}
-            </select>
-            {entry.equipment_name && (
+          {/* Equipment Header */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '14px 16px',
+            borderBottom: entry.collapsed ? 'none' : '1.5px solid #E2E8E4',
+            background: '#fff'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>
+                {entry.equipment_name}
+              </h4>
               <div style={{
-                marginTop: 8,
-                display: 'inline-block',
                 background: '#1B7A45',
                 color: '#fff',
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: 600,
-                padding: '4px 8px',
-                borderRadius: 4
+                padding: '3px 8px',
+                borderRadius: 3
               }}>
-                Active
-              </div>
-            )}
-          </div>
-
-          {/* Opening, Added, Used, Closing Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 12 }}>
-            {/* Opening (readonly) */}
-            <div>
-              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center', textTransform: 'uppercase' }}>
-                Opening (L)
-              </label>
-              <input
-                type="number"
-                value={entry.opening || 0}
-                onChange={e => updateEntry(idx, 'opening', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 8px',
-                  borderRadius: 8,
-                  border: '1.5px solid #E2E8E4',
-                  fontSize: 12,
-                  textAlign: 'center',
-                  outline: 'none',
-                  background: '#fff'
-                }}
-              />
-            </div>
-
-            {/* Added (editable) */}
-            <div>
-              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center', textTransform: 'uppercase' }}>
-                Added (L)
-              </label>
-              <input
-                type="number"
-                value={entry.added || 0}
-                onChange={e => updateEntry(idx, 'added', e.target.value)}
-                placeholder="0"
-                style={{
-                  width: '100%',
-                  padding: '8px 8px',
-                  borderRadius: 8,
-                  border: '1.5px solid #E2E8E4',
-                  fontSize: 12,
-                  textAlign: 'center',
-                  outline: 'none',
-                  background: '#fff'
-                }}
-              />
-            </div>
-
-            {/* Used (editable) */}
-            <div>
-              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center', textTransform: 'uppercase' }}>
-                Used (L)
-              </label>
-              <input
-                type="number"
-                value={entry.used || 0}
-                onChange={e => updateEntry(idx, 'used', e.target.value)}
-                placeholder="0"
-                style={{
-                  width: '100%',
-                  padding: '8px 8px',
-                  borderRadius: 8,
-                  border: '1.5px solid #E2E8E4',
-                  fontSize: 12,
-                  textAlign: 'center',
-                  outline: 'none',
-                  background: '#fff'
-                }}
-              />
-            </div>
-
-            {/* Closing (readonly/auto) */}
-            <div>
-              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center', textTransform: 'uppercase' }}>
-                Closing (L)
-              </label>
-              <div
-                style={{
-                  width: '100%',
-                  padding: '8px 8px',
-                  borderRadius: 8,
-                  border: '1px solid #E2E8E4',
-                  fontSize: 12,
-                  textAlign: 'center',
-                  background: '#F5F7F6',
-                  color: '#1A1A2E',
-                  fontWeight: 600
-                }}
-              >
-                {entry.closing || 0}
+                Running
               </div>
             </div>
-          </div>
-
-          {/* Hours and Avg L/Hr Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {/* Hours Worked (editable) */}
-            <div>
-              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center', textTransform: 'uppercase' }}>
-                Hrs Worked
-              </label>
-              <input
-                type="number"
-                value={entry.hours || 0}
-                onChange={e => updateEntry(idx, 'hours', e.target.value)}
-                placeholder="0"
+            <button
+              onClick={() => toggleCollapse(idx)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                color: '#5A6B62',
+                padding: 0
+              }}
+            >
+              <ChevronDown
+                size={20}
                 style={{
-                  width: '100%',
-                  padding: '8px 8px',
-                  borderRadius: 8,
-                  border: '1.5px solid #E2E8E4',
-                  fontSize: 12,
-                  textAlign: 'center',
-                  outline: 'none',
-                  background: '#fff'
+                  transform: entry.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.2s'
                 }}
               />
-            </div>
+            </button>
+          </div>
 
-            {/* Avg L/Hr (readonly/auto) */}
-            <div>
-              <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8A9B92', marginBottom: 4, textAlign: 'center', textTransform: 'uppercase' }}>
-                Avg L/Hr
-              </label>
-              <div
-                style={{
-                  width: '100%',
-                  padding: '8px 8px',
-                  borderRadius: 8,
-                  border: '1px solid #E2E8E4',
-                  fontSize: 12,
-                  textAlign: 'center',
-                  background: '#F5F7F6',
-                  color: '#1A1A2E',
-                  fontWeight: 600
-                }}
-              >
-                {entry.avg_per_hr ? entry.avg_per_hr.toFixed(2) : '0.00'}
+          {/* Equipment Details - Hidden if Collapsed */}
+          {!entry.collapsed && (
+            <div style={{ padding: '16px' }}>
+              {/* Row 1: Opening | Added */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+                    OPENING (L)
+                  </label>
+                  <div
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #E2E8E4',
+                      fontSize: 12,
+                      background: '#F5F7F6',
+                      color: '#1A1A2E',
+                      fontWeight: 600
+                    }}
+                  >
+                    {entry.opening || 0}
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+                    ADDED (L)
+                  </label>
+                  <input
+                    type="number"
+                    value={entry.added || 0}
+                    onChange={e => updateEntry(idx, 'added', e.target.value)}
+                    placeholder="0"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1.5px solid #E2E8E4',
+                      fontSize: 12,
+                      outline: 'none',
+                      background: '#fff'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Used | Closing */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+                    USED (L)
+                  </label>
+                  <input
+                    type="number"
+                    value={entry.used || 0}
+                    onChange={e => updateEntry(idx, 'used', e.target.value)}
+                    placeholder="0"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1.5px solid #E2E8E4',
+                      fontSize: 12,
+                      outline: 'none',
+                      background: '#fff'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+                    CLOSING (L)
+                  </label>
+                  <div
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #E2E8E4',
+                      fontSize: 12,
+                      background: '#F5F7F6',
+                      color: '#1A1A2E',
+                      fontWeight: 600
+                    }}
+                  >
+                    {entry.closing || 0}
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 3: Hrs Worked | Avg L/Hr */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+                    HRS WORKED
+                  </label>
+                  <input
+                    type="number"
+                    value={entry.hours || 0}
+                    onChange={e => updateEntry(idx, 'hours', e.target.value)}
+                    placeholder="0"
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1.5px solid #E2E8E4',
+                      fontSize: 12,
+                      outline: 'none',
+                      background: '#fff'
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+                    AVG L/HR
+                  </label>
+                  <div
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #E2E8E4',
+                      fontSize: 12,
+                      background: '#F5F7F6',
+                      color: '#1A1A2E',
+                      fontWeight: 600
+                    }}
+                  >
+                    {entry.avg_per_hr ? entry.avg_per_hr.toFixed(2) : '0.00'}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       ))}
-
-      {/* Add Equipment Button */}
-      <button
-        onClick={addEntry}
-        style={{
-          width: '100%',
-          padding: '12px 0',
-          border: '2px dashed #C6F6D5',
-          borderRadius: 14,
-          fontSize: 14,
-          fontWeight: 600,
-          color: '#1B7A45',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 8,
-          background: 'transparent',
-          cursor: 'pointer'
-        }}
-      >
-        <Plus size={18} /> Add Equipment
-      </button>
     </div>
   )
 }

@@ -1,136 +1,235 @@
-import { useState } from 'react'
-import { Plus, Trash2, Phone } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
+import { Loader2, TrendingUp } from 'lucide-react'
 
-export default function Step6Dispatch({ data, updateData }) {
-  function addDispatch() {
-    updateData('dispatches', [...data.dispatches, {
-      id: Date.now(), truck_number: '', customer: '', destination: '',
-      transporter: '', driver_name: '', driver_phone: '', invoice_no: '',
-      pellets: [{ type: '', quantity: '' }],
-    }])
+export default function Step6Dispatch({ data, plant }) {
+  const navigate = useNavigate()
+  const [dispatches, setDispatches] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Get today's date in YYYY-MM-DD format
+  const today = new Date().toISOString().split('T')[0]
+
+  useEffect(() => {
+    if (plant?.id) {
+      loadDispatches()
+    }
+  }, [plant])
+
+  async function loadDispatches() {
+    try {
+      setLoading(true)
+      const { data: dispatchData, error } = await supabase
+        .from('vehicle_dispatches')
+        .select('*')
+        .eq('plant_id', plant.id)
+        .eq('date', today)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setDispatches(dispatchData || [])
+    } catch (err) {
+      console.error('Error loading dispatches:', err)
+      setDispatches([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  function updateDispatch(idx, field, value) {
-    const entries = [...data.dispatches]
-    entries[idx] = { ...entries[idx], [field]: value }
-    updateData('dispatches', entries)
+  // Calculate totals by pellet type
+  const calculateSummary = () => {
+    const summary = {}
+    let totalTrucks = 0
+    let totalQuantity = 0
+
+    dispatches.forEach(d => {
+      totalTrucks += 1
+      // Assume dispatches have a pellet_type and quantity field
+      if (d.pellet_type && d.quantity) {
+        const qty = parseFloat(d.quantity) || 0
+        summary[d.pellet_type] = (summary[d.pellet_type] || 0) + qty
+        totalQuantity += qty
+      }
+    })
+
+    return { summary, totalTrucks, totalQuantity }
   }
 
-  function removeDispatch(idx) {
-    updateData('dispatches', data.dispatches.filter((_, i) => i !== idx))
-  }
-
-  function addPellet(dIdx) {
-    const entries = [...data.dispatches]
-    entries[dIdx].pellets.push({ type: '', quantity: '' })
-    updateData('dispatches', entries)
-  }
-
-  function updatePellet(dIdx, pIdx, field, value) {
-    const entries = [...data.dispatches]
-    entries[dIdx].pellets[pIdx] = { ...entries[dIdx].pellets[pIdx], [field]: value }
-    updateData('dispatches', entries)
-  }
+  const { summary, totalTrucks, totalQuantity } = calculateSummary()
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <p style={{ fontSize: 12, color: '#5A6B62' }}>Record vehicle dispatches for this shift.</p>
+      {/* Info Box */}
+      <div style={{ background: '#E8F5EE', borderRadius: 12, padding: 14, border: '1.5px solid #1B7A45' }}>
+        <p style={{ fontSize: 13, color: '#1A1A2E', margin: 0, lineHeight: '1.5' }}>
+          Dispatches are managed in the <strong>Dispatch</strong> tab. This is a read-only summary of today's vehicle dispatches.
+        </p>
+      </div>
 
-      {data.dispatches.map((d, idx) => (
-        <div key={d.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16, position: 'relative' }}>
-          <button onClick={() => removeDispatch(idx)} style={{ position: 'absolute', top: 12, right: 12, color: '#E53E3E', opacity: 0.5, background: 'none', border: 'none', cursor: 'pointer' }}>
-            <Trash2 size={16} />
+      {/* Loading State */}
+      {loading && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: 12 }}>
+          <Loader2 size={20} style={{ color: '#1B7A45', animation: 'spin 1s linear infinite' }} />
+          <span style={{ color: '#5A6B62', fontSize: 14 }}>Loading dispatches...</span>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && dispatches.length === 0 && (
+        <div style={{ background: '#F5F7F6', borderRadius: 14, border: '2px dashed #E2E8E4', padding: 24, textAlign: 'center' }}>
+          <div style={{ color: '#5A6B62', fontSize: 14, marginBottom: 12 }}>No dispatches yet today.</div>
+          <button
+            onClick={() => navigate('/dispatch')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 16px',
+              background: '#1B7A45',
+              color: 'white',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Go to Dispatch Tab →
           </button>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', marginBottom: 12 }}>Truck #{idx + 1}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>TRUCK NO.</label>
-              <input type="text" value={d.truck_number} onChange={e => updateDispatch(idx, 'truck_number', e.target.value)} placeholder="UP-26-XX-1234" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, textTransform: 'uppercase', outline: 'none' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>DESTINATION</label>
-              <input type="text" value={d.destination} onChange={e => updateDispatch(idx, 'destination', e.target.value)} placeholder="City" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
-            </div>
+        </div>
+      )}
+
+      {/* Dispatch Cards */}
+      {!loading && dispatches.length > 0 && (
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {dispatches.map((dispatch, idx) => (
+              <div
+                key={dispatch.id}
+                style={{
+                  background: '#fff',
+                  borderRadius: 12,
+                  border: '1.5px solid #E2E8E4',
+                  padding: 14,
+                  display: 'grid',
+                  gridTemplateColumns: '40px 1fr auto',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                {/* Truck Icon */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 40,
+                    height: 40,
+                    background: '#E8F5EE',
+                    borderRadius: 10,
+                    fontSize: 20,
+                  }}
+                >
+                  🚛
+                </div>
+
+                {/* Details */}
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 4 }}>
+                    Truck {dispatch.truck_number || `#${idx + 1}`}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#5A6B62', marginBottom: 2 }}>
+                    Destination: {dispatch.destination || 'N/A'}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#5A6B62' }}>
+                    {dispatch.pellet_type || 'Pellet'}: {dispatch.quantity ? `${parseFloat(dispatch.quantity).toFixed(1)} MT` : 'N/A'}
+                  </div>
+                </div>
+
+                {/* Quantity Badge */}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1B7A45' }}>
+                    {dispatch.quantity ? `${parseFloat(dispatch.quantity).toFixed(1)}` : '0'}
+                  </div>
+                  <div style={{ fontSize: 10, color: '#5A6B62' }}>MT</div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>CUSTOMER</label>
-              <input type="text" value={d.customer} onChange={e => updateDispatch(idx, 'customer', e.target.value)} placeholder="Customer name" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
+
+          {/* Summary */}
+          <div style={{ background: '#F5F7F6', borderRadius: 12, border: '1.5px solid #E2E8E4', padding: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <TrendingUp size={16} style={{ color: '#1B7A45' }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#1A1A2E', textTransform: 'uppercase' }}>
+                Dispatch Summary
+              </div>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>TRANSPORTER</label>
-              <input type="text" value={d.transporter} onChange={e => updateDispatch(idx, 'transporter', e.target.value)} placeholder="Transporter name" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>DRIVER</label>
-              <input type="text" value={d.driver_name} onChange={e => updateDispatch(idx, 'driver_name', e.target.value)} placeholder="Name" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>PHONE</label>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <input type="tel" value={d.driver_phone} onChange={e => updateDispatch(idx, 'driver_phone', e.target.value)} placeholder="Number" style={{ flex: 1, padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
-                {d.driver_phone && (
-                  <a href={`tel:${d.driver_phone}`} style={{ padding: '10px 12px', borderRadius: 8, border: '1.5px solid #1B7A45', color: '#1B7A45', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-                    <Phone size={14} />
-                  </a>
-                )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {/* Pellet Type Breakdown */}
+              {Object.entries(summary).map(([pelletType, qty]) => (
+                <div
+                  key={pelletType}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    fontSize: 13,
+                    color: '#1A1A2E',
+                  }}
+                >
+                  <span>{pelletType}:</span>
+                  <span style={{ fontWeight: 600, color: '#1B7A45' }}>{qty.toFixed(1)} MT</span>
+                </div>
+              ))}
+
+              {/* Divider */}
+              <div style={{ height: '1.5px', background: '#E2E8E4', margin: '8px 0' }} />
+
+              {/* Grand Total */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: '#1B7A45',
+                }}
+              >
+                <span>GRAND TOTAL</span>
+                <span>
+                  {totalQuantity.toFixed(1)} MT • {totalTrucks} truck{totalTrucks !== 1 ? 's' : ''}
+                </span>
               </div>
             </div>
           </div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', marginBottom: 8 }}>Pellets Loaded</div>
-          {d.pellets.map((p, pIdx) => (
-            <div key={pIdx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-              <select value={p.type} onChange={e => updatePellet(idx, pIdx, 'type', e.target.value)} style={{ padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 12, outline: 'none' }}>
-                <option value="">Pellet type...</option>
-                {data.pelletStock.map(pt => <option key={pt.id} value={pt.name}>{pt.name}</option>)}
-              </select>
-              <input type="number" step="0.1" value={p.quantity} onChange={e => updatePellet(idx, pIdx, 'quantity', e.target.value)} placeholder="MT" style={{ padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 12, outline: 'none' }} />
-            </div>
-          ))}
-          <button onClick={() => addPellet(idx)} style={{ fontSize: 12, color: '#1B7A45', fontWeight: 500, marginTop: 4, marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0, textAlign: 'left' }}>+ Add pellet type</button>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8A9B92', marginBottom: 4 }}>INVOICE NO.</label>
-            <input type="text" value={d.invoice_no} onChange={e => updateDispatch(idx, 'invoice_no', e.target.value)} placeholder="INV-XXXX" style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }} />
-          </div>
-        </div>
-      ))}
 
-      <button onClick={addDispatch} style={{ width: '100%', padding: '12px 0', border: '2px dashed #C6F6D5', borderRadius: 14, fontSize: 14, fontWeight: 600, color: '#1B7A45', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', cursor: 'pointer' }}>
-        <Plus size={18} /> Add Dispatch
-      </button>
-
-      {data.dispatches.length > 0 && (
-        <div style={{ background: '#F5F7F6', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#1A1A2E', marginBottom: 12 }}>DISPATCH SUMMARY</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-            {(() => {
-              const pelletTotals = {}
-              let grandTotal = 0
-              data.dispatches.forEach(d => {
-                d.pellets.forEach(p => {
-                  if (p.type && p.quantity) {
-                    const qty = parseFloat(p.quantity) || 0
-                    pelletTotals[p.type] = (pelletTotals[p.type] || 0) + qty
-                    grandTotal += qty
-                  }
-                })
-              })
-              return Object.entries(pelletTotals).map(([type, total]) => (
-                <div key={type} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#1A1A2E' }}>
-                  <span>{type}:</span>
-                  <span style={{ fontWeight: 600 }}>{total.toFixed(1)} MT</span>
-                </div>
-              )).concat(
-                <div key="grand-total" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color: '#1B7A45', paddingTop: 8, borderTop: '1.5px solid #E2E8E4' }}>
-                  <span>GRAND TOTAL:</span>
-                  <span>{grandTotal.toFixed(1)} MT • {data.dispatches.length} truck{data.dispatches.length !== 1 ? 's' : ''}</span>
-                </div>
-              )
-            })()}
-          </div>
-        </div>
+          {/* CTA Button */}
+          <button
+            onClick={() => navigate('/dispatch')}
+            style={{
+              width: '100%',
+              padding: '12px 0',
+              background: 'white',
+              border: '1.5px solid #1B7A45',
+              borderRadius: 12,
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#1B7A45',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              e.target.style.background = '#E8F5EE'
+            }}
+            onMouseLeave={e => {
+              e.target.style.background = 'white'
+            }}
+          >
+            Go to Dispatch Tab →
+          </button>
+        </>
       )}
     </div>
   )

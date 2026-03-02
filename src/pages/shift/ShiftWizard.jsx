@@ -22,7 +22,7 @@ const STEPS = [
   { num: 3, title: 'Production', component: Step3Production },
   { num: 4, title: 'Raw Material', component: Step4RawMaterial },
   { num: 5, title: 'Equipment & Diesel', component: Step5Diesel },
-  { num: 6, title: 'Dispatch', component: Step6Dispatch },
+  { num: 6, title: 'Dispatch Summary', component: Step6Dispatch },
   { num: 7, title: 'Pellet Stock', component: Step7PelletStock },
   { num: 8, title: 'Issues', component: Step8Issues },
   { num: 9, title: 'Submit', component: Step9Submit },

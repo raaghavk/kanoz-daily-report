@@ -210,7 +210,7 @@ export default function Home() {
             New Shift Report
           </button>
           <button
-            onClick={() => navigate('/dispatch/new')}
+            onClick={() => navigate('/dispatch')}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '14px 0', borderRadius: 14,
