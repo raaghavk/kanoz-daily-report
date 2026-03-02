@@ -138,6 +138,55 @@ export default function ShiftWizard() {
         }
       }
 
+      // Save raw material usage
+      if (reportData.rawMaterials.length) {
+        await supabase.from('raw_material_usage').delete().eq('shift_report_id', report.id)
+        const rmRows = reportData.rawMaterials
+          .filter(rm => rm.used > 0)
+          .map(rm => ({
+            shift_report_id: report.id,
+            raw_material_type_id: rm.id,
+            quantity_kg: rm.used,
+          }))
+        if (rmRows.length) {
+          await supabase.from('raw_material_usage').insert(rmRows)
+        }
+      }
+
+      // Save equipment diesel log
+      if (reportData.diesel && reportData.diesel.length) {
+        await supabase.from('equipment_diesel_log').delete().eq('shift_report_id', report.id)
+        const dieselRows = reportData.diesel
+          .filter(d => d.used > 0 || d.hours > 0)
+          .map(d => ({
+            shift_report_id: report.id,
+            equipment_name: d.equipment_name,
+            opening_litres: d.opening || 0,
+            added_litres: d.added || 0,
+            closing_litres: d.closing || 0,
+            hours_worked: d.hours || 0,
+          }))
+        if (dieselRows.length) {
+          await supabase.from('equipment_diesel_log').insert(dieselRows)
+        }
+      }
+
+      // Save pellet stock
+      if (reportData.pelletStock && reportData.pelletStock.length) {
+        await supabase.from('pellet_stock').delete().eq('shift_report_id', report.id)
+        const stockRows = reportData.pelletStock.map(ps => ({
+          shift_report_id: report.id,
+          pellet_type_id: ps.id,
+          opening_mt: ps.opening || 0,
+          production_mt: ps.production || 0,
+          dispatch_mt: ps.dispatch || 0,
+          wastage_mt: ps.wastage || 0,
+        }))
+        if (stockRows.length) {
+          await supabase.from('pellet_stock').insert(stockRows)
+        }
+      }
+
       // Save issues
       if (reportData.issues.length) {
         await supabase.from('issues').delete().eq('shift_report_id', report.id)

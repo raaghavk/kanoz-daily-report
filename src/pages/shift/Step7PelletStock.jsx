@@ -1,4 +1,32 @@
+import { useEffect } from 'react'
+
 export default function Step7PelletStock({ data, updateData }) {
+  // Auto-populate production from Step 3 and dispatch from Step 6
+  useEffect(() => {
+    if (!data.pelletStock || data.pelletStock.length === 0) return
+
+    const stock = data.pelletStock.map(ps => {
+      // Sum production from Step 3 matching this pellet type name
+      const prodTotal = (data.production || [])
+        .filter(p => p.pellet_type === ps.name)
+        .reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
+
+      // Dispatch total would come from dispatches data if available
+      // For now, keep what was manually entered or 0
+      return {
+        ...ps,
+        production: prodTotal,
+        closing: (ps.opening || 0) + prodTotal - (ps.dispatch || 0) - (ps.wastage || 0),
+      }
+    })
+
+    // Only update if production values actually changed
+    const hasChanged = stock.some((s, i) => s.production !== data.pelletStock[i].production)
+    if (hasChanged) {
+      updateData('pelletStock', stock)
+    }
+  }, [data.production])
+
   function updateStock(idx, field, value) {
     const stock = [...data.pelletStock]
     stock[idx] = { ...stock[idx], [field]: parseFloat(value) || 0 }
@@ -35,8 +63,15 @@ export default function Step7PelletStock({ data, updateData }) {
                 <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12, color: '#1B7A45', background: '#E8F5EE' }}>
                   {(ps.production || 0).toFixed(1)}
                 </td>
-                <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12, color: '#1B7A45', background: '#E8F5EE' }}>
-                  {(ps.dispatch || 0).toFixed(1)}
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={ps.dispatch || ''}
+                    onChange={e => updateStock(idx, 'dispatch', e.target.value)}
+                    placeholder="0"
+                    style={{ width: '100%', maxWidth: 70, padding: '6px 8px', borderRadius: 4, border: '1px solid #E2E8E4', textAlign: 'center', fontSize: 12, outline: 'none', background: '#ffffff' }}
+                  />
                 </td>
                 <td style={{ padding: '12px 16px', textAlign: 'center' }}>
                   <input
@@ -59,7 +94,7 @@ export default function Step7PelletStock({ data, updateData }) {
 
       {/* Info Box */}
       <div style={{ background: '#E8F5EE', borderRadius: 8, padding: '8px 10px', fontSize: 11, color: '#1B7A45', lineHeight: 1.6 }}>
-        <b>Only Wastage is manual.</b> Open = prev shift • Prod = Step 3 • Disp = Step 6 • Close = Open + Prod - Disp - Waste
+        <b>Prod auto-fills from Step 3. Dispatch &amp; Wastage are manual.</b> Close = Open + Prod - Disp - Waste
       </div>
 
       {/* Summary Card */}

@@ -60,9 +60,9 @@ export default function DispatchForm() {
           dispatch_pellets(*),
           customers(name)
         `)
-        .eq('shift_reports.plant_id', plant.id)
-        .eq('shift_reports.date', today)
-        .order('dispatch_time', { ascending: false })
+        .eq('plant_id', plant.id)
+        .eq('date', today)
+        .order('created_at', { ascending: false })
 
       if (dispatches) {
         const dispatchesWithTotals = dispatches.map(d => ({
@@ -84,7 +84,8 @@ export default function DispatchForm() {
       const { data } = await supabase
         .from('customers')
         .select('*')
-        .eq('plant_id', plant.id)
+        .eq('org_id', plant.org_id)
+        .eq('is_active', true)
         .order('name')
 
       setCustomers(data || [])
@@ -98,6 +99,8 @@ export default function DispatchForm() {
       const { data } = await supabase
         .from('pellet_types')
         .select('*')
+        .eq('plant_id', plant.id)
+        .eq('is_active', true)
         .order('name')
 
       setPelletTypes(data || [])
@@ -138,7 +141,7 @@ export default function DispatchForm() {
     try {
       const { data } = await supabase
         .from('customers')
-        .insert([{ name: newCustomer, plant_id: plant.id }])
+        .insert([{ name: newCustomer, org_id: plant.org_id }])
         .select()
 
       if (data) {
@@ -209,17 +212,20 @@ export default function DispatchForm() {
         .from('vehicle_dispatches')
         .insert([{
           shift_report_id: activeShiftReport.id,
+          plant_id: plant.id,
+          date: today,
           truck_number: form.truck_number,
           customer_id: form.customer_id,
           destination: form.destination,
           transporter: form.transporter,
           driver_name: form.driver_name,
           driver_phone: form.driver_phone,
-          invoice_number: form.invoice_number,
-          loading_time: form.loading_time,
-          dispatch_time: form.dispatch_time,
-          katta_parchi_photo: form.katta_parchi_photo ? 'stored' : null,
-          remarks: form.remarks
+          invoice_no: form.invoice_number,
+          loading_time: form.loading_time || null,
+          dispatch_time: form.dispatch_time || null,
+          katta_parchi_url: form.katta_parchi_photo || null,
+          remarks: form.remarks,
+          created_by: employee?.id,
         }])
         .select()
 
@@ -229,6 +235,7 @@ export default function DispatchForm() {
         const pelletEntries = form.pellets.map(p => ({
           dispatch_id: dispatch[0].id,
           pellet_type_id: p.pellet_type_id,
+          pellet_type_name: pelletTypes.find(pt => pt.id === p.pellet_type_id)?.name || '',
           quantity_mt: parseFloat(p.quantity_mt)
         }))
 
