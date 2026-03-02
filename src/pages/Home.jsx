@@ -40,9 +40,9 @@ export default function Home() {
 
       const { data: dispatches } = await supabase
         .from('vehicle_dispatches')
-        .select('*, shift_reports!inner(*)')
-        .eq('shift_reports.plant_id', plant.id)
-        .eq('shift_reports.date', today)
+        .select('*')
+        .eq('plant_id', plant.id)
+        .eq('date', today)
 
       if (dispatches) {
         setStats(prev => ({ ...prev, trucks: dispatches.length }))

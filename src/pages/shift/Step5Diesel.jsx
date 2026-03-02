@@ -1,26 +1,15 @@
 import { ChevronDown } from 'lucide-react'
 
 export default function Step5Diesel({ data, updateData }) {
-  const EQUIPMENT_LIST = ['Generator', 'Tractor-Diwakar', 'Loader', 'JCB']
-
   // Initialize diesel_stock if not exists
   if (!data.diesel_stock) {
     data.diesel_stock = { opening: 0, purchased: 0, purchase_cost: 0, closing: 0 }
   }
 
-  // Initialize diesel array with all equipment if empty
+  // Equipment list is loaded from Supabase in ShiftWizard
+  // If still empty (loading), show nothing
   if (!data.diesel || data.diesel.length === 0) {
-    data.diesel = EQUIPMENT_LIST.map(name => ({
-      id: name,
-      equipment_name: name,
-      opening: 0,
-      added: 0,
-      used: 0,
-      closing: 0,
-      hours: 0,
-      avg_per_hr: 0,
-      collapsed: false
-    }))
+    return <div style={{ textAlign: 'center', padding: 40, color: '#5A6B62' }}>Loading equipment...</div>
   }
 
   // Calculate total used from all equipment

@@ -66,11 +66,33 @@ export default function ShiftWizard() {
   }, [plant])
 
   async function loadPlantData() {
-    const [machinesRes, materialsRes, pelletTypesRes] = await Promise.all([
+    const [machinesRes, materialsRes, pelletTypesRes, equipmentRes] = await Promise.all([
       supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
       supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
       supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
+      supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
     ])
+
+    // Fetch previous shift data for carry-forward (opening = prev closing)
+    let prevPelletStock = []
+    let prevDieselLog = []
+    const { data: prevReport } = await supabase
+      .from('shift_reports')
+      .select('id')
+      .eq('plant_id', plant.id)
+      .order('date', { ascending: false })
+      .order('shift', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (prevReport) {
+      const [psRes, dlRes] = await Promise.all([
+        supabase.from('pellet_stock').select('*').eq('shift_report_id', prevReport.id),
+        supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', prevReport.id),
+      ])
+      prevPelletStock = psRes.data || []
+      prevDieselLog = dlRes.data || []
+    }
 
     if (machinesRes.data) {
       updateData('machines', machinesRes.data.map(m => ({
@@ -83,9 +105,21 @@ export default function ShiftWizard() {
       })))
     }
     if (pelletTypesRes.data) {
-      updateData('pelletStock', pelletTypesRes.data.map(p => ({
-        id: p.id, name: p.name, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0,
-      })))
+      updateData('pelletStock', pelletTypesRes.data.map(p => {
+        const prev = prevPelletStock.find(ps => ps.pellet_type_id === p.id)
+        const opening = prev ? parseFloat(prev.closing_mt) || 0 : 0
+        return { id: p.id, name: p.name, opening, production: 0, dispatch: 0, wastage: 0, closing: opening }
+      }))
+    }
+    if (equipmentRes.data) {
+      updateData('diesel', equipmentRes.data.map(eq => {
+        const prev = prevDieselLog.find(d => d.equipment_name === eq.name)
+        const opening = prev ? parseFloat(prev.closing_litres) || 0 : 0
+        return {
+          id: eq.id, equipment_name: eq.name, opening, added: 0, used: 0,
+          closing: opening, hours: 0, avg_per_hr: 0, collapsed: false,
+        }
+      }))
     }
   }
 
