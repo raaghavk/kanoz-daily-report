@@ -166,7 +166,16 @@ export default function Step1Header({ data, updateData }) {
               <input
                 type="date"
                 value={data.shift_start_date || data.date}
-                onChange={e => updateData('shift_start_date', e.target.value)}
+                onChange={e => {
+                  updateData('shift_start_date', e.target.value)
+                  if (data.shift === 'B') {
+                    const next = new Date(e.target.value)
+                    next.setDate(next.getDate() + 1)
+                    updateData('shift_end_date', next.toISOString().split('T')[0])
+                  } else {
+                    updateData('shift_end_date', e.target.value)
+                  }
+                }}
                 style={{
                   width: '100%',
                   padding: '10px 12px 10px 36px',

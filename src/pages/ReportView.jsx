@@ -2,13 +2,16 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
-import { Calendar, Clock, AlertTriangle, Eye } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
 export default function ReportView() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { employee } = useAuth()
   const [report, setReport] = useState(null)
+  const [deleting, setDeleting] = useState(false)
   const [machineProduction, setMachineProduction] = useState([])
   const [rawMaterials, setRawMaterials] = useState([])
   const [dispatches, setDispatches] = useState([])
@@ -22,6 +25,30 @@ export default function ReportView() {
       fetchReport()
     }
   }, [id])
+
+  async function deleteReport() {
+    if (!window.confirm('Are you sure you want to delete this report? This cannot be undone.')) return
+    try {
+      setDeleting(true)
+      // Delete child records first
+      await Promise.all([
+        supabase.from('machine_production').delete().eq('shift_report_id', id),
+        supabase.from('raw_material_usage').delete().eq('shift_report_id', id),
+        supabase.from('equipment_diesel_log').delete().eq('shift_report_id', id),
+        supabase.from('pellet_stock').delete().eq('shift_report_id', id),
+        supabase.from('diesel_stock').delete().eq('shift_report_id', id),
+        supabase.from('issues').delete().eq('shift_report_id', id),
+      ])
+      await supabase.from('shift_reports').delete().eq('id', id)
+      showToast('Report deleted', 'success')
+      navigate('/reports')
+    } catch (err) {
+      console.error('Delete error:', err)
+      showToast('Failed to delete report', 'error')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   async function fetchReport() {
     try {
@@ -426,14 +453,29 @@ export default function ReportView() {
         </div>
       )}
 
-      {/* Status Badge */}
-      <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 0', background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4' }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: report.status === "submitted" ? "#1B7A45" : "#F59E0B" }} />
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase' }}>
-            {report.status === 'submitted' ? 'Submitted' : 'Draft'}
-          </span>
-        </div>
+      {/* Action Buttons */}
+      <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16, display: 'flex', gap: 12 }}>
+        <button
+          onClick={() => navigate(`/shift/edit/${id}`)}
+          style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '14px 0', borderRadius: 14, fontSize: 14, fontWeight: 700,
+            background: '#1B7A45', color: 'white', border: 'none', cursor: 'pointer'
+          }}
+        >
+          <Edit3 size={16} /> Edit Report
+        </button>
+        <button
+          onClick={deleteReport}
+          disabled={deleting}
+          style={{
+            padding: '14px 20px', borderRadius: 14, fontSize: 14, fontWeight: 700,
+            background: '#FEE2E2', color: '#B91C1C', border: '1.5px solid #FECACA',
+            cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.5 : 1
+          }}
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
     </div>
   )

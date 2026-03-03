@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -11,6 +11,7 @@ import SupplierDetail from './pages/suppliers/SupplierDetail'
 import DispatchForm from './pages/dispatch/DispatchForm'
 import ReportView from './pages/ReportView'
 import ReportList from './pages/ReportList'
+import UserManagement from './pages/UserManagement'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -49,9 +50,18 @@ export default function App() {
         <Route path="suppliers" element={<SupplierList />} />
         <Route path="suppliers/:id" element={<SupplierDetail />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="users" element={<UserManagement />} />
       </Route>
       <Route
         path="/shift/new"
+        element={
+          <ProtectedRoute>
+            <ShiftWizard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/shift/edit/:id"
         element={
           <ProtectedRoute>
             <ShiftWizard />
@@ -64,6 +74,7 @@ export default function App() {
 
 function SettingsPage() {
   const { employee, plant, signOut } = useAuth()
+  const nav = useNavigate()
   return (
     <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
       <h2 style={{ fontSize: 18, fontWeight: 700 }}>Settings</h2>
@@ -72,6 +83,14 @@ function SettingsPage() {
         <div style={{ fontSize: 14 }}><span style={{ color: '#5A6B62' }}>Plant:</span> {plant?.name}</div>
         <div style={{ fontSize: 14 }}><span style={{ color: '#5A6B62' }}>Role:</span> {employee?.role}</div>
       </div>
+      {employee?.role === 'admin' && (
+        <button
+          onClick={() => nav('/users')}
+          style={{ width: '100%', padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+        >
+          Manage Team Members
+        </button>
+      )}
       <button
         onClick={signOut}
         style={{ width: '100%', padding: '14px 0', background: '#E53E3E', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}

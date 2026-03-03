@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -31,9 +31,10 @@ const STEPS = [
 export default function ShiftWizard() {
   const navigate = useNavigate()
   const { employee, plant } = useAuth()
+  const { id: editId } = useParams()
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
-  const [reportId, setReportId] = useState(null)
+  const [reportId, setReportId] = useState(editId || null)
 
   // Report data state — shared across all steps
   const [reportData, setReportData] = useState({
@@ -65,6 +66,10 @@ export default function ShiftWizard() {
     if (plant?.id) loadPlantData()
   }, [plant])
 
+  useEffect(() => {
+    if (editId && plant?.id) loadExistingReport()
+  }, [editId, plant])
+
   async function loadPlantData() {
     const [machinesRes, materialsRes, pelletTypesRes, equipmentRes] = await Promise.all([
       supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
@@ -76,6 +81,8 @@ export default function ShiftWizard() {
     // Fetch previous shift data for carry-forward (opening = prev closing)
     let prevPelletStock = []
     let prevDieselLog = []
+    let prevRawMaterials = []
+    let prevDieselStock = null
     const { data: prevReport } = await supabase
       .from('shift_reports')
       .select('id')
@@ -86,12 +93,16 @@ export default function ShiftWizard() {
       .maybeSingle()
 
     if (prevReport) {
-      const [psRes, dlRes] = await Promise.all([
+      const [psRes, dlRes, rmRes, dsRes] = await Promise.all([
         supabase.from('pellet_stock').select('*').eq('shift_report_id', prevReport.id),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', prevReport.id),
+        supabase.from('raw_material_usage').select('*').eq('shift_report_id', prevReport.id),
+        supabase.from('diesel_stock').select('*').eq('shift_report_id', prevReport.id).maybeSingle(),
       ])
       prevPelletStock = psRes.data || []
       prevDieselLog = dlRes.data || []
+      prevRawMaterials = rmRes.data || []
+      prevDieselStock = dsRes.data
     }
 
     if (machinesRes.data) {
@@ -100,9 +111,11 @@ export default function ShiftWizard() {
       })))
     }
     if (materialsRes.data) {
-      updateData('rawMaterials', materialsRes.data.map(m => ({
-        id: m.id, name: m.name, opening: 0, purchased: 0, used: 0, closing: 0,
-      })))
+      updateData('rawMaterials', materialsRes.data.map(m => {
+        const prev = prevRawMaterials.find(r => r.raw_material_type_id === m.id)
+        const opening = prev ? parseFloat(prev.closing_kg) || 0 : 0
+        return { id: m.id, name: m.name, opening, purchased: 0, used: 0, closing: opening }
+      }))
     }
     if (pelletTypesRes.data) {
       updateData('pelletStock', pelletTypesRes.data.map(p => {
@@ -120,6 +133,108 @@ export default function ShiftWizard() {
           closing: opening, hours: 0, avg_per_hr: 0, collapsed: false,
         }
       }))
+    }
+
+    // Carry forward diesel stock tank opening from previous shift closing
+    if (prevDieselStock) {
+      updateData('diesel_stock', {
+        opening: parseFloat(prevDieselStock.closing_litres) || 0,
+        purchased: 0,
+        purchase_cost: 0,
+        used: 0,
+        closing: parseFloat(prevDieselStock.closing_litres) || 0,
+      })
+    }
+  }
+
+  async function loadExistingReport() {
+    try {
+      const { data: report } = await supabase
+        .from('shift_reports')
+        .select('*')
+        .eq('id', editId)
+        .single()
+
+      if (!report) { showToast('Report not found', 'error'); navigate('/'); return }
+
+      setReportId(editId)
+      updateData('date', report.date)
+      updateData('shift', report.shift)
+      updateData('start_time', report.start_time)
+      updateData('end_time', report.end_time)
+      updateData('shift_start_date', report.shift_start_date || report.date)
+      updateData('shift_end_date', report.shift_end_date || report.date)
+      updateData('handover_notes', report.handover_notes || '')
+      updateData('remarks', report.remarks || '')
+
+      // Load child data
+      const [machProd, rmUsage, diesel, pStock, issuesData, dStock] = await Promise.all([
+        supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
+        supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', editId),
+        supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', editId),
+        supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', editId),
+        supabase.from('issues').select('*').eq('shift_report_id', editId),
+        supabase.from('diesel_stock').select('*').eq('shift_report_id', editId).maybeSingle(),
+      ])
+
+      if (rmUsage.data?.length) {
+        updateData('rawMaterials', rmUsage.data.map(rm => ({
+          id: rm.raw_material_type_id,
+          name: rm.raw_material_types?.name || 'Unknown',
+          opening: parseFloat(rm.opening_kg) || 0,
+          purchased: 0,
+          used: parseFloat(rm.quantity_kg) || 0,
+          closing: parseFloat(rm.closing_kg) || 0,
+        })))
+      }
+
+      if (diesel.data?.length) {
+        updateData('diesel', diesel.data.map(d => ({
+          id: d.id,
+          equipment_name: d.equipment_name,
+          opening: parseFloat(d.opening_litres) || 0,
+          added: parseFloat(d.added_litres) || 0,
+          used: (parseFloat(d.opening_litres) || 0) + (parseFloat(d.added_litres) || 0) - (parseFloat(d.closing_litres) || 0),
+          closing: parseFloat(d.closing_litres) || 0,
+          hours: parseFloat(d.hours_worked) || 0,
+          avg_per_hr: 0,
+          collapsed: false,
+        })))
+      }
+
+      if (pStock.data?.length) {
+        updateData('pelletStock', pStock.data.map(ps => ({
+          id: ps.pellet_type_id,
+          name: ps.pellet_types?.name || 'Unknown',
+          opening: parseFloat(ps.opening_mt) || 0,
+          production: parseFloat(ps.production_mt) || 0,
+          dispatch: parseFloat(ps.dispatch_mt) || 0,
+          wastage: parseFloat(ps.wastage_mt) || 0,
+          closing: parseFloat(ps.closing_mt) || 0,
+        })))
+      }
+
+      if (issuesData.data?.length) {
+        updateData('issues', issuesData.data.map(i => ({
+          id: i.id,
+          type: i.issue_type,
+          description: i.description,
+          severity: i.severity,
+          photo_url: i.photo_url,
+        })))
+      }
+
+      if (dStock.data) {
+        updateData('diesel_stock', {
+          opening: parseFloat(dStock.data.opening_litres) || 0,
+          purchased: parseFloat(dStock.data.purchased_litres) || 0,
+          purchase_cost: parseFloat(dStock.data.purchase_cost) || 0,
+          closing: parseFloat(dStock.data.closing_litres) || 0,
+        })
+      }
+    } catch (err) {
+      console.error('Error loading report:', err)
+      showToast('Failed to load report', 'error')
     }
   }
 
@@ -172,15 +287,18 @@ export default function ShiftWizard() {
         }
       }
 
-      // Save raw material usage
+      // Save raw material usage (with opening/closing for carry-forward)
       if (reportData.rawMaterials.length) {
         await supabase.from('raw_material_usage').delete().eq('shift_report_id', report.id)
         const rmRows = reportData.rawMaterials
-          .filter(rm => rm.used > 0)
+          .filter(rm => rm.used > 0 || rm.opening > 0)
           .map(rm => ({
             shift_report_id: report.id,
             raw_material_type_id: rm.id,
             quantity_kg: rm.used,
+            opening_kg: rm.opening || 0,
+            purchased_kg: rm.purchased || 0,
+            closing_kg: rm.closing || 0,
           }))
         if (rmRows.length) {
           await supabase.from('raw_material_usage').insert(rmRows)
@@ -234,7 +352,20 @@ export default function ShiftWizard() {
         await supabase.from('issues').insert(issueRows)
       }
 
-      showToast('Report submitted successfully!', 'success')
+      // Save diesel stock (overall tank)
+      await supabase.from('diesel_stock').delete().eq('shift_report_id', report.id)
+      const totalUsed = (reportData.diesel || []).reduce((sum, eq) => sum + (eq.used || 0), 0)
+      const ds = reportData.diesel_stock || {}
+      await supabase.from('diesel_stock').insert({
+        shift_report_id: report.id,
+        opening_litres: ds.opening || 0,
+        purchased_litres: ds.purchased || 0,
+        purchase_cost: ds.purchase_cost || 0,
+        used_litres: totalUsed,
+        closing_litres: (ds.opening || 0) + (ds.purchased || 0) - totalUsed,
+      })
+
+      showToast(editId ? 'Report updated!' : 'Report submitted!', 'success')
       navigate('/')
     } catch (err) {
       console.error('Save error:', err)
@@ -250,7 +381,7 @@ export default function ShiftWizard() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F5F7F6' }}>
       <PageHeader
         title={STEPS[step - 1].title}
-        subtitle={`Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
+        subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
         onBack={() => step === 1 ? navigate('/') : setStep(step - 1)}
       />
 
@@ -292,7 +423,7 @@ export default function ShiftWizard() {
             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
           >
             {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : null}
-            Submit Report
+            {editId ? 'Update Report' : 'Submit Report'}
           </button>
         )}
       </div>
