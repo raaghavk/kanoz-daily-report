@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 
-export default function Stepper({ currentStep, totalSteps = 9, onStepClick }) {
+export default function Stepper({ currentStep, totalSteps = 9, onStepClick, stepsWithErrors = [] }) {
   return (
     <div style={{
       display: 'flex',
@@ -15,6 +15,7 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick }) {
         const step = i + 1
         const isDone = step < currentStep
         const isCurrent = step === currentStep
+        const hasError = stepsWithErrors.includes(step)
         return (
           <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
             <button
@@ -32,6 +33,7 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick }) {
                 border: 'none',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
+                position: 'relative',
                 ...(isDone
                   ? { background: '#1B7A45', color: 'white' }
                   : isCurrent
@@ -41,6 +43,13 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick }) {
               }}
             >
               {isDone ? <Check size={14} strokeWidth={3} /> : step}
+              {hasError && !isCurrent && (
+                <div style={{
+                  position: 'absolute', top: -2, right: -2,
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: '#E53E3E', border: '1.5px solid #F5F7F6'
+                }} />
+              )}
             </button>
             {step < totalSteps && (
               <div style={{

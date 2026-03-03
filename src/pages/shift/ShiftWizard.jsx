@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Stepper from '../../components/Stepper'
-import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Loader2, AlertTriangle } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
@@ -49,7 +49,7 @@ export default function ShiftWizard() {
     production: [],
     rawMaterials: [],
     diesel: [],
-    diesel_stock: { opening: 0, purchased: 0, purchase_cost: 0, used: 0, closing: 0 },
+    diesel_stock: { opening: 0, purchases: [], closing: 0 },
     dispatches: [],
     pelletStock: [],
     issues: [],
@@ -139,9 +139,7 @@ export default function ShiftWizard() {
     if (prevDieselStock) {
       updateData('diesel_stock', {
         opening: parseFloat(prevDieselStock.closing_litres) || 0,
-        purchased: 0,
-        purchase_cost: 0,
-        used: 0,
+        purchases: [],
         closing: parseFloat(prevDieselStock.closing_litres) || 0,
       })
     }
@@ -168,13 +166,14 @@ export default function ShiftWizard() {
       updateData('remarks', report.remarks || '')
 
       // Load child data
-      const [machProd, rmUsage, diesel, pStock, issuesData, dStock] = await Promise.all([
+      const [machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', editId),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', editId),
         supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', editId),
         supabase.from('issues').select('*').eq('shift_report_id', editId),
         supabase.from('diesel_stock').select('*').eq('shift_report_id', editId).maybeSingle(),
+        supabase.from('diesel_purchases').select('*').eq('shift_report_id', editId),
       ])
 
       if (rmUsage.data?.length) {
@@ -225,10 +224,14 @@ export default function ShiftWizard() {
       }
 
       if (dStock.data) {
+        const purchases = (dPurchases.data || []).map(dp => ({
+          litres: parseFloat(dp.litres) || 0,
+          cost_per_litre: parseFloat(dp.cost_per_litre) || 0,
+          receipt_url: dp.receipt_url || null,
+        }))
         updateData('diesel_stock', {
           opening: parseFloat(dStock.data.opening_litres) || 0,
-          purchased: parseFloat(dStock.data.purchased_litres) || 0,
-          purchase_cost: parseFloat(dStock.data.purchase_cost) || 0,
+          purchases,
           closing: parseFloat(dStock.data.closing_litres) || 0,
         })
       }
@@ -238,7 +241,48 @@ export default function ShiftWizard() {
     }
   }
 
+  // Validation: returns array of {step, message} for incomplete required fields
+  function getValidationErrors() {
+    const errors = []
+    // Step 1: Header
+    if (!reportData.date) errors.push({ step: 1, message: 'Date is required' })
+    if (!reportData.shift) errors.push({ step: 1, message: 'Shift is required' })
+    if (!reportData.start_time) errors.push({ step: 1, message: 'Start time is required' })
+    if (!reportData.end_time) errors.push({ step: 1, message: 'End time is required' })
+
+    // Step 2: Machines — at least one machine should have timing
+    const hasAnyMachineTiming = reportData.machines.some(m => m.from_time && m.to_time)
+    if (!hasAnyMachineTiming && reportData.machines.length > 0) {
+      errors.push({ step: 2, message: 'Enter timing for at least one machine' })
+    }
+
+    // Step 3: Production — at least one entry
+    const hasProduction = reportData.production && reportData.production.length > 0 &&
+      reportData.production.some(p => parseFloat(p.quantity) > 0)
+    if (!hasProduction) {
+      errors.push({ step: 3, message: 'Add at least one production entry' })
+    }
+
+    // Step 4: Raw Materials — used field for at least one
+    const hasRMUsage = reportData.rawMaterials.some(rm => parseFloat(rm.used) > 0)
+    if (!hasRMUsage && reportData.rawMaterials.length > 0) {
+      errors.push({ step: 4, message: 'Enter raw material usage for at least one material' })
+    }
+
+    return errors
+  }
+
+  // Get warnings for current step (shown as yellow banner)
+  function getStepWarnings(stepNum) {
+    return getValidationErrors().filter(e => e.step === stepNum)
+  }
+
   async function saveReport() {
+    const errors = getValidationErrors()
+    if (errors.length > 0) {
+      showToast(`Please fix ${errors.length} issue${errors.length > 1 ? 's' : ''} before submitting (check Steps ${[...new Set(errors.map(e => e.step))].join(', ')})`, 'error')
+      return
+    }
     setSaving(true)
     try {
       // Create or update the shift report
@@ -352,18 +396,38 @@ export default function ShiftWizard() {
         await supabase.from('issues').insert(issueRows)
       }
 
-      // Save diesel stock (overall tank)
+      // Save diesel stock (overall tank) + diesel purchases
+      await supabase.from('diesel_purchases').delete().eq('shift_report_id', report.id)
       await supabase.from('diesel_stock').delete().eq('shift_report_id', report.id)
       const totalUsed = (reportData.diesel || []).reduce((sum, eq) => sum + (eq.used || 0), 0)
       const ds = reportData.diesel_stock || {}
+      const purchases = ds.purchases || []
+      const totalPurchased = purchases.reduce((sum, p) => sum + (parseFloat(p.litres) || 0), 0)
+      const totalCost = purchases.reduce((sum, p) => {
+        return sum + ((parseFloat(p.litres) || 0) * (parseFloat(p.cost_per_litre) || 0))
+      }, 0)
       await supabase.from('diesel_stock').insert({
         shift_report_id: report.id,
         opening_litres: ds.opening || 0,
-        purchased_litres: ds.purchased || 0,
-        purchase_cost: ds.purchase_cost || 0,
+        purchased_litres: totalPurchased,
+        purchase_cost: totalCost,
         used_litres: totalUsed,
-        closing_litres: (ds.opening || 0) + (ds.purchased || 0) - totalUsed,
+        closing_litres: (ds.opening || 0) + totalPurchased - totalUsed,
       })
+      // Save individual purchase entries
+      if (purchases.length > 0) {
+        const purchaseRows = purchases
+          .filter(p => (parseFloat(p.litres) || 0) > 0)
+          .map(p => ({
+            shift_report_id: report.id,
+            litres: parseFloat(p.litres) || 0,
+            cost_per_litre: parseFloat(p.cost_per_litre) || 0,
+            receipt_url: p.receipt_url || null,
+          }))
+        if (purchaseRows.length > 0) {
+          await supabase.from('diesel_purchases').insert(purchaseRows)
+        }
+      }
 
       showToast(editId ? 'Report updated!' : 'Report submitted!', 'success')
       navigate('/')
@@ -376,20 +440,33 @@ export default function ShiftWizard() {
   }
 
   const CurrentStep = STEPS[step - 1].component
+  const currentWarnings = getStepWarnings(step)
+  const allErrors = getValidationErrors()
+  const stepsWithErrors = [...new Set(allErrors.map(e => e.step))]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F5F7F6' }}>
+    <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#E8EBE9' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F5F7F6', width: '100%', maxWidth: 480, boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
       <PageHeader
         title={STEPS[step - 1].title}
         subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
         onBack={() => step === 1 ? navigate('/') : setStep(step - 1)}
       />
 
-      <Stepper currentStep={step} onStepClick={setStep} />
+      <Stepper currentStep={step} onStepClick={setStep} stepsWithErrors={stepsWithErrors} />
 
       {/* Step Content */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <div style={{ padding: '16px 20px' }}>
+          {/* Validation warnings for this step */}
+          {currentWarnings.length > 0 && (
+            <div style={{ background: '#FFF8E6', border: '1.5px solid #F0D98C', borderRadius: 12, padding: 12, marginBottom: 12, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <AlertTriangle size={16} color="#D4960A" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ fontSize: 12, color: '#92400E' }}>
+                {currentWarnings.map((w, i) => <div key={i}>{w.message}</div>)}
+              </div>
+            </div>
+          )}
           <CurrentStep
             data={reportData}
             updateData={updateData}
@@ -420,13 +497,14 @@ export default function ShiftWizard() {
           <button
             onClick={saveReport}
             disabled={saving}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: allErrors.length > 0 ? '#D4960A' : '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
           >
             {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : null}
-            {editId ? 'Update Report' : 'Submit Report'}
+            {allErrors.length > 0 ? `Fix ${allErrors.length} Issue${allErrors.length > 1 ? 's' : ''} to Submit` : (editId ? 'Update Report' : 'Submit Report')}
           </button>
         )}
       </div>
+    </div>
     </div>
   )
 }

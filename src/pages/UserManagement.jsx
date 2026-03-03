@@ -154,7 +154,8 @@ export default function UserManagement() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F7F6' }}>
+    <div style={{ minHeight: '100vh', background: '#E8EBE9', display: 'flex', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: '#F5F7F6', width: '100%', maxWidth: 480, boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #1B7A45 0%, #15603A 100%)', color: 'white', padding: '16px 20px', paddingTop: 'max(16px, env(safe-area-inset-top))' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
@@ -199,10 +200,10 @@ export default function UserManagement() {
                   <span style={{
                     fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
                     padding: '2px 8px', borderRadius: 20,
-                    background: emp.role === 'admin' ? '#E8F5EE' : '#EBF4FF',
-                    color: emp.role === 'admin' ? '#1B7A45' : '#3B82F6'
+                    background: emp.role === 'admin' ? '#E8F5EE' : emp.role === 'purchase_manager' ? '#FFF8E6' : emp.role === 'accountant' ? '#F3E8FF' : '#EBF4FF',
+                    color: emp.role === 'admin' ? '#1B7A45' : emp.role === 'purchase_manager' ? '#D4960A' : emp.role === 'accountant' ? '#7C3AED' : '#3B82F6'
                   }}>
-                    {emp.role}
+                    {emp.role === 'purchase_manager' ? 'Purchase Mgr' : emp.role}
                   </span>
                   {emp.plants && (
                     <span style={{ fontSize: 12, color: '#5A6B62' }}>
@@ -218,11 +219,11 @@ export default function UserManagement() {
                 <div style={{ marginTop: 6, fontSize: 11 }}>
                   {emp.auth_user_id ? (
                     <span style={{ color: '#1B7A45', fontWeight: 600 }}>
-                      <Check size={12} style={{ verticalAlign: -2 }} /> Login enabled
+                      <Check size={12} style={{ verticalAlign: -2 }} /> Can log in to app
                     </span>
                   ) : (
                     <span style={{ color: '#E8960C', fontWeight: 600 }}>
-                      <X size={12} style={{ verticalAlign: -2 }} /> No login
+                      <X size={12} style={{ verticalAlign: -2 }} /> No app access yet — tap Invite
                     </span>
                   )}
                 </div>
@@ -284,6 +285,8 @@ export default function UserManagement() {
                 <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
                   <option value="supervisor">Supervisor</option>
                   <option value="admin">Admin</option>
+                  <option value="purchase_manager">Purchase Manager</option>
+                  <option value="accountant">Accountant</option>
                   <option value="worker">Worker</option>
                 </select>
               </div>
@@ -402,6 +405,7 @@ export default function UserManagement() {
           {toast.msg}
         </div>
       )}
+    </div>
     </div>
   )
 }

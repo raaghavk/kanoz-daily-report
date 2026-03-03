@@ -200,18 +200,13 @@ export default function DispatchForm() {
       showToast('Fill all pellet entries', 'error')
       return
     }
-    if (!activeShiftReport) {
-      showToast('No active shift report found. Please create one first.', 'error')
-      return
-    }
-
     try {
       setSubmitting(true)
 
       const { data: dispatch, error: dispatchError } = await supabase
         .from('vehicle_dispatches')
         .insert([{
-          shift_report_id: activeShiftReport.id,
+          shift_report_id: activeShiftReport?.id || null,
           plant_id: plant.id,
           date: today,
           truck_number: form.truck_number,
@@ -275,11 +270,11 @@ export default function DispatchForm() {
     <div style={{ paddingBottom: 80 }}>
       <PageHeader title="Vehicle Dispatch" subtitle="Quick dispatch entry for today" backTo="/" />
 
-      {/* Warning if no shift report */}
+      {/* Info if no shift report — dispatch still allowed */}
       {shiftWarning && (
-        <div style={{ margin: '16px 20px 0', background: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: 14, padding: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#991B1B' }}>No Active Shift Report</div>
-          <div style={{ fontSize: 11, color: '#B91C1C', marginTop: 4 }}>Create a shift report first to add dispatches</div>
+        <div style={{ margin: '16px 20px 0', background: '#FFF8E6', border: '1.5px solid #F0D98C', borderRadius: 14, padding: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>No Active Shift Report</div>
+          <div style={{ fontSize: 11, color: '#A16207', marginTop: 4 }}>Dispatch will be saved independently. It will be linked to a shift report when one is created.</div>
         </div>
       )}
 
@@ -333,16 +328,15 @@ export default function DispatchForm() {
       <div style={{ padding: '0 20px', marginTop: 16, marginBottom: 16 }}>
         <button
           onClick={() => setShowForm(!showForm)}
-          disabled={shiftWarning}
           style={{
             width: '100%',
             padding: '14px 0',
             borderRadius: 14,
             fontWeight: 700,
             fontSize: 14,
-            background: shiftWarning ? '#E5E7EB' : showForm ? '#D4960A' : '#1B7A45',
-            color: shiftWarning ? '#9CA3AF' : 'white',
-            cursor: shiftWarning ? 'not-allowed' : 'pointer',
+            background: showForm ? '#D4960A' : '#1B7A45',
+            color: 'white',
+            cursor: 'pointer',
             border: 'none',
             display: 'flex',
             alignItems: 'center',
@@ -357,7 +351,7 @@ export default function DispatchForm() {
       </div>
 
       {/* Dispatch Form */}
-      {showForm && !shiftWarning && (
+      {showForm && (
         <div style={{ padding: '0 20px', paddingBottom: 16 }}>
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
