@@ -1,6 +1,6 @@
 import { Calendar, Clock } from 'lucide-react'
 
-export default function Step1Header({ data, updateData }) {
+export default function Step1Header({ data, updateData, employee }) {
   function handleShiftChange(shift) {
     updateData('shift', shift)
     if (shift === 'A') {
@@ -24,51 +24,62 @@ export default function Step1Header({ data, updateData }) {
   const currentDateStr = now.toISOString().split('T')[0]
   const currentTimeStr = now.toTimeString().split(' ')[0].slice(0, 5)
 
+  const inputStyle = {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 10,
+    border: '1px solid #E2E8E4',
+    background: '#F5F7F6',
+    color: '#5A6B62',
+    fontSize: 14,
+    outline: 'none',
+    cursor: 'not-allowed',
+    boxSizing: 'border-box',
+  }
+
+  const inputWithIconStyle = {
+    ...inputStyle,
+    paddingLeft: 38,
+  }
+
+  const editableInputStyle = {
+    width: '100%',
+    padding: '12px 14px',
+    borderRadius: 10,
+    border: '1.5px solid #E2E8E4',
+    background: 'white',
+    color: '#1A1A2E',
+    fontSize: 14,
+    outline: 'none',
+    boxSizing: 'border-box',
+  }
+
+  const editableInputWithIconStyle = {
+    ...editableInputStyle,
+    paddingLeft: 38,
+  }
+
+  const labelStyle = {
+    display: 'block',
+    fontSize: 12,
+    fontWeight: 600,
+    color: '#5A6B62',
+    marginBottom: 6,
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Report Fill Date & Time (auto/readonly) */}
       <div>
-        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
-          Report Fill Date & Time
-        </label>
+        <label style={labelStyle}>Report Fill Date & Time</label>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ position: 'relative' }}>
-            <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8' }} />
-            <input
-              type="date"
-              value={currentDateStr}
-              readOnly
-              style={{
-                width: '100%',
-                padding: '10px 12px 10px 36px',
-                borderRadius: 10,
-                border: '1px solid #E2E8E4',
-                background: '#F5F7F6',
-                color: '#5A6B62',
-                fontSize: 14,
-                outline: 'none',
-                cursor: 'not-allowed'
-              }}
-            />
+            <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
+            <input type="date" value={currentDateStr} readOnly style={inputWithIconStyle} />
           </div>
           <div style={{ position: 'relative' }}>
-            <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8' }} />
-            <input
-              type="time"
-              value={currentTimeStr}
-              readOnly
-              style={{
-                width: '100%',
-                padding: '10px 12px 10px 36px',
-                borderRadius: 10,
-                border: '1px solid #E2E8E4',
-                background: '#F5F7F6',
-                color: '#5A6B62',
-                fontSize: 14,
-                outline: 'none',
-                cursor: 'not-allowed'
-              }}
-            />
+            <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
+            <input type="time" value={currentTimeStr} readOnly style={inputWithIconStyle} />
           </div>
         </div>
       </div>
@@ -77,46 +88,22 @@ export default function Step1Header({ data, updateData }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         {/* Plant (auto/readonly) */}
         <div>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
-            Plant
-          </label>
-          <input
-            type="text"
-            value={data.plant?.name || 'Prayagraj'}
-            readOnly
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              borderRadius: 10,
-              border: '1px solid #E2E8E4',
-              background: '#F5F7F6',
-              color: '#5A6B62',
-              fontSize: 14,
-              outline: 'none',
-              cursor: 'not-allowed'
-            }}
-          />
+          <label style={labelStyle}>Plant</label>
+          <input type="text" value={data.plant?.name || 'Prayagraj'} readOnly style={inputStyle} />
         </div>
 
         {/* Shift Dropdown (A Day / B Night) */}
         <div>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+          <label style={labelStyle}>
             Shift <span style={{ color: '#E53E3E' }}>*</span>
           </label>
           <select
             value={data.shift || ''}
             onChange={e => handleShiftChange(e.target.value)}
             style={{
-              width: '100%',
-              padding: '10px 12px',
-              borderRadius: 10,
-              border: '1.5px solid #E2E8E4',
-              background: 'white',
-              color: '#1A1A2E',
-              fontSize: 14,
+              ...editableInputStyle,
               fontWeight: 500,
-              outline: 'none',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             <option value="">Select Shift</option>
@@ -126,43 +113,31 @@ export default function Step1Header({ data, updateData }) {
         </div>
       </div>
 
-      {/* Supervisor (auto/readonly) */}
+      {/* Supervisor (auto/readonly - show name) */}
       <div>
-        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
-          Supervisor
-        </label>
+        <label style={labelStyle}>Supervisor</label>
         <input
           type="text"
-          value={data.employee?.name || 'Auto-detected'}
+          value={employee?.name || 'Loading...'}
           readOnly
-          style={{
-            width: '100%',
-            padding: '10px 12px',
-            borderRadius: 10,
-            border: '1px solid #E2E8E4',
-            background: '#F5F7F6',
-            color: '#5A6B62',
-            fontSize: 14,
-            outline: 'none',
-            cursor: 'not-allowed'
-          }}
+          style={inputStyle}
         />
       </div>
 
       {/* Shift Schedule Box */}
-      <div style={{ background: '#E8F5EE', borderRadius: 14, border: '1.5px solid #C6F6D5', padding: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#1B7A45', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+      <div style={{ background: '#E8F5EE', borderRadius: 14, border: '1.5px solid #C6F6D5', padding: '16px 16px 20px' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#1B7A45', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.5 }}>
           Shift Schedule
         </div>
 
         {/* Start Date & Start Time (side by side) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+            <label style={labelStyle}>
               Start Date <span style={{ color: '#E53E3E' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8' }} />
+              <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
               <input
                 type="date"
                 value={data.shift_start_date || data.date}
@@ -176,41 +151,22 @@ export default function Step1Header({ data, updateData }) {
                     updateData('shift_end_date', e.target.value)
                   }
                 }}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  borderRadius: 10,
-                  border: '1.5px solid #E2E8E4',
-                  background: 'white',
-                  color: '#1A1A2E',
-                  fontSize: 14,
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
+                style={{ ...editableInputWithIconStyle, cursor: 'pointer' }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+            <label style={labelStyle}>
               Start Time <span style={{ color: '#E53E3E' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8' }} />
+              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
               <input
                 type="time"
                 value={data.start_time}
                 onChange={e => updateData('start_time', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  borderRadius: 10,
-                  border: '1.5px solid #E2E8E4',
-                  background: 'white',
-                  color: '#1A1A2E',
-                  fontSize: 14,
-                  outline: 'none'
-                }}
+                style={editableInputWithIconStyle}
               />
             </div>
           </div>
@@ -219,50 +175,31 @@ export default function Step1Header({ data, updateData }) {
         {/* End Date & End Time (side by side) */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+            <label style={labelStyle}>
               End Date <span style={{ color: '#E53E3E' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8' }} />
+              <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
               <input
                 type="date"
                 value={data.shift_end_date || data.date}
                 onChange={e => updateData('shift_end_date', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  borderRadius: 10,
-                  border: '1.5px solid #E2E8E4',
-                  background: 'white',
-                  color: '#1A1A2E',
-                  fontSize: 14,
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
+                style={{ ...editableInputWithIconStyle, cursor: 'pointer' }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+            <label style={labelStyle}>
               End Time <span style={{ color: '#E53E3E' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8' }} />
+              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
               <input
                 type="time"
                 value={data.end_time}
                 onChange={e => updateData('end_time', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px 10px 36px',
-                  borderRadius: 10,
-                  border: '1.5px solid #E2E8E4',
-                  background: 'white',
-                  color: '#1A1A2E',
-                  fontSize: 14,
-                  outline: 'none'
-                }}
+                style={editableInputWithIconStyle}
               />
             </div>
           </div>
@@ -271,23 +208,16 @@ export default function Step1Header({ data, updateData }) {
 
       {/* Weather Dropdown (optional) */}
       <div>
-        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }}>
+        <label style={labelStyle}>
           Weather <span style={{ color: '#999', fontSize: 11 }}>(Optional)</span>
         </label>
         <select
           value={data.weather || ''}
           onChange={e => updateData('weather', e.target.value)}
           style={{
-            width: '100%',
-            padding: '10px 12px',
-            borderRadius: 10,
-            border: '1.5px solid #E2E8E4',
-            background: 'white',
-            color: '#1A1A2E',
-            fontSize: 14,
+            ...editableInputStyle,
             fontWeight: 500,
-            outline: 'none',
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           <option value="">Select Weather</option>

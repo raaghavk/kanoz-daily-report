@@ -5,11 +5,13 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      padding: '10px 16px',
+      justifyContent: 'center',
+      padding: '12px 20px',
       overflowX: 'auto',
       flexShrink: 0,
       background: '#F5F7F6',
       borderBottom: '1px solid #E2E8E4',
+      gap: 4,
     }}>
       {Array.from({ length: totalSteps }, (_, i) => {
         const step = i + 1
@@ -17,12 +19,12 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
         const isCurrent = step === currentStep
         const hasError = stepsWithErrors.includes(step)
         return (
-          <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
+          <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
               onClick={() => onStepClick?.(step)}
               style={{
-                width: 30,
-                height: 30,
+                width: 28,
+                height: 28,
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
@@ -42,7 +44,7 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
                 )
               }}
             >
-              {isDone ? <Check size={14} strokeWidth={3} /> : step}
+              {isDone ? <Check size={13} strokeWidth={3} /> : step}
               {hasError && !isCurrent && (
                 <div style={{
                   position: 'absolute', top: -2, right: -2,
@@ -53,10 +55,11 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
             </button>
             {step < totalSteps && (
               <div style={{
-                width: 4,
-                minWidth: 4,
+                width: 8,
+                minWidth: 8,
                 height: 2,
                 flexShrink: 0,
+                borderRadius: 1,
                 background: isDone ? '#1B7A45' : '#E2E8E4',
               }} />
             )}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -9,6 +10,9 @@ import PageHeader from '../../components/PageHeader'
 
 export default function DispatchForm() {
   const { employee, plant } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const returnToShift = location.state?.returnToShift || false
   const today = new Date().toISOString().split('T')[0]
 
   // Today's dispatches
@@ -268,7 +272,24 @@ export default function DispatchForm() {
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      <PageHeader title="Vehicle Dispatch" subtitle="Quick dispatch entry for today" backTo="/" />
+      <PageHeader
+        title="Vehicle Dispatch"
+        subtitle={returnToShift ? "Add dispatches, then go back to shift report" : "Quick dispatch entry for today"}
+        backTo={returnToShift ? "/shift/new" : "/"}
+      />
+
+      {/* Return to Shift Banner */}
+      {returnToShift && (
+        <div style={{ margin: '12px 20px 0', background: '#E8F5EE', border: '1.5px solid #1B7A45', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 12, color: '#1B7A45', fontWeight: 600 }}>You came from the Shift Report wizard.</div>
+          <button
+            onClick={() => navigate('/shift/new')}
+            style={{ padding: '6px 12px', background: '#1B7A45', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+          >
+            ← Back to Shift
+          </button>
+        </div>
+      )}
 
       {/* Info if no shift report — dispatch still allowed */}
       {shiftWarning && (

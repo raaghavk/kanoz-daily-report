@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Loader2, TrendingUp } from 'lucide-react'
+import { Loader2, TrendingUp, ExternalLink } from 'lucide-react'
 
-export default function Step6Dispatch({ data, plant }) {
+export default function Step6Dispatch({ data, updateData, plant }) {
   const navigate = useNavigate()
   const [dispatches, setDispatches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -22,13 +22,32 @@ export default function Step6Dispatch({ data, plant }) {
       setLoading(true)
       const { data: dispatchData, error } = await supabase
         .from('vehicle_dispatches')
-        .select('*')
+        .select(`
+          *,
+          dispatch_pellets(*),
+          customers(name)
+        `)
         .eq('plant_id', plant.id)
         .eq('date', today)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setDispatches(dispatchData || [])
+
+      const processedDispatches = (dispatchData || []).map(d => ({
+        ...d,
+        total_mt: d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0) || 0
+      }))
+      setDispatches(processedDispatches)
+
+      // Store dispatch totals by pellet type for Step 7 auto-calculation
+      const dispatchByPellet = {}
+      ;(dispatchData || []).forEach(d => {
+        (d.dispatch_pellets || []).forEach(dp => {
+          const name = dp.pellet_type_name || ''
+          dispatchByPellet[name] = (dispatchByPellet[name] || 0) + (parseFloat(dp.quantity_mt) || 0)
+        })
+      })
+      updateData('dispatchTotals', dispatchByPellet)
     } catch (err) {
       console.error('Error loading dispatches:', err)
       setDispatches([])
@@ -37,26 +56,23 @@ export default function Step6Dispatch({ data, plant }) {
     }
   }
 
-  // Calculate totals by pellet type
-  const calculateSummary = () => {
-    const summary = {}
-    let totalTrucks = 0
-    let totalQuantity = 0
+  // Calculate totals
+  const totalTrucks = dispatches.length
+  const totalQuantity = dispatches.reduce((sum, d) => sum + (d.total_mt || 0), 0)
 
-    dispatches.forEach(d => {
-      totalTrucks += 1
-      // Assume dispatches have a pellet_type and quantity field
-      if (d.pellet_type && d.quantity) {
-        const qty = parseFloat(d.quantity) || 0
-        summary[d.pellet_type] = (summary[d.pellet_type] || 0) + qty
-        totalQuantity += qty
-      }
+  // Group by pellet type from dispatch_pellets
+  const pelletSummary = {}
+  dispatches.forEach(d => {
+    (d.dispatch_pellets || []).forEach(dp => {
+      const name = dp.pellet_type_name || 'Unknown'
+      pelletSummary[name] = (pelletSummary[name] || 0) + (parseFloat(dp.quantity_mt) || 0)
     })
+  })
 
-    return { summary, totalTrucks, totalQuantity }
+  function goToDispatchTab() {
+    // Navigate with state so DispatchForm knows to come back here
+    navigate('/dispatch', { state: { returnToShift: true } })
   }
-
-  const { summary, totalTrucks, totalQuantity } = calculateSummary()
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -80,7 +96,7 @@ export default function Step6Dispatch({ data, plant }) {
         <div style={{ background: '#F5F7F6', borderRadius: 14, border: '2px dashed #E2E8E4', padding: 24, textAlign: 'center' }}>
           <div style={{ color: '#5A6B62', fontSize: 14, marginBottom: 12 }}>No dispatches yet today.</div>
           <button
-            onClick={() => navigate('/dispatch')}
+            onClick={goToDispatchTab}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -95,7 +111,7 @@ export default function Step6Dispatch({ data, plant }) {
               cursor: 'pointer',
             }}
           >
-            Go to Dispatch Tab →
+            <ExternalLink size={14} /> Go to Dispatch Tab
           </button>
         </div>
       )}
@@ -104,7 +120,7 @@ export default function Step6Dispatch({ data, plant }) {
       {!loading && dispatches.length > 0 && (
         <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {dispatches.map((dispatch, idx) => (
+            {dispatches.map((dispatch) => (
               <div
                 key={dispatch.id}
                 style={{
@@ -119,38 +135,30 @@ export default function Step6Dispatch({ data, plant }) {
                 }}
               >
                 {/* Truck Icon */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 40,
-                    height: 40,
-                    background: '#E8F5EE',
-                    borderRadius: 10,
-                    fontSize: 20,
-                  }}
-                >
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 40, height: 40, background: '#E8F5EE', borderRadius: 10, fontSize: 20,
+                }}>
                   🚛
                 </div>
 
                 {/* Details */}
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginBottom: 4 }}>
-                    Truck {dispatch.truck_number || `#${idx + 1}`}
+                    {dispatch.truck_number || 'Unknown Truck'}
                   </div>
                   <div style={{ fontSize: 12, color: '#5A6B62', marginBottom: 2 }}>
-                    Destination: {dispatch.destination || 'N/A'}
+                    {dispatch.customers?.name || 'N/A'}
                   </div>
-                  <div style={{ fontSize: 12, color: '#5A6B62' }}>
-                    {dispatch.pellet_type || 'Pellet'}: {dispatch.quantity ? `${parseFloat(dispatch.quantity).toFixed(1)} MT` : 'N/A'}
+                  <div style={{ fontSize: 11, color: '#8A9B92' }}>
+                    {(dispatch.dispatch_pellets || []).map(dp => `${dp.pellet_type_name}: ${parseFloat(dp.quantity_mt).toFixed(1)} MT`).join(', ')}
                   </div>
                 </div>
 
                 {/* Quantity Badge */}
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: '#1B7A45' }}>
-                    {dispatch.quantity ? `${parseFloat(dispatch.quantity).toFixed(1)}` : '0'}
+                    {(dispatch.total_mt || 0).toFixed(1)}
                   </div>
                   <div style={{ fontSize: 10, color: '#5A6B62' }}>MT</div>
                 </div>
@@ -168,69 +176,47 @@ export default function Step6Dispatch({ data, plant }) {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {/* Pellet Type Breakdown */}
-              {Object.entries(summary).map(([pelletType, qty]) => (
-                <div
-                  key={pelletType}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 13,
-                    color: '#1A1A2E',
-                  }}
-                >
+              {Object.entries(pelletSummary).map(([pelletType, qty]) => (
+                <div key={pelletType} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#1A1A2E' }}>
                   <span>{pelletType}:</span>
                   <span style={{ fontWeight: 600, color: '#1B7A45' }}>{qty.toFixed(1)} MT</span>
                 </div>
               ))}
-
-              {/* Divider */}
               <div style={{ height: '1.5px', background: '#E2E8E4', margin: '8px 0' }} />
-
-              {/* Grand Total */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: '#1B7A45',
-                }}
-              >
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color: '#1B7A45' }}>
                 <span>GRAND TOTAL</span>
-                <span>
-                  {totalQuantity.toFixed(1)} MT • {totalTrucks} truck{totalTrucks !== 1 ? 's' : ''}
-                </span>
+                <span>{totalQuantity.toFixed(1)} MT • {totalTrucks} truck{totalTrucks !== 1 ? 's' : ''}</span>
               </div>
             </div>
           </div>
 
           {/* CTA Button */}
           <button
-            onClick={() => navigate('/dispatch')}
+            onClick={goToDispatchTab}
             style={{
-              width: '100%',
-              padding: '12px 0',
-              background: 'white',
-              border: '1.5px solid #1B7A45',
-              borderRadius: 12,
-              fontSize: 14,
-              fontWeight: 600,
-              color: '#1B7A45',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={e => {
-              e.target.style.background = '#E8F5EE'
-            }}
-            onMouseLeave={e => {
-              e.target.style.background = 'white'
+              width: '100%', padding: '12px 0',
+              background: 'white', border: '1.5px solid #1B7A45',
+              borderRadius: 12, fontSize: 14, fontWeight: 600, color: '#1B7A45',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}
           >
-            Go to Dispatch Tab →
+            <ExternalLink size={14} /> Go to Dispatch Tab
           </button>
         </>
       )}
+
+      {/* Refresh button */}
+      <button
+        onClick={loadDispatches}
+        style={{
+          width: '100%', padding: '10px 0',
+          background: '#F5F7F6', border: '1px solid #E2E8E4',
+          borderRadius: 10, fontSize: 12, fontWeight: 600, color: '#5A6B62',
+          cursor: 'pointer',
+        }}
+      >
+        🔄 Refresh Dispatches
+      </button>
     </div>
   )
 }

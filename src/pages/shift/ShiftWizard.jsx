@@ -51,6 +51,7 @@ export default function ShiftWizard() {
     diesel: [],
     diesel_stock: { opening: 0, purchases: [], closing: 0 },
     dispatches: [],
+    dispatchTotals: {},
     pelletStock: [],
     issues: [],
     handover_notes: '',
