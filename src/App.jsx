@@ -1,17 +1,30 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import Layout from './components/Layout'
-import Login from './pages/Login'
-import Home from './pages/Home'
-import ShiftWizard from './pages/shift/ShiftWizard'
-import PurchaseList from './pages/purchase/PurchaseList'
-import PurchaseForm from './pages/purchase/PurchaseForm'
-import SupplierList from './pages/suppliers/SupplierList'
-import SupplierDetail from './pages/suppliers/SupplierDetail'
-import DispatchForm from './pages/dispatch/DispatchForm'
-import ReportView from './pages/ReportView'
-import ReportList from './pages/ReportList'
-import UserManagement from './pages/UserManagement'
+
+const Login = lazy(() => import('./pages/Login'))
+const Home = lazy(() => import('./pages/Home'))
+const ShiftWizard = lazy(() => import('./pages/shift/ShiftWizard'))
+const PurchaseList = lazy(() => import('./pages/purchase/PurchaseList'))
+const PurchaseForm = lazy(() => import('./pages/purchase/PurchaseForm'))
+const SupplierList = lazy(() => import('./pages/suppliers/SupplierList'))
+const SupplierDetail = lazy(() => import('./pages/suppliers/SupplierDetail'))
+const DispatchForm = lazy(() => import('./pages/dispatch/DispatchForm'))
+const ReportView = lazy(() => import('./pages/ReportView'))
+const ReportList = lazy(() => import('./pages/ReportList'))
+const UserManagement = lazy(() => import('./pages/UserManagement'))
+
+function LoadingFallback() {
+  return (
+    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 32, height: 32, border: '3px solid #1B7A45', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
+        <p style={{ fontSize: 13, color: '#5A6B62' }}>Loading...</p>
+      </div>
+    </div>
+  )
+}
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -30,6 +43,7 @@ function ProtectedRoute({ children }) {
 
 export default function App() {
   return (
+    <Suspense fallback={<LoadingFallback />}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route
@@ -69,6 +83,7 @@ export default function App() {
         }
       />
     </Routes>
+    </Suspense>
   )
 }
 

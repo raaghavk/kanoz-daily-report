@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import { Clock, AlertCircle } from 'lucide-react'
 
-export default function Step2Machines({ data, updateData }) {
+export default memo(function Step2Machines({ data, updateData }) {
   function updateMachine(idx, field, value) {
     const machines = [...data.machines]
     machines[idx] = { ...machines[idx], [field]: value }
@@ -108,4 +109,4 @@ export default function Step2Machines({ data, updateData }) {
       ))}
     </div>
   )
-}
+})

@@ -1,25 +1,33 @@
-import { useState, useEffect, createContext, useContext } from 'react'
+import { useState, useCallback, useEffect, createContext, useContext } from 'react'
 import { CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 const ToastContext = createContext()
 
-let toastFn = () => {}
+// Mutable reference for backward compatibility with `import { showToast }`
+const toastRef = { current: () => {} }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function showToast(message, type = 'success') {
-  toastFn(message, type)
+  toastRef.current(message, type)
 }
 
-export default function Toast() {
+// eslint-disable-next-line react-refresh/only-export-components
+export function useToast() {
+  return useContext(ToastContext)
+}
+
+export function ToastProvider({ children }) {
   const [toast, setToast] = useState(null)
 
-  useEffect(() => {
-    toastFn = (message, type) => {
-      setToast({ message, type })
-      setTimeout(() => setToast(null), 2500)
-    }
+  const show = useCallback((message, type = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 2500)
   }, [])
 
-  if (!toast) return null
+  // Keep mutable ref in sync with provider (via useEffect, not during render)
+  useEffect(() => {
+    toastRef.current = show
+  }, [show])
 
   const icons = {
     success: <CheckCircle size={18} />,
@@ -34,11 +42,21 @@ export default function Toast() {
   }
 
   return (
-    <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 999 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', background: bgColors[toast.type], color: 'white' }}>
-        {icons[toast.type]}
-        <span style={{ fontSize: 14, fontWeight: 500 }}>{toast.message}</span>
-      </div>
-    </div>
+    <ToastContext.Provider value={{ showToast: show }}>
+      {children}
+      {toast && (
+        <div role="alert" aria-live="polite" style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 999 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', background: bgColors[toast.type], color: 'white' }}>
+            {icons[toast.type]}
+            <span style={{ fontSize: 14, fontWeight: 500 }}>{toast.message}</span>
+          </div>
+        </div>
+      )}
+    </ToastContext.Provider>
   )
+}
+
+// Default export kept for backward compatibility but no longer needed
+export default function Toast() {
+  return null
 }

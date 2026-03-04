@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { ChevronDown, Plus, X, Camera } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
 
@@ -8,14 +9,13 @@ function numVal(v) {
   return isNaN(n) ? '' : n
 }
 
-export default function Step5Diesel({ data, updateData }) {
-  // Initialize diesel_stock if not exists
+export default memo(function Step5Diesel({ data, updateData }) {
+  // Initialize diesel_stock if not exists (via updateData, not prop mutation)
+  const dieselStock = data.diesel_stock || { opening: 0, purchases: [], closing: 0 }
   if (!data.diesel_stock) {
-    data.diesel_stock = { opening: 0, purchases: [], closing: 0 }
-  }
-  // Initialize purchases array if missing
-  if (!data.diesel_stock.purchases) {
-    data.diesel_stock.purchases = []
+    updateData('diesel_stock', dieselStock)
+  } else if (!data.diesel_stock.purchases) {
+    updateData('diesel_stock', { ...data.diesel_stock, purchases: [] })
   }
 
   // Equipment list is loaded from Supabase in ShiftWizard
@@ -292,4 +292,4 @@ export default function Step5Diesel({ data, updateData }) {
       ))}
     </div>
   )
-}
+})

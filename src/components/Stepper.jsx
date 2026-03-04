@@ -1,18 +1,36 @@
 import { Check } from 'lucide-react'
 
+const STEP_TITLES = [
+  'Report Header', 'Machine Timings', 'Production', 'Raw Material',
+  'Equipment & Diesel', 'Dispatch Summary', 'Pellet Stock', 'Issues', 'Submit'
+]
+
 export default function Stepper({ currentStep, totalSteps = 9, onStepClick, stepsWithErrors = [] }) {
+  function handleKeyDown(e) {
+    if (e.key === 'ArrowRight' && currentStep < totalSteps) {
+      onStepClick?.(currentStep + 1)
+    } else if (e.key === 'ArrowLeft' && currentStep > 1) {
+      onStepClick?.(currentStep - 1)
+    }
+  }
+
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '12px 20px',
-      overflowX: 'auto',
-      flexShrink: 0,
-      background: '#F5F7F6',
-      borderBottom: '1px solid #E2E8E4',
-      gap: 4,
-    }}>
+    <div
+      role="tablist"
+      aria-label="Report wizard steps"
+      onKeyDown={handleKeyDown}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '12px 20px',
+        overflowX: 'auto',
+        flexShrink: 0,
+        background: '#F5F7F6',
+        borderBottom: '1px solid #E2E8E4',
+        gap: 4,
+      }}
+    >
       {Array.from({ length: totalSteps }, (_, i) => {
         const step = i + 1
         const isDone = step < currentStep
@@ -21,6 +39,10 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
         return (
           <div key={step} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
+              role="tab"
+              aria-selected={isCurrent}
+              aria-label={`Step ${step}: ${STEP_TITLES[i] || ''}`}
+              tabIndex={isCurrent ? 0 : -1}
               onClick={() => onStepClick?.(step)}
               style={{
                 width: 28,

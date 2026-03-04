@@ -1,4 +1,6 @@
-export default function Step4RawMaterial({ data, updateData }) {
+import { memo } from 'react'
+
+export default memo(function Step4RawMaterial({ data, updateData }) {
   function updateRM(idx, field, value) {
     const mats = [...data.rawMaterials]
     mats[idx] = { ...mats[idx], [field]: parseFloat(value) || 0 }
@@ -48,4 +50,4 @@ export default function Step4RawMaterial({ data, updateData }) {
       ))}
     </div>
   )
-}
+})

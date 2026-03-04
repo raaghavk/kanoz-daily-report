@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -7,24 +8,18 @@ import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
 import { Truck, Phone, Plus, X, ChevronLeft } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
+import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 
 export default function DispatchForm() {
   const { employee, plant } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const returnToShift = location.state?.returnToShift || false
   const today = new Date().toISOString().split('T')[0]
 
-  // Today's dispatches
-  const [dispatches, setDispatches] = useState([])
-  const [loading, setLoading] = useState(true)
-
   // Form state
   const [showForm, setShowForm] = useState(false)
-  const [customers, setCustomers] = useState([])
-  const [pelletTypes, setPelletTypes] = useState([])
-  const [activeShiftReport, setActiveShiftReport] = useState(null)
-  const [shiftWarning, setShiftWarning] = useState(false)
 
   const [form, setForm] = useState({
     truck_number: '',
@@ -45,76 +40,45 @@ export default function DispatchForm() {
   const [newCustomer, setNewCustomer] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    if (plant?.id) {
-      fetchTodayDispatches()
-      fetchCustomers()
-      fetchPelletTypes()
-      fetchActiveShiftReport()
-    }
-  }, [plant])
-
-  async function fetchTodayDispatches() {
-    try {
-      setLoading(true)
-      const { data: dispatches } = await supabase
+  const { data: dispatches = [], isLoading: loading } = useQuery({
+    queryKey: ['todayDispatches', plant?.id, today],
+    queryFn: async () => {
+      const { data } = await supabase
         .from('vehicle_dispatches')
-        .select(`
-          *,
-          dispatch_pellets(*),
-          customers(name)
-        `)
+        .select(`*, dispatch_pellets(*), customers(name)`)
         .eq('plant_id', plant.id)
         .eq('date', today)
         .order('created_at', { ascending: false })
 
-      if (dispatches) {
-        const dispatchesWithTotals = dispatches.map(d => ({
-          ...d,
-          total_mt: d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0) || 0
-        }))
-        setDispatches(dispatchesWithTotals)
-      }
-    } catch (err) {
-      console.error('Error fetching dispatches:', err)
-      showToast('Failed to load dispatches', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
+      return (data || []).map(d => ({
+        ...d,
+        total_mt: d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0) || 0
+      }))
+    },
+    enabled: !!plant?.id,
+  })
 
-  async function fetchCustomers() {
-    try {
-      const { data } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('org_id', plant.org_id)
-        .eq('is_active', true)
-        .order('name')
+  const { data: customers = [] } = useQuery({
+    queryKey: ['customers', plant?.org_id],
+    queryFn: async () => {
+      const { data } = await supabase.from('customers').select('*').eq('org_id', plant.org_id).eq('is_active', true).order('name')
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
 
-      setCustomers(data || [])
-    } catch (err) {
-      console.error('Error fetching customers:', err)
-    }
-  }
+  const { data: pelletTypes = [] } = useQuery({
+    queryKey: ['pelletTypes', plant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true).order('name')
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
 
-  async function fetchPelletTypes() {
-    try {
-      const { data } = await supabase
-        .from('pellet_types')
-        .select('*')
-        .eq('plant_id', plant.id)
-        .eq('is_active', true)
-        .order('name')
-
-      setPelletTypes(data || [])
-    } catch (err) {
-      console.error('Error fetching pellet types:', err)
-    }
-  }
-
-  async function fetchActiveShiftReport() {
-    try {
+  const { data: activeShiftReport } = useQuery({
+    queryKey: ['activeShiftReport', plant?.id, today],
+    queryFn: async () => {
       const { data } = await supabase
         .from('shift_reports')
         .select('id')
@@ -123,18 +87,12 @@ export default function DispatchForm() {
         .order('shift', { ascending: false })
         .limit(1)
         .single()
+      return data
+    },
+    enabled: !!plant?.id,
+  })
 
-      if (data) {
-        setActiveShiftReport(data)
-        setShiftWarning(false)
-      } else {
-        setShiftWarning(true)
-      }
-    } catch (err) {
-      console.error('Error fetching shift report:', err)
-      setShiftWarning(true)
-    }
-  }
+  const shiftWarning = activeShiftReport === undefined ? false : !activeShiftReport
 
   async function addCustomer() {
     if (!newCustomer.trim()) {
@@ -149,7 +107,7 @@ export default function DispatchForm() {
         .select()
 
       if (data) {
-        setCustomers([...customers, data[0]])
+        queryClient.invalidateQueries({ queryKey: ['customers', plant?.org_id] })
         setForm(prev => ({ ...prev, customer_id: data[0].id }))
         setNewCustomer('')
         setShowAddCustomer(false)
@@ -188,6 +146,7 @@ export default function DispatchForm() {
   }
 
   async function handleSave() {
+    if (submitting) return
     if (!form.truck_number.trim()) {
       showToast('Truck number is required', 'error')
       return
@@ -213,17 +172,17 @@ export default function DispatchForm() {
           shift_report_id: activeShiftReport?.id || null,
           plant_id: plant.id,
           date: today,
-          truck_number: form.truck_number,
+          truck_number: sanitizeText(form.truck_number, 20),
           customer_id: form.customer_id,
-          destination: form.destination,
-          transporter: form.transporter,
-          driver_name: form.driver_name,
-          driver_phone: form.driver_phone,
-          invoice_no: form.invoice_number,
+          destination: sanitizeText(form.destination, 200),
+          transporter: sanitizeText(form.transporter, 100),
+          driver_name: sanitizeText(form.driver_name, 100),
+          driver_phone: sanitizeText(form.driver_phone, 15),
+          invoice_no: sanitizeText(form.invoice_number, 50),
           loading_time: form.loading_time || null,
           dispatch_time: form.dispatch_time || null,
           katta_parchi_url: form.katta_parchi_photo || null,
-          remarks: form.remarks,
+          remarks: sanitizeText(form.remarks, 500),
           created_by: employee?.id,
         }])
         .select()
@@ -235,7 +194,7 @@ export default function DispatchForm() {
           dispatch_id: dispatch[0].id,
           pellet_type_id: p.pellet_type_id,
           pellet_type_name: pelletTypes.find(pt => pt.id === p.pellet_type_id)?.name || '',
-          quantity_mt: parseFloat(p.quantity_mt)
+          quantity_mt: sanitizeNumber(p.quantity_mt)
         }))
 
         const { error: pelletError } = await supabase
@@ -260,7 +219,8 @@ export default function DispatchForm() {
           remarks: ''
         })
         setShowForm(false)
-        fetchTodayDispatches()
+        queryClient.invalidateQueries({ queryKey: ['todayDispatches'] })
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       }
     } catch (err) {
       console.error('Error saving dispatch:', err)

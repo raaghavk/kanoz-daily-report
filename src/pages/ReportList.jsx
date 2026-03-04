@@ -1,45 +1,41 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { showToast } from '../components/Toast'
 import { FileText, ChevronRight, Calendar } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+
+function getDateRange(filter, today) {
+  let startDate = today
+  const endDate = today
+
+  if (filter === 'week') {
+    const currentDate = new Date(today)
+    const dayOfWeek = currentDate.getDay()
+    const diff = currentDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+    const monday = new Date(currentDate.setDate(diff))
+    startDate = monday.toISOString().split('T')[0]
+  } else if (filter === 'month') {
+    const currentDate = new Date(today)
+    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+    startDate = firstDay.toISOString().split('T')[0]
+  }
+
+  return { startDate, endDate }
+}
 
 export default function ReportList() {
   const { plant } = useAuth()
   const navigate = useNavigate()
-  const [reports, setReports] = useState([])
-  const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('today')
 
   const today = new Date().toISOString().split('T')[0]
 
-  useEffect(() => {
-    if (plant?.id) {
-      fetchReports()
-    }
-  }, [plant, filter])
-
-  async function fetchReports() {
-    try {
-      setLoading(true)
-      let startDate = today
-      let endDate = today
-
-      const currentDate = new Date(today)
-
-      if (filter === 'week') {
-        const dayOfWeek = currentDate.getDay()
-        const diff = currentDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
-        const monday = new Date(currentDate.setDate(diff))
-        startDate = monday.toISOString().split('T')[0]
-        endDate = today
-      } else if (filter === 'month') {
-        const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-        startDate = firstDay.toISOString().split('T')[0]
-        endDate = today
-      }
+  const { data: reports = [], isLoading: loading } = useQuery({
+    queryKey: ['reports', plant?.id, filter, today],
+    queryFn: async () => {
+      const { startDate, endDate } = getDateRange(filter, today)
 
       const { data, error } = await supabase
         .from('shift_reports')
@@ -52,19 +48,13 @@ export default function ReportList() {
 
       if (error) throw error
 
-      const reportsWithTotals = data?.map(r => ({
+      return (data || []).map(r => ({
         ...r,
         total_mt: parseFloat(r.pellet_production_mt) || 0
-      })) || []
-
-      setReports(reportsWithTotals)
-    } catch (err) {
-      console.error('Error fetching reports:', err)
-      showToast('Failed to load reports', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
+      }))
+    },
+    enabled: !!plant?.id,
+  })
 
   const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('en-IN', {

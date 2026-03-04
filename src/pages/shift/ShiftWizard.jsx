@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Stepper from '../../components/Stepper'
 import { ArrowLeft, ArrowRight, Loader2, AlertTriangle } from 'lucide-react'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import PageHeader from '../../components/PageHeader'
+import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
 import Step3Production from './Step3Production'
@@ -30,10 +33,12 @@ const STEPS = [
 
 export default function ShiftWizard() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { employee, plant } = useAuth()
   const { id: editId } = useParams()
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [reportId, setReportId] = useState(editId || null)
 
   // Report data state — shared across all steps
@@ -58,9 +63,9 @@ export default function ShiftWizard() {
     remarks: '',
   })
 
-  function updateData(key, value) {
+  const updateData = useCallback((key, value) => {
     setReportData(prev => ({ ...prev, [key]: value }))
-  }
+  }, [])
 
   // Load machines and raw material types for this plant
   useEffect(() => {
@@ -167,7 +172,7 @@ export default function ShiftWizard() {
       updateData('remarks', report.remarks || '')
 
       // Load child data
-      const [machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
+      const [, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', editId),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', editId),
@@ -273,12 +278,8 @@ export default function ShiftWizard() {
     return errors
   }
 
-  // Get warnings for current step (shown as yellow banner)
-  function getStepWarnings(stepNum) {
-    return getValidationErrors().filter(e => e.step === stepNum)
-  }
-
   async function saveReport() {
+    if (saving) return
     const errors = getValidationErrors()
     if (errors.length > 0) {
       showToast(`Please fix ${errors.length} issue${errors.length > 1 ? 's' : ''} before submitting (check Steps ${[...new Set(errors.map(e => e.step))].join(', ')})`, 'error')
@@ -295,11 +296,11 @@ export default function ShiftWizard() {
         end_time: reportData.end_time,
         shift_start_date: reportData.shift_start_date,
         shift_end_date: reportData.shift_end_date,
-        pellet_production_mt: reportData.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0),
+        pellet_production_mt: reportData.production.reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
         supervisor_id: employee?.id,
         created_by: employee?.id,
-        handover_notes: reportData.handover_notes,
-        remarks: reportData.remarks,
+        handover_notes: sanitizeText(reportData.handover_notes, 1000),
+        remarks: sanitizeText(reportData.remarks, 1000),
       }
 
       let report
@@ -318,14 +319,14 @@ export default function ShiftWizard() {
       if (reportData.machines.length) {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
         const machineRows = reportData.machines
-          .filter(m => m.production_hours > 0)
+          .filter(m => sanitizeNumber(m.production_hours) > 0)
           .map(m => ({
             shift_report_id: report.id,
             machine_id: m.id,
-            hours_run: m.production_hours,
+            hours_run: sanitizeNumber(m.production_hours),
             production_mt: reportData.production
               .filter(p => p.machine_id === m.id)
-              .reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0),
+              .reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
           }))
         if (machineRows.length) {
           await supabase.from('machine_production').insert(machineRows)
@@ -336,14 +337,14 @@ export default function ShiftWizard() {
       if (reportData.rawMaterials.length) {
         await supabase.from('raw_material_usage').delete().eq('shift_report_id', report.id)
         const rmRows = reportData.rawMaterials
-          .filter(rm => rm.used > 0 || rm.opening > 0)
+          .filter(rm => sanitizeNumber(rm.used) > 0 || sanitizeNumber(rm.opening) > 0)
           .map(rm => ({
             shift_report_id: report.id,
             raw_material_type_id: rm.id,
-            quantity_kg: rm.used,
-            opening_kg: rm.opening || 0,
-            purchased_kg: rm.purchased || 0,
-            closing_kg: rm.closing || 0,
+            quantity_kg: sanitizeNumber(rm.used),
+            opening_kg: sanitizeNumber(rm.opening),
+            purchased_kg: sanitizeNumber(rm.purchased),
+            closing_kg: sanitizeNumber(rm.closing),
           }))
         if (rmRows.length) {
           await supabase.from('raw_material_usage').insert(rmRows)
@@ -354,14 +355,14 @@ export default function ShiftWizard() {
       if (reportData.diesel && reportData.diesel.length) {
         await supabase.from('equipment_diesel_log').delete().eq('shift_report_id', report.id)
         const dieselRows = reportData.diesel
-          .filter(d => d.used > 0 || d.hours > 0)
+          .filter(d => sanitizeNumber(d.used) > 0 || sanitizeNumber(d.hours) > 0)
           .map(d => ({
             shift_report_id: report.id,
-            equipment_name: d.equipment_name,
-            opening_litres: d.opening || 0,
-            added_litres: d.added || 0,
-            closing_litres: d.closing || 0,
-            hours_worked: d.hours || 0,
+            equipment_name: sanitizeText(d.equipment_name, 100),
+            opening_litres: sanitizeNumber(d.opening),
+            added_litres: sanitizeNumber(d.added),
+            closing_litres: sanitizeNumber(d.closing),
+            hours_worked: sanitizeNumber(d.hours),
           }))
         if (dieselRows.length) {
           await supabase.from('equipment_diesel_log').insert(dieselRows)
@@ -374,10 +375,10 @@ export default function ShiftWizard() {
         const stockRows = reportData.pelletStock.map(ps => ({
           shift_report_id: report.id,
           pellet_type_id: ps.id,
-          opening_mt: ps.opening || 0,
-          production_mt: ps.production || 0,
-          dispatch_mt: ps.dispatch || 0,
-          wastage_mt: ps.wastage || 0,
+          opening_mt: sanitizeNumber(ps.opening),
+          production_mt: sanitizeNumber(ps.production),
+          dispatch_mt: sanitizeNumber(ps.dispatch),
+          wastage_mt: sanitizeNumber(ps.wastage),
         }))
         if (stockRows.length) {
           await supabase.from('pellet_stock').insert(stockRows)
@@ -389,9 +390,9 @@ export default function ShiftWizard() {
         await supabase.from('issues').delete().eq('shift_report_id', report.id)
         const issueRows = reportData.issues.map(i => ({
           shift_report_id: report.id,
-          issue_type: i.type,
-          description: i.description,
-          severity: i.severity,
+          issue_type: sanitizeText(i.type, 50),
+          description: sanitizeText(i.description, 1000),
+          severity: sanitizeText(i.severity, 20),
           photo_url: i.photo_url,
         }))
         await supabase.from('issues').insert(issueRows)
@@ -400,29 +401,30 @@ export default function ShiftWizard() {
       // Save diesel stock (overall tank) + diesel purchases
       await supabase.from('diesel_purchases').delete().eq('shift_report_id', report.id)
       await supabase.from('diesel_stock').delete().eq('shift_report_id', report.id)
-      const totalUsed = (reportData.diesel || []).reduce((sum, eq) => sum + (eq.used || 0), 0)
+      const totalUsed = (reportData.diesel || []).reduce((sum, eq) => sum + sanitizeNumber(eq.used), 0)
       const ds = reportData.diesel_stock || {}
       const purchases = ds.purchases || []
-      const totalPurchased = purchases.reduce((sum, p) => sum + (parseFloat(p.litres) || 0), 0)
+      const totalPurchased = purchases.reduce((sum, p) => sum + sanitizeNumber(p.litres), 0)
       const totalCost = purchases.reduce((sum, p) => {
-        return sum + ((parseFloat(p.litres) || 0) * (parseFloat(p.cost_per_litre) || 0))
+        return sum + (sanitizeNumber(p.litres) * sanitizeNumber(p.cost_per_litre))
       }, 0)
+      const dsOpening = sanitizeNumber(ds.opening)
       await supabase.from('diesel_stock').insert({
         shift_report_id: report.id,
-        opening_litres: ds.opening || 0,
+        opening_litres: dsOpening,
         purchased_litres: totalPurchased,
         purchase_cost: totalCost,
         used_litres: totalUsed,
-        closing_litres: (ds.opening || 0) + totalPurchased - totalUsed,
+        closing_litres: dsOpening + totalPurchased - totalUsed,
       })
       // Save individual purchase entries
       if (purchases.length > 0) {
         const purchaseRows = purchases
-          .filter(p => (parseFloat(p.litres) || 0) > 0)
+          .filter(p => sanitizeNumber(p.litres) > 0)
           .map(p => ({
             shift_report_id: report.id,
-            litres: parseFloat(p.litres) || 0,
-            cost_per_litre: parseFloat(p.cost_per_litre) || 0,
+            litres: sanitizeNumber(p.litres),
+            cost_per_litre: sanitizeNumber(p.cost_per_litre),
             receipt_url: p.receipt_url || null,
           }))
         if (purchaseRows.length > 0) {
@@ -431,6 +433,8 @@ export default function ShiftWizard() {
       }
 
       showToast(editId ? 'Report updated!' : 'Report submitted!', 'success')
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['reports'] })
       navigate('/')
     } catch (err) {
       console.error('Save error:', err)
@@ -441,9 +445,12 @@ export default function ShiftWizard() {
   }
 
   const CurrentStep = STEPS[step - 1].component
-  const currentWarnings = getStepWarnings(step)
-  const allErrors = getValidationErrors()
-  const stepsWithErrors = [...new Set(allErrors.map(e => e.step))]
+  const allErrors = useMemo(() => getValidationErrors(), [
+    reportData.date, reportData.shift, reportData.start_time, reportData.end_time,
+    reportData.machines, reportData.production, reportData.rawMaterials
+  ])
+  const stepsWithErrors = useMemo(() => [...new Set(allErrors.map(e => e.step))], [allErrors])
+  const currentWarnings = useMemo(() => allErrors.filter(e => e.step === step), [allErrors, step])
 
   return (
     <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#E8EBE9' }}>
@@ -496,7 +503,7 @@ export default function ShiftWizard() {
           </button>
         ) : (
           <button
-            onClick={saveReport}
+            onClick={() => allErrors.length === 0 ? setShowConfirm(true) : saveReport()}
             disabled={saving}
             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: allErrors.length > 0 ? '#D4960A' : '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
           >
@@ -505,6 +512,15 @@ export default function ShiftWizard() {
           </button>
         )}
       </div>
+      <ConfirmDialog
+        isOpen={showConfirm}
+        onClose={() => setShowConfirm(false)}
+        onConfirm={saveReport}
+        title={editId ? 'Update Report?' : 'Submit Report?'}
+        message={editId ? 'Are you sure you want to update this shift report?' : 'Are you sure you want to submit this shift report? Please verify all entries are correct.'}
+        confirmLabel={editId ? 'Update Report' : 'Submit Report'}
+        variant="primary"
+      />
     </div>
     </div>
   )

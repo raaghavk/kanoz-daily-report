@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, memo } from 'react'
 
-export default function Step7PelletStock({ data, updateData }) {
+export default memo(function Step7PelletStock({ data, updateData }) {
   // Auto-populate production from Step 3 and dispatch from Step 6
   useEffect(() => {
     if (!data.pelletStock || data.pelletStock.length === 0) return
@@ -116,4 +116,4 @@ export default function Step7PelletStock({ data, updateData }) {
       </div>
     </div>
   )
-}
+})

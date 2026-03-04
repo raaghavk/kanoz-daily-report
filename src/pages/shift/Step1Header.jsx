@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import { Calendar, Clock } from 'lucide-react'
 
-export default function Step1Header({ data, updateData, employee }) {
+export default memo(function Step1Header({ data, updateData, employee }) {
   function handleShiftChange(shift) {
     updateData('shift', shift)
     if (shift === 'A') {
@@ -229,4 +230,4 @@ export default function Step1Header({ data, updateData, employee }) {
       </div>
     </div>
   )
-}
+})
