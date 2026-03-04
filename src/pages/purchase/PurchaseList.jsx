@@ -9,7 +9,6 @@ import { showToast } from '../../components/Toast'
 export default function PurchaseList() {
   const navigate = useNavigate()
   const { plant } = useAuth()
-  const [purchases, setPurchases] = useState([])
   const [loading, setLoading] = useState(true)
   const [filterTab, setFilterTab] = useState('today')
   const [groupedPurchases, setGroupedPurchases] = useState({})
@@ -39,7 +38,6 @@ export default function PurchaseList() {
 
       if (error) throw error
 
-      setPurchases(data || [])
       groupPurchasesByDate(data || [])
     } catch (err) {
       console.error('Error fetching purchases:', err)

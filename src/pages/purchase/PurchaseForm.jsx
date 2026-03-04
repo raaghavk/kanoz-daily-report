@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Plus } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
@@ -210,7 +210,6 @@ export default function PurchaseForm() {
         remarks: sanitizeText(formData.remarks, 500) || null,
       }
 
-      let result
       if (id) {
         const { error } = await supabase
           .from('rm_purchases')

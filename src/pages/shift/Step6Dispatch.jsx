@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Loader2, TrendingUp, ExternalLink } from 'lucide-react'
 
-export default memo(function Step6Dispatch({ data, updateData, plant }) {
+export default memo(function Step6Dispatch({ updateData, plant }) {
   const navigate = useNavigate()
   const [dispatches, setDispatches] = useState([])
   const [loading, setLoading] = useState(true)

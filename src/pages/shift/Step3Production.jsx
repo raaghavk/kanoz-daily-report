@@ -1,4 +1,4 @@
-import { useState, memo } from 'react'
+import { memo } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
 
 const MATERIALS = ['Cow Dung', 'Saw Dust', 'Chicken Litter', 'Ash', 'Press Mud', 'Bagasse', 'Rice Husk', 'Other']

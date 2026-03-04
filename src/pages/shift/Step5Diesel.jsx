@@ -10,13 +10,12 @@ function numVal(v) {
 }
 
 export default memo(function Step5Diesel({ data, updateData }) {
-  // Initialize diesel_stock if not exists
+  // Initialize diesel_stock if not exists (via updateData, not prop mutation)
+  const dieselStock = data.diesel_stock || { opening: 0, purchases: [], closing: 0 }
   if (!data.diesel_stock) {
-    data.diesel_stock = { opening: 0, purchases: [], closing: 0 }
-  }
-  // Initialize purchases array if missing
-  if (!data.diesel_stock.purchases) {
-    data.diesel_stock.purchases = []
+    updateData('diesel_stock', dieselStock)
+  } else if (!data.diesel_stock.purchases) {
+    updateData('diesel_stock', { ...data.diesel_stock, purchases: [] })
   }
 
   // Equipment list is loaded from Supabase in ShiftWizard

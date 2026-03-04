@@ -9,7 +9,7 @@ import PageHeader from '../components/PageHeader'
 export default function ReportView() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { employee } = useAuth()
+  useAuth()
   const [report, setReport] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [machineProduction, setMachineProduction] = useState([])
@@ -132,11 +132,6 @@ export default function ReportView() {
         <div style={{ color: '#5A6B62', fontSize: 13 }}>Report not found</div>
       </div>
     )
-  }
-
-  const formatDateTime = (dateStr, timeStr) => {
-    if (!dateStr || !timeStr) return 'N/A'
-    return `${new Date(dateStr).toLocaleDateString('en-IN')} ${timeStr}`
   }
 
   const machineTimings = machineProduction.map(m => ({

@@ -23,8 +23,14 @@ export default function UserManagement() {
   const [inviteForm, setInviteForm] = useState({ email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
 
-  // Check admin access
-  if (employee?.role !== 'admin') {
+  const isAdmin = employee?.role === 'admin'
+
+  useEffect(() => {
+    if (isAdmin) loadData()
+  }, [isAdmin])
+
+  // Check admin access (after all hooks)
+  if (!isAdmin) {
     return (
       <div style={{ padding: 20, textAlign: 'center', paddingTop: 80 }}>
         <Shield size={48} color="#E53E3E" style={{ margin: '0 auto 16px' }} />
@@ -33,10 +39,6 @@ export default function UserManagement() {
       </div>
     )
   }
-
-  useEffect(() => {
-    loadData()
-  }, [])
 
   async function loadData() {
     setLoading(true)

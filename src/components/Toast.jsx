@@ -1,15 +1,17 @@
-import { useState, useCallback, createContext, useContext } from 'react'
+import { useState, useCallback, useEffect, createContext, useContext } from 'react'
 import { CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 const ToastContext = createContext()
 
 // Mutable reference for backward compatibility with `import { showToast }`
-let toastFn = () => {}
+const toastRef = { current: () => {} }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function showToast(message, type = 'success') {
-  toastFn(message, type)
+  toastRef.current(message, type)
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   return useContext(ToastContext)
 }
@@ -22,8 +24,10 @@ export function ToastProvider({ children }) {
     setTimeout(() => setToast(null), 2500)
   }, [])
 
-  // Keep mutable ref in sync with provider
-  toastFn = show
+  // Keep mutable ref in sync with provider (via useEffect, not during render)
+  useEffect(() => {
+    toastRef.current = show
+  }, [show])
 
   const icons = {
     success: <CheckCircle size={18} />,

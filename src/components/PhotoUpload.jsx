@@ -37,7 +37,7 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
       const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
       const filePath = `issues/${fileName}`
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, { cacheControl: '3600', upsert: false })
 
