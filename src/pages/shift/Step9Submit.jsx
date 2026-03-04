@@ -1,6 +1,7 @@
+import { memo } from 'react'
 import { CheckCircle } from 'lucide-react'
 
-export default function Step9Submit({ data, updateData }) {
+export default memo(function Step9Submit({ data, updateData }) {
   const totalProd = data.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
   const totalDispatches = data.dispatches.length
   const totalIssues = data.issues.length
@@ -57,4 +58,4 @@ export default function Step9Submit({ data, updateData }) {
       </div>
     </div>
   )
-}
+})

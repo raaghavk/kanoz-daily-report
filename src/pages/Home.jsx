@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import Modal from '../components/Modal'
@@ -8,62 +9,55 @@ import { ChevronRight, Plus, Truck, Package } from 'lucide-react'
 export default function Home() {
   const { employee, plant } = useAuth()
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ production: 0, trucks: 0, issues: 0 })
   const [showProductionModal, setShowProductionModal] = useState(false)
   const [showTrucksModal, setShowTrucksModal] = useState(false)
   const [showIssuesModal, setShowIssuesModal] = useState(false)
-  const [todayReports, setTodayReports] = useState([])
-  const [handoverNotes, setHandoverNotes] = useState(null)
 
   const today = new Date().toISOString().split('T')[0]
   const currentShift = new Date().getHours() < 18 ? 'A' : 'B'
   const shiftTime = currentShift === 'A' ? '06:00–18:00' : '18:00–06:00'
 
-  useEffect(() => {
-    if (plant?.id) fetchDashboardData()
-  }, [plant])
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboard', plant?.id, today],
+    queryFn: async () => {
+      const [reportsRes, dispatchesRes, lastReportRes] = await Promise.all([
+        supabase
+          .from('shift_reports')
+          .select('*, machine_production(*), issues(*)')
+          .eq('plant_id', plant.id)
+          .eq('date', today),
+        supabase
+          .from('vehicle_dispatches')
+          .select('*')
+          .eq('plant_id', plant.id)
+          .eq('date', today),
+        supabase
+          .from('shift_reports')
+          .select('handover_notes, shift, date')
+          .eq('plant_id', plant.id)
+          .order('date', { ascending: false })
+          .order('shift', { ascending: false })
+          .limit(1)
+          .single(),
+      ])
 
-  async function fetchDashboardData() {
-    try {
-      const { data: reports } = await supabase
-        .from('shift_reports')
-        .select('*, machine_production(*), issues(*)')
-        .eq('plant_id', plant.id)
-        .eq('date', today)
+      const reports = reportsRes.data || []
+      const totalProd = reports.reduce((sum, r) => sum + (parseFloat(r.pellet_production_mt) || 0), 0)
+      const totalIssues = reports.reduce((sum, r) => sum + (r.issues?.length || 0), 0)
+      const handover = lastReportRes.data?.handover_notes ? lastReportRes.data : null
 
-      if (reports?.length) {
-        const totalProd = reports.reduce((sum, r) => sum + (parseFloat(r.pellet_production_mt) || 0), 0)
-        const totalIssues = reports.reduce((sum, r) => sum + (r.issues?.length || 0), 0)
-        setStats(prev => ({ ...prev, production: totalProd, issues: totalIssues }))
-        setTodayReports(reports)
+      return {
+        stats: { production: totalProd, trucks: dispatchesRes.data?.length || 0, issues: totalIssues },
+        todayReports: reports,
+        handoverNotes: handover,
       }
+    },
+    enabled: !!plant?.id,
+  })
 
-      const { data: dispatches } = await supabase
-        .from('vehicle_dispatches')
-        .select('*')
-        .eq('plant_id', plant.id)
-        .eq('date', today)
-
-      if (dispatches) {
-        setStats(prev => ({ ...prev, trucks: dispatches.length }))
-      }
-
-      const { data: lastReport } = await supabase
-        .from('shift_reports')
-        .select('handover_notes, shift, date')
-        .eq('plant_id', plant.id)
-        .order('date', { ascending: false })
-        .order('shift', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (lastReport?.handover_notes) {
-        setHandoverNotes(lastReport)
-      }
-    } catch (err) {
-      console.error('Dashboard fetch error:', err)
-    }
-  }
+  const stats = dashboardData?.stats || { production: 0, trucks: 0, issues: 0 }
+  const todayReports = dashboardData?.todayReports || []
+  const handoverNotes = dashboardData?.handoverNotes || null
 
   const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 

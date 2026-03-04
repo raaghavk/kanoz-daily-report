@@ -1,8 +1,54 @@
+import { useEffect, useRef } from 'react'
+
 export default function Modal({ isOpen, onClose, title, children }) {
+  const modalRef = useRef()
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    // Focus the modal on open
+    modalRef.current?.focus()
+
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+
+      // Focus trap
+      if (e.key === 'Tab') {
+        const focusable = modalRef.current?.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (!focusable?.length) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
       onClick={onClose}
       style={{
         position: 'fixed',
@@ -15,6 +61,8 @@ export default function Modal({ isOpen, onClose, title, children }) {
       }}
     >
       <div
+        ref={modalRef}
+        tabIndex={-1}
         style={{
           width: '100%',
           maxHeight: '75%',
@@ -23,6 +71,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
           borderRadius: '20px 20px 0 0',
           padding: '20px 16px 30px',
           animation: 'sheetUp 0.3s ease',
+          outline: 'none',
         }}
         onClick={e => e.stopPropagation()}
       >

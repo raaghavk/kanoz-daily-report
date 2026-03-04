@@ -1,7 +1,8 @@
+import { memo } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
 
-export default function Step8Issues({ data, updateData }) {
+export default memo(function Step8Issues({ data, updateData }) {
   const types = ['Machine', 'Labour', 'Weather', 'Raw Material', 'Electrical', 'Other']
   const severities = ['low', 'medium', 'high', 'critical']
 
@@ -61,4 +62,4 @@ export default function Step8Issues({ data, updateData }) {
       )}
     </div>
   )
-}
+})

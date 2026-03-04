@@ -1,6 +1,10 @@
 import { useRef, useState } from 'react'
 import { Camera, X, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import { showToast } from './Toast'
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 
 export default function PhotoUpload({ label, value, onChange, bucket = 'photos' }) {
   const inputRef = useRef()
@@ -10,6 +14,17 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
   async function handleFile(e) {
     const file = e.target.files[0]
     if (!file) return
+
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      showToast('Only JPEG, PNG, or WebP images allowed', 'error')
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      showToast('Photo must be under 10MB', 'error')
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
 
     // Show local preview immediately
     const localUrl = URL.createObjectURL(file)
@@ -52,7 +67,7 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
   return (
     <div>
       {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#5A6B62", marginBottom: 6 }}>{label}</label>}
-      <input ref={inputRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
       {preview ? (
         <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid #E2E8E4" }}>
           <img src={preview} alt="Upload" style={{ width: '100%', height: 128, objectFit: 'cover' }} />

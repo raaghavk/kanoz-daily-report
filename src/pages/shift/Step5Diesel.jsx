@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { ChevronDown, Plus, X, Camera } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
 
@@ -8,7 +9,7 @@ function numVal(v) {
   return isNaN(n) ? '' : n
 }
 
-export default function Step5Diesel({ data, updateData }) {
+export default memo(function Step5Diesel({ data, updateData }) {
   // Initialize diesel_stock if not exists
   if (!data.diesel_stock) {
     data.diesel_stock = { opening: 0, purchases: [], closing: 0 }
@@ -292,4 +293,4 @@ export default function Step5Diesel({ data, updateData }) {
       ))}
     </div>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
 
 const MATERIALS = ['Cow Dung', 'Saw Dust', 'Chicken Litter', 'Ash', 'Press Mud', 'Bagasse', 'Rice Husk', 'Other']
@@ -15,7 +15,7 @@ const COLORS = {
   lightGray: '#F9FAFB'
 }
 
-export default function Step3Production({ data, updateData }) {
+export default memo(function Step3Production({ data, updateData }) {
   function addEntry() {
     updateData('production', [...data.production, {
       id: Date.now(),
@@ -342,4 +342,4 @@ export default function Step3Production({ data, updateData }) {
       </button>
     </div>
   )
-}
+})

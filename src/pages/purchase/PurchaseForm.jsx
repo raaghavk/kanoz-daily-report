@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Plus } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
@@ -7,16 +8,15 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
+import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 
 export default function PurchaseForm() {
   const navigate = useNavigate()
   const { id } = useParams()
   const { plant, employee } = useAuth()
+  const queryClient = useQueryClient()
 
-  const [loading, setLoading] = useState(!!id)
   const [saving, setSaving] = useState(false)
-  const [suppliers, setSuppliers] = useState([])
-  const [rawMaterials, setRawMaterials] = useState([])
   const [showAddSupplier, setShowAddSupplier] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -51,57 +51,31 @@ export default function PurchaseForm() {
     remarks: '',
   })
 
-  useEffect(() => {
-    if (plant?.id) {
-      fetchSuppliers()
-      fetchRawMaterials()
-      if (id) {
-        fetchPurchase(id)
-      }
-    }
-  }, [plant?.id, id])
-
-  async function fetchSuppliers() {
-    try {
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select('*')
-        .eq('plant_id', plant?.id)
-        .order('name')
-
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ['suppliers', plant?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('suppliers').select('*').eq('plant_id', plant.id).order('name')
       if (error) throw error
-      setSuppliers(data || [])
-    } catch (err) {
-      console.error('Error fetching suppliers:', err)
-    }
-  }
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
 
-  async function fetchRawMaterials() {
-    try {
-      const { data, error } = await supabase
-        .from('raw_material_types')
-        .select('*')
-        .eq('plant_id', plant?.id)
-        .order('name')
-
+  const { data: rawMaterials = [] } = useQuery({
+    queryKey: ['rawMaterials', plant?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).order('name')
       if (error) throw error
-      setRawMaterials(data || [])
-    } catch (err) {
-      console.error('Error fetching raw materials:', err)
-    }
-  }
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
 
-  async function fetchPurchase(purchaseId) {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('rm_purchases')
-        .select('*')
-        .eq('id', purchaseId)
-        .single()
-
+  const { isLoading: loading } = useQuery({
+    queryKey: ['purchase', id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('rm_purchases').select('*').eq('id', id).single()
       if (error) throw error
-
       setFormData({
         date: data.date || formData.date,
         supplier_id: data.supplier_id || '',
@@ -124,13 +98,10 @@ export default function PurchaseForm() {
         payment_status: data.payment_status || 'Pending',
         remarks: data.remarks || '',
       })
-    } catch (err) {
-      console.error('Error fetching purchase:', err)
-      showToast('Failed to load purchase', 'error')
-    } finally {
-      setLoading(false)
-    }
-  }
+      return data
+    },
+    enabled: !!id && !!plant?.id,
+  })
 
   function handleFieldChange(field, value) {
     const updated = { ...formData, [field]: value }
@@ -186,7 +157,7 @@ export default function PurchaseForm() {
 
       if (error) throw error
 
-      setSuppliers([...suppliers, data])
+      queryClient.invalidateQueries({ queryKey: ['suppliers', plant?.id] })
       handleFieldChange('supplier_id', data.id)
       setShowAddSupplier(false)
       setSupplierForm({
@@ -205,6 +176,7 @@ export default function PurchaseForm() {
   }
 
   async function savePurchase() {
+    if (saving) return
     try {
       if (!formData.supplier_id || !formData.raw_material_type_id || !formData.final_quantity) {
         showToast('Please fill in all required fields', 'error')
@@ -219,23 +191,23 @@ export default function PurchaseForm() {
         date: formData.date,
         supplier_id: formData.supplier_id,
         raw_material_type_id: formData.raw_material_type_id,
-        vehicle_number: formData.vehicle_number || null,
-        gross_weight: parseFloat(formData.gross_weight) || null,
-        tare_weight: parseFloat(formData.tare_weight) || null,
-        net_weight: parseFloat(formData.net_weight) || null,
-        moisture_percentage: parseFloat(formData.moisture_percentage) || null,
-        deduction_kg: parseFloat(formData.deduction_kg) || null,
-        final_quantity: parseFloat(formData.final_quantity),
-        rate_per_kg: parseFloat(formData.rate_per_kg) || null,
-        rm_amount: parseFloat(formData.rm_amount) || null,
-        loading_charges: parseFloat(formData.loading_charges) || 0,
-        unloading_charges: parseFloat(formData.unloading_charges) || 0,
-        transport_charges: parseFloat(formData.transport_charges) || 0,
-        total_amount: parseFloat(formData.total_amount) || null,
-        average_cost_per_kg: parseFloat(formData.average_cost_per_kg) || null,
+        vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
+        gross_weight: sanitizeNumber(formData.gross_weight) || null,
+        tare_weight: sanitizeNumber(formData.tare_weight) || null,
+        net_weight: sanitizeNumber(formData.net_weight) || null,
+        moisture_percentage: sanitizeNumber(formData.moisture_percentage) || null,
+        deduction_kg: sanitizeNumber(formData.deduction_kg) || null,
+        final_quantity: sanitizeNumber(formData.final_quantity),
+        rate_per_kg: sanitizeNumber(formData.rate_per_kg) || null,
+        rm_amount: sanitizeNumber(formData.rm_amount) || null,
+        loading_charges: sanitizeNumber(formData.loading_charges),
+        unloading_charges: sanitizeNumber(formData.unloading_charges),
+        transport_charges: sanitizeNumber(formData.transport_charges),
+        total_amount: sanitizeNumber(formData.total_amount) || null,
+        average_cost_per_kg: sanitizeNumber(formData.average_cost_per_kg) || null,
         katta_parchi_photo: formData.katta_parchi_photo,
         payment_status: formData.payment_status,
-        remarks: formData.remarks || null,
+        remarks: sanitizeText(formData.remarks, 500) || null,
       }
 
       let result

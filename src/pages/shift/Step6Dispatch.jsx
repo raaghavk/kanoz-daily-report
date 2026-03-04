@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Loader2, TrendingUp, ExternalLink } from 'lucide-react'
 
-export default function Step6Dispatch({ data, updateData, plant }) {
+export default memo(function Step6Dispatch({ data, updateData, plant }) {
   const navigate = useNavigate()
   const [dispatches, setDispatches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -219,4 +219,4 @@ export default function Step6Dispatch({ data, updateData, plant }) {
       </button>
     </div>
   )
-}
+})
