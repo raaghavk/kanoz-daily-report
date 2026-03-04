@@ -3,8 +3,8 @@
   "short_name": "Kanoz",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8fafc",
-  "theme_color": "#16a34a",
+  "background_color": "#fefae0",
+  "theme_color": "#2d6a4f",
   "icons": [
     { "src": "/kanoz-icon.svg", "sizes": "any", "type": "image/svg+xml" }
   ]

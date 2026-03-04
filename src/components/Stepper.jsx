@@ -26,8 +26,8 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
         padding: '12px 20px',
         overflowX: 'auto',
         flexShrink: 0,
-        background: '#F5F7F6',
-        borderBottom: '1px solid #E2E8E4',
+        background: '#fefae0',
+        borderBottom: '1px solid #e5ddd0',
         gap: 4,
       }}
     >
@@ -59,10 +59,10 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
                 transition: 'all 0.2s',
                 position: 'relative',
                 ...(isDone
-                  ? { background: '#1B7A45', color: 'white' }
+                  ? { background: '#2d6a4f', color: 'white' }
                   : isCurrent
-                  ? { background: '#D4960A', color: 'white', boxShadow: '0 0 0 3px rgba(212,150,10,0.3)' }
-                  : { background: '#EDF0EE', color: '#8A9B92', border: '1px solid #E2E8E4' }
+                  ? { background: '#d4a373', color: 'white', boxShadow: '0 0 0 3px rgba(212,150,10,0.3)' }
+                  : { background: '#f5edd6', color: '#8a8d7a', border: '1px solid #e5ddd0' }
                 )
               }}
             >
@@ -71,7 +71,7 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
                 <div style={{
                   position: 'absolute', top: -2, right: -2,
                   width: 8, height: 8, borderRadius: '50%',
-                  background: '#E53E3E', border: '1.5px solid #F5F7F6'
+                  background: '#d32f2f', border: '1.5px solid #fefae0'
                 }} />
               )}
             </button>
@@ -82,7 +82,7 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
                 height: 2,
                 flexShrink: 0,
                 borderRadius: 1,
-                background: isDone ? '#1B7A45' : '#E2E8E4',
+                background: isDone ? '#2d6a4f' : '#e5ddd0',
               }} />
             )}
           </div>

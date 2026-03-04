@@ -121,7 +121,7 @@ export default function ReportView() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <div style={{ color: '#5A6B62', fontSize: 13 }}>Loading report...</div>
+        <div style={{ color: '#595c4a', fontSize: 13 }}>Loading report...</div>
       </div>
     )
   }
@@ -129,7 +129,7 @@ export default function ReportView() {
   if (!report) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <div style={{ color: '#5A6B62', fontSize: 13 }}>Report not found</div>
+        <div style={{ color: '#595c4a', fontSize: 13 }}>Report not found</div>
       </div>
     )
   }
@@ -148,37 +148,37 @@ export default function ReportView() {
 
       {/* Report Header Info */}
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Date</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
-                <Calendar size={16} style={{ color: '#1B7A45' }} />
+              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Date</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
+                <Calendar size={16} style={{ color: '#2d6a4f' }} />
                 {new Date(report.date).toLocaleDateString('en-IN')}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Shift</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
+              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Shift</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
                 Shift {report.shift}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Time</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
+              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Time</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
                 <Clock size={16} style={{ color: '#1E3A5F' }} />
                 {report.start_time?.slice(0, 5)} → {report.end_time?.slice(0, 5)}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Supervisor</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
+              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Supervisor</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
                 {report.employees?.name || 'N/A'}
               </div>
             </div>
             <div style={{ gridColumn: 'span 2' }}>
-              <div style={{ fontSize: 10, color: '#8A9B92', fontWeight: 600, marginBottom: 4 }}>Plant</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E' }}>
+              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Plant</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
                 {report.plants?.name || 'N/A'}
               </div>
             </div>
@@ -188,32 +188,32 @@ export default function ReportView() {
 
       {/* Machine Timings Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Machine Timings</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Machine Timings</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
+            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Machine</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>From</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>To</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Hours</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Breakdown</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Machine</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>From</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>To</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Hours</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Breakdown</th>
               </tr>
             </thead>
             <tbody>
               {machineTimings.length > 0 ? (
                 machineTimings.map((m, idx) => (
-                  <tr key={idx} style={{ borderTop: '1px solid #E2E8E4' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{m.name}</td>
-                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>{m.from}</td>
-                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>{m.to}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{m.hours}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{m.breakdown_hours}h</td>
+                  <tr key={idx} style={{ borderTop: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.name}</td>
+                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.from}</td>
+                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.to}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.hours}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.breakdown_hours}h</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -223,28 +223,28 @@ export default function ReportView() {
 
       {/* Production Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Production</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Production</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
+            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Machine</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Pellet Type</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Quantity (MT)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Machine</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Pellet Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Quantity (MT)</th>
               </tr>
             </thead>
             <tbody>
               {machineProduction.length > 0 ? (
                 machineProduction.map(m => (
-                  <tr key={m.id} style={{ borderTop: '1px solid #E2E8E4' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{m.machines?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>{m.pellet_type || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{m.quantity_mt || 0}</td>
+                  <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.machines?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.pellet_type || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.quantity_mt || 0}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="3" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
+                  <td colSpan="3" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -254,32 +254,32 @@ export default function ReportView() {
 
       {/* Raw Materials Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Raw Materials</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Raw Materials</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
+            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Material</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Opening</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Purchased</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Used</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Closing</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Material</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Opening</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Purchased</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Used</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Closing</th>
               </tr>
             </thead>
             <tbody>
               {rawMaterials.length > 0 ? (
                 rawMaterials.map(m => (
-                  <tr key={m.id} style={{ borderTop: '1px solid #E2E8E4' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{m.raw_materials?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{m.opening_qty || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{m.purchased_qty || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{m.used_qty || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{m.closing_qty || 0}</td>
+                  <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.raw_materials?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.opening_qty || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.purchased_qty || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.used_qty || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.closing_qty || 0}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -289,32 +289,32 @@ export default function ReportView() {
 
       {/* Equipment & Diesel Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Equipment & Diesel</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Equipment & Diesel</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
+            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Equipment</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Opening (L)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Added (L)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Closing (L)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Hours</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Equipment</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Opening (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Added (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Closing (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Hours</th>
               </tr>
             </thead>
             <tbody>
               {equipmentDiesel.length > 0 ? (
                 equipmentDiesel.map(e => (
-                  <tr key={e.id} style={{ borderTop: '1px solid #E2E8E4' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{e.equipment_name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{e.opening_litres || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{e.added_litres || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{e.closing_litres || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{e.hours_operated || 0}h</td>
+                  <tr key={e.id} style={{ borderTop: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{e.equipment_name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.opening_litres || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.added_litres || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{e.closing_litres || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.hours_operated || 0}h</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -324,36 +324,36 @@ export default function ReportView() {
 
       {/* Dispatches Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Vehicle Dispatches</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Vehicle Dispatches</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
+            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Truck</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Customer</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Pellet Type</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Qty (MT)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Time</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Truck</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Customer</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Pellet Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Qty (MT)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Time</th>
               </tr>
             </thead>
             <tbody>
               {dispatches.length > 0 ? (
                 dispatches.map(d => (
-                  <tr key={d.id} style={{ borderTop: '1px solid #E2E8E4' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{d.truck_number}</td>
-                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>{d.customers?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', color: '#5A6B62', fontSize: 11 }}>
+                  <tr key={d.id} style={{ borderTop: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{d.truck_number}</td>
+                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{d.customers?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>
                       {d.dispatch_pellets?.map(p => p.pellet_types?.name).join(', ') || 'N/A'}
                     </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>
                       {d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0).toFixed(1) || 0}
                     </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{d.dispatch_time?.slice(0, 5) || '-'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{d.dispatch_time?.slice(0, 5) || '-'}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -363,34 +363,34 @@ export default function ReportView() {
 
       {/* Pellet Stock Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
-        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Pellet Stock</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
+        <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Pellet Stock</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#F5F7F6', borderBottom: '1px solid #E2E8E4' }}>
+            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Type</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Opening</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Production</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Dispatch</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Wastage</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>Closing</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Opening</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Production</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Dispatch</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Wastage</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Closing</th>
               </tr>
             </thead>
             <tbody>
               {pelletStock.length > 0 ? (
                 pelletStock.map(p => (
-                  <tr key={p.id} style={{ borderTop: '1px solid #E2E8E4' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#1A1A2E', fontSize: 11 }}>{p.pellet_types?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{p.opening_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{p.production_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{p.dispatch_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#5A6B62', fontSize: 11 }}>{p.wastage_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#1A1A2E', fontSize: 11 }}>{p.closing_mt || 0}</td>
+                  <tr key={p.id} style={{ borderTop: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{p.pellet_types?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.opening_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.production_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.dispatch_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.wastage_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{p.closing_mt || 0}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" style={{ padding: '16px 12px', textAlign: 'center', color: '#C5CFC8', fontSize: 11 }}>No data</td>
+                  <td colSpan="6" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -401,17 +401,17 @@ export default function ReportView() {
       {/* Issues Section */}
       {issues.length > 0 && (
         <div style={{ padding: '0 20px', marginTop: 24 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Issues Reported</h2>
+          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Issues Reported</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {issues.map(issue => (
-              <div key={issue.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 12 }}>
+              <div key={issue.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                   <div style={{ marginTop: 2 }}>
-                    <AlertTriangle size={16} style={{ color: '#E53E3E' }} />
+                    <AlertTriangle size={16} style={{ color: '#d32f2f' }} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#1A1A2E', textTransform: 'capitalize' }}>{issue.issue_type}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c', textTransform: 'capitalize' }}>{issue.issue_type}</span>
                       <span style={{
                         fontSize: 10,
                         fontWeight: 700,
@@ -424,7 +424,7 @@ export default function ReportView() {
                         {issue.severity}
                       </span>
                     </div>
-                    <p style={{ fontSize: 12, color: '#5A6B62', marginTop: 4 }}>{issue.description}</p>
+                    <p style={{ fontSize: 12, color: '#595c4a', marginTop: 4 }}>{issue.description}</p>
                     {issue.photo_url && (
                       <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 4, color: "#1E3A5F", fontSize: 10, fontWeight: 500 }}>
                         <Eye size={12} /> Photo attached
@@ -441,8 +441,8 @@ export default function ReportView() {
       {/* Handover Notes Section */}
       {report.handover_notes && (
         <div style={{ padding: '0 20px', marginTop: 24 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Handover Notes</h2>
-          <div style={{ background: '#FFF8E6', border: '1.5px solid #F0D98C', borderRadius: 14, padding: 16 }}>
+          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Handover Notes</h2>
+          <div style={{ background: '#fefae0', border: '1.5px solid #e9c46a', borderRadius: 14, padding: 16 }}>
             <p style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5 }}>{report.handover_notes}</p>
           </div>
         </div>
@@ -455,7 +455,7 @@ export default function ReportView() {
           style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '14px 0', borderRadius: 14, fontSize: 14, fontWeight: 700,
-            background: '#1B7A45', color: 'white', border: 'none', cursor: 'pointer'
+            background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer'
           }}
         >
           <Edit3 size={16} /> Edit Report

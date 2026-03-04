@@ -19,7 +19,7 @@ export default function BottomNav() {
       display: 'flex',
       height: 68,
       background: '#FFFFFF',
-      borderTop: '1px solid #E2E8E4',
+      borderTop: '1px solid #e5ddd0',
       paddingBottom: 6,
     }}>
       {tabs.map(tab => {
@@ -37,7 +37,7 @@ export default function BottomNav() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 2,
-              color: isActive ? '#1B7A45' : '#8A9B92',
+              color: isActive ? '#2d6a4f' : '#8a8d7a',
               background: 'none',
               border: 'none',
               cursor: 'pointer',

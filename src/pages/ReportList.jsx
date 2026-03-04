@@ -84,8 +84,8 @@ export default function ReportList() {
               padding: '8px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700,
               whiteSpace: 'nowrap', transition: 'all 0.2s',
               ...(filter === tab.id
-                ? { background: '#1B7A45', color: 'white' }
-                : { background: '#fff', color: '#1A1A2E', border: '1.5px solid #E2E8E4' })
+                ? { background: '#2d6a4f', color: 'white' }
+                : { background: '#fff', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
             }}
           >
             {tab.label}
@@ -97,7 +97,7 @@ export default function ReportList() {
       <div style={{ padding: '16px 20px' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div style={{ fontSize: 13, color: '#8A9B92' }}>Loading reports...</div>
+            <div style={{ fontSize: 13, color: '#8a8d7a' }}>Loading reports...</div>
           </div>
         ) : reports.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -107,14 +107,14 @@ export default function ReportList() {
                 onClick={() => navigate(`/reports/${report.id}`)}
                 style={{
                   width: '100%', textAlign: 'left', cursor: 'pointer',
-                  background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4',
+                  background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0',
                   padding: 16, transition: 'all 0.2s'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: '#1A1A2E' }}>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: '#2c2c2c' }}>
                         Shift {report.shift}
                       </span>
                       <span style={{
@@ -126,34 +126,34 @@ export default function ReportList() {
                         {report.status === 'submitted' ? 'Submitted' : 'Draft'}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#8A9B92', marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#8a8d7a', marginBottom: 6 }}>
                       <Calendar size={12} />
                       {formatDate(report.date)}
                     </div>
-                    <div style={{ fontSize: 12, color: '#5A6B62' }}>
+                    <div style={{ fontSize: 12, color: '#595c4a' }}>
                       Supervisor: {report.employees?.name || 'N/A'}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: '#1B7A45' }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: '#2d6a4f' }}>
                       {report.total_mt.toFixed(1)} MT
                     </div>
-                    <ChevronRight size={16} color="#C5CFC8" />
+                    <ChevronRight size={16} color="#b5b8a8" />
                   </div>
                 </div>
 
                 {/* Production Details */}
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  paddingTop: 12, borderTop: '1px solid #F0F3F1', fontSize: 12
+                  paddingTop: 12, borderTop: '1px solid #f0ebe0', fontSize: 12
                 }}>
                   <div>
-                    <span style={{ color: '#8A9B92' }}>Time: </span>
-                    <span style={{ color: '#1A1A2E', fontWeight: 500 }}>
+                    <span style={{ color: '#8a8d7a' }}>Time: </span>
+                    <span style={{ color: '#2c2c2c', fontWeight: 500 }}>
                       {report.start_time?.slice(0, 5)} – {report.end_time?.slice(0, 5)}
                     </span>
                   </div>
-                  <div style={{ color: '#8A9B92' }}>
+                  <div style={{ color: '#8a8d7a' }}>
                     {report.status === 'submitted' ? 'Completed' : 'In Progress'}
                   </div>
                 </div>
@@ -163,11 +163,11 @@ export default function ReportList() {
         ) : (
           <div style={{
             textAlign: 'center',
-            background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: '32px 20px'
+            background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '32px 20px'
           }}>
-            <FileText size={32} style={{ color: '#C5CFC8', marginBottom: 12, margin: '0 auto 12px' }} />
-            <p style={{ fontSize: 14, fontWeight: 500, color: '#5A6B62', marginBottom: 8 }}>No reports found</p>
-            <p style={{ fontSize: 12, color: '#8A9B92', marginBottom: 16 }}>
+            <FileText size={32} style={{ color: '#b5b8a8', marginBottom: 12, margin: '0 auto 12px' }} />
+            <p style={{ fontSize: 14, fontWeight: 500, color: '#595c4a', marginBottom: 8 }}>No reports found</p>
+            <p style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 16 }}>
               {filter === 'today'
                 ? 'No reports for today yet'
                 : filter === 'week'
@@ -177,7 +177,7 @@ export default function ReportList() {
             <button
               onClick={() => navigate('/shift/new')}
               style={{
-                padding: '10px 20px', background: '#1B7A45', color: 'white',
+                padding: '10px 20px', background: '#2d6a4f', color: 'white',
                 borderRadius: 12, fontSize: 13, fontWeight: 700
               }}
             >
@@ -190,23 +190,23 @@ export default function ReportList() {
       {/* Summary Stats */}
       {reports.length > 0 && (
         <div style={{ padding: '0 20px 16px' }}>
-          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
               Summary
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <div>
-                <div style={{ fontSize: 10, color: '#8A9B92', marginBottom: 4 }}>Total Reports</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#1A1A2E' }}>{reports.length}</div>
+                <div style={{ fontSize: 10, color: '#8a8d7a', marginBottom: 4 }}>Total Reports</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#2c2c2c' }}>{reports.length}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: '#8A9B92', marginBottom: 4 }}>Total Production</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#1B7A45' }}>
+                <div style={{ fontSize: 10, color: '#8a8d7a', marginBottom: 4 }}>Total Production</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#2d6a4f' }}>
                   {reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: '#8A9B92', marginBottom: 4 }}>Submitted</div>
+                <div style={{ fontSize: 10, color: '#8a8d7a', marginBottom: 4 }}>Submitted</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: '#2563EB' }}>
                   {reports.filter(r => r.status === 'submitted').length}
                 </div>

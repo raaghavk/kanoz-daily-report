@@ -64,14 +64,14 @@ export default function Home() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {/* Dark App Bar */}
-      <div style={{ flexShrink: 0, background: '#0F2418', paddingTop: 'env(safe-area-inset-top)' }}>
+      <div style={{ flexShrink: 0, background: '#1b4332', paddingTop: 'env(safe-area-inset-top)' }}>
         <div style={{ padding: '14px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 11,
-                background: 'linear-gradient(135deg, #1B7A45, #145C34)',
-                boxShadow: '0 2px 8px rgba(27,122,69,0.3)',
+                background: 'linear-gradient(135deg, #2d6a4f, #1b4332)',
+                boxShadow: '0 2px 8px rgba(45,106,79,0.3)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>
                 <svg viewBox="0 0 48 48" width="18" height="18">
@@ -123,13 +123,13 @@ export default function Home() {
         {/* Handover Notes */}
         {handoverNotes && (
           <div style={{
-            background: '#FFF8E6', border: '1.5px solid #F0D98C',
+            background: '#fefae0', border: '1.5px solid #e9c46a',
             borderRadius: 14, padding: '14px 16px', marginBottom: 16
           }}>
-            <h4 style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: '#D4960A', textTransform: 'uppercase', marginBottom: 4 }}>
+            <h4 style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: '#d4a373', textTransform: 'uppercase', marginBottom: 4 }}>
               Shift {handoverNotes.shift === 'A' ? 'B' : 'A'} Handover
             </h4>
-            <p style={{ fontSize: 13, lineHeight: 1.5, color: '#5A6B62' }}>
+            <p style={{ fontSize: 13, lineHeight: 1.5, color: '#595c4a' }}>
               {handoverNotes.handover_notes}
             </p>
           </div>
@@ -141,15 +141,15 @@ export default function Home() {
             onClick={() => setShowProductionModal(true)}
             style={{
               flex: 1, textAlign: 'center',
-              background: '#fff', border: '1.5px solid #E2E8E4',
+              background: '#fff', border: '1.5px solid #e5ddd0',
               borderRadius: 14, padding: '16px 8px',
               cursor: 'pointer'
             }}
           >
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#1B7A45', lineHeight: 1 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#2d6a4f', lineHeight: 1 }}>
               {stats.production.toFixed(1)}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 6 }}>
               Production MT
             </div>
           </button>
@@ -157,15 +157,15 @@ export default function Home() {
             onClick={() => setShowTrucksModal(true)}
             style={{
               flex: 1, textAlign: 'center',
-              background: '#fff', border: '1.5px solid #E2E8E4',
+              background: '#fff', border: '1.5px solid #e5ddd0',
               borderRadius: 14, padding: '16px 8px',
               cursor: 'pointer'
             }}
           >
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#D4960A', lineHeight: 1 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#d4a373', lineHeight: 1 }}>
               {stats.trucks}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 6 }}>
               Trucks Out
             </div>
           </button>
@@ -173,15 +173,15 @@ export default function Home() {
             onClick={() => setShowIssuesModal(true)}
             style={{
               flex: 1, textAlign: 'center',
-              background: '#fff', border: '1.5px solid #E2E8E4',
+              background: '#fff', border: '1.5px solid #e5ddd0',
               borderRadius: 14, padding: '16px 8px',
               cursor: 'pointer'
             }}
           >
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#E53E3E', lineHeight: 1 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: '#d32f2f', lineHeight: 1 }}>
               {stats.issues}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.3, marginTop: 6 }}>
               Issues
             </div>
           </button>
@@ -194,9 +194,9 @@ export default function Home() {
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '15px 0', borderRadius: 14,
-              background: '#1B7A45', color: 'white',
+              background: '#2d6a4f', color: 'white',
               fontSize: 15, fontWeight: 600,
-              boxShadow: '0 4px 14px rgba(27,122,69,0.25)',
+              boxShadow: '0 4px 14px rgba(45,106,79,0.25)',
               border: 'none', cursor: 'pointer'
             }}
           >
@@ -208,9 +208,9 @@ export default function Home() {
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '14px 0', borderRadius: 14,
-              background: '#E8F5EE', color: '#1B7A45',
+              background: '#e8f0ec', color: '#2d6a4f',
               fontSize: 14, fontWeight: 600,
-              border: '1.5px solid #C3DFCC',
+              border: '1.5px solid #b8d4c4',
               cursor: 'pointer'
             }}
           >
@@ -222,9 +222,9 @@ export default function Home() {
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '14px 0', borderRadius: 14,
-              background: '#fff', color: '#1A1A2E',
+              background: '#fff', color: '#2c2c2c',
               fontSize: 14, fontWeight: 600,
-              border: '1.5px solid #E2E8E4',
+              border: '1.5px solid #e5ddd0',
               cursor: 'pointer'
             }}
           >
@@ -235,12 +235,12 @@ export default function Home() {
 
         {/* Recent Reports */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8A9B92', textTransform: 'uppercase', marginBottom: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 12 }}>
             Recent Reports
           </div>
 
           {todayReports.length > 0 ? (
-            <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden' }}>
+            <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
               {todayReports.map((report, idx) => (
                 <button
                   key={report.id}
@@ -248,25 +248,25 @@ export default function Home() {
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
                     padding: '14px 16px',
-                    borderBottom: idx < todayReports.length - 1 ? '1px solid #F0F3F1' : 'none',
+                    borderBottom: idx < todayReports.length - 1 ? '1px solid #f0ebe0' : 'none',
                     background: 'transparent', border: 'none', cursor: 'pointer'
                   }}
                 >
                   <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    width: 44, height: 44, borderRadius: 12, background: '#E8F5EE', fontSize: 20
+                    width: 44, height: 44, borderRadius: 12, background: '#e8f0ec', fontSize: 20
                   }}>
                     📊
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#1A1A2E' }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>
                       Shift {report.shift} — {report.date}
                     </div>
-                    <div style={{ fontSize: 12, color: '#8A9B92', marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 2 }}>
                       {report.pellet_production_mt || 0} MT &bull; {report.start_time?.slice(0,5)}–{report.end_time?.slice(0,5)}
                     </div>
                   </div>
-                  <ChevronRight size={18} color="#C5CFC8" />
+                  <ChevronRight size={18} color="#b5b8a8" />
                 </button>
               ))}
             </div>
@@ -274,16 +274,16 @@ export default function Home() {
             <div style={{
               textAlign: 'center',
               background: '#fff', borderRadius: 14,
-              border: '1.5px solid #E2E8E4', padding: '32px 20px'
+              border: '1.5px solid #e5ddd0', padding: '32px 20px'
             }}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>📊</div>
-              <p style={{ fontSize: 14, fontWeight: 500, color: '#5A6B62', marginBottom: 4 }}>No reports yet today</p>
-              <p style={{ fontSize: 12, color: '#8A9B92', marginBottom: 16 }}>Start a shift report to track production</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: '#595c4a', marginBottom: 4 }}>No reports yet today</p>
+              <p style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 16 }}>Start a shift report to track production</p>
               <button
                 onClick={() => navigate('/shift/new')}
                 style={{
                   padding: '10px 24px', borderRadius: 10,
-                  background: '#1B7A45', color: 'white',
+                  background: '#2d6a4f', color: 'white',
                   fontSize: 13, fontWeight: 600,
                   border: 'none', cursor: 'pointer'
                 }}
@@ -298,29 +298,29 @@ export default function Home() {
       {/* Production Modal */}
       <Modal isOpen={showProductionModal} onClose={() => setShowProductionModal(false)} title="Production Breakdown">
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
-          <div style={{ fontSize: 30, fontWeight: 800, color: '#1B7A45' }}>{stats.production.toFixed(1)} MT</div>
-          <div style={{ fontSize: 12, marginTop: 4, color: '#8A9B92' }}>Total production today</div>
+          <div style={{ fontSize: 30, fontWeight: 800, color: '#2d6a4f' }}>{stats.production.toFixed(1)} MT</div>
+          <div style={{ fontSize: 12, marginTop: 4, color: '#8a8d7a' }}>Total production today</div>
         </div>
-        <p style={{ fontSize: 14, textAlign: 'center', color: '#5A6B62' }}>Machine-wise breakdown will appear once reports are submitted.</p>
-        <button onClick={() => setShowProductionModal(false)} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, background: '#F5F7F6', border: '1px solid #E2E8E4', cursor: 'pointer' }}>Close</button>
+        <p style={{ fontSize: 14, textAlign: 'center', color: '#595c4a' }}>Machine-wise breakdown will appear once reports are submitted.</p>
+        <button onClick={() => setShowProductionModal(false)} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, background: '#fefae0', border: '1px solid #e5ddd0', cursor: 'pointer' }}>Close</button>
       </Modal>
 
       {/* Trucks Modal */}
       <Modal isOpen={showTrucksModal} onClose={() => setShowTrucksModal(false)} title="Today's Dispatches">
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
-          <div style={{ fontSize: 30, fontWeight: 800, color: '#D4960A' }}>{stats.trucks}</div>
-          <div style={{ fontSize: 12, marginTop: 4, color: '#8A9B92' }}>Trucks dispatched today</div>
+          <div style={{ fontSize: 30, fontWeight: 800, color: '#d4a373' }}>{stats.trucks}</div>
+          <div style={{ fontSize: 12, marginTop: 4, color: '#8a8d7a' }}>Trucks dispatched today</div>
         </div>
-        <button onClick={() => { setShowTrucksModal(false); navigate('/dispatch') }} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 700, color: 'white', background: '#1B7A45', border: 'none', cursor: 'pointer' }}>View All Dispatches</button>
+        <button onClick={() => { setShowTrucksModal(false); navigate('/dispatch') }} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 700, color: 'white', background: '#2d6a4f', border: 'none', cursor: 'pointer' }}>View All Dispatches</button>
       </Modal>
 
       {/* Issues Modal */}
       <Modal isOpen={showIssuesModal} onClose={() => setShowIssuesModal(false)} title="Issues Reported">
         <div style={{ textAlign: 'center', padding: '16px 0' }}>
-          <div style={{ fontSize: 30, fontWeight: 800, color: '#E53E3E' }}>{stats.issues}</div>
-          <div style={{ fontSize: 12, marginTop: 4, color: '#8A9B92' }}>Issues reported today</div>
+          <div style={{ fontSize: 30, fontWeight: 800, color: '#d32f2f' }}>{stats.issues}</div>
+          <div style={{ fontSize: 12, marginTop: 4, color: '#8a8d7a' }}>Issues reported today</div>
         </div>
-        <button onClick={() => setShowIssuesModal(false)} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, background: '#F5F7F6', border: '1px solid #E2E8E4', cursor: 'pointer' }}>Close</button>
+        <button onClick={() => setShowIssuesModal(false)} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, background: '#fefae0', border: '1px solid #e5ddd0', cursor: 'pointer' }}>Close</button>
       </Modal>
     </div>
   )

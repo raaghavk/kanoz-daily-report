@@ -240,11 +240,11 @@ export default function DispatchForm() {
 
       {/* Return to Shift Banner */}
       {returnToShift && (
-        <div style={{ margin: '12px 20px 0', background: '#E8F5EE', border: '1.5px solid #1B7A45', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 12, color: '#1B7A45', fontWeight: 600 }}>You came from the Shift Report wizard.</div>
+        <div style={{ margin: '12px 20px 0', background: '#e8f0ec', border: '1.5px solid #2d6a4f', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ fontSize: 12, color: '#2d6a4f', fontWeight: 600 }}>You came from the Shift Report wizard.</div>
           <button
             onClick={() => navigate('/shift/new')}
-            style={{ padding: '6px 12px', background: '#1B7A45', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+            style={{ padding: '6px 12px', background: '#2d6a4f', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
           >
             ← Back to Shift
           </button>
@@ -253,7 +253,7 @@ export default function DispatchForm() {
 
       {/* Info if no shift report — dispatch still allowed */}
       {shiftWarning && (
-        <div style={{ margin: '16px 20px 0', background: '#FFF8E6', border: '1.5px solid #F0D98C', borderRadius: 14, padding: 12 }}>
+        <div style={{ margin: '16px 20px 0', background: '#fefae0', border: '1.5px solid #e9c46a', borderRadius: 14, padding: 12 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>No Active Shift Report</div>
           <div style={{ fontSize: 11, color: '#A16207', marginTop: 4 }}>Dispatch will be saved independently. It will be linked to a shift report when one is created.</div>
         </div>
@@ -262,33 +262,33 @@ export default function DispatchForm() {
       {/* Today's Dispatches List */}
       <div style={{ padding: '0 20px', marginTop: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8A9B92', textTransform: 'uppercase', letterSpacing: 1 }}>Today's Dispatches</h2>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#1A1A2E' }}>{dispatches.length}</span>
+          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1 }}>Today's Dispatches</h2>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2c' }}>{dispatches.length}</span>
         </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div style={{ fontSize: 12, color: '#C5CFC8' }}>Loading...</div>
+            <div style={{ fontSize: 12, color: '#b5b8a8' }}>Loading...</div>
           </div>
         ) : dispatches.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {dispatches.map(dispatch => (
-              <div key={dispatch.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 12 }}>
+              <div key={dispatch.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>
                       Truck {dispatch.truck_number}
                     </div>
-                    <div style={{ fontSize: 12, color: '#5A6B62', marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: '#595c4a', marginTop: 2 }}>
                       {dispatch.customers?.name || 'Unknown Customer'}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1B7A45' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>
                       {dispatch.total_mt.toFixed(1)} MT
                     </div>
                     {dispatch.dispatch_time && (
-                      <div style={{ fontSize: 10, color: '#C5CFC8', marginTop: 2 }}>
+                      <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 2 }}>
                         {dispatch.dispatch_time.slice(0, 5)}
                       </div>
                     )}
@@ -298,9 +298,9 @@ export default function DispatchForm() {
             ))}
           </div>
         ) : (
-          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 24, textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Truck size={24} style={{ color: '#C5CFC8' }} /></div>
-            <p style={{ fontSize: 12, color: '#5A6B62' }}>No dispatches yet</p>
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 24, textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Truck size={24} style={{ color: '#b5b8a8' }} /></div>
+            <p style={{ fontSize: 12, color: '#595c4a' }}>No dispatches yet</p>
           </div>
         )}
       </div>
@@ -315,7 +315,7 @@ export default function DispatchForm() {
             borderRadius: 14,
             fontWeight: 700,
             fontSize: 14,
-            background: showForm ? '#D4960A' : '#1B7A45',
+            background: showForm ? '#d4a373' : '#2d6a4f',
             color: 'white',
             cursor: 'pointer',
             border: 'none',
@@ -334,11 +334,11 @@ export default function DispatchForm() {
       {/* Dispatch Form */}
       {showForm && (
         <div style={{ padding: '0 20px', paddingBottom: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Truck Number */}
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Truck Number <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <input
@@ -346,20 +346,20 @@ export default function DispatchForm() {
                 placeholder="e.g., MH-01-AB-1234"
                 value={form.truck_number}
                 onChange={e => updateForm('truck_number', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
               />
             </div>
 
             {/* Customer */}
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Customer <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <select
                   value={form.customer_id}
                   onChange={e => updateForm('customer_id', e.target.value)}
-                  style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                  style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                 >
                   <option value="">Select customer</option>
                   {customers.map(c => (
@@ -380,11 +380,11 @@ export default function DispatchForm() {
                     placeholder="New customer name"
                     value={newCustomer}
                     onChange={e => setNewCustomer(e.target.value)}
-                    style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                    style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                   />
                   <button
                     onClick={addCustomer}
-                    style={{ padding: '10px 12px', background: '#1B7A45', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                    style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}
                   >
                     Add
                   </button>
@@ -394,7 +394,7 @@ export default function DispatchForm() {
 
             {/* Destination */}
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Destination
               </label>
               <input
@@ -402,13 +402,13 @@ export default function DispatchForm() {
                 placeholder="Destination address"
                 value={form.destination}
                 onChange={e => updateForm('destination', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
               />
             </div>
 
             {/* Transporter */}
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Transporter
               </label>
               <input
@@ -416,13 +416,13 @@ export default function DispatchForm() {
                 placeholder="Transporter name"
                 value={form.transporter}
                 onChange={e => updateForm('transporter', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
               />
             </div>
 
             {/* Driver Info */}
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Driver Name <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <input
@@ -430,12 +430,12 @@ export default function DispatchForm() {
                 placeholder="Driver full name"
                 value={form.driver_name}
                 onChange={e => updateForm('driver_name', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Driver Phone
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -444,12 +444,12 @@ export default function DispatchForm() {
                   placeholder="Driver phone number"
                   value={form.driver_phone}
                   onChange={e => updateForm('driver_phone', e.target.value)}
-                  style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                  style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                 />
                 {form.driver_phone && (
                   <a
                     href={`tel:${form.driver_phone}`}
-                    style={{ padding: '10px 12px', background: '#1B7A45', color: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', textDecoration: 'none' }}
+                    style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', textDecoration: 'none' }}
                   >
                     <Phone size={16} />
                   </a>
@@ -459,7 +459,7 @@ export default function DispatchForm() {
 
             {/* Pellets */}
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Pellet Details <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -468,7 +468,7 @@ export default function DispatchForm() {
                     <select
                       value={pellet.pellet_type_id}
                       onChange={e => updatePellet(idx, 'pellet_type_id', e.target.value)}
-                      style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                      style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                     >
                       <option value="">Pellet type</option>
                       {pelletTypes.map(pt => (
@@ -482,7 +482,7 @@ export default function DispatchForm() {
                       step="0.1"
                       value={pellet.quantity_mt}
                       onChange={e => updatePellet(idx, 'quantity_mt', e.target.value)}
-                      style={{ width: 80, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                      style={{ width: 80, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                     />
                     {form.pellets.length > 1 && (
                       <button
@@ -497,7 +497,7 @@ export default function DispatchForm() {
               </div>
               <button
                 onClick={addPelletRow}
-                style={{ marginTop: 8, fontSize: 12, color: '#1B7A45', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0 }}
+                style={{ marginTop: 8, fontSize: 12, color: '#2d6a4f', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: 0 }}
               >
                 <Plus size={14} /> Add Pellet Type
               </button>
@@ -506,7 +506,7 @@ export default function DispatchForm() {
             {/* Invoice & Times */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                   Invoice Number
                 </label>
                 <input
@@ -514,31 +514,31 @@ export default function DispatchForm() {
                   placeholder="Invoice #"
                   value={form.invoice_number}
                   onChange={e => updateForm('invoice_number', e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                   Loading Time
                 </label>
                 <input
                   type="time"
                   value={form.loading_time}
                   onChange={e => updateForm('loading_time', e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Dispatch Time
               </label>
               <input
                 type="time"
                 value={form.dispatch_time}
                 onChange={e => updateForm('dispatch_time', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
               />
             </div>
 
@@ -552,7 +552,7 @@ export default function DispatchForm() {
 
             {/* Remarks */}
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Remarks
               </label>
               <textarea
@@ -560,7 +560,7 @@ export default function DispatchForm() {
                 value={form.remarks}
                 onChange={e => updateForm('remarks', e.target.value)}
                 rows="3"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', fontSize: 14, outline: 'none', resize: 'none' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', resize: 'none' }}
               />
             </div>
 
@@ -568,7 +568,7 @@ export default function DispatchForm() {
             <button
               onClick={handleSave}
               disabled={submitting}
-              style={{ width: '100%', padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer' }}
+              style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontWeight: 700, fontSize: 14, border: 'none', cursor: 'pointer' }}
             >
               {submitting ? 'Saving...' : 'Save Dispatch'}
             </button>

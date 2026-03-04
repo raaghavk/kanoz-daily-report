@@ -102,14 +102,14 @@ export default function PurchaseList() {
   const dateKeys = Object.keys(groupedPurchases).sort((a, b) => new Date(b) - new Date(a))
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F7F6', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100vh', background: '#fefae0', paddingBottom: 80 }}>
       <PageHeader title="RM Purchase" subtitle="Raw Material Purchases" backTo="/" />
 
       {/* Filter Tabs */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 20,
         display: 'flex', gap: 8, overflowX: 'auto',
-        background: '#F5F7F6', borderBottom: '1px solid #E2E8E4', padding: '10px 20px',
+        background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
       }}>
         {['today', 'week', 'month'].map(tab => (
           <button
@@ -119,8 +119,8 @@ export default function PurchaseList() {
               padding: '8px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700,
               whiteSpace: 'nowrap', transition: 'all 0.2s', border: 'none', cursor: 'pointer',
               ...(filterTab === tab
-                ? { background: '#1B7A45', color: 'white' }
-                : { background: 'white', color: '#1A1A2E', border: '1.5px solid #E2E8E4' })
+                ? { background: '#2d6a4f', color: 'white' }
+                : { background: 'white', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
             }}
           >
             {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : 'This Month'}
@@ -131,19 +131,19 @@ export default function PurchaseList() {
       <div style={{ padding: '16px 20px' }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
-            <Loader2 size={32} style={{ color: '#1B7A45', animation: 'spin 1s linear infinite' }} />
+            <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
           </div>
         ) : dateKeys.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', textAlign: 'center' }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>📋</div>
-            <p style={{ color: '#5A6B62', fontWeight: 500 }}>No purchases found</p>
-            <p style={{ color: '#C5CFC8', fontSize: 13, marginTop: 4 }}>Start by adding your first raw material purchase</p>
+            <p style={{ color: '#595c4a', fontWeight: 500 }}>No purchases found</p>
+            <p style={{ color: '#b5b8a8', fontSize: 13, marginTop: 4 }}>Start by adding your first raw material purchase</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {dateKeys.map(date => (
               <div key={date}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#C5CFC8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#b5b8a8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
                   {formatDate(date)}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -151,12 +151,12 @@ export default function PurchaseList() {
                     <button
                       key={purchase.id}
                       onClick={() => navigate(`/purchase/${purchase.id}`)}
-                      style={{ background: '#fff', border: '1.5px solid #E2E8E4', borderRadius: 14, padding: 16, width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                      style={{ background: '#fff', border: '1.5px solid #e5ddd0', borderRadius: 14, padding: 16, width: '100%', textAlign: 'left', cursor: 'pointer' }}
                     >
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>{purchase.suppliers?.name || 'Unknown Supplier'}</div>
-                          <div style={{ fontSize: 12, color: '#C5CFC8', marginTop: 2 }}>{purchase.raw_material_types?.name || 'N/A'}</div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>{purchase.suppliers?.name || 'Unknown Supplier'}</div>
+                          <div style={{ fontSize: 12, color: '#b5b8a8', marginTop: 2 }}>{purchase.raw_material_types?.name || 'N/A'}</div>
                         </div>
                         <div style={
                           purchase.payment_status === 'Paid'
@@ -169,16 +169,16 @@ export default function PurchaseList() {
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
                         <div>
-                          <div style={{ color: '#C5CFC8' }}>Quantity</div>
-                          <div style={{ fontWeight: 700, color: '#1A1A2E' }}>{(purchase.final_quantity || 0).toFixed(2)} t</div>
+                          <div style={{ color: '#b5b8a8' }}>Quantity</div>
+                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>{(purchase.final_quantity || 0).toFixed(2)} t</div>
                         </div>
                         <div>
-                          <div style={{ color: '#C5CFC8' }}>Rate</div>
-                          <div style={{ fontWeight: 700, color: '#1A1A2E' }}>₹{(purchase.rate_per_kg || 0).toFixed(2)}/kg</div>
+                          <div style={{ color: '#b5b8a8' }}>Rate</div>
+                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>₹{(purchase.rate_per_kg || 0).toFixed(2)}/kg</div>
                         </div>
                         <div>
-                          <div style={{ color: '#C5CFC8' }}>Amount</div>
-                          <div style={{ fontWeight: 700, color: '#1A1A2E' }}>{formatCurrency(purchase.total_amount)}</div>
+                          <div style={{ color: '#b5b8a8' }}>Amount</div>
+                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>{formatCurrency(purchase.total_amount)}</div>
                         </div>
                       </div>
                     </button>
@@ -194,8 +194,8 @@ export default function PurchaseList() {
         onClick={() => navigate('/purchase/new')}
         style={{
           position: 'fixed', bottom: 96, right: 16, width: 56, height: 56,
-          borderRadius: '50%', background: '#1B7A45', color: 'white',
-          boxShadow: '0 4px 14px rgba(27,122,69,0.3)',
+          borderRadius: '50%', background: '#2d6a4f', color: 'white',
+          boxShadow: '0 4px 14px rgba(45,106,79,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: 'none', cursor: 'pointer',
         }}

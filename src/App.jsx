@@ -19,8 +19,8 @@ function LoadingFallback() {
   return (
     <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 32, height: 32, border: '3px solid #1B7A45', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
-        <p style={{ fontSize: 13, color: '#5A6B62' }}>Loading...</p>
+        <div style={{ width: 32, height: 32, border: '3px solid #2d6a4f', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
+        <p style={{ fontSize: 13, color: '#595c4a' }}>Loading...</p>
       </div>
     </div>
   )
@@ -30,10 +30,10 @@ function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F7F6' }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, border: '4px solid #1B7A45', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
-          <p style={{ fontSize: 14, color: '#5A6B62' }}>Loading...</p>
+          <div style={{ width: 40, height: 40, border: '4px solid #2d6a4f', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
+          <p style={{ fontSize: 14, color: '#595c4a' }}>Loading...</p>
         </div>
       </div>
     )
@@ -93,22 +93,22 @@ function SettingsPage() {
   return (
     <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
       <h2 style={{ fontSize: 18, fontWeight: 700 }}>Settings</h2>
-      <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ fontSize: 14 }}><span style={{ color: '#5A6B62' }}>Name:</span> {employee?.name}</div>
-        <div style={{ fontSize: 14 }}><span style={{ color: '#5A6B62' }}>Plant:</span> {plant?.name}</div>
-        <div style={{ fontSize: 14 }}><span style={{ color: '#5A6B62' }}>Role:</span> {employee?.role}</div>
+      <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Name:</span> {employee?.name}</div>
+        <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Plant:</span> {plant?.name}</div>
+        <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Role:</span> {employee?.role}</div>
       </div>
       {employee?.role === 'admin' && (
         <button
           onClick={() => nav('/users')}
-          style={{ width: '100%', padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
         >
           Manage Team Members
         </button>
       )}
       <button
         onClick={signOut}
-        style={{ width: '100%', padding: '14px 0', background: '#E53E3E', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+        style={{ width: '100%', padding: '14px 0', background: '#d32f2f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
       >
         Sign Out
       </button>

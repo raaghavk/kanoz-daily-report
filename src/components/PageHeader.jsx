@@ -15,7 +15,7 @@ export default function PageHeader({ title, subtitle, backTo, onBack, rightActio
   }
 
   return (
-    <div style={{ flexShrink: 0, background: '#0F2418' }}>
+    <div style={{ flexShrink: 0, background: '#1b4332' }}>
       <div style={{
         padding: '14px 16px',
         display: 'flex',

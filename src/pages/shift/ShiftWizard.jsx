@@ -453,8 +453,8 @@ export default function ShiftWizard() {
   const currentWarnings = useMemo(() => allErrors.filter(e => e.step === step), [allErrors, step])
 
   return (
-    <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#E8EBE9' }}>
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F5F7F6', width: '100%', maxWidth: 480, boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
+    <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#f5edd6' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fefae0', width: '100%', maxWidth: 480, boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
       <PageHeader
         title={STEPS[step - 1].title}
         subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
@@ -468,8 +468,8 @@ export default function ShiftWizard() {
         <div style={{ padding: '16px 20px' }}>
           {/* Validation warnings for this step */}
           {currentWarnings.length > 0 && (
-            <div style={{ background: '#FFF8E6', border: '1.5px solid #F0D98C', borderRadius: 12, padding: 12, marginBottom: 12, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-              <AlertTriangle size={16} color="#D4960A" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div style={{ background: '#fefae0', border: '1.5px solid #e9c46a', borderRadius: 12, padding: 12, marginBottom: 12, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <AlertTriangle size={16} color="#d4a373" style={{ flexShrink: 0, marginTop: 1 }} />
               <div style={{ fontSize: 12, color: '#92400E' }}>
                 {currentWarnings.map((w, i) => <div key={i}>{w.message}</div>)}
               </div>
@@ -485,11 +485,11 @@ export default function ShiftWizard() {
       </div>
 
       {/* Navigation */}
-      <div style={{ flexShrink: 0, display: 'flex', gap: 12, background: '#fff', borderTop: '1.5px solid #E2E8E4', padding: '16px 20px' }}>
+      <div style={{ flexShrink: 0, display: 'flex', gap: 12, background: '#fff', borderTop: '1.5px solid #e5ddd0', padding: '16px 20px' }}>
         {step > 1 && (
           <button
             onClick={() => setStep(step - 1)}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', border: '1.5px solid #E2E8E4', borderRadius: 14, fontSize: 14, fontWeight: 600, background: '#fff', cursor: 'pointer' }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', border: '1.5px solid #e5ddd0', borderRadius: 14, fontSize: 14, fontWeight: 600, background: '#fff', cursor: 'pointer' }}
           >
             <ArrowLeft size={16} /> Previous
           </button>
@@ -497,7 +497,7 @@ export default function ShiftWizard() {
         {step < 9 ? (
           <button
             onClick={() => setStep(step + 1)}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
           >
             Next <ArrowRight size={16} />
           </button>
@@ -505,7 +505,7 @@ export default function ShiftWizard() {
           <button
             onClick={() => allErrors.length === 0 ? setShowConfirm(true) : saveReport()}
             disabled={saving}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: allErrors.length > 0 ? '#D4960A' : '#1B7A45', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: allErrors.length > 0 ? '#d4a373' : '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
           >
             {saving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : null}
             {allErrors.length > 0 ? `Fix ${allErrors.length} Issue${allErrors.length > 1 ? 's' : ''} to Submit` : (editId ? 'Update Report' : 'Submit Report')}

@@ -29,9 +29,9 @@ export default memo(function Step1Header({ data, updateData, employee }) {
     width: '100%',
     padding: '12px 14px',
     borderRadius: 10,
-    border: '1px solid #E2E8E4',
-    background: '#F5F7F6',
-    color: '#5A6B62',
+    border: '1px solid #e5ddd0',
+    background: '#fefae0',
+    color: '#595c4a',
     fontSize: 14,
     outline: 'none',
     cursor: 'not-allowed',
@@ -47,9 +47,9 @@ export default memo(function Step1Header({ data, updateData, employee }) {
     width: '100%',
     padding: '12px 14px',
     borderRadius: 10,
-    border: '1.5px solid #E2E8E4',
+    border: '1.5px solid #e5ddd0',
     background: 'white',
-    color: '#1A1A2E',
+    color: '#2c2c2c',
     fontSize: 14,
     outline: 'none',
     boxSizing: 'border-box',
@@ -64,7 +64,7 @@ export default memo(function Step1Header({ data, updateData, employee }) {
     display: 'block',
     fontSize: 12,
     fontWeight: 600,
-    color: '#5A6B62',
+    color: '#595c4a',
     marginBottom: 6,
   }
 
@@ -75,11 +75,11 @@ export default memo(function Step1Header({ data, updateData, employee }) {
         <label style={labelStyle}>Report Fill Date & Time</label>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div style={{ position: 'relative' }}>
-            <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
+            <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
             <input type="date" value={currentDateStr} readOnly style={inputWithIconStyle} />
           </div>
           <div style={{ position: 'relative' }}>
-            <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
+            <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
             <input type="time" value={currentTimeStr} readOnly style={inputWithIconStyle} />
           </div>
         </div>
@@ -96,7 +96,7 @@ export default memo(function Step1Header({ data, updateData, employee }) {
         {/* Shift Dropdown (A Day / B Night) */}
         <div>
           <label style={labelStyle}>
-            Shift <span style={{ color: '#E53E3E' }}>*</span>
+            Shift <span style={{ color: '#d32f2f' }}>*</span>
           </label>
           <select
             value={data.shift || ''}
@@ -126,8 +126,8 @@ export default memo(function Step1Header({ data, updateData, employee }) {
       </div>
 
       {/* Shift Schedule Box */}
-      <div style={{ background: '#E8F5EE', borderRadius: 14, border: '1.5px solid #C6F6D5', padding: '16px 16px 20px' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#1B7A45', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+      <div style={{ background: '#e8f0ec', borderRadius: 14, border: '1.5px solid #b8d4c4', padding: '16px 16px 20px' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', marginBottom: 14, textTransform: 'uppercase', letterSpacing: 0.5 }}>
           Shift Schedule
         </div>
 
@@ -135,10 +135,10 @@ export default memo(function Step1Header({ data, updateData, employee }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>
-              Start Date <span style={{ color: '#E53E3E' }}>*</span>
+              Start Date <span style={{ color: '#d32f2f' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
+              <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
               <input
                 type="date"
                 value={data.shift_start_date || data.date}
@@ -159,10 +159,10 @@ export default memo(function Step1Header({ data, updateData, employee }) {
 
           <div>
             <label style={labelStyle}>
-              Start Time <span style={{ color: '#E53E3E' }}>*</span>
+              Start Time <span style={{ color: '#d32f2f' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
+              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
               <input
                 type="time"
                 value={data.start_time}
@@ -177,10 +177,10 @@ export default memo(function Step1Header({ data, updateData, employee }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
             <label style={labelStyle}>
-              End Date <span style={{ color: '#E53E3E' }}>*</span>
+              End Date <span style={{ color: '#d32f2f' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
+              <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
               <input
                 type="date"
                 value={data.shift_end_date || data.date}
@@ -192,10 +192,10 @@ export default memo(function Step1Header({ data, updateData, employee }) {
 
           <div>
             <label style={labelStyle}>
-              End Time <span style={{ color: '#E53E3E' }}>*</span>
+              End Time <span style={{ color: '#d32f2f' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#C5CFC8', zIndex: 1 }} />
+              <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
               <input
                 type="time"
                 value={data.end_time}

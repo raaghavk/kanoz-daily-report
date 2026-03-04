@@ -4,14 +4,14 @@ import { Plus, Trash2, X } from 'lucide-react'
 const MATERIALS = ['Cow Dung', 'Saw Dust', 'Chicken Litter', 'Ash', 'Press Mud', 'Bagasse', 'Rice Husk', 'Other']
 
 const COLORS = {
-  green: '#1B7A45',
-  accent: '#D4960A',
-  primary: '#1A1A2E',
-  secondary: '#5A6B62',
-  tertiary: '#C5CFC8',
-  bg: '#F5F7F6',
-  border: '#E2E8E4',
-  red: '#E53E3E',
+  green: '#2d6a4f',
+  accent: '#d4a373',
+  primary: '#2c2c2c',
+  secondary: '#595c4a',
+  tertiary: '#b5b8a8',
+  bg: '#fefae0',
+  border: '#e5ddd0',
+  red: '#d32f2f',
   lightGray: '#F9FAFB'
 }
 
@@ -166,7 +166,7 @@ export default memo(function Step3Production({ data, updateData }) {
                   onMouseEnter={(e) => {
                     if (entry.pellet_type !== p.name) {
                       e.target.style.borderColor = COLORS.green
-                      e.target.style.background = 'rgba(27, 122, 69, 0.1)'
+                      e.target.style.background = 'rgba(45, 106, 79, 0.1)'
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -298,7 +298,7 @@ export default memo(function Step3Production({ data, updateData }) {
                 gap: 6,
                 transition: 'background-color 0.2s'
               }}
-              onMouseEnter={(e) => e.target.style.background = 'rgba(27, 122, 69, 0.08)'}
+              onMouseEnter={(e) => e.target.style.background = 'rgba(45, 106, 79, 0.08)'}
               onMouseLeave={(e) => e.target.style.background = 'transparent'}
             >
               <Plus size={14} /> Add Material
@@ -334,7 +334,7 @@ export default memo(function Step3Production({ data, updateData }) {
       {/* Add Production Entry button */}
       <button
         onClick={addEntry}
-        style={{ width: '100%', padding: '12px 0', border: '2px dashed #C6F6D5', borderRadius: 12, fontSize: 14, fontWeight: 600, color: COLORS.green, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', cursor: 'pointer', transition: 'background-color 0.3s' }}
+        style={{ width: '100%', padding: '12px 0', border: '2px dashed #b8d4c4', borderRadius: 12, fontSize: 14, fontWeight: 600, color: COLORS.green, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', cursor: 'pointer', transition: 'background-color 0.3s' }}
         onMouseEnter={(e) => e.target.style.background = 'rgba(198, 246, 213, 0.2)'}
         onMouseLeave={(e) => e.target.style.background = 'transparent'}
       >
