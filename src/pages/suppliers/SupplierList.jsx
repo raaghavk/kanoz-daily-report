@@ -130,13 +130,13 @@ export default function SupplierList() {
       {/* Search Bar */}
       <div style={{ padding: '0 20px', marginTop: 12 }}>
         <div style={{ position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8A9B92' }} />
+          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8a8d7a' }} />
           <input
             type="text"
             placeholder="Search by name or mobile..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 12, fontSize: 14, outline: 'none', background: '#F8FAF9', border: '1.5px solid #E2E8E4', color: '#1A1A2E' }}
+            style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 12, fontSize: 14, outline: 'none', background: '#fffdf5', border: '1.5px solid #e5ddd0', color: '#2c2c2c' }}
           />
         </div>
       </div>
@@ -145,22 +145,22 @@ export default function SupplierList() {
       <div style={{ padding: '0 20px', marginTop: 16 }}>
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
-            <Loader2 size={32} style={{ color: '#1B7A45', marginBottom: 8, animation: 'spin 1s linear infinite' }} />
-            <p style={{ fontSize: 13, color: '#5A6B62' }}>Loading suppliers...</p>
+            <Loader2 size={32} style={{ color: '#2d6a4f', marginBottom: 8, animation: 'spin 1s linear infinite' }} />
+            <p style={{ fontSize: 13, color: '#595c4a' }}>Loading suppliers...</p>
           </div>
         ) : filteredSuppliers.length === 0 ? (
-          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 32, textAlign: 'center' }}>
-            <AlertCircle size={32} style={{ color: '#C5CFC8', margin: '0 auto 8px' }} />
-            <p style={{ fontSize: 14, color: '#5A6B62', marginBottom: 4 }}>
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 32, textAlign: 'center' }}>
+            <AlertCircle size={32} style={{ color: '#b5b8a8', margin: '0 auto 8px' }} />
+            <p style={{ fontSize: 14, color: '#595c4a', marginBottom: 4 }}>
               {searchQuery ? 'No suppliers found' : 'No suppliers added yet'}
             </p>
-            <p style={{ fontSize: 12, color: '#C5CFC8', marginBottom: 16 }}>
+            <p style={{ fontSize: 12, color: '#b5b8a8', marginBottom: 16 }}>
               {searchQuery ? 'Try a different search' : 'Add your first supplier to get started'}
             </p>
             {!searchQuery && (
               <button
                 onClick={() => setShowAddModal(true)}
-                style={{ padding: '8px 16px', background: '#1B7A45', color: 'white', fontSize: 12, fontWeight: 700, borderRadius: 8 }}
+                style={{ padding: '8px 16px', background: '#2d6a4f', color: 'white', fontSize: 12, fontWeight: 700, borderRadius: 8 }}
               >
                 Add Supplier
               </button>
@@ -171,7 +171,7 @@ export default function SupplierList() {
             {filteredSuppliers.map(supplier => (
               <div
                 key={supplier.id}
-                style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}
+                style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}
               >
                 {/* Card Header */}
                 <button
@@ -179,21 +179,21 @@ export default function SupplierList() {
                   style={{ width: '100%', textAlign: 'left', marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>{supplier.name}</h3>
-                    <ChevronRight size={16} style={{ color: '#C5CFC8' }} />
+                    <h3 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>{supplier.name}</h3>
+                    <ChevronRight size={16} style={{ color: '#b5b8a8' }} />
                   </div>
-                  <p style={{ fontSize: 12, color: '#5A6B62' }}>{supplier.mobile}</p>
+                  <p style={{ fontSize: 12, color: '#595c4a' }}>{supplier.mobile}</p>
                 </button>
 
                 {/* Materials & Rate */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #E2E8E4' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #e5ddd0' }}>
                   <div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Material</span>
-                    <p style={{ fontSize: 12, color: '#1A1A2E', marginTop: 2 }}>{supplier.material_type || 'N/A'}</p>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Material</span>
+                    <p style={{ fontSize: 12, color: '#2c2c2c', marginTop: 2 }}>{supplier.material_type || 'N/A'}</p>
                   </div>
                   <div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Rate</span>
-                    <p style={{ fontSize: 12, color: '#1B7A45', fontWeight: 600, marginTop: 2 }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Rate</span>
+                    <p style={{ fontSize: 12, color: '#2d6a4f', fontWeight: 600, marginTop: 2 }}>
                       {supplier.rate_offered ? `₹${supplier.rate_offered}` : 'N/A'}
                     </p>
                   </div>
@@ -203,10 +203,10 @@ export default function SupplierList() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button
                     onClick={() => handleCall(supplier.mobile)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#E8F5EE', borderRadius: 8, border: 'none', cursor: 'pointer' }}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#e8f0ec', borderRadius: 8, border: 'none', cursor: 'pointer' }}
                   >
-                    <Phone size={14} style={{ color: '#1B7A45' }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#1B7A45' }}>Call</span>
+                    <Phone size={14} style={{ color: '#2d6a4f' }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2d6a4f' }}>Call</span>
                   </button>
                   <button
                     onClick={() => handleSMS(supplier.mobile)}
@@ -217,10 +217,10 @@ export default function SupplierList() {
                   </button>
                   <button
                     onClick={() => handleMap(supplier)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#FFF8E6', borderRadius: 8, border: 'none', cursor: 'pointer' }}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#fefae0', borderRadius: 8, border: 'none', cursor: 'pointer' }}
                   >
-                    <MapPin size={14} style={{ color: '#D4960A' }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#D4960A' }}>Map</span>
+                    <MapPin size={14} style={{ color: '#d4a373' }} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#d4a373' }}>Map</span>
                   </button>
                 </div>
               </div>
@@ -232,7 +232,7 @@ export default function SupplierList() {
       {/* Floating Action Button */}
       <button
         onClick={() => setShowAddModal(true)}
-        style={{ position: 'fixed', display: 'flex', alignItems: 'center', justifyContent: 'center', bottom: 96, right: 16, width: 56, height: 56, background: '#1B7A45', borderRadius: '50%', boxShadow: '0 4px 14px rgba(27,122,69,0.3)', border: 'none', cursor: 'pointer' }}
+        style={{ position: 'fixed', display: 'flex', alignItems: 'center', justifyContent: 'center', bottom: 96, right: 16, width: 56, height: 56, background: '#2d6a4f', borderRadius: '50%', boxShadow: '0 4px 14px rgba(45,106,79,0.3)', border: 'none', cursor: 'pointer' }}
       >
         <Plus size={24} color="white" />
       </button>
@@ -241,94 +241,94 @@ export default function SupplierList() {
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Supplier">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Supplier Name *</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Supplier Name *</label>
             <input
               type="text"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., ABC Biomass"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Mobile Number *</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Mobile Number *</label>
             <input
               type="tel"
               value={formData.mobile}
               onChange={e => setFormData({ ...formData, mobile: e.target.value })}
               placeholder="e.g., 9876543210"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Address</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>
             <input
               type="text"
               value={formData.address}
               onChange={e => setFormData({ ...formData, address: e.target.value })}
               placeholder="Supplier address"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Material Type *</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Material Type *</label>
             <input
               type="text"
               value={formData.material_type}
               onChange={e => setFormData({ ...formData, material_type: e.target.value })}
               placeholder="e.g., Wood Chips, Sawdust"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Rate (per unit)</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Rate (per unit)</label>
             <input
               type="number"
               value={formData.rate_offered}
               onChange={e => setFormData({ ...formData, rate_offered: e.target.value })}
               placeholder="0"
               step="0.01"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>GCV Value</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>GCV Value</label>
             <input
               type="number"
               value={formData.gcv_value}
               onChange={e => setFormData({ ...formData, gcv_value: e.target.value })}
               placeholder="0"
               step="0.01"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Remarks</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Remarks</label>
             <textarea
               value={formData.remarks}
               onChange={e => setFormData({ ...formData, remarks: e.target.value })}
               placeholder="Any additional notes"
               rows="3"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none', resize: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', resize: 'none' }}
             />
           </div>
 
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <button
               onClick={() => setShowAddModal(false)}
-              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#1A1A2E', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Cancel
             </button>
             <button
               onClick={handleAddSupplier}
-              style={{ flex: 1, padding: '10px 0', background: '#1B7A45', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Add Supplier
             </button>

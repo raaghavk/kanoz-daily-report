@@ -1,28 +1,28 @@
 @import "tailwindcss";
 
 @theme {
-  --color-kanoz-green: #1B7A45;
-  --color-kanoz-green-dark: #145C34;
-  --color-kanoz-green-light: #E8F5EE;
-  --color-kanoz-green-50: #F0FAF4;
-  --color-kanoz-accent: #D4960A;
-  --color-kanoz-accent-light: #FFF8E6;
-  --color-kanoz-red: #E53E3E;
+  --color-kanoz-green: #2d6a4f;
+  --color-kanoz-green-dark: #1b4332;
+  --color-kanoz-green-light: #e8f0ec;
+  --color-kanoz-green-50: #f0f5f2;
+  --color-kanoz-accent: #d4a373;
+  --color-kanoz-accent-light: #fefae0;
+  --color-kanoz-red: #d32f2f;
   --color-kanoz-blue: #3182CE;
-  --color-kanoz-navy: #0F2418;
-  --color-kanoz-navy2: #1A3A28;
-  --color-kanoz-bg: #F5F7F6;
-  --color-kanoz-bg2: #EDF0EE;
+  --color-kanoz-navy: #1b4332;
+  --color-kanoz-navy2: #2d6a4f;
+  --color-kanoz-bg: #fefae0;
+  --color-kanoz-bg2: #f5edd6;
   --color-kanoz-card: #FFFFFF;
-  --color-kanoz-border: #E2E8E4;
-  --color-kanoz-border-light: #F0F3F1;
-  --color-kanoz-input: #F8FAF9;
-  --color-kanoz-text: #1A1A2E;
-  --color-kanoz-text-secondary: #5A6B62;
-  --color-kanoz-text-tertiary: #8A9B92;
-  --color-kanoz-auto-bg: #EDF5F0;
-  --color-kanoz-auto-text: #1B7A45;
-  --color-kanoz-auto-border: #C3DFCC;
+  --color-kanoz-border: #e5ddd0;
+  --color-kanoz-border-light: #f0ebe0;
+  --color-kanoz-input: #fffdf5;
+  --color-kanoz-text: #2c2c2c;
+  --color-kanoz-text-secondary: #595c4a;
+  --color-kanoz-text-tertiary: #8a8d7a;
+  --color-kanoz-auto-bg: #e8f0ec;
+  --color-kanoz-auto-text: #2d6a4f;
+  --color-kanoz-auto-border: #b8d4c4;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,6 +31,11 @@ body {
   background: var(--color-kanoz-bg);
   color: var(--color-kanoz-text);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Heading font */
+h1, h2, h3 {
+  font-family: 'Playfair Display', Georgia, serif;
 }
 
 /* Mobile app feel */
@@ -47,7 +52,7 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   border-color: var(--color-kanoz-green) !important;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(27,122,69,0.12);
+  box-shadow: 0 0 0 3px rgba(45,106,79,0.12);
 }
 
 /* Dark login input placeholders */
@@ -55,7 +60,7 @@ input:focus, select:focus, textarea:focus {
   color: rgba(255,255,255,0.25);
 }
 .login-input:focus {
-  border-color: #1B7A45 !important;
+  border-color: #2d6a4f !important;
   background: rgba(255,255,255,0.1) !important;
-  box-shadow: 0 0 0 3px rgba(27,122,69,0.25) !important;
+  box-shadow: 0 0 0 3px rgba(45,106,79,0.25) !important;
 }

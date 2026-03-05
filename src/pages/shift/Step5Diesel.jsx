@@ -20,7 +20,7 @@ export default memo(function Step5Diesel({ data, updateData }) {
 
   // Equipment list is loaded from Supabase in ShiftWizard
   if (!data.diesel || data.diesel.length === 0) {
-    return <div style={{ textAlign: 'center', padding: 40, color: '#5A6B62' }}>Loading equipment...</div>
+    return <div style={{ textAlign: 'center', padding: 40, color: '#595c4a' }}>Loading equipment...</div>
   }
 
   // Calculate totals from purchases
@@ -102,24 +102,24 @@ export default memo(function Step5Diesel({ data, updateData }) {
 
   const inputStyle = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1.5px solid #E2E8E4', fontSize: 13, outline: 'none', background: '#fff'
+    border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fff'
   }
   const readOnlyStyle = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #E2E8E4', fontSize: 12, background: '#F5F7F6',
-    color: '#1A1A2E', fontWeight: 600
+    border: '1px solid #e5ddd0', fontSize: 12, background: '#fefae0',
+    color: '#2c2c2c', fontWeight: 600
   }
-  const labelStyle = { display: 'block', fontSize: 10, fontWeight: 600, color: '#5A6B62', marginBottom: 6 }
+  const labelStyle = { display: 'block', fontSize: 10, fontWeight: 600, color: '#595c4a', marginBottom: 6 }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Diesel Stock Summary Card */}
       <div style={{
-        background: '#FFF8E6', borderRadius: 14, border: '1.5px solid #F0D98C', padding: 16
+        background: '#fefae0', borderRadius: 14, border: '1.5px solid #e9c46a', padding: 16
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#D4960A', margin: 0 }}>DIESEL STOCK</h3>
-          <div style={{ background: '#D4960A', color: '#fff', fontSize: 10, fontWeight: 600, padding: '4px 8px', borderRadius: 4 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#d4a373', margin: 0 }}>DIESEL STOCK</h3>
+          <div style={{ background: '#d4a373', color: '#fff', fontSize: 10, fontWeight: 600, padding: '4px 8px', borderRadius: 4 }}>
             Tank
           </div>
         </div>
@@ -127,20 +127,20 @@ export default memo(function Step5Diesel({ data, updateData }) {
         {/* Big Numbers Row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ fontSize: 10, color: '#5A6B62', fontWeight: 600, marginBottom: 4 }}>Open L</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#1A1A2E' }}>{opening}</div>
+            <div style={{ fontSize: 10, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>Open L</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#2c2c2c' }}>{opening}</div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ fontSize: 10, color: '#5A6B62', fontWeight: 600, marginBottom: 4 }}>+Purch L</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#1B7A45' }}>{totalPurchased}</div>
+            <div style={{ fontSize: 10, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>+Purch L</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#2d6a4f' }}>{totalPurchased}</div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ fontSize: 10, color: '#5A6B62', fontWeight: 600, marginBottom: 4 }}>-Used L</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#E53E3E' }}>{totalUsed}</div>
+            <div style={{ fontSize: 10, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>-Used L</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#d32f2f' }}>{totalUsed}</div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ fontSize: 10, color: '#5A6B62', fontWeight: 600, marginBottom: 4 }}>Close L</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#D4960A' }}>{closingStock}</div>
+            <div style={{ fontSize: 10, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>Close L</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#d4a373' }}>{closingStock}</div>
           </div>
         </div>
 
@@ -152,14 +152,14 @@ export default memo(function Step5Diesel({ data, updateData }) {
       </div>
 
       {/* Diesel Purchases Section */}
-      <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
+      <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>Diesel Purchases</h3>
+          <h3 style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', margin: 0 }}>Diesel Purchases</h3>
           <button
             onClick={addPurchase}
             style={{
               display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px',
-              background: '#E8F5EE', color: '#1B7A45', border: 'none', borderRadius: 8,
+              background: '#e8f0ec', color: '#2d6a4f', border: 'none', borderRadius: 8,
               fontSize: 12, fontWeight: 600, cursor: 'pointer'
             }}
           >
@@ -178,9 +178,9 @@ export default memo(function Step5Diesel({ data, updateData }) {
                 background: '#FAFAFA', borderRadius: 10, border: '1px solid #E8E8E8', padding: 12
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#5A6B62' }}>Purchase #{idx + 1}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#595c4a' }}>Purchase #{idx + 1}</span>
                   <button onClick={() => removePurchase(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-                    <X size={16} color="#E53E3E" />
+                    <X size={16} color="#d32f2f" />
                   </button>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
@@ -226,21 +226,21 @@ export default memo(function Step5Diesel({ data, updateData }) {
       {/* Equipment Cards */}
       {data.diesel.map((entry, idx) => (
         <div key={entry.id} style={{
-          background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', overflow: 'hidden'
+          background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden'
         }}>
           {/* Equipment Header */}
           <div style={{
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             padding: '14px 16px',
-            borderBottom: entry.collapsed ? 'none' : '1.5px solid #E2E8E4'
+            borderBottom: entry.collapsed ? 'none' : '1.5px solid #e5ddd0'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 700, color: '#1A1A2E', margin: 0 }}>{entry.equipment_name}</h4>
-              <div style={{ background: '#1B7A45', color: '#fff', fontSize: 9, fontWeight: 600, padding: '3px 8px', borderRadius: 3 }}>
+              <h4 style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', margin: 0 }}>{entry.equipment_name}</h4>
+              <div style={{ background: '#2d6a4f', color: '#fff', fontSize: 9, fontWeight: 600, padding: '3px 8px', borderRadius: 3 }}>
                 Running
               </div>
             </div>
-            <button onClick={() => toggleCollapse(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5A6B62', padding: 0 }}>
+            <button onClick={() => toggleCollapse(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#595c4a', padding: 0 }}>
               <ChevronDown size={20} style={{ transform: entry.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
             </button>
           </div>

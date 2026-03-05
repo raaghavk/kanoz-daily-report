@@ -66,10 +66,10 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
 
   return (
     <div>
-      {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#5A6B62", marginBottom: 6 }}>{label}</label>}
+      {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#595c4a", marginBottom: 6 }}>{label}</label>}
       <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
       {preview ? (
-        <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid #E2E8E4" }}>
+        <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid #e5ddd0" }}>
           <img src={preview} alt="Upload" style={{ width: '100%', height: 128, objectFit: 'cover' }} />
           {uploading && (
             <div style={{
@@ -97,7 +97,7 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
       ) : (
         <button
           onClick={() => inputRef.current?.click()}
-          style={{ width: "100%", padding: "24px 16px", borderRadius: 12, border: "2px dashed #E2E8E4", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "#C5CFC8", cursor: "pointer", background: 'transparent' }}
+          style={{ width: "100%", padding: "24px 16px", borderRadius: 12, border: "2px dashed #e5ddd0", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "#b5b8a8", cursor: "pointer", background: 'transparent' }}
         >
           <Camera size={28} />
           <span style={{ fontSize: 12 }}>Take photo or upload</span>

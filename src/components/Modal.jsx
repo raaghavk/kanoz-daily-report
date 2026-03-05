@@ -76,9 +76,9 @@ export default function Modal({ isOpen, onClose, title, children }) {
         onClick={e => e.stopPropagation()}
       >
         {/* Handle bar */}
-        <div style={{ width: 40, height: 4, borderRadius: 2, margin: '0 auto 16px', background: '#E2E8E4' }} />
+        <div style={{ width: 40, height: 4, borderRadius: 2, margin: '0 auto 16px', background: '#e5ddd0' }} />
         {title && (
-          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#1A1A2E' }}>{title}</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#2c2c2c' }}>{title}</h3>
         )}
         {children}
       </div>

@@ -170,8 +170,8 @@ export default function SupplierDetail() {
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', paddingTop: 80, paddingBottom: 80 }}>
-        <Loader2 size={32} style={{ color: '#1B7A45', marginBottom: 8, animation: 'spin 1s linear infinite' }} />
-        <p style={{ fontSize: 14, color: '#5A6B62' }}>Loading supplier...</p>
+        <Loader2 size={32} style={{ color: '#2d6a4f', marginBottom: 8, animation: 'spin 1s linear infinite' }} />
+        <p style={{ fontSize: 14, color: '#595c4a' }}>Loading supplier...</p>
       </div>
     )
   }
@@ -179,12 +179,12 @@ export default function SupplierDetail() {
   if (!supplier) {
     return (
       <div style={{ padding: '0 16px', paddingTop: 48, paddingBottom: 48 }}>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 32, textAlign: 'center' }}>
-          <AlertCircle size={32} style={{ color: '#C5CFC8', marginBottom: 8, margin: '0 auto 8px' }} />
-          <p style={{ fontSize: 14, color: '#5A6B62' }}>Supplier not found</p>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 32, textAlign: 'center' }}>
+          <AlertCircle size={32} style={{ color: '#b5b8a8', marginBottom: 8, margin: '0 auto 8px' }} />
+          <p style={{ fontSize: 14, color: '#595c4a' }}>Supplier not found</p>
           <button
             onClick={() => navigate('/suppliers')}
-            style={{ marginTop: 16, padding: '8px 16px', background: '#1B7A45', color: 'white', fontSize: 12, fontWeight: 700, borderRadius: 8 }}
+            style={{ marginTop: 16, padding: '8px 16px', background: '#2d6a4f', color: 'white', fontSize: 12, fontWeight: 700, borderRadius: 8 }}
           >
             Back to Suppliers
           </button>
@@ -211,17 +211,17 @@ export default function SupplierDetail() {
 
       <div style={{ padding: '0 20px', marginTop: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Supplier Info Card */}
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 12 }}>Supplier Information</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 12 }}>Supplier Information</h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Phone size={16} style={{ color: '#1B7A45', flexShrink: 0 }} />
+              <Phone size={16} style={{ color: '#2d6a4f', flexShrink: 0 }} />
               <div>
-                <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Mobile</p>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Mobile</p>
                 <a
                   href={`tel:${supplier.mobile}`}
-                  style={{ fontSize: 13, color: '#1B7A45', fontWeight: 600, textDecoration: 'none' }}
+                  style={{ fontSize: 13, color: '#2d6a4f', fontWeight: 600, textDecoration: 'none' }}
                 >
                   {supplier.mobile}
                 </a>
@@ -230,46 +230,46 @@ export default function SupplierDetail() {
 
             {supplier.address && (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                <MapPin size={16} style={{ color: '#D4960A', marginTop: 4, flexShrink: 0 }} />
+                <MapPin size={16} style={{ color: '#d4a373', marginTop: 4, flexShrink: 0 }} />
                 <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Address</p>
-                  <p style={{ fontSize: 13, color: '#1A1A2E', marginTop: 2 }}>{supplier.address}</p>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Address</p>
+                  <p style={{ fontSize: 13, color: '#2c2c2c', marginTop: 2 }}>{supplier.address}</p>
                 </div>
               </div>
             )}
 
             <div>
-              <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase', marginBottom: 4 }}>Material Type</p>
-              <p style={{ fontSize: 13, color: '#1A1A2E' }}>{supplier.material_type}</p>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>Material Type</p>
+              <p style={{ fontSize: 13, color: '#2c2c2c' }}>{supplier.material_type}</p>
             </div>
 
             {supplier.rate_offered && (
               <div>
-                <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase', marginBottom: 4 }}>Rate Offered</p>
-                <p style={{ fontSize: 13, fontWeight: 600, color: '#1B7A45' }}>₹{supplier.rate_offered}</p>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>Rate Offered</p>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#2d6a4f' }}>₹{supplier.rate_offered}</p>
               </div>
             )}
 
             {supplier.gcv_value && (
               <div>
-                <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase', marginBottom: 4 }}>GCV Value</p>
-                <p style={{ fontSize: 13, color: '#1A1A2E' }}>{supplier.gcv_value}</p>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>GCV Value</p>
+                <p style={{ fontSize: 13, color: '#2c2c2c' }}>{supplier.gcv_value}</p>
               </div>
             )}
 
             {supplier.remarks && (
               <div>
-                <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase', marginBottom: 4 }}>Remarks</p>
-                <p style={{ fontSize: 13, color: '#1A1A2E' }}>{supplier.remarks}</p>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>Remarks</p>
+                <p style={{ fontSize: 13, color: '#2c2c2c' }}>{supplier.remarks}</p>
               </div>
             )}
 
             {supplier.created_at && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 8, borderTop: '1px solid #E2E8E4' }}>
-                <Calendar size={16} style={{ color: '#C5CFC8', flexShrink: 0 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 8, borderTop: '1px solid #e5ddd0' }}>
+                <Calendar size={16} style={{ color: '#b5b8a8', flexShrink: 0 }} />
                 <div>
-                  <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8', textTransform: 'uppercase' }}>Registered</p>
-                  <p style={{ fontSize: 13, color: '#5A6B62' }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Registered</p>
+                  <p style={{ fontSize: 13, color: '#595c4a' }}>
                     {new Date(supplier.created_at).toLocaleDateString('en-IN')}
                   </p>
                 </div>
@@ -279,38 +279,38 @@ export default function SupplierDetail() {
         </div>
 
         {/* GPS Location Section */}
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 12 }}>Location</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 12 }}>Location</h2>
 
           {supplier.location_lat && supplier.location_lng ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ background: '#F5F7F6', borderRadius: 8, padding: 12 }}>
+              <div style={{ background: '#fefae0', borderRadius: 8, padding: 12 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <div>
-                    <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8' }}>Latitude</p>
-                    <p style={{ fontSize: 13, color: '#1A1A2E', fontFamily: 'monospace', marginTop: 4 }}>{supplier.location_lat.toFixed(6)}</p>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8' }}>Latitude</p>
+                    <p style={{ fontSize: 13, color: '#2c2c2c', fontFamily: 'monospace', marginTop: 4 }}>{supplier.location_lat.toFixed(6)}</p>
                   </div>
                   <div>
-                    <p style={{ fontSize: 10, fontWeight: 600, color: '#C5CFC8' }}>Longitude</p>
-                    <p style={{ fontSize: 13, color: '#1A1A2E', fontFamily: 'monospace', marginTop: 4 }}>{supplier.location_lng.toFixed(6)}</p>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8' }}>Longitude</p>
+                    <p style={{ fontSize: 13, color: '#2c2c2c', fontFamily: 'monospace', marginTop: 4 }}>{supplier.location_lng.toFixed(6)}</p>
                   </div>
                 </div>
               </div>
               <button
                 onClick={handleGetDirections}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#FFF8E6', borderRadius: 8, padding: '10px 0', border: 'none', cursor: 'pointer' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#fefae0', borderRadius: 8, padding: '10px 0', border: 'none', cursor: 'pointer' }}
               >
-                <Navigation size={16} style={{ color: '#D4960A' }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#D4960A' }}>Get Directions</span>
+                <Navigation size={16} style={{ color: '#d4a373' }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: '#d4a373' }}>Get Directions</span>
               </button>
             </div>
           ) : (
             <div>
-              <p style={{ fontSize: 13, color: '#5A6B62', marginBottom: 12 }}>No GPS location captured yet</p>
+              <p style={{ fontSize: 13, color: '#595c4a', marginBottom: 12 }}>No GPS location captured yet</p>
               <button
                 onClick={handleGetLocation}
                 disabled={gettingLocation}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#1B7A45', color: 'white', borderRadius: 8, padding: '10px 0', opacity: gettingLocation ? 0.5 : 1, cursor: gettingLocation ? 'not-allowed' : 'pointer', border: 'none' }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: '#2d6a4f', color: 'white', borderRadius: 8, padding: '10px 0', opacity: gettingLocation ? 0.5 : 1, cursor: gettingLocation ? 'not-allowed' : 'pointer', border: 'none' }}
               >
                 {gettingLocation ? (
                   <>
@@ -329,45 +329,45 @@ export default function SupplierDetail() {
         </div>
 
         {/* Recent Purchases Section */}
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #E2E8E4', padding: 16 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E', marginBottom: 12 }}>Recent Purchases</h2>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
+          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 12 }}>Recent Purchases</h2>
 
           {purchases.length === 0 ? (
-            <p style={{ fontSize: 13, color: '#5A6B62', textAlign: 'center', padding: '16px 0' }}>No purchases yet</p>
+            <p style={{ fontSize: 13, color: '#595c4a', textAlign: 'center', padding: '16px 0' }}>No purchases yet</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {purchases.map(purchase => (
-                <div key={purchase.id} style={{ background: '#F5F7F6', borderRadius: 8, padding: 12 }}>
+                <div key={purchase.id} style={{ background: '#fefae0', borderRadius: 8, padding: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div>
-                      <p style={{ fontSize: 12, color: '#C5CFC8' }}>
+                      <p style={{ fontSize: 12, color: '#b5b8a8' }}>
                         {new Date(purchase.purchase_date).toLocaleDateString('en-IN')}
                       </p>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#1A1A2E', marginTop: 2 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
                         {purchase.material_type}
                       </p>
                     </div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1B7A45' }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>
                       ₹{purchase.amount?.toFixed(2) || '-'}
                     </p>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
                     <div>
-                      <span style={{ color: '#C5CFC8' }}>Quantity</span>
-                      <p style={{ fontWeight: 600, color: '#1A1A2E', marginTop: 2 }}>
+                      <span style={{ color: '#b5b8a8' }}>Quantity</span>
+                      <p style={{ fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
                         {purchase.quantity} {purchase.unit || 'units'}
                       </p>
                     </div>
                     <div>
-                      <span style={{ color: '#C5CFC8' }}>Rate</span>
-                      <p style={{ fontWeight: 600, color: '#1A1A2E', marginTop: 2 }}>
+                      <span style={{ color: '#b5b8a8' }}>Rate</span>
+                      <p style={{ fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
                         ₹{purchase.rate?.toFixed(2) || '-'}
                       </p>
                     </div>
                     <div>
-                      <span style={{ color: '#C5CFC8' }}>GCV</span>
-                      <p style={{ fontWeight: 600, color: '#1A1A2E', marginTop: 2 }}>
+                      <span style={{ color: '#b5b8a8' }}>GCV</span>
+                      <p style={{ fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
                         {purchase.gcv_value?.toFixed(2) || '-'}
                       </p>
                     </div>
@@ -383,76 +383,76 @@ export default function SupplierDetail() {
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Supplier">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Supplier Name *</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Supplier Name *</label>
             <input
               type="text"
               value={editData.name}
               onChange={e => setEditData({ ...editData, name: e.target.value })}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Mobile Number *</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Mobile Number *</label>
             <input
               type="tel"
               value={editData.mobile}
               onChange={e => setEditData({ ...editData, mobile: e.target.value })}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Address</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>
             <input
               type="text"
               value={editData.address}
               onChange={e => setEditData({ ...editData, address: e.target.value })}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Material Type *</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Material Type *</label>
             <input
               type="text"
               value={editData.material_type}
               onChange={e => setEditData({ ...editData, material_type: e.target.value })}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Rate (per unit)</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Rate (per unit)</label>
             <input
               type="number"
               value={editData.rate_offered}
               onChange={e => setEditData({ ...editData, rate_offered: e.target.value })}
               step="0.01"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8A9B92', marginBottom: 6 }}>Remarks</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Remarks</label>
             <textarea
               value={editData.remarks}
               onChange={e => setEditData({ ...editData, remarks: e.target.value })}
               rows="3"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #E2E8E4', background: '#F5F7F6', fontSize: 14, outline: 'none', resize: 'none' }}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', resize: 'none' }}
             />
           </div>
 
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <button
               onClick={() => setShowEditModal(false)}
-              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#1A1A2E', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Cancel
             </button>
             <button
               onClick={handleUpdateSupplier}
-              style={{ flex: 1, padding: '10px 0', background: '#1B7A45', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+              style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Save Changes
             </button>

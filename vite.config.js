@@ -9,14 +9,14 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['kanoz-icon.svg'],
+      includeAssets: ['kanoz-icon.svg', 'kanoz-logo.png'],
       manifest: {
         name: 'Kanoz Daily Report',
         short_name: 'Kanoz',
         start_url: '/',
         display: 'standalone',
-        background_color: '#F5F7F6',
-        theme_color: '#1B7A45',
+        background_color: '#fefae0',
+        theme_color: '#2d6a4f',
         icons: [
           { src: '/kanoz-icon.svg', sizes: 'any', type: 'image/svg+xml' },
         ],

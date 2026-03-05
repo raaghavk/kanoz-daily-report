@@ -36,8 +36,8 @@ export function ToastProvider({ children }) {
   }
 
   const bgColors = {
-    success: '#1B7A45',
-    error: '#E53E3E',
+    success: '#2d6a4f',
+    error: '#d32f2f',
     info: '#2563EB',
   }
 

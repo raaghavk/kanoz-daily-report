@@ -27,7 +27,7 @@ export default function Login() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', background: '#0a0a14' }}>
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 430, background: 'linear-gradient(165deg, #0a0a14 0%, #141428 50%, #145C34 100%)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', maxWidth: 430, background: 'linear-gradient(165deg, #0a0a14 0%, #141428 50%, #1b4332 100%)' }}>
       {/* Status bar area */}
       <div style={{ height: 56, flexShrink: 0, width: '100%' }} />
 
@@ -37,8 +37,8 @@ export default function Login() {
         <div style={{
           width: 88, height: 88, borderRadius: 22,
           display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20,
-          background: 'linear-gradient(135deg, #1B7A45, #145C34)',
-          boxShadow: '0 8px 28px rgba(27,122,69,0.4)',
+          background: 'linear-gradient(135deg, #2d6a4f, #1b4332)',
+          boxShadow: '0 8px 28px rgba(45,106,79,0.4)',
         }}>
           <svg viewBox="0 0 48 48" width="48" height="48">
             <path fill="white" d="M24 4C16 4 8 12 8 24c0 8 4 14 8 17 1-4 3-8 8-12 5 4 7 8 8 12 4-3 8-9 8-17C40 12 32 4 24 4zm0 8c3 0 6 4 6 10s-3 10-6 10-6-4-6-10 3-10 6-10z"/>
@@ -124,10 +124,10 @@ export default function Login() {
           {/* Remember + Forgot */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 4 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}>
-              <input type="checkbox" style={{ width: 14, height: 14, borderRadius: 4, accentColor: '#1B7A45' }} />
+              <input type="checkbox" style={{ width: 14, height: 14, borderRadius: 4, accentColor: '#2d6a4f' }} />
               Remember me
             </label>
-            <span style={{ fontSize: 12, color: '#1B7A45' }}>Forgot password?</span>
+            <span style={{ fontSize: 12, color: '#2d6a4f' }}>Forgot password?</span>
           </div>
 
           {/* Sign In */}
@@ -137,8 +137,8 @@ export default function Login() {
             style={{
               width: '100%', padding: '15px 0', borderRadius: 12, color: 'white', fontSize: 16, fontWeight: 700,
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 8,
-              background: '#1B7A45', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 16px rgba(27,122,69,0.35)', opacity: loading ? 0.6 : 1,
+              background: '#2d6a4f', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 16px rgba(45,106,79,0.35)', opacity: loading ? 0.6 : 1,
             }}
           >
             {loading ? (
