@@ -108,8 +108,8 @@ export default function Home() {
           }}>
             <div style={{
               width: 6, height: 6, borderRadius: '50%',
-              background: currentShift === 'A' ? '#4ADE80' : '#FBBF24',
-              boxShadow: currentShift === 'A' ? '0 0 6px #4ADE80' : '0 0 6px #FBBF24'
+              background: currentShift === 'A' ? '#40916c' : '#e9c46a',
+              boxShadow: currentShift === 'A' ? '0 0 6px #40916c' : '0 0 6px #e9c46a'
             }} />
             <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>
               Shift {currentShift} &bull; {shiftTime}
