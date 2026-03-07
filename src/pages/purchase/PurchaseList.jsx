@@ -10,7 +10,7 @@ export default function PurchaseList() {
   const navigate = useNavigate()
   const { plant } = useAuth()
   const [loading, setLoading] = useState(true)
-  const [filterTab, setFilterTab] = useState('today')
+  const [filterTab, setFilterTab] = useState('month')
   const [groupedPurchases, setGroupedPurchases] = useState({})
 
   useEffect(() => {
@@ -64,11 +64,17 @@ export default function PurchaseList() {
         start: start.toISOString().split('T')[0],
         end: today.toISOString().split('T')[0],
       }
-    } else {
+    } else if (tab === 'month') {
       start.setDate(1)
       start.setHours(0, 0, 0, 0)
       return {
         start: start.toISOString().split('T')[0],
+        end: today.toISOString().split('T')[0],
+      }
+    } else {
+      // 'all' — show everything from 2024 onwards
+      return {
+        start: '2024-01-01',
         end: today.toISOString().split('T')[0],
       }
     }
@@ -111,7 +117,7 @@ export default function PurchaseList() {
         display: 'flex', gap: 8, overflowX: 'auto',
         background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
       }}>
-        {['today', 'week', 'month'].map(tab => (
+        {['today', 'week', 'month', 'all'].map(tab => (
           <button
             key={tab}
             onClick={() => setFilterTab(tab)}
@@ -123,7 +129,7 @@ export default function PurchaseList() {
                 : { background: 'white', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
             }}
           >
-            {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : 'This Month'}
+            {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
           </button>
         ))}
       </div>
@@ -170,7 +176,7 @@ export default function PurchaseList() {
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
                         <div>
                           <div style={{ color: '#b5b8a8' }}>Quantity</div>
-                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>{(purchase.final_quantity || 0).toFixed(2)} t</div>
+                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>{Math.round(purchase.final_quantity || 0).toLocaleString('en-IN')} kg</div>
                         </div>
                         <div>
                           <div style={{ color: '#b5b8a8' }}>Rate</div>
