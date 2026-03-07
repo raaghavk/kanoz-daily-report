@@ -70,14 +70,11 @@ export default function Home() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{
                 width: 36, height: 36, borderRadius: 11,
-                background: 'linear-gradient(135deg, #2d6a4f, #1b4332)',
-                boxShadow: '0 2px 8px rgba(45,106,79,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                background: 'rgba(255,255,255,0.12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                overflow: 'hidden',
               }}>
-                <svg viewBox="0 0 48 48" width="18" height="18">
-                  <path fill="white" d="M24 4C16 4 8 12 8 24c0 8 4 14 8 17 1-4 3-8 8-12 5 4 7 8 8 12 4-3 8-9 8-17C40 12 32 4 24 4zm0 8c3 0 6 4 6 10s-3 10-6 10-6-4-6-10 3-10 6-10z"/>
-                  <circle cx="24" cy="22" r="3" fill="white"/>
-                </svg>
+                <img src="/kanoz-logo.png" alt="Kanoz" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               </div>
               <div>
                 <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Kanoz Report</div>
@@ -119,7 +116,7 @@ export default function Home() {
       </div>
 
       {/* Scrollable Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 20px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 20px', background: '#fefae0' }}>
         {/* Handover Notes */}
         {handoverNotes && (
           <div style={{

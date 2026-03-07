@@ -77,10 +77,10 @@ export default function Login() {
           paddingTop: 72,
           marginBottom: 40,
         }}>
-          {/* Leaf icon */}
+          {/* Logo */}
           <div style={{
-            width: 72,
-            height: 72,
+            width: 80,
+            height: 80,
             borderRadius: 20,
             display: 'flex',
             alignItems: 'center',
@@ -89,11 +89,13 @@ export default function Login() {
             background: 'rgba(255,255,255,0.15)',
             backdropFilter: 'blur(10px)',
             border: '1.5px solid rgba(255,255,255,0.2)',
+            overflow: 'hidden',
           }}>
-            <svg viewBox="0 0 40 40" width="40" height="40">
-              <path fill="white" d="M20 4C13 4 7 11 7 21c0 7 3.5 12.5 7 15 0.8-3.5 2.5-7 6-10.5 3.5 3.5 5.2 7 6 10.5 3.5-2.5 7-8 7-15C33 11 27 4 20 4z" opacity="0.9"/>
-              <ellipse cx="20" cy="19" rx="4.5" ry="7" fill="none" stroke="white" strokeWidth="1.5" opacity="0.6"/>
-            </svg>
+            <img
+              src="/kanoz-logo.png"
+              alt="Kanoz Bio Energy"
+              style={{ width: 64, height: 64, objectFit: 'contain' }}
+            />
           </div>
 
           <h1 style={{
