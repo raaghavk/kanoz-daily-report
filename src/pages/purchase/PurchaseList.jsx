@@ -25,7 +25,7 @@ export default function PurchaseList() {
       const dateFilter = getDateFilter(filterTab)
 
       const { data, error } = await supabase
-        .from('rm_purchases')
+        .from('raw_material_purchases')
         .select(`
           *,
           suppliers (id, name, mobile),

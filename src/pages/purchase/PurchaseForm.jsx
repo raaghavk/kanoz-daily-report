@@ -74,7 +74,7 @@ export default function PurchaseForm() {
   const { isLoading: loading } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('rm_purchases').select('*').eq('id', id).single()
+      const { data, error } = await supabase.from('raw_material_purchases').select('*').eq('id', id).single()
       if (error) throw error
       setFormData({
         date: data.date || formData.date,
@@ -212,7 +212,7 @@ export default function PurchaseForm() {
 
       if (id) {
         const { error } = await supabase
-          .from('rm_purchases')
+          .from('raw_material_purchases')
           .update(purchaseData)
           .eq('id', id)
 
@@ -220,7 +220,7 @@ export default function PurchaseForm() {
         showToast('Purchase updated successfully', 'success')
       } else {
         const { error } = await supabase
-          .from('rm_purchases')
+          .from('raw_material_purchases')
           .insert([purchaseData])
 
         if (error) throw error

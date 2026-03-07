@@ -77,7 +77,7 @@ export default function ReportView() {
       setMachineProduction(machData || [])
 
       const { data: matData } = await supabase
-        .from('rm_purchases')
+        .from('raw_material_purchases')
         .select('*, raw_materials(name)')
         .eq('shift_report_id', id)
 

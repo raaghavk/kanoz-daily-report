@@ -53,7 +53,7 @@ export default function SupplierDetail() {
       })
 
       const { data: purchasesData, error: purchasesError } = await supabase
-        .from('rm_purchases')
+        .from('raw_material_purchases')
         .select('*')
         .eq('supplier_id', id)
         .eq('plant_id', plant.id)
