@@ -485,6 +485,7 @@ export default function PurchaseForm() {
             label="Katta Parchi Photo"
             value={formData.katta_parchi_photo}
             onChange={file => handleFieldChange('katta_parchi_photo', file)}
+            folder="purchases"
           />
         </div>
 

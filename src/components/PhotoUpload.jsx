@@ -6,9 +6,15 @@ import { showToast } from './Toast'
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
 
-export default function PhotoUpload({ label, value, onChange, bucket = 'photos' }) {
+// Check if value is an old AppSheet-style path (not a real URL)
+function isLegacyPath(val) {
+  return val && typeof val === 'string' && !val.startsWith('http') && !val.startsWith('blob:')
+}
+
+export default function PhotoUpload({ label, value, onChange, bucket = 'photos', folder = 'issues' }) {
   const inputRef = useRef()
-  const [preview, setPreview] = useState(value || null)
+  const legacy = isLegacyPath(value)
+  const [preview, setPreview] = useState(legacy ? null : (value || null))
   const [uploading, setUploading] = useState(false)
 
   async function handleFile(e) {
@@ -35,7 +41,7 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
     try {
       const ext = file.name.split('.').pop()
       const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
-      const filePath = `issues/${fileName}`
+      const filePath = `${folder}/${fileName}`
 
       const { error } = await supabase.storage
         .from(bucket)
@@ -68,7 +74,25 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos' 
     <div>
       {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#595c4a", marginBottom: 6 }}>{label}</label>}
       <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
-      {preview ? (
+      {legacy ? (
+        <div style={{ borderRadius: 12, border: '1.5px solid #e5ddd0', padding: 16, background: '#f5f0e1', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 10, background: '#2d6a4f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Camera size={20} color="white" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c' }}>Original Photo on File</div>
+            <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {value.replace('Purchase Data_Images/', '')}
+            </div>
+          </div>
+          <button
+            onClick={() => inputRef.current?.click()}
+            style={{ padding: '6px 10px', borderRadius: 8, background: '#2d6a4f', color: 'white', fontSize: 10, fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >
+            Replace
+          </button>
+        </div>
+      ) : preview ? (
         <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: "1px solid #e5ddd0" }}>
           <img src={preview} alt="Upload" style={{ width: '100%', height: 128, objectFit: 'cover' }} />
           {uploading && (
