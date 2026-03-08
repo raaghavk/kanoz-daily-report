@@ -77,36 +77,34 @@ export default function Login() {
           paddingTop: 72,
           marginBottom: 40,
         }}>
-          {/* Logo in white circle */}
+          {/* Logo banner - rounded rectangle */}
           <div style={{
-            width: 110,
-            height: 110,
-            borderRadius: '50%',
-            background: 'white',
+            background: '#fefae0',
+            borderRadius: 24,
+            padding: '16px 32px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            marginBottom: 12,
-            boxShadow: '0 6px 24px rgba(0,0,0,0.15)',
+            marginBottom: 14,
+            boxShadow: '0 6px 24px rgba(0,0,0,0.12)',
           }}>
             <img
               src="/kanoz-logo.png"
               alt="Kanoz Bio Energy"
               style={{
-                width: 80,
-                height: 80,
+                width: 120,
+                height: 100,
                 objectFit: 'contain',
-                borderRadius: '50%',
               }}
             />
           </div>
 
           <p style={{
-            fontSize: 11,
-            color: 'rgba(255,255,255,0.55)',
+            fontSize: 14,
+            color: 'white',
             textTransform: 'uppercase',
-            letterSpacing: 2.5,
-            fontWeight: 600,
+            letterSpacing: 3,
+            fontWeight: 700,
           }}>
             Daily Report System
           </p>
@@ -134,7 +132,7 @@ export default function Login() {
               <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2c2c2c', marginBottom: 4 }}>
                 Welcome back
               </h2>
-              <p style={{ fontSize: 13, color: '#b5b8a8' }}>
+              <p style={{ fontSize: 13, color: '#8a8d7a' }}>
                 Sign in to continue to your dashboard
               </p>
             </div>
