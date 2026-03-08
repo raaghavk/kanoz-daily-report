@@ -77,39 +77,22 @@ export default function Login() {
           paddingTop: 72,
           marginBottom: 40,
         }}>
-          {/* Logo */}
-          <div style={{
-            width: 80,
-            height: 80,
-            borderRadius: 20,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 16,
-            background: 'rgba(255,255,255,0.15)',
-            backdropFilter: 'blur(10px)',
-            border: '1.5px solid rgba(255,255,255,0.2)',
-            overflow: 'hidden',
-          }}>
-            <img
-              src="/kanoz-logo.png"
-              alt="Kanoz Bio Energy"
-              style={{ width: 64, height: 64, objectFit: 'contain' }}
-            />
-          </div>
+          {/* Logo — displayed large, no box */}
+          <img
+            src="/kanoz-logo.png"
+            alt="Kanoz Bio Energy"
+            style={{
+              width: 140,
+              height: 140,
+              objectFit: 'contain',
+              marginBottom: 8,
+              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
+            }}
+          />
 
-          <h1 style={{
-            fontSize: 22,
-            fontWeight: 800,
-            color: 'white',
-            marginBottom: 4,
-            letterSpacing: -0.3,
-          }}>
-            Kanoz Bio Energy
-          </h1>
           <p style={{
             fontSize: 11,
-            color: 'rgba(255,255,255,0.6)',
+            color: 'rgba(255,255,255,0.55)',
             textTransform: 'uppercase',
             letterSpacing: 2.5,
             fontWeight: 600,
