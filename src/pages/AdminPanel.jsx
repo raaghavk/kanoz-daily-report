@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
@@ -15,7 +14,6 @@ const SECTIONS = [
 
 export default function AdminPanel() {
   const { employee, plant } = useAuth()
-  const navigate = useNavigate()
 
   // Plant selector state
   const [plants, setPlants] = useState([])
@@ -33,34 +31,6 @@ export default function AdminPanel() {
   // Expanded sections
   const [expandedSections, setExpandedSections] = useState({ machines: true, equipment: true, raw_material_types: true, pellet_types: true })
 
-  if (employee?.role !== 'admin') {
-    return (
-      <div style={{ minHeight: '100vh', background: '#fefae0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#595c4a', fontSize: 14 }}>Admin access required</p>
-      </div>
-    )
-  }
-
-  useEffect(() => {
-    loadPlants()
-  }, [])
-
-  useEffect(() => {
-    if (selectedPlantId) loadAllData()
-  }, [selectedPlantId])
-
-  async function loadPlants() {
-    const { data: orgPlants } = await supabase
-      .from('plants')
-      .select('id, name')
-      .eq('org_id', plant?.org_id)
-      .order('name')
-    setPlants(orgPlants || [])
-    if (!selectedPlantId && orgPlants?.length) {
-      setSelectedPlantId(orgPlants[0].id)
-    }
-  }
-
   async function loadAllData() {
     setLoading(true)
     const results = {}
@@ -75,6 +45,55 @@ export default function AdminPanel() {
     }
     setData(results)
     setLoading(false)
+  }
+
+  useEffect(() => {
+    if (employee?.role !== 'admin') return
+    const ctrl = new AbortController()
+    supabase
+      .from('plants')
+      .select('id, name')
+      .eq('org_id', plant?.org_id)
+      .order('name')
+      .then(({ data: orgPlants }) => {
+        if (ctrl.signal.aborted) return
+        setPlants(orgPlants || [])
+        if (!selectedPlantId && orgPlants?.length) {
+          setSelectedPlantId(orgPlants[0].id)
+        }
+      })
+    return () => ctrl.abort()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!selectedPlantId || employee?.role !== 'admin') return
+    let cancelled = false
+    ;(async () => {
+      setLoading(true)
+      const results = {}
+      for (const section of SECTIONS) {
+        const orderBy = section.hasSort ? 'sort_order' : 'name'
+        const { data: items } = await supabase
+          .from(section.table)
+          .select('*')
+          .eq('plant_id', selectedPlantId)
+          .order(orderBy)
+        results[section.key] = items || []
+      }
+      if (!cancelled) {
+        setData(results)
+        setLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [selectedPlantId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (employee?.role !== 'admin') {
+    return (
+      <div style={{ minHeight: '100vh', background: '#fefae0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: '#595c4a', fontSize: 14 }}>Admin access required</p>
+      </div>
+    )
   }
 
   async function addItem(sectionKey) {

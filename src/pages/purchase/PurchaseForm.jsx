@@ -146,7 +146,7 @@ export default function PurchaseForm() {
         setFetchingLocation(false)
         showToast('Location captured', 'success')
       },
-      (error) => {
+      () => {
         setFetchingLocation(false)
         showToast('Failed to get location. Please allow location access.', 'error')
       },

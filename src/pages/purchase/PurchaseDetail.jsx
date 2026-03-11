@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../../components/PageHeader'
 import { Loader2, Edit3 } from 'lucide-react'
@@ -8,7 +7,6 @@ import { Loader2, Edit3 } from 'lucide-react'
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { plant } = useAuth()
 
   const { data: purchase, isLoading } = useQuery({
     queryKey: ['purchase', id],

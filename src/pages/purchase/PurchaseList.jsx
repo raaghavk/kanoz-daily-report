@@ -180,7 +180,7 @@ export default function PurchaseList() {
               whiteSpace: 'nowrap', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
               background: hasActiveFilters ? '#d4a373' : 'white',
               color: hasActiveFilters ? 'white' : '#2c2c2c',
-              border: hasActiveFilters ? 'none' : '1.5px solid #e5ddd0',
+              borderColor: hasActiveFilters ? '#d4a373' : '#e5ddd0',
             }}
           >
             <Filter size={12} /> Filters
