@@ -24,8 +24,7 @@ export default function PurchaseForm() {
     supplier_id: '',
     raw_material_type_id: '',
     vehicle_number: '',
-    gross_weight: '',
-    tare_weight: '',
+    vehicle_type: 'company',
     net_weight: '',
     moisture_percentage: '',
     deduction_kg: '',
@@ -49,7 +48,10 @@ export default function PurchaseForm() {
     rate_offered: '',
     address: '',
     remarks: '',
+    location_lat: null,
+    location_lng: null,
   })
+  const [fetchingLocation, setFetchingLocation] = useState(false)
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ['suppliers', plant?.id],
@@ -81,8 +83,7 @@ export default function PurchaseForm() {
         supplier_id: data.supplier_id || '',
         raw_material_type_id: data.raw_material_type_id || '',
         vehicle_number: data.vehicle_number || '',
-        gross_weight: data.gross_weight || '',
-        tare_weight: data.tare_weight || '',
+        vehicle_type: data.vehicle_type || 'company',
         net_weight: data.net_weight || '',
         moisture_percentage: data.moisture_percentage || '',
         deduction_kg: data.deduction_kg || '',
@@ -110,9 +111,7 @@ export default function PurchaseForm() {
   }
 
   function updateCalculatedFields(data) {
-    const gross = parseFloat(data.gross_weight) || 0
-    const tare = parseFloat(data.tare_weight) || 0
-    const net = gross - tare
+    const net = parseFloat(data.net_weight) || 0
     const moisture = parseFloat(data.moisture_percentage) || 0
     const deduction = (net * moisture) / 100
     const finalQty = net - deduction
@@ -124,12 +123,35 @@ export default function PurchaseForm() {
     const totalAmount = rmAmount + loading + unloading + transport
     const avgCost = finalQty > 0 ? totalAmount / finalQty : 0
 
-    data.net_weight = net > 0 ? net.toFixed(2) : ''
     data.deduction_kg = deduction > 0 ? deduction.toFixed(2) : ''
     data.final_quantity = finalQty > 0 ? finalQty.toFixed(2) : ''
     data.rm_amount = rmAmount > 0 ? rmAmount.toFixed(2) : ''
     data.total_amount = totalAmount > 0 ? totalAmount.toFixed(2) : ''
     data.average_cost_per_kg = avgCost > 0 ? avgCost.toFixed(2) : ''
+  }
+
+  function fetchSupplierLocation() {
+    if (!navigator.geolocation) {
+      showToast('Geolocation not supported by your browser', 'error')
+      return
+    }
+    setFetchingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setSupplierForm(prev => ({
+          ...prev,
+          location_lat: position.coords.latitude,
+          location_lng: position.coords.longitude,
+        }))
+        setFetchingLocation(false)
+        showToast('Location captured', 'success')
+      },
+      (error) => {
+        setFetchingLocation(false)
+        showToast('Failed to get location. Please allow location access.', 'error')
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
   }
 
   async function addNewSupplier() {
@@ -138,15 +160,25 @@ export default function PurchaseForm() {
         showToast('Supplier name is required', 'error')
         return
       }
+      if (!supplierForm.mobile.trim()) {
+        showToast('Supplier phone is required', 'error')
+        return
+      }
+      if (!supplierForm.raw_material_type_id) {
+        showToast('Raw material type is required', 'error')
+        return
+      }
 
       const supplierData = {
         plant_id: plant?.id,
         name: supplierForm.name.trim(),
-        mobile: supplierForm.mobile || null,
-        raw_material_type_id: supplierForm.raw_material_type_id || null,
+        mobile: supplierForm.mobile.trim(),
+        raw_material_type_id: supplierForm.raw_material_type_id,
         rate_offered: supplierForm.rate_offered ? parseFloat(supplierForm.rate_offered) : null,
         address: supplierForm.address || null,
         remarks: supplierForm.remarks || null,
+        location_lat: supplierForm.location_lat,
+        location_lng: supplierForm.location_lng,
       }
 
       const { data, error } = await supabase
@@ -167,6 +199,8 @@ export default function PurchaseForm() {
         rate_offered: '',
         address: '',
         remarks: '',
+        location_lat: null,
+        location_lng: null,
       })
       showToast('Supplier added successfully', 'success')
     } catch (err) {
@@ -178,8 +212,12 @@ export default function PurchaseForm() {
   async function savePurchase() {
     if (saving) return
     try {
-      if (!formData.supplier_id || !formData.raw_material_type_id || !formData.final_quantity) {
+      if (!formData.supplier_id || !formData.raw_material_type_id || !formData.net_weight) {
         showToast('Please fill in all required fields', 'error')
+        return
+      }
+      if (!formData.katta_parchi_photo) {
+        showToast('Weight bridge photo is mandatory', 'error')
         return
       }
 
@@ -192,9 +230,9 @@ export default function PurchaseForm() {
         supplier_id: formData.supplier_id,
         raw_material_type_id: formData.raw_material_type_id,
         vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
-        gross_weight: sanitizeNumber(formData.gross_weight) || null,
-        tare_weight: sanitizeNumber(formData.tare_weight) || null,
-        net_weight: sanitizeNumber(formData.net_weight) || null,
+        gross_weight: null,
+        tare_weight: null,
+        net_weight: sanitizeNumber(formData.net_weight),
         moisture_percentage: sanitizeNumber(formData.moisture_percentage) || null,
         deduction_kg: sanitizeNumber(formData.deduction_kg) || null,
         final_quantity: sanitizeNumber(formData.final_quantity),
@@ -261,98 +299,120 @@ export default function PurchaseForm() {
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
-              Supplier <span style={{ color: '#d32f2f' }}>*</span>
-            </label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <select
-                value={formData.supplier_id}
-                onChange={e => handleFieldChange('supplier_id', e.target.value)}
-                style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
-              >
-                <option value="">Select supplier...</option>
-                {suppliers.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-              <button
-                onClick={() => setShowAddSupplier(true)}
-                style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, border: 'none', cursor: 'pointer' }}
-              >
-                <Plus size={16} />
-              </button>
-            </div>
-          </div>
-
-          <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
-              Raw Material Type <span style={{ color: '#d32f2f' }}>*</span>
-            </label>
+        <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
+            Supplier <span style={{ color: '#d32f2f' }}>*</span>
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
             <select
-              value={formData.raw_material_type_id}
-              onChange={e => handleFieldChange('raw_material_type_id', e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
+              value={formData.supplier_id}
+              onChange={e => {
+                const supplierId = e.target.value
+                handleFieldChange('supplier_id', supplierId)
+                // Auto-fill raw material type from supplier
+                const selectedSupplier = suppliers.find(s => s.id === supplierId)
+                if (selectedSupplier?.raw_material_type_id) {
+                  handleFieldChange('raw_material_type_id', selectedSupplier.raw_material_type_id)
+                }
+              }}
+              style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
             >
-              <option value="">Select type...</option>
-              {rawMaterials.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+              <option value="">Select supplier...</option>
+              {suppliers.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
+            <button
+              onClick={() => setShowAddSupplier(true)}
+              style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 4, border: 'none', cursor: 'pointer' }}
+            >
+              <Plus size={16} />
+            </button>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Number</label>
-            <input
-              type="text"
-              placeholder="e.g., HR-01-AB-1234"
-              value={formData.vehicle_number}
-              onChange={e => handleFieldChange('vehicle_number', e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
-            />
+        <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
+            Raw Material Type <span style={{ color: '#d32f2f' }}>*</span>
+          </label>
+          <select
+            value={formData.raw_material_type_id}
+            onChange={e => handleFieldChange('raw_material_type_id', e.target.value)}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
+          >
+            <option value="">Select type...</option>
+            {rawMaterials.map(m => (
+              <option key={m.id} value={m.id}>{m.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Type</label>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <button
+              type="button"
+              onClick={() => handleFieldChange('vehicle_type', 'company')}
+              style={{
+                flex: 1, padding: '10px 12px', borderRadius: 12, fontSize: 13, fontWeight: 600,
+                border: '1.5px solid',
+                borderColor: formData.vehicle_type === 'company' ? '#2d6a4f' : '#e5ddd0',
+                background: formData.vehicle_type === 'company' ? '#e8f0ec' : '#fff',
+                color: formData.vehicle_type === 'company' ? '#2d6a4f' : '#595c4a',
+                cursor: 'pointer',
+              }}
+            >
+              Company Owned
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFieldChange('vehicle_type', 'other')}
+              style={{
+                flex: 1, padding: '10px 12px', borderRadius: 12, fontSize: 13, fontWeight: 600,
+                border: '1.5px solid',
+                borderColor: formData.vehicle_type === 'other' ? '#2d6a4f' : '#e5ddd0',
+                background: formData.vehicle_type === 'other' ? '#e8f0ec' : '#fff',
+                color: formData.vehicle_type === 'other' ? '#2d6a4f' : '#595c4a',
+                cursor: 'pointer',
+              }}
+            >
+              Other Vehicle
+            </button>
           </div>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Number</label>
+          <input
+            type="text"
+            placeholder="e.g., HR-01-AB-1234"
+            value={formData.vehicle_number}
+            onChange={e => handleFieldChange('vehicle_number', e.target.value)}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
+          />
         </div>
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #e5ddd0' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 16 }}>Weight Details</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
-                Gross Weight (kg) <span style={{ color: '#d32f2f' }}>*</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.gross_weight}
-                onChange={e => handleFieldChange('gross_weight', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
-                Tare Weight (kg) <span style={{ color: '#d32f2f' }}>*</span>
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.tare_weight}
-                onChange={e => handleFieldChange('tare_weight', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Net Weight (kg)</label>
-              <input
-                type="number"
-                disabled
-                value={formData.net_weight}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed' }}
-              />
-              <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 4 }}>Auto-calculated</div>
-            </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
+              Net Weight (kg) <span style={{ color: '#d32f2f' }}>*</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Enter net weight"
+              value={formData.net_weight}
+              onChange={e => handleFieldChange('net_weight', e.target.value)}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
+            />
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <PhotoUpload
+              label="Weight Bridge Photo"
+              required
+              value={formData.katta_parchi_photo}
+              onChange={file => handleFieldChange('katta_parchi_photo', file)}
+              folder="purchases"
+            />
+            <div style={{ fontSize: 10, color: '#d32f2f', marginTop: 4 }}>* Weight bridge photo is mandatory</div>
           </div>
         </div>
 
@@ -480,15 +540,6 @@ export default function PurchaseForm() {
           </div>
         </div>
 
-        <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
-          <PhotoUpload
-            label="Katta Parchi Photo"
-            value={formData.katta_parchi_photo}
-            onChange={file => handleFieldChange('katta_parchi_photo', file)}
-            folder="purchases"
-          />
-        </div>
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
@@ -542,7 +593,9 @@ export default function PurchaseForm() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Mobile</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
+              Phone <span style={{ color: '#d32f2f' }}>*</span>
+            </label>
             <input
               type="tel"
               placeholder="Phone number"
@@ -553,13 +606,15 @@ export default function PurchaseForm() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Raw Material Type</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
+              Raw Material Type <span style={{ color: '#d32f2f' }}>*</span>
+            </label>
             <select
               value={supplierForm.raw_material_type_id}
               onChange={e => setSupplierForm({ ...supplierForm, raw_material_type_id: e.target.value })}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
             >
-              <option value="">Select type (optional)</option>
+              <option value="">Select type...</option>
               {rawMaterials.map(m => (
                 <option key={m.id} value={m.id}>{m.name}</option>
               ))}
@@ -600,9 +655,28 @@ export default function PurchaseForm() {
             />
           </div>
 
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Geolocation</label>
+            <button
+              type="button"
+              onClick={fetchSupplierLocation}
+              disabled={fetchingLocation}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 12,
+                border: '1.5px solid #e5ddd0', fontSize: 13, fontWeight: 600,
+                background: supplierForm.location_lat ? '#e8f0ec' : '#fefae0',
+                color: supplierForm.location_lat ? '#2d6a4f' : '#595c4a',
+                cursor: fetchingLocation ? 'not-allowed' : 'pointer',
+                opacity: fetchingLocation ? 0.6 : 1,
+              }}
+            >
+              {fetchingLocation ? 'Fetching location...' : supplierForm.location_lat ? `Location captured (${supplierForm.location_lat.toFixed(4)}, ${supplierForm.location_lng.toFixed(4)})` : 'Capture Current Location'}
+            </button>
+          </div>
+
           <button
             onClick={addNewSupplier}
-            style={{ width: '100%', padding: '12px 0', borderRadius: 14, background: '#2d6a4f', color: 'white', fontWeight: 700 }}
+            style={{ width: '100%', padding: '12px 0', borderRadius: 14, background: '#2d6a4f', color: 'white', fontWeight: 700, border: 'none', cursor: 'pointer' }}
           >
             Add Supplier
           </button>
