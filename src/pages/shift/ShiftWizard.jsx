@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -31,8 +31,11 @@ const STEPS = [
   { num: 9, title: 'Submit', component: Step9Submit },
 ]
 
+const WIZARD_STORAGE_KEY = 'kanoz_shift_wizard_state'
+
 export default function ShiftWizard() {
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const { employee, plant } = useAuth()
   const { id: editId } = useParams()
@@ -40,6 +43,7 @@ export default function ShiftWizard() {
   const [saving, setSaving] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [reportId, setReportId] = useState(editId || null)
+  const [restoredFromStorage, setRestoredFromStorage] = useState(false)
 
   // Report data state — shared across all steps
   const [reportData, setReportData] = useState({
@@ -67,10 +71,43 @@ export default function ShiftWizard() {
     setReportData(prev => ({ ...prev, [key]: value }))
   }, [])
 
+  // Save wizard state to sessionStorage (called before navigating away)
+  const saveWizardState = useCallback(() => {
+    try {
+      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId }))
+    } catch (e) {
+      console.error('Failed to save wizard state:', e)
+    }
+  }, [reportData, step, reportId])
+
+  // Restore from sessionStorage if returning from dispatch
+  useEffect(() => {
+    if (editId) return // Don't restore for edit mode
+    const returnToStep = location.state?.returnToStep
+    if (returnToStep) {
+      try {
+        const saved = sessionStorage.getItem(WIZARD_STORAGE_KEY)
+        if (saved) {
+          const { reportData: savedData, step: savedStep, reportId: savedId } = JSON.parse(saved)
+          if (savedData) {
+            setReportData(savedData)
+            setStep(returnToStep || savedStep || 6)
+            if (savedId) setReportId(savedId)
+            setRestoredFromStorage(true)
+            sessionStorage.removeItem(WIZARD_STORAGE_KEY)
+            return
+          }
+        }
+      } catch (e) {
+        console.error('Failed to restore wizard state:', e)
+      }
+    }
+  }, [])
+
   // Load machines and raw material types for this plant
   useEffect(() => {
-    if (plant?.id) loadPlantData()
-  }, [plant])
+    if (plant?.id && !restoredFromStorage) loadPlantData()
+  }, [plant, restoredFromStorage])
 
   useEffect(() => {
     if (editId && plant?.id) loadExistingReport()
@@ -432,6 +469,7 @@ export default function ShiftWizard() {
         }
       }
 
+      sessionStorage.removeItem(WIZARD_STORAGE_KEY)
       showToast(editId ? 'Report updated!' : 'Report submitted!', 'success')
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
@@ -480,6 +518,7 @@ export default function ShiftWizard() {
             updateData={updateData}
             plant={plant}
             employee={employee}
+            saveWizardState={saveWizardState}
           />
         </div>
       </div>

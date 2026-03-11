@@ -77,7 +77,7 @@ export default function Home() {
                 <img src="/kanoz-logo.png" alt="Kanoz" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               </div>
               <div>
-                <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Kanoz Report</div>
+                <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Welcome, {employee?.name?.split(' ')[0] || 'User'}</div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
                   {plant?.name || 'Plant'} &bull; Shift {currentShift} &bull; {dateStr}
                 </div>

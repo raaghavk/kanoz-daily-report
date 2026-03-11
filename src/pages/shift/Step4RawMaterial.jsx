@@ -36,7 +36,7 @@ export default memo(function Step4RawMaterial({ data, updateData }) {
                 value={rm.used || ''}
                 onChange={e => updateRM(idx, 'used', e.target.value)}
                 placeholder="0"
-                style={{ width: '100%', padding: '8px 8px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', textAlign: 'center' }}
+                style={{ width: '100%', padding: '8px 8px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', textAlign: 'center', boxSizing: 'border-box' }}
               />
             </div>
             <div>

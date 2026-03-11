@@ -77,19 +77,28 @@ export default function Login() {
           paddingTop: 72,
           marginBottom: 40,
         }}>
-          {/* Logo — full size, no container */}
-          <img
-            src="/kanoz-logo.png"
-            alt="Kanoz Bio Energy"
-            style={{
-              width: 180,
-              marginBottom: 10,
-              objectFit: 'contain',
-              borderRadius: 20,
-              mixBlendMode: 'multiply',
-              filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.2))',
-            }}
-          />
+          {/* Logo in white circle */}
+          <div style={{
+            width: 140,
+            height: 140,
+            borderRadius: '50%',
+            background: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 10,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+            overflow: 'hidden',
+          }}>
+            <img
+              src="/kanoz-logo.png"
+              alt="Kanoz Bio Energy"
+              style={{
+                width: 120,
+                objectFit: 'contain',
+              }}
+            />
+          </div>
 
           <p style={{
             fontSize: 14,

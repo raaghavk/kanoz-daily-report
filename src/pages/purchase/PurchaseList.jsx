@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, Loader2 } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Plus, Loader2, Filter } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -9,22 +9,45 @@ import { showToast } from '../../components/Toast'
 export default function PurchaseList() {
   const navigate = useNavigate()
   const { plant } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [loading, setLoading] = useState(true)
-  const [filterTab, setFilterTab] = useState('month')
   const [groupedPurchases, setGroupedPurchases] = useState({})
+
+  // Persist filter tab in URL
+  const filterTab = searchParams.get('tab') || 'month'
+  function setFilterTab(tab) {
+    setSearchParams({ tab }, { replace: true })
+  }
+
+  // Filter state for 'all' tab
+  const [showFilters, setShowFilters] = useState(false)
+  const [filterSupplier, setFilterSupplier] = useState('')
+  const [filterRMType, setFilterRMType] = useState('')
+  const [filterDateFrom, setFilterDateFrom] = useState('')
+  const [filterDateTo, setFilterDateTo] = useState('')
+  const [suppliers, setSuppliers] = useState([])
+  const [rmTypes, setRmTypes] = useState([])
+
+  // Load filter options
+  useEffect(() => {
+    if (plant?.id) {
+      supabase.from('suppliers').select('id, name').eq('plant_id', plant.id).eq('is_active', true).order('name').then(({ data }) => setSuppliers(data || []))
+      supabase.from('raw_material_types').select('id, name').eq('plant_id', plant.id).eq('is_active', true).order('name').then(({ data }) => setRmTypes(data || []))
+    }
+  }, [plant?.id])
 
   useEffect(() => {
     if (plant?.id) {
       fetchPurchases()
     }
-  }, [plant?.id, filterTab])
+  }, [plant?.id, filterTab, filterSupplier, filterRMType, filterDateFrom, filterDateTo])
 
   async function fetchPurchases() {
     try {
       setLoading(true)
       const dateFilter = getDateFilter(filterTab)
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('raw_material_purchases')
         .select(`
           *,
@@ -32,10 +55,29 @@ export default function PurchaseList() {
           raw_material_types (id, name)
         `)
         .eq('plant_id', plant?.id)
-        .gte('date', dateFilter.start)
-        .lte('date', dateFilter.end)
         .order('date', { ascending: false })
 
+      // Apply date filter
+      if (filterTab === 'all' && filterDateFrom) {
+        query = query.gte('date', filterDateFrom)
+      } else {
+        query = query.gte('date', dateFilter.start)
+      }
+      if (filterTab === 'all' && filterDateTo) {
+        query = query.lte('date', filterDateTo)
+      } else {
+        query = query.lte('date', dateFilter.end)
+      }
+
+      // Apply supplier/RM type filters for 'all' tab
+      if (filterTab === 'all' && filterSupplier) {
+        query = query.eq('supplier_id', filterSupplier)
+      }
+      if (filterTab === 'all' && filterRMType) {
+        query = query.eq('raw_material_type_id', filterRMType)
+      }
+
+      const { data, error } = await query
       if (error) throw error
 
       groupPurchasesByDate(data || [])
@@ -52,27 +94,23 @@ export default function PurchaseList() {
     const start = new Date(today)
 
     if (tab === 'today') {
-      start.setHours(0, 0, 0, 0)
       return {
         start: today.toISOString().split('T')[0],
         end: today.toISOString().split('T')[0],
       }
     } else if (tab === 'week') {
       start.setDate(today.getDate() - today.getDay())
-      start.setHours(0, 0, 0, 0)
       return {
         start: start.toISOString().split('T')[0],
         end: today.toISOString().split('T')[0],
       }
     } else if (tab === 'month') {
       start.setDate(1)
-      start.setHours(0, 0, 0, 0)
       return {
         start: start.toISOString().split('T')[0],
         end: today.toISOString().split('T')[0],
       }
     } else {
-      // 'all' — show everything from 2024 onwards
       return {
         start: '2024-01-01',
         end: today.toISOString().split('T')[0],
@@ -84,9 +122,7 @@ export default function PurchaseList() {
     const grouped = {}
     data.forEach(purchase => {
       const date = purchase.date || ''
-      if (!grouped[date]) {
-        grouped[date] = []
-      }
+      if (!grouped[date]) grouped[date] = []
       grouped[date].push(purchase)
     })
     setGroupedPurchases(grouped)
@@ -94,18 +130,22 @@ export default function PurchaseList() {
 
   function formatDate(dateStr) {
     const date = new Date(dateStr + 'T00:00:00')
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    })
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
   function formatCurrency(amount) {
-    return '₹' + (Math.round(amount) || 0).toLocaleString('en-IN')
+    return '\u20B9' + (Math.round(amount) || 0).toLocaleString('en-IN')
+  }
+
+  function clearFilters() {
+    setFilterSupplier('')
+    setFilterRMType('')
+    setFilterDateFrom('')
+    setFilterDateTo('')
   }
 
   const dateKeys = Object.keys(groupedPurchases).sort((a, b) => new Date(b) - new Date(a))
+  const hasActiveFilters = filterSupplier || filterRMType || filterDateFrom || filterDateTo
 
   return (
     <div style={{ minHeight: '100vh', background: '#fefae0', paddingBottom: 80 }}>
@@ -132,7 +172,79 @@ export default function PurchaseList() {
             {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
           </button>
         ))}
+        {filterTab === 'all' && (
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            style={{
+              padding: '8px 12px', borderRadius: 12, fontSize: 12, fontWeight: 700,
+              whiteSpace: 'nowrap', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+              background: hasActiveFilters ? '#d4a373' : 'white',
+              color: hasActiveFilters ? 'white' : '#2c2c2c',
+              borderColor: hasActiveFilters ? '#d4a373' : '#e5ddd0',
+            }}
+          >
+            <Filter size={12} /> Filters
+          </button>
+        )}
       </div>
+
+      {/* Filters Panel */}
+      {filterTab === 'all' && showFilters && (
+        <div style={{ padding: '12px 20px', background: '#fff', borderBottom: '1px solid #e5ddd0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>Supplier</label>
+              <select
+                value={filterSupplier}
+                onChange={e => setFilterSupplier(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+              >
+                <option value="">All Suppliers</option>
+                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>RM Type</label>
+              <select
+                value={filterRMType}
+                onChange={e => setFilterRMType(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+              >
+                <option value="">All Types</option>
+                {rmTypes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>From Date</label>
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={e => setFilterDateFrom(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>To Date</label>
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={e => setFilterDateTo(e.target.value)}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              style={{ padding: '6px 12px', background: '#fefae0', border: '1px solid #e5ddd0', borderRadius: 8, fontSize: 11, fontWeight: 600, color: '#595c4a', cursor: 'pointer', alignSelf: 'flex-start' }}
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+      )}
 
       <div style={{ padding: '16px 20px' }}>
         {loading ? (
@@ -179,8 +291,8 @@ export default function PurchaseList() {
                           <div style={{ fontWeight: 700, color: '#2c2c2c' }}>{Math.round(purchase.final_quantity || 0).toLocaleString('en-IN')} kg</div>
                         </div>
                         <div>
-                          <div style={{ color: '#b5b8a8' }}>Rate</div>
-                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>₹{(purchase.rate_per_kg || 0).toFixed(2)}/kg</div>
+                          <div style={{ color: '#b5b8a8' }}>Avg Rate</div>
+                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>{'\u20B9'}{purchase.final_quantity > 0 ? (purchase.total_amount / purchase.final_quantity).toFixed(2) : '0.00'}/kg</div>
                         </div>
                         <div>
                           <div style={{ color: '#b5b8a8' }}>Amount</div>

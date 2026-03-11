@@ -8,12 +8,14 @@ const Home = lazy(() => import('./pages/Home'))
 const ShiftWizard = lazy(() => import('./pages/shift/ShiftWizard'))
 const PurchaseList = lazy(() => import('./pages/purchase/PurchaseList'))
 const PurchaseForm = lazy(() => import('./pages/purchase/PurchaseForm'))
+const PurchaseDetail = lazy(() => import('./pages/purchase/PurchaseDetail'))
 const SupplierList = lazy(() => import('./pages/suppliers/SupplierList'))
 const SupplierDetail = lazy(() => import('./pages/suppliers/SupplierDetail'))
 const DispatchForm = lazy(() => import('./pages/dispatch/DispatchForm'))
 const ReportView = lazy(() => import('./pages/ReportView'))
 const ReportList = lazy(() => import('./pages/ReportList'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
+const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 
 function LoadingFallback() {
   return (
@@ -59,12 +61,14 @@ export default function App() {
         <Route path="reports/:id" element={<ReportView />} />
         <Route path="purchase" element={<PurchaseList />} />
         <Route path="purchase/new" element={<PurchaseForm />} />
-        <Route path="purchase/:id" element={<PurchaseForm />} />
+        <Route path="purchase/:id" element={<PurchaseDetail />} />
+        <Route path="purchase/:id/edit" element={<PurchaseForm />} />
         <Route path="dispatch" element={<DispatchForm />} />
         <Route path="suppliers" element={<SupplierList />} />
         <Route path="suppliers/:id" element={<SupplierDetail />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<UserManagement />} />
+        <Route path="admin" element={<AdminPanel />} />
       </Route>
       <Route
         path="/shift/new"
@@ -98,13 +102,27 @@ function SettingsPage() {
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Plant:</span> {plant?.name}</div>
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Role:</span> {employee?.role}</div>
       </div>
+      <button
+        onClick={() => nav('/suppliers')}
+        style={{ width: '100%', padding: '14px 0', background: '#fff', color: '#2c2c2c', borderRadius: 14, fontSize: 14, fontWeight: 600, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
+      >
+        View Suppliers
+      </button>
       {employee?.role === 'admin' && (
-        <button
-          onClick={() => nav('/users')}
-          style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-        >
-          Manage Team Members
-        </button>
+        <>
+          <button
+            onClick={() => nav('/users')}
+            style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
+            Manage Team Members
+          </button>
+          <button
+            onClick={() => nav('/admin')}
+            style={{ width: '100%', padding: '14px 0', background: '#d4a373', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+          >
+            Plant Settings (Admin)
+          </button>
+        </>
       )}
       <button
         onClick={signOut}

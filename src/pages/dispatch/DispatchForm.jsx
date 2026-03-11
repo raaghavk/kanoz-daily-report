@@ -235,7 +235,8 @@ export default function DispatchForm() {
       <PageHeader
         title="Vehicle Dispatch"
         subtitle={returnToShift ? "Add dispatches, then go back to shift report" : "Quick dispatch entry for today"}
-        backTo={returnToShift ? "/shift/new" : "/"}
+        backTo={returnToShift ? undefined : "/"}
+        onBack={returnToShift ? () => navigate('/shift/new', { state: { returnToStep: 6 } }) : undefined}
       />
 
       {/* Return to Shift Banner */}
@@ -243,7 +244,7 @@ export default function DispatchForm() {
         <div style={{ margin: '12px 20px 0', background: '#e8f0ec', border: '1.5px solid #2d6a4f', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ fontSize: 12, color: '#2d6a4f', fontWeight: 600 }}>You came from the Shift Report wizard.</div>
           <button
-            onClick={() => navigate('/shift/new')}
+            onClick={() => navigate('/shift/new', { state: { returnToStep: 6 } })}
             style={{ padding: '6px 12px', background: '#2d6a4f', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
           >
             ← Back to Shift
