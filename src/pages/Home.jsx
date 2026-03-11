@@ -93,36 +93,21 @@ export default function Home() {
       {/* Dark App Bar */}
       <div style={{ flexShrink: 0, background: '#1b4332', paddingTop: 'env(safe-area-inset-top)' }}>
         <div style={{ padding: '14px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 11,
-                background: 'rgba(255,255,255,0.12)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                overflow: 'hidden',
-              }}>
-                <img src="/kanoz-logo.png" alt="Kanoz" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-              </div>
-              <div>
-                <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Welcome, {employee?.name?.split(' ')[0] || 'User'}</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
-                  {plant?.name || 'Plant'} &bull; Shift {currentShift} &bull; {dateStr}
-                </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 11,
+              background: 'rgba(255,255,255,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              <img src="/kanoz-logo.png" alt="Kanoz" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+            </div>
+            <div>
+              <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Welcome, {employee?.name?.split(' ')[0] || 'User'}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
+                {plant?.name || 'Plant'} &bull; Shift {currentShift} &bull; {dateStr}
               </div>
             </div>
-            <button
-              onClick={() => navigate('/settings')}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 38, height: 38, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)',
-                border: '2px solid rgba(255,255,255,0.15)',
-                fontSize: 14, fontWeight: 700, color: 'white',
-                cursor: 'pointer'
-              }}
-            >
-              {employee?.name?.charAt(0) || 'U'}
-            </button>
           </div>
           {/* Shift time bar */}
           <div style={{

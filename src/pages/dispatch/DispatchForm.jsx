@@ -38,6 +38,7 @@ export default function DispatchForm() {
 
   const [showAddCustomer, setShowAddCustomer] = useState(false)
   const [newCustomer, setNewCustomer] = useState('')
+  const [newCustomerAddress, setNewCustomerAddress] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const { data: dispatches = [], isLoading: loading } = useQuery({
@@ -101,15 +102,18 @@ export default function DispatchForm() {
     }
 
     try {
+      const payload = { name: newCustomer, org_id: plant.org_id }
+      if (newCustomerAddress.trim()) payload.address = newCustomerAddress.trim()
       const { data } = await supabase
         .from('customers')
-        .insert([{ name: newCustomer, org_id: plant.org_id }])
+        .insert([payload])
         .select()
 
       if (data) {
         queryClient.invalidateQueries({ queryKey: ['customers', plant?.org_id] })
-        setForm(prev => ({ ...prev, customer_id: data[0].id }))
+        setForm(prev => ({ ...prev, customer_id: data[0].id, ...(data[0].address ? { destination: data[0].address } : {}) }))
         setNewCustomer('')
+        setNewCustomerAddress('')
         setShowAddCustomer(false)
         showToast('Customer added', 'success')
       }
@@ -155,12 +159,36 @@ export default function DispatchForm() {
       showToast('Customer is required', 'error')
       return
     }
+    if (!form.destination.trim()) {
+      showToast('Destination is required', 'error')
+      return
+    }
+    if (!form.transporter.trim()) {
+      showToast('Transporter is required', 'error')
+      return
+    }
     if (!form.driver_name.trim()) {
       showToast('Driver name is required', 'error')
       return
     }
+    if (!form.driver_phone.trim()) {
+      showToast('Driver phone is required', 'error')
+      return
+    }
     if (form.pellets.some(p => !p.pellet_type_id || !p.quantity_mt)) {
       showToast('Fill all pellet entries', 'error')
+      return
+    }
+    if (!form.invoice_number.trim()) {
+      showToast('Invoice number is required', 'error')
+      return
+    }
+    if (!form.loading_time) {
+      showToast('Loading time is required', 'error')
+      return
+    }
+    if (!form.dispatch_time) {
+      showToast('Dispatch time is required', 'error')
       return
     }
     try {
@@ -359,7 +387,11 @@ export default function DispatchForm() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <select
                   value={form.customer_id}
-                  onChange={e => updateForm('customer_id', e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value
+                    const selected = customers.find(c => c.id === val)
+                    setForm(prev => ({ ...prev, customer_id: val, ...(selected?.address ? { destination: selected.address } : {}) }))
+                  }}
                   style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                 >
                   <option value="">Select customer</option>
@@ -375,20 +407,29 @@ export default function DispatchForm() {
                 </button>
               </div>
               {showAddCustomer && (
-                <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      placeholder="New customer name"
+                      value={newCustomer}
+                      onChange={e => setNewCustomer(e.target.value)}
+                      style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                    />
+                    <button
+                      onClick={addCustomer}
+                      style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                    >
+                      Add
+                    </button>
+                  </div>
                   <input
                     type="text"
-                    placeholder="New customer name"
-                    value={newCustomer}
-                    onChange={e => setNewCustomer(e.target.value)}
-                    style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                    placeholder="Customer address (optional)"
+                    value={newCustomerAddress}
+                    onChange={e => setNewCustomerAddress(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                   />
-                  <button
-                    onClick={addCustomer}
-                    style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-                  >
-                    Add
-                  </button>
                 </div>
               )}
             </div>
@@ -396,7 +437,7 @@ export default function DispatchForm() {
             {/* Destination */}
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-                Destination
+                Destination <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <input
                 type="text"
@@ -410,7 +451,7 @@ export default function DispatchForm() {
             {/* Transporter */}
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-                Transporter
+                Transporter <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <input
                 type="text"
@@ -437,7 +478,7 @@ export default function DispatchForm() {
 
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-                Driver Phone
+                Driver Phone <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
@@ -508,7 +549,7 @@ export default function DispatchForm() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-                  Invoice Number
+                  Invoice Number <span style={{ color: '#D32F2F' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -520,7 +561,7 @@ export default function DispatchForm() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-                  Loading Time
+                  Loading Time <span style={{ color: '#D32F2F' }}>*</span>
                 </label>
                 <input
                   type="time"
@@ -533,7 +574,7 @@ export default function DispatchForm() {
 
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-                Dispatch Time
+                Dispatch Time <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <input
                 type="time"

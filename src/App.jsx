@@ -135,6 +135,21 @@ function SettingsPage() {
           {switching && <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 4 }}>Switching...</div>}
         </div>
       )}
+      {/* History Links */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5 }}>View History</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <button onClick={() => nav('/reports')} style={{ padding: '14px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer', textAlign: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>Reports</div>
+          </button>
+          <button onClick={() => nav('/dispatch')} style={{ padding: '14px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer', textAlign: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#d4a373' }}>Dispatches</div>
+          </button>
+          <button onClick={() => nav('/purchase')} style={{ padding: '14px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer', textAlign: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#595c4a' }}>Purchases</div>
+          </button>
+        </div>
+      </div>
       <button
         onClick={() => nav('/suppliers')}
         style={{ width: '100%', padding: '14px 0', background: '#fff', color: '#2c2c2c', borderRadius: 14, fontSize: 14, fontWeight: 600, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
