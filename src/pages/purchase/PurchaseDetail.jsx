@@ -34,7 +34,7 @@ export default function PurchaseDetail() {
   if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', background: '#fefae0' }}>
-        <PageHeader title="Purchase Detail" backTo="/purchase" />
+        <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
           <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
         </div>
@@ -45,7 +45,7 @@ export default function PurchaseDetail() {
   if (!purchase) {
     return (
       <div style={{ minHeight: '100vh', background: '#fefae0' }}>
-        <PageHeader title="Purchase Detail" backTo="/purchase" />
+        <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
         <div style={{ padding: 20, textAlign: 'center', color: '#595c4a' }}>Purchase not found</div>
       </div>
     )
@@ -67,7 +67,7 @@ export default function PurchaseDetail() {
       <PageHeader
         title={purchase.suppliers?.name || 'Purchase Detail'}
         subtitle={formatDate(purchase.date)}
-        backTo="/purchase"
+        onBack={() => navigate(-1)}
         rightAction={
           <button
             onClick={() => navigate(`/purchase/${id}/edit`)}

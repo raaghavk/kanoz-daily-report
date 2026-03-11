@@ -1,6 +1,7 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { supabase } from './lib/supabase'
 import Layout from './components/Layout'
 
 const Login = lazy(() => import('./pages/Login'))
@@ -92,8 +93,25 @@ export default function App() {
 }
 
 function SettingsPage() {
-  const { employee, plant, signOut } = useAuth()
+  const { employee, plant, signOut, switchPlant } = useAuth()
   const nav = useNavigate()
+  const [orgPlants, setOrgPlants] = useState([])
+  const [switching, setSwitching] = useState(false)
+
+  useEffect(() => {
+    if (employee?.role === 'admin' && plant?.org_id) {
+      supabase.from('plants').select('id, name').eq('org_id', plant.org_id).order('name')
+        .then(({ data }) => setOrgPlants(data || []))
+    }
+  }, [employee?.role, plant?.org_id])
+
+  async function handlePlantSwitch(plantId) {
+    if (plantId === plant?.id) return
+    setSwitching(true)
+    await switchPlant(plantId)
+    setSwitching(false)
+  }
+
   return (
     <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
       <h2 style={{ fontSize: 18, fontWeight: 700 }}>Settings</h2>
@@ -102,6 +120,21 @@ function SettingsPage() {
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Plant:</span> {plant?.name}</div>
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Role:</span> {employee?.role}</div>
       </div>
+      {/* Admin plant switcher */}
+      {employee?.role === 'admin' && orgPlants.length > 1 && (
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Switch Active Plant</label>
+          <select
+            value={plant?.id || ''}
+            onChange={e => handlePlantSwitch(e.target.value)}
+            disabled={switching}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', background: '#fefae0' }}
+          >
+            {orgPlants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          {switching && <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 4 }}>Switching...</div>}
+        </div>
+      )}
       <button
         onClick={() => nav('/suppliers')}
         style={{ width: '100%', padding: '14px 0', background: '#fff', color: '#2c2c2c', borderRadius: 14, fontSize: 14, fontWeight: 600, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}

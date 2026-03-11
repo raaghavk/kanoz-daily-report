@@ -62,6 +62,16 @@ export function AuthProvider({ children }) {
     return Promise.race([signInPromise, timeoutPromise])
   }
 
+  async function switchPlant(newPlantId) {
+    if (!employee || employee.role !== 'admin') return
+    const { data: newPlant } = await supabase
+      .from('plants')
+      .select('*')
+      .eq('id', newPlantId)
+      .single()
+    if (newPlant) setPlant(newPlant)
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     setUser(null)
@@ -70,7 +80,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, employee, plant, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, employee, plant, loading, signIn, signOut, switchPlant }}>
       {children}
     </AuthContext.Provider>
   )
