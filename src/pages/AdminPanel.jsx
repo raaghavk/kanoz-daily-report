@@ -6,10 +6,10 @@ import PageHeader from '../components/PageHeader'
 import { Plus, Edit3, Check, X, ChevronDown, ChevronUp } from 'lucide-react'
 
 const SECTIONS = [
-  { key: 'machines', table: 'machines', label: 'Machines', hasSort: true },
-  { key: 'equipment', table: 'equipment', label: 'Equipment', hasSort: true },
-  { key: 'raw_material_types', table: 'raw_material_types', label: 'Raw Material Types', hasSort: false },
-  { key: 'pellet_types', table: 'pellet_types', label: 'Pellet Types', hasSort: false },
+  { key: 'machines', table: 'machines', label: 'Machines', singular: 'Machine', hasSort: true },
+  { key: 'equipment', table: 'equipment', label: 'Equipment', singular: 'Equipment', hasSort: true },
+  { key: 'raw_material_types', table: 'raw_material_types', label: 'Raw Material Types', singular: 'Raw Material Type', hasSort: false },
+  { key: 'pellet_types', table: 'pellet_types', label: 'Pellet Types', singular: 'Pellet Type', hasSort: false },
 ]
 
 export default function AdminPanel() {
@@ -112,7 +112,7 @@ export default function AdminPanel() {
       showToast('Failed to add: ' + error.message, 'error')
       return
     }
-    showToast(`${section.label.slice(0, -1)} added`, 'success')
+    showToast(`${section.singular} added`, 'success')
     setNewItemName('')
     setAddingTo(null)
     loadAllData()
@@ -258,7 +258,7 @@ export default function AdminPanel() {
                       <div style={{ display: 'flex', gap: 8, padding: '10px 16px' }}>
                         <input
                           type="text"
-                          placeholder={`New ${section.label.slice(0, -1).toLowerCase()} name`}
+                          placeholder={`New ${section.singular.toLowerCase()} name`}
                           value={newItemName}
                           onChange={e => setNewItemName(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && addItem(section.key)}
@@ -286,7 +286,7 @@ export default function AdminPanel() {
                           background: '#fefae0', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#2d6a4f',
                         }}
                       >
-                        <Plus size={14} /> Add {section.label.slice(0, -1)}
+                        <Plus size={14} /> Add {section.singular}
                       </button>
                     )}
                   </div>
