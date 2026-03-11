@@ -73,7 +73,7 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
   return (
     <div>
       {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#595c4a", marginBottom: 6 }}>{label}</label>}
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
+      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" style={{ display: 'none' }} onChange={handleFile} />
       {legacy ? (
         <div style={{ borderRadius: 12, border: '1.5px solid #e5ddd0', padding: 16, background: '#f5f0e1', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 44, height: 44, borderRadius: 10, background: '#2d6a4f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

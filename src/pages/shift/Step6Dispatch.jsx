@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Loader2, TrendingUp, ExternalLink } from 'lucide-react'
 
-export default memo(function Step6Dispatch({ updateData, plant }) {
+export default memo(function Step6Dispatch({ updateData, plant, saveWizardState }) {
   const navigate = useNavigate()
   const [dispatches, setDispatches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -70,6 +70,8 @@ export default memo(function Step6Dispatch({ updateData, plant }) {
   })
 
   function goToDispatchTab() {
+    // Save wizard state before navigating away
+    if (saveWizardState) saveWizardState()
     // Navigate with state so DispatchForm knows to come back here
     navigate('/dispatch', { state: { returnToShift: true } })
   }

@@ -69,16 +69,16 @@ export default memo(function Step1Header({ data, updateData, employee }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden' }}>
       {/* Report Fill Date & Time (auto/readonly) */}
       <div>
         <label style={labelStyle}>Report Fill Date & Time</label>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div style={{ position: 'relative' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, minWidth: 0 }}>
+          <div style={{ position: 'relative', minWidth: 0 }}>
             <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
             <input type="date" value={currentDateStr} readOnly style={inputWithIconStyle} />
           </div>
-          <div style={{ position: 'relative' }}>
+          <div style={{ position: 'relative', minWidth: 0 }}>
             <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
             <input type="time" value={currentTimeStr} readOnly style={inputWithIconStyle} />
           </div>
@@ -86,15 +86,15 @@ export default memo(function Step1Header({ data, updateData, employee }) {
       </div>
 
       {/* Plant & Shift (side by side) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, minWidth: 0 }}>
         {/* Plant (auto/readonly) */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           <label style={labelStyle}>Plant</label>
           <input type="text" value={data.plant?.name || 'Prayagraj'} readOnly style={inputStyle} />
         </div>
 
         {/* Shift Dropdown (A Day / B Night) */}
-        <div>
+        <div style={{ minWidth: 0 }}>
           <label style={labelStyle}>
             Shift <span style={{ color: '#d32f2f' }}>*</span>
           </label>
@@ -132,8 +132,8 @@ export default memo(function Step1Header({ data, updateData, employee }) {
         </div>
 
         {/* Start Date & Start Time (side by side) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-          <div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14, minWidth: 0 }}>
+          <div style={{ minWidth: 0 }}>
             <label style={labelStyle}>
               Start Date <span style={{ color: '#d32f2f' }}>*</span>
             </label>
@@ -157,7 +157,7 @@ export default memo(function Step1Header({ data, updateData, employee }) {
             </div>
           </div>
 
-          <div>
+          <div style={{ minWidth: 0 }}>
             <label style={labelStyle}>
               Start Time <span style={{ color: '#d32f2f' }}>*</span>
             </label>
@@ -174,8 +174,8 @@ export default memo(function Step1Header({ data, updateData, employee }) {
         </div>
 
         {/* End Date & End Time (side by side) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, minWidth: 0 }}>
+          <div style={{ minWidth: 0 }}>
             <label style={labelStyle}>
               End Date <span style={{ color: '#d32f2f' }}>*</span>
             </label>
@@ -190,7 +190,7 @@ export default memo(function Step1Header({ data, updateData, employee }) {
             </div>
           </div>
 
-          <div>
+          <div style={{ minWidth: 0 }}>
             <label style={labelStyle}>
               End Time <span style={{ color: '#d32f2f' }}>*</span>
             </label>
