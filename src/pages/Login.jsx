@@ -82,7 +82,7 @@ export default function Login() {
             width: 140,
             height: 140,
             borderRadius: '50%',
-            background: 'white',
+            background: '#fefae0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -94,8 +94,9 @@ export default function Login() {
               src="/kanoz-logo.png"
               alt="Kanoz Bio Energy"
               style={{
-                width: 120,
-                objectFit: 'contain',
+                width: 140,
+                height: 140,
+                objectFit: 'cover',
               }}
             />
           </div>
