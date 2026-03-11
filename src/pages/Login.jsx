@@ -85,13 +85,15 @@ export default function Login() {
               width: 180,
               marginBottom: 10,
               objectFit: 'contain',
+              borderRadius: 20,
+              mixBlendMode: 'multiply',
               filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.2))',
             }}
           />
 
           <p style={{
             fontSize: 14,
-            color: 'white',
+            color: '#d4a373',
             textTransform: 'uppercase',
             letterSpacing: 3,
             fontWeight: 700,
