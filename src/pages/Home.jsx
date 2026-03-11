@@ -13,9 +13,33 @@ export default function Home() {
   const [showTrucksModal, setShowTrucksModal] = useState(false)
   const [showIssuesModal, setShowIssuesModal] = useState(false)
 
-  const today = new Date().toISOString().split('T')[0]
-  const currentShift = new Date().getHours() < 18 ? 'A' : 'B'
+  const now = new Date()
+  const hour = now.getHours()
+  const today = now.toISOString().split('T')[0]
+  // Shift A: 06:00–17:59, Shift B: 18:00–05:59 (overnight)
+  const currentShift = (hour >= 6 && hour < 18) ? 'A' : 'B'
   const shiftTime = currentShift === 'A' ? '06:00–18:00' : '18:00–06:00'
+
+  // Compute shift start/end dates
+  let shiftStartDate, shiftEndDate
+  if (currentShift === 'A') {
+    shiftStartDate = today
+    shiftEndDate = today
+  } else {
+    if (hour >= 18) {
+      // Evening portion: starts today, ends tomorrow
+      shiftStartDate = today
+      const tomorrow = new Date(now)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      shiftEndDate = tomorrow.toISOString().split('T')[0]
+    } else {
+      // Early morning portion (0-5): started yesterday, ends today
+      const yesterday = new Date(now)
+      yesterday.setDate(yesterday.getDate() - 1)
+      shiftStartDate = yesterday.toISOString().split('T')[0]
+      shiftEndDate = today
+    }
+  }
 
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard', plant?.id, today],
@@ -59,43 +83,31 @@ export default function Home() {
   const todayReports = dashboardData?.todayReports || []
   const handoverNotes = dashboardData?.handoverNotes || null
 
-  const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  const fmtDate = (d) => new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+  const dateStr = currentShift === 'A' || shiftStartDate === shiftEndDate
+    ? fmtDate(shiftStartDate)
+    : `${fmtDate(shiftStartDate)} – ${fmtDate(shiftEndDate)}`
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
       {/* Dark App Bar */}
       <div style={{ flexShrink: 0, background: '#1b4332', paddingTop: 'env(safe-area-inset-top)' }}>
         <div style={{ padding: '14px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 11,
-                background: 'rgba(255,255,255,0.12)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                overflow: 'hidden',
-              }}>
-                <img src="/kanoz-logo.png" alt="Kanoz" style={{ width: 28, height: 28, objectFit: 'contain' }} />
-              </div>
-              <div>
-                <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Welcome, {employee?.name?.split(' ')[0] || 'User'}</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
-                  {plant?.name || 'Plant'} &bull; Shift {currentShift} &bull; {dateStr}
-                </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 11,
+              background: 'rgba(255,255,255,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              <img src="/kanoz-logo.png" alt="Kanoz" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+            </div>
+            <div>
+              <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Welcome, {employee?.name?.split(' ')[0] || 'User'}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 1 }}>
+                {plant?.name || 'Plant'} &bull; Shift {currentShift} &bull; {dateStr}
               </div>
             </div>
-            <button
-              onClick={() => navigate('/settings')}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 38, height: 38, borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)',
-                border: '2px solid rgba(255,255,255,0.15)',
-                fontSize: 14, fontWeight: 700, color: 'white',
-                cursor: 'pointer'
-              }}
-            >
-              {employee?.name?.charAt(0) || 'U'}
-            </button>
           </div>
           {/* Shift time bar */}
           <div style={{

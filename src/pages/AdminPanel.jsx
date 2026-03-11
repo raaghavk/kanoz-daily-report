@@ -6,10 +6,10 @@ import PageHeader from '../components/PageHeader'
 import { Plus, Edit3, Check, X, ChevronDown, ChevronUp } from 'lucide-react'
 
 const SECTIONS = [
-  { key: 'machines', table: 'machines', label: 'Machines', hasSort: true },
-  { key: 'equipment', table: 'equipment', label: 'Equipment', hasSort: true },
-  { key: 'raw_material_types', table: 'raw_material_types', label: 'Raw Material Types', hasSort: false },
-  { key: 'pellet_types', table: 'pellet_types', label: 'Pellet Types', hasSort: false },
+  { key: 'machines', table: 'machines', label: 'Machines', singular: 'Machine', hasSort: true },
+  { key: 'equipment', table: 'equipment', label: 'Equipment', singular: 'Equipment', hasSort: true },
+  { key: 'raw_material_types', table: 'raw_material_types', label: 'Raw Material Types', singular: 'Raw Material Type', hasSort: false },
+  { key: 'pellet_types', table: 'pellet_types', label: 'Pellet Types', singular: 'Pellet Type', hasSort: false },
 ]
 
 export default function AdminPanel() {
@@ -27,6 +27,8 @@ export default function AdminPanel() {
   const [editingItem, setEditingItem] = useState(null) // { section, id, name }
   const [addingTo, setAddingTo] = useState(null) // section key
   const [newItemName, setNewItemName] = useState('')
+  const [addingPlant, setAddingPlant] = useState(false)
+  const [newPlantName, setNewPlantName] = useState('')
 
   // Expanded sections
   const [expandedSections, setExpandedSections] = useState({ machines: true, equipment: true, raw_material_types: true, pellet_types: true })
@@ -112,7 +114,7 @@ export default function AdminPanel() {
       showToast('Failed to add: ' + error.message, 'error')
       return
     }
-    showToast(`${section.label.slice(0, -1)} added`, 'success')
+    showToast(`${section.singular} added`, 'success')
     setNewItemName('')
     setAddingTo(null)
     loadAllData()
@@ -145,6 +147,27 @@ export default function AdminPanel() {
     setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }))
   }
 
+  async function addPlant() {
+    if (!newPlantName.trim()) {
+      showToast('Plant name is required', 'error')
+      return
+    }
+    const { data: newPlant, error } = await supabase
+      .from('plants')
+      .insert({ org_id: plant?.org_id, name: newPlantName.trim() })
+      .select()
+      .single()
+    if (error) {
+      showToast('Failed to add plant: ' + error.message, 'error')
+      return
+    }
+    showToast('Plant added', 'success')
+    setNewPlantName('')
+    setAddingPlant(false)
+    setPlants(prev => [...prev, { id: newPlant.id, name: newPlant.name }].sort((a, b) => a.name.localeCompare(b.name)))
+    setSelectedPlantId(newPlant.id)
+  }
+
   const selectedPlantName = plants.find(p => p.id === selectedPlantId)?.name || 'Plant'
 
   return (
@@ -152,18 +175,38 @@ export default function AdminPanel() {
       <PageHeader title="Plant Settings" subtitle={`Admin · ${selectedPlantName}`} backTo="/settings" />
 
       {/* Plant Selector */}
-      {plants.length > 1 && (
-        <div style={{ padding: '12px 20px', background: '#fff', borderBottom: '1px solid #e5ddd0' }}>
-          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Select Plant</label>
-          <select
-            value={selectedPlantId}
-            onChange={e => setSelectedPlantId(e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', background: '#fefae0' }}
+      <div style={{ padding: '12px 20px', background: '#fff', borderBottom: '1px solid #e5ddd0' }}>
+        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Select Plant</label>
+        <select
+          value={selectedPlantId}
+          onChange={e => setSelectedPlantId(e.target.value)}
+          style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', background: '#fefae0' }}
+        >
+          {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        {addingPlant ? (
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <input
+              type="text"
+              placeholder="New plant name"
+              value={newPlantName}
+              onChange={e => setNewPlantName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addPlant()}
+              autoFocus
+              style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none' }}
+            />
+            <button onClick={addPlant} style={{ padding: '8px 12px', background: '#2d6a4f', color: 'white', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Add</button>
+            <button onClick={() => { setAddingPlant(false); setNewPlantName('') }} style={{ padding: '8px 12px', background: '#fefae0', color: '#595c4a', borderRadius: 8, border: '1px solid #e5ddd0', cursor: 'pointer', fontSize: 12 }}>Cancel</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setAddingPlant(true)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', marginTop: 8, padding: '8px 0', background: 'transparent', border: '1.5px dashed #b8d4c4', borderRadius: 10, cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#2d6a4f' }}
           >
-            {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </div>
-      )}
+            <Plus size={14} /> Add New Plant
+          </button>
+        )}
+      </div>
 
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {loading ? (
@@ -258,7 +301,7 @@ export default function AdminPanel() {
                       <div style={{ display: 'flex', gap: 8, padding: '10px 16px' }}>
                         <input
                           type="text"
-                          placeholder={`New ${section.label.slice(0, -1).toLowerCase()} name`}
+                          placeholder={`New ${section.singular.toLowerCase()} name`}
                           value={newItemName}
                           onChange={e => setNewItemName(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && addItem(section.key)}
@@ -286,7 +329,7 @@ export default function AdminPanel() {
                           background: '#fefae0', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: '#2d6a4f',
                         }}
                       >
-                        <Plus size={14} /> Add {section.label.slice(0, -1)}
+                        <Plus size={14} /> Add {section.singular}
                       </button>
                     )}
                   </div>

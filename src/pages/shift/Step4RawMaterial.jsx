@@ -33,10 +33,11 @@ export default memo(function Step4RawMaterial({ data, updateData }) {
               <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8a8d7a', marginBottom: 4, textAlign: 'center' }}>USED</label>
               <input
                 type="number"
+                inputMode="decimal"
                 value={rm.used || ''}
                 onChange={e => updateRM(idx, 'used', e.target.value)}
                 placeholder="0"
-                style={{ width: '100%', padding: '8px 8px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', textAlign: 'center', boxSizing: 'border-box' }}
+                style={{ width: '100%', padding: '8px 4px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', textAlign: 'center', boxSizing: 'border-box', MozAppearance: 'textfield', WebkitAppearance: 'none', appearance: 'textfield' }}
               />
             </div>
             <div>

@@ -81,33 +81,41 @@ export default function ShiftWizard() {
   }, [reportData, step, reportId])
 
   // Restore from sessionStorage if returning from dispatch
+  const [initDone, setInitDone] = useState(false)
   useEffect(() => {
-    if (editId) return // Don't restore for edit mode
+    if (editId) { setInitDone(true); return }
     const returnToStep = location.state?.returnToStep
-    if (returnToStep) {
-      try {
-        const saved = sessionStorage.getItem(WIZARD_STORAGE_KEY)
-        if (saved) {
-          const { reportData: savedData, step: savedStep, reportId: savedId } = JSON.parse(saved)
-          if (savedData) {
-            setReportData(savedData)
-            setStep(returnToStep || savedStep || 6)
-            if (savedId) setReportId(savedId)
-            setRestoredFromStorage(true)
-            sessionStorage.removeItem(WIZARD_STORAGE_KEY)
-            return
-          }
+    try {
+      const saved = sessionStorage.getItem(WIZARD_STORAGE_KEY)
+      if (saved) {
+        const { reportData: savedData, step: savedStep, reportId: savedId } = JSON.parse(saved)
+        if (savedData && savedData.machines?.length > 0) {
+          setReportData(savedData)
+          setStep(returnToStep || savedStep || 1)
+          if (savedId) setReportId(savedId)
+          setRestoredFromStorage(true)
+          setInitDone(true)
+          return
         }
-      } catch (e) {
-        console.error('Failed to restore wizard state:', e)
       }
+    } catch (e) {
+      console.error('Failed to restore wizard state:', e)
     }
-  }, [])
+    setInitDone(true)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load machines and raw material types for this plant
   useEffect(() => {
-    if (plant?.id && !restoredFromStorage) loadPlantData()
-  }, [plant, restoredFromStorage])
+    if (plant?.id && initDone && !restoredFromStorage) loadPlantData()
+  }, [plant, initDone, restoredFromStorage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save wizard state to sessionStorage on changes (so it survives navigation)
+  useEffect(() => {
+    if (!initDone || editId) return
+    try {
+      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId }))
+    } catch { /* ignore */ }
+  }, [reportData, step, reportId, initDone, editId])
 
   useEffect(() => {
     if (editId && plant?.id) loadExistingReport()

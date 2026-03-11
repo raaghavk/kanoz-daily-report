@@ -2,9 +2,10 @@ import { memo } from 'react'
 import { ChevronDown, Plus, X, Camera } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
 
-// Helper: format number for display, avoid leading zeros
+// Helper: format number for display, allow empty string for clearing
 function numVal(v) {
   if (v === '' || v === null || v === undefined) return ''
+  if (typeof v === 'string') return v
   const n = parseFloat(v)
   return isNaN(n) ? '' : n
 }
@@ -68,18 +69,18 @@ export default memo(function Step5Diesel({ data, updateData }) {
 
   function updateEntry(idx, field, value) {
     const entries = [...data.diesel]
-    const numValue = value === '' ? 0 : (parseFloat(value) || 0)
-    entries[idx] = { ...entries[idx], [field]: numValue }
+    // Store raw string so user can clear the field; parse for calculations
+    entries[idx] = { ...entries[idx], [field]: value }
+    const num = (f) => parseFloat(entries[idx][f]) || 0
 
     // Auto-calculate closing: opening + added - used
     if (field === 'opening' || field === 'added' || field === 'used') {
-      entries[idx].closing = (entries[idx].opening || 0) + (entries[idx].added || 0) - (entries[idx].used || 0)
+      entries[idx].closing = num('opening') + num('added') - num('used')
     }
 
     // Auto-calculate avg_per_hr
     if (field === 'used' || field === 'hours') {
-      const hours = entries[idx].hours || 0
-      entries[idx].avg_per_hr = hours > 0 ? (entries[idx].used || 0) / hours : 0
+      entries[idx].avg_per_hr = num('hours') > 0 ? num('used') / num('hours') : 0
     }
 
     updateData('diesel', entries)
