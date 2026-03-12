@@ -232,6 +232,18 @@ export default function DispatchForm() {
         if (pelletError) throw pelletError
 
         showToast('Dispatch saved successfully', 'success')
+
+        // Send push notification to admins (non-blocking)
+        const totalQty = form.pellets.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0)
+        const customerName = customers?.find(c => c.id === form.customer_id)?.name || 'Unknown'
+        import('../../lib/notifications').then(({ sendNotification }) => {
+          sendNotification('dispatch_created', {
+            truck_number: form.truck_number,
+            customer: customerName,
+            quantity_mt: totalQty.toFixed(1),
+            plant: plant?.name,
+          })
+        }).catch(() => {})
         setForm({
           truck_number: '',
           customer_id: '',

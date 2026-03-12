@@ -67,23 +67,23 @@ export default memo(function Step2Machines({ data, updateData }) {
               {m.name}
               <span style={{ background: '#e8f0ec', color: '#2d6a4f', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6, marginLeft: 'auto' }}>Active</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
-              <div style={{ minWidth: 0 }}>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>FROM</label>
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, marginBottom: 6 }}>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', paddingLeft: 2 }}>FROM</label>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', paddingLeft: 14 }}>TO</label>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', border: '1.5px solid #e5ddd0', borderRadius: 8, overflow: 'hidden' }}>
                 <input
                   type="time"
                   value={m.from_time}
                   onChange={e => updateMachine(idx, 'from_time', e.target.value)}
-                  style={inputStyle}
+                  style={{ ...inputStyle, border: 'none', borderRight: '1px solid #e5ddd0', borderRadius: 0 }}
                 />
-              </div>
-              <div style={{ minWidth: 0 }}>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>TO</label>
                 <input
                   type="time"
                   value={m.to_time}
                   onChange={e => updateMachine(idx, 'to_time', e.target.value)}
-                  style={inputStyle}
+                  style={{ ...inputStyle, border: 'none', borderRadius: 0 }}
                 />
               </div>
             </div>

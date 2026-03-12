@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Home, Settings, Plus, ClipboardList, Truck, Package, X } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { can } from '../lib/permissions'
 
 export default function BottomNav() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { employee } = useAuth()
   const [showSheet, setShowSheet] = useState(false)
+  const role = employee?.role
 
   const isHome = location.pathname === '/'
   const isMore = location.pathname === '/settings' ||
@@ -46,6 +50,7 @@ export default function BottomNav() {
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {can(role, 'create_report') && (
               <button onClick={() => handleAction('/shift/new')} style={{
                 display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
                 background: '#e8f0ec', borderRadius: 14, border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
@@ -58,6 +63,8 @@ export default function BottomNav() {
                   <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>Log production & operations</div>
                 </div>
               </button>
+              )}
+              {can(role, 'create_dispatch') && (
               <button onClick={() => handleAction('/dispatch')} style={{
                 display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
                 background: '#fefae0', borderRadius: 14, border: '1px solid #e5ddd0', cursor: 'pointer', width: '100%', textAlign: 'left',
@@ -70,6 +77,8 @@ export default function BottomNav() {
                   <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>Record vehicle dispatch</div>
                 </div>
               </button>
+              )}
+              {can(role, 'create_purchase') && (
               <button onClick={() => handleAction('/purchase/new')} style={{
                 display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
                 background: '#fefae0', borderRadius: 14, border: '1px solid #e5ddd0', cursor: 'pointer', width: '100%', textAlign: 'left',
@@ -82,6 +91,7 @@ export default function BottomNav() {
                   <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>Log raw material purchase</div>
                 </div>
               </button>
+              )}
             </div>
           </div>
         </div>
@@ -102,14 +112,14 @@ export default function BottomNav() {
           <span style={{ fontSize: 10, fontWeight: isHome ? 700 : 600 }}>Home</span>
         </button>
 
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <button onClick={() => setShowSheet(!showSheet)} style={{
             width: 52, height: 52, borderRadius: '50%',
             background: showSheet ? '#1b4332' : '#2d6a4f',
             color: 'white', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 14px rgba(45,106,79,0.3)',
-            marginTop: -16, transition: 'background 0.2s, transform 0.2s',
+            marginTop: -22, transition: 'background 0.2s, transform 0.2s',
             transform: showSheet ? 'rotate(45deg)' : 'none',
           }}>
             <Plus size={26} strokeWidth={2.5} />

@@ -154,7 +154,7 @@ export default function AdminPanel() {
     }
     const { data: newPlant, error } = await supabase
       .from('plants')
-      .insert({ org_id: plant?.org_id, name: newPlantName.trim() })
+      .insert({ org_id: plant?.org_id, name: newPlantName.trim(), code: newPlantName.trim().toLowerCase().replace(/\s+/g, '-') })
       .select()
       .single()
     if (error) {

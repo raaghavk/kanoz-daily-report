@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { ROLE_OPTIONS } from '../lib/permissions'
 import { UserPlus, Edit2, Shield, ShieldOff, Eye, EyeOff, ChevronLeft, Phone, Mail, MapPin, Check, X, Loader2, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -285,12 +286,13 @@ export default function UserManagement() {
               <div>
                 <label style={labelStyle}>Role <span style={{ color: '#d32f2f' }}>*</span></label>
                 <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
-                  <option value="supervisor">Supervisor</option>
-                  <option value="admin">Admin</option>
-                  <option value="purchase_manager">Purchase Manager</option>
-                  <option value="accountant">Accountant</option>
-                  <option value="worker">Worker</option>
+                  {ROLE_OPTIONS.map(r => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
                 </select>
+                <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 4 }}>
+                  {ROLE_OPTIONS.find(r => r.value === form.role)?.description}
+                </div>
               </div>
 
               <div>

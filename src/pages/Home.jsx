@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
 import { ChevronRight, Plus, Truck, Package } from 'lucide-react'
 
@@ -198,6 +199,7 @@ export default function Home() {
 
         {/* Action Buttons */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+          {can(employee?.role, 'create_report') && (
           <button
             onClick={() => navigate('/shift/new')}
             style={{
@@ -212,6 +214,8 @@ export default function Home() {
             <Plus size={18} strokeWidth={2.5} />
             New Shift Report
           </button>
+          )}
+          {can(employee?.role, 'create_dispatch') && (
           <button
             onClick={() => navigate('/dispatch')}
             style={{
@@ -226,6 +230,8 @@ export default function Home() {
             <Truck size={16} strokeWidth={2} />
             Quick Vehicle Dispatch
           </button>
+          )}
+          {can(employee?.role, 'create_purchase') && (
           <button
             onClick={() => navigate('/purchase/new')}
             style={{
@@ -240,6 +246,7 @@ export default function Home() {
             <Package size={16} strokeWidth={2} />
             Raw Material Purchase
           </button>
+          )}
         </div>
 
         {/* Recent Reports */}
