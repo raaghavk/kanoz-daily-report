@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Calendar, Clock } from 'lucide-react'
 
-export default memo(function Step1Header({ data, updateData, employee }) {
+export default memo(function Step1Header({ data, updateData, employee, plant }) {
   function handleShiftChange(shift) {
     updateData('shift', shift)
     if (shift === 'A') {
@@ -90,7 +90,7 @@ export default memo(function Step1Header({ data, updateData, employee }) {
         {/* Plant (auto/readonly) */}
         <div style={{ minWidth: 0 }}>
           <label style={labelStyle}>Plant</label>
-          <input type="text" value={data.plant?.name || 'Prayagraj'} readOnly style={inputStyle} />
+          <input type="text" value={plant?.name || 'Plant'} readOnly style={inputStyle} />
         </div>
 
         {/* Shift Dropdown (A Day / B Night) */}
