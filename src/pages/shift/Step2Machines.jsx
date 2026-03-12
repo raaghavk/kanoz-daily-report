@@ -98,7 +98,7 @@ export default memo(function Step2Machines({ data, updateData }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 14 }}>
               <div style={{ minWidth: 0 }}>
                 <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>TOTAL HRS</label>
-                <div style={{ padding: '12px 10px', borderRadius: 8, background: '#fefae0', border: '1px solid #e5ddd0', fontSize: 13, fontWeight: 600, color: '#595c4a', textAlign: 'center' }}>
+                <div style={{ height: 44, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: '#fefae0', border: '1.5px solid #e5ddd0', fontSize: 13, fontWeight: 600, color: '#595c4a' }}>
                   {totalHrs}
                 </div>
               </div>
@@ -111,12 +111,12 @@ export default memo(function Step2Machines({ data, updateData }) {
                   value={m.breakdown_hrs || ''}
                   onChange={e => updateMachine(idx, 'breakdown_hrs', e.target.value)}
                   placeholder="0"
-                  style={{ ...inputStyle, textAlign: 'center' }}
+                  style={{ ...inputStyle, height: 44, textAlign: 'center' }}
                 />
               </div>
               <div style={{ minWidth: 0 }}>
                 <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>PROD. HRS</label>
-                <div style={{ padding: '12px 10px', borderRadius: 8, background: 'rgba(198, 246, 213, 0.2)', border: '1.5px solid #b8d4c4', fontSize: 13, fontWeight: 700, color: '#2d6a4f', textAlign: 'center' }}>
+                <div style={{ height: 44, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: 'rgba(198, 246, 213, 0.2)', border: '1.5px solid #b8d4c4', fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>
                   {m.production_hours || 0}
                 </div>
               </div>

@@ -27,6 +27,7 @@ export default memo(function Step1Header({ data, updateData, employee, plant }) 
 
   const inputStyle = {
     width: '100%',
+    height: 48,
     padding: '12px 14px',
     borderRadius: 10,
     border: '1px solid #e5ddd0',
@@ -45,6 +46,7 @@ export default memo(function Step1Header({ data, updateData, employee, plant }) 
 
   const editableInputStyle = {
     width: '100%',
+    height: 48,
     padding: '12px 14px',
     borderRadius: 10,
     border: '1.5px solid #e5ddd0',
