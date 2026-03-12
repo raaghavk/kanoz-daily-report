@@ -481,6 +481,26 @@ export default function ShiftWizard() {
       showToast(editId ? 'Report updated!' : 'Report submitted!', 'success')
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
+
+      // Send push notification to admins (non-blocking)
+      if (!editId) {
+        const totalMT = reportData.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
+        import('../../lib/notifications').then(({ sendNotification }) => {
+          sendNotification('report_submitted', {
+            shift: reportData.shift,
+            supervisor: employee?.name,
+            production_mt: totalMT.toFixed(1),
+            plant: plant?.name,
+            date: reportData.date,
+          })
+        }).catch(() => {})
+
+        // Auto-sync to Google Sheets (non-blocking)
+        supabase.functions.invoke('sync-to-sheets', {
+          body: { report_id: report.id },
+        }).catch(() => {})
+      }
+
       navigate('/')
     } catch (err) {
       console.error('Save error:', err)

@@ -3,15 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
-import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3 } from 'lucide-react'
+import { can } from '../lib/permissions'
+import { exportDetailedReportToCSV } from '../lib/exportUtils'
+import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, Download, FileSpreadsheet } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
 export default function ReportView() {
   const { id } = useParams()
   const navigate = useNavigate()
-  useAuth()
+  const { employee } = useAuth()
   const [report, setReport] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [machineProduction, setMachineProduction] = useState([])
   const [rawMaterials, setRawMaterials] = useState([])
   const [dispatches, setDispatches] = useState([])
@@ -47,6 +50,22 @@ export default function ReportView() {
       showToast('Failed to delete report', 'error')
     } finally {
       setDeleting(false)
+    }
+  }
+
+  async function syncToSheets() {
+    setSyncing(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-to-sheets', {
+        body: { report_id: id },
+      })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      showToast('Synced to Google Sheets!', 'success')
+    } catch (err) {
+      showToast(err.message || 'Failed to sync to Sheets', 'error')
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -450,6 +469,7 @@ export default function ReportView() {
 
       {/* Action Buttons */}
       <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16, display: 'flex', gap: 12 }}>
+        {can(employee?.role, 'create_report') && (
         <button
           onClick={() => navigate(`/shift/edit/${id}`)}
           style={{
@@ -460,6 +480,35 @@ export default function ReportView() {
         >
           <Edit3 size={16} /> Edit Report
         </button>
+        )}
+        {can(employee?.role, 'export') && (
+        <button
+          onClick={() => exportDetailedReportToCSV({ report, machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues })}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700,
+            background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4',
+            cursor: 'pointer'
+          }}
+        >
+          <Download size={14} /> CSV
+        </button>
+        )}
+        {can(employee?.role, 'export') && (
+        <button
+          onClick={syncToSheets}
+          disabled={syncing}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700,
+            background: '#EDE9FE', color: '#6D28D9', border: '1.5px solid #DDD6FE',
+            cursor: syncing ? 'not-allowed' : 'pointer', opacity: syncing ? 0.6 : 1,
+          }}
+        >
+          <FileSpreadsheet size={14} /> {syncing ? 'Syncing...' : 'Sheets'}
+        </button>
+        )}
+        {can(employee?.role, 'create_report') && (
         <button
           onClick={deleteReport}
           disabled={deleting}
@@ -471,6 +520,7 @@ export default function ReportView() {
         >
           <Trash2 size={16} />
         </button>
+        )}
       </div>
     </div>
   )

@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { supabase } from './lib/supabase'
+import { can } from './lib/permissions'
 import Layout from './components/Layout'
 
 const Login = lazy(() => import('./pages/Login'))
@@ -44,6 +45,12 @@ function ProtectedRoute({ children }) {
   return user ? children : <Navigate to="/login" replace />
 }
 
+function PermissionGuard({ action, children }) {
+  const { employee } = useAuth()
+  if (!can(employee?.role, action)) return <Navigate to="/" replace />
+  return children
+}
+
 export default function App() {
   return (
     <Suspense fallback={<LoadingFallback />}>
@@ -58,18 +65,18 @@ export default function App() {
         }
       >
         <Route index element={<Home />} />
-        <Route path="reports" element={<ReportList />} />
-        <Route path="reports/:id" element={<ReportView />} />
-        <Route path="purchase" element={<PurchaseList />} />
-        <Route path="purchase/new" element={<PurchaseForm />} />
-        <Route path="purchase/:id" element={<PurchaseDetail />} />
-        <Route path="purchase/:id/edit" element={<PurchaseForm />} />
-        <Route path="dispatch" element={<DispatchForm />} />
+        <Route path="reports" element={<PermissionGuard action="view_reports"><ReportList /></PermissionGuard>} />
+        <Route path="reports/:id" element={<PermissionGuard action="view_reports"><ReportView /></PermissionGuard>} />
+        <Route path="purchase" element={<PermissionGuard action="view_purchases"><PurchaseList /></PermissionGuard>} />
+        <Route path="purchase/new" element={<PermissionGuard action="create_purchase"><PurchaseForm /></PermissionGuard>} />
+        <Route path="purchase/:id" element={<PermissionGuard action="view_purchases"><PurchaseDetail /></PermissionGuard>} />
+        <Route path="purchase/:id/edit" element={<PermissionGuard action="create_purchase"><PurchaseForm /></PermissionGuard>} />
+        <Route path="dispatch" element={<PermissionGuard action="create_dispatch"><DispatchForm /></PermissionGuard>} />
         <Route path="suppliers" element={<SupplierList />} />
         <Route path="suppliers/:id" element={<SupplierDetail />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="users" element={<UserManagement />} />
-        <Route path="admin" element={<AdminPanel />} />
+        <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
+        <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
       </Route>
       <Route
         path="/shift/new"
@@ -97,13 +104,54 @@ function SettingsPage() {
   const nav = useNavigate()
   const [orgPlants, setOrgPlants] = useState([])
   const [switching, setSwitching] = useState(false)
+  const [notifEnabled, setNotifEnabled] = useState(false)
+  const [notifLoading, setNotifLoading] = useState(false)
 
   useEffect(() => {
-    if (employee?.role === 'admin' && plant?.org_id) {
+    if (can(employee?.role, 'switch_plant') && plant?.org_id) {
       supabase.from('plants').select('id, name').eq('org_id', plant.org_id).order('name')
         .then(({ data }) => setOrgPlants(data || []))
     }
   }, [employee?.role, plant?.org_id])
+
+  // Check current notification status
+  useEffect(() => {
+    import('./lib/notifications').then(({ isSubscribed }) => {
+      isSubscribed().then(setNotifEnabled)
+    })
+  }, [])
+
+  async function toggleNotifications() {
+    setNotifLoading(true)
+    try {
+      const { getNotificationStatus, subscribeToPush, unsubscribeFromPush } = await import('./lib/notifications')
+      const status = getNotificationStatus()
+      if (status === 'unsupported') {
+        alert('Push notifications are not supported on this device/browser.')
+        return
+      }
+      if (status === 'not_configured') {
+        alert('Push notifications are not configured yet. VAPID key is missing.')
+        return
+      }
+
+      if (notifEnabled) {
+        await unsubscribeFromPush(employee.id)
+        setNotifEnabled(false)
+      } else {
+        const result = await subscribeToPush(employee.id)
+        if (result.success) {
+          setNotifEnabled(true)
+        } else if (result.reason === 'denied') {
+          alert('Notification permission was denied. Please enable it in your browser settings.')
+        }
+      }
+    } catch (err) {
+      console.error('Notification toggle error:', err)
+    } finally {
+      setNotifLoading(false)
+    }
+  }
 
   async function handlePlantSwitch(plantId) {
     if (plantId === plant?.id) return
@@ -120,8 +168,8 @@ function SettingsPage() {
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Plant:</span> {plant?.name}</div>
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Role:</span> {employee?.role}</div>
       </div>
-      {/* Admin plant switcher */}
-      {employee?.role === 'admin' && orgPlants.length > 1 && (
+      {/* Plant switcher (admin only) */}
+      {can(employee?.role, 'switch_plant') && orgPlants.length > 1 && (
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Switch Active Plant</label>
           <select
@@ -139,15 +187,21 @@ function SettingsPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5 }}>View History</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          {can(employee?.role, 'view_reports') && (
           <button onClick={() => nav('/reports')} style={{ padding: '14px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer', textAlign: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>Reports</div>
           </button>
+          )}
+          {can(employee?.role, 'view_dispatches') && (
           <button onClick={() => nav('/dispatch')} style={{ padding: '14px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer', textAlign: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#d4a373' }}>Dispatches</div>
           </button>
+          )}
+          {can(employee?.role, 'view_purchases') && (
           <button onClick={() => nav('/purchase')} style={{ padding: '14px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer', textAlign: 'center' }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#595c4a' }}>Purchases</div>
           </button>
+          )}
         </div>
       </div>
       <button
@@ -156,22 +210,47 @@ function SettingsPage() {
       >
         View Suppliers
       </button>
-      {employee?.role === 'admin' && (
-        <>
-          <button
-            onClick={() => nav('/users')}
-            style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-          >
-            Manage Team Members
-          </button>
-          <button
-            onClick={() => nav('/admin')}
-            style={{ width: '100%', padding: '14px 0', background: '#d4a373', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-          >
-            Plant Settings (Admin)
-          </button>
-        </>
+      {can(employee?.role, 'manage_users') && (
+        <button
+          onClick={() => nav('/users')}
+          style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+        >
+          Manage Team Members
+        </button>
       )}
+      {can(employee?.role, 'plant_settings') && (
+        <button
+          onClick={() => nav('/admin')}
+          style={{ width: '100%', padding: '14px 0', background: '#d4a373', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+        >
+          Plant Settings (Admin)
+        </button>
+      )}
+      {/* Notifications */}
+      <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Push Notifications</div>
+          <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>
+            {notifEnabled ? 'Receiving alerts for reports & dispatches' : 'Enable to get shift alerts'}
+          </div>
+        </div>
+        <button
+          onClick={toggleNotifications}
+          disabled={notifLoading}
+          style={{
+            width: 48, height: 28, borderRadius: 14, border: 'none', cursor: notifLoading ? 'not-allowed' : 'pointer',
+            background: notifEnabled ? '#2d6a4f' : '#D1D5DB',
+            position: 'relative', transition: 'background 0.2s',
+            opacity: notifLoading ? 0.6 : 1,
+          }}
+        >
+          <div style={{
+            width: 22, height: 22, borderRadius: '50%', background: 'white',
+            position: 'absolute', top: 3,
+            left: notifEnabled ? 23 : 3, transition: 'left 0.2s'
+          }} />
+        </button>
+      </div>
       <button
         onClick={signOut}
         style={{ width: '100%', padding: '14px 0', background: '#d32f2f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}

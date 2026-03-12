@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { FileText, ChevronRight, Calendar } from 'lucide-react'
+import { can } from '../lib/permissions'
+import { exportReportListToCSV } from '../lib/exportUtils'
+import { FileText, ChevronRight, Calendar, Download } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
 function getDateRange(filter, today) {
@@ -26,7 +28,7 @@ function getDateRange(filter, today) {
 }
 
 export default function ReportList() {
-  const { plant } = useAuth()
+  const { plant, employee } = useAuth()
   const navigate = useNavigate()
   const [filter, setFilter] = useState('today')
 
@@ -74,8 +76,8 @@ export default function ReportList() {
     <div style={{ paddingBottom: 80 }}>
       <PageHeader title="Shift Reports" subtitle="View and manage all reports" backTo="/" />
 
-      {/* Filter Tabs */}
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '16px 20px 0' }}>
+      {/* Filter Tabs + Export */}
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '16px 20px 0', alignItems: 'center' }}>
         {filterTabs.map(tab => (
           <button
             key={tab.id}
@@ -91,6 +93,19 @@ export default function ReportList() {
             {tab.label}
           </button>
         ))}
+        {can(employee?.role, 'export') && reports.length > 0 && (
+          <button
+            onClick={() => exportReportListToCSV(reports)}
+            style={{
+              marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4,
+              padding: '8px 12px', borderRadius: 12, fontSize: 11, fontWeight: 700,
+              background: '#e8f0ec', color: '#2d6a4f', border: 'none', cursor: 'pointer',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}
+          >
+            <Download size={14} /> Export CSV
+          </button>
+        )}
       </div>
 
       {/* Reports List */}
