@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
 
   async function fetchEmployee(authUserId) {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('employees')
         .select('*, plants(*)')
         .eq('auth_user_id', authUserId)
