@@ -217,7 +217,7 @@ export default function ShiftWizard() {
       updateData('remarks', report.remarks || '')
 
       // Load child data
-      const [, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
+      const [machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', editId),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', editId),
@@ -226,6 +226,20 @@ export default function ShiftWizard() {
         supabase.from('diesel_stock').select('*').eq('shift_report_id', editId).maybeSingle(),
         supabase.from('diesel_purchases').select('*').eq('shift_report_id', editId),
       ])
+
+      // Merge machine production hours back into machines
+      if (machProd.data?.length) {
+        setReportData(prev => ({
+          ...prev,
+          machines: prev.machines.map(m => {
+            const prod = machProd.data.find(mp => mp.machine_id === m.id)
+            if (prod) {
+              return { ...m, production_hours: parseFloat(prod.hours_run) || 0 }
+            }
+            return m
+          })
+        }))
+      }
 
       if (rmUsage.data?.length) {
         updateData('rawMaterials', rmUsage.data.map(rm => ({

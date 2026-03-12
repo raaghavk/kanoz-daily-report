@@ -295,6 +295,7 @@ export default function Home() {
               <div style={{ fontSize: 28, marginBottom: 8 }}>📊</div>
               <p style={{ fontSize: 14, fontWeight: 500, color: '#595c4a', marginBottom: 4 }}>No reports yet today</p>
               <p style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 16 }}>Start a shift report to track production</p>
+              {can(employee?.role, 'create_report') && (
               <button
                 onClick={() => navigate('/shift/new')}
                 style={{
@@ -306,6 +307,7 @@ export default function Home() {
               >
                 Start Shift Report
               </button>
+              )}
             </div>
           )}
         </div>
