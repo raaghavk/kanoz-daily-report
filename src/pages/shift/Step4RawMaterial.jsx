@@ -19,13 +19,13 @@ export default memo(function Step4RawMaterial({ data, updateData }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
             <div>
               <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8a8d7a', marginBottom: 4, textAlign: 'center' }}>OPENING</label>
-              <div style={{ padding: '8px 4px', borderRadius: 8, background: '#fefae0', border: '1px solid #e5ddd0', textAlign: 'center', fontSize: 12, fontWeight: 500 }}>
+              <div style={{ height: 38, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: '#fefae0', border: '1px solid #e5ddd0', fontSize: 12, fontWeight: 500 }}>
                 {rm.opening}
               </div>
             </div>
             <div>
               <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#8a8d7a', marginBottom: 4, textAlign: 'center' }}>PURCHASED</label>
-              <div style={{ padding: '8px 4px', borderRadius: 8, background: '#fefae0', border: '1px solid #e5ddd0', textAlign: 'center', fontSize: 12, fontWeight: 500 }}>
+              <div style={{ height: 38, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: '#fefae0', border: '1px solid #e5ddd0', fontSize: 12, fontWeight: 500 }}>
                 {rm.purchased}
               </div>
             </div>
@@ -37,12 +37,12 @@ export default memo(function Step4RawMaterial({ data, updateData }) {
                 value={rm.used || ''}
                 onChange={e => updateRM(idx, 'used', e.target.value)}
                 placeholder="0"
-                style={{ width: '100%', padding: '8px 4px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', textAlign: 'center', boxSizing: 'border-box', MozAppearance: 'textfield', WebkitAppearance: 'none', appearance: 'textfield' }}
+                style={{ width: '100%', height: 38, padding: '8px 4px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', textAlign: 'center', boxSizing: 'border-box', MozAppearance: 'textfield', WebkitAppearance: 'none', appearance: 'textfield' }}
               />
             </div>
             <div>
               <label style={{ display: 'block', fontSize: 9, fontWeight: 600, color: '#2d6a4f', marginBottom: 4, textAlign: 'center' }}>CLOSING</label>
-              <div style={{ padding: '8px 4px', borderRadius: 8, background: '#e8f0ec', border: '1px solid #b8d4c4', textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#2d6a4f' }}>
+              <div style={{ height: 38, boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, background: '#e8f0ec', border: '1px solid #b8d4c4', fontSize: 12, fontWeight: 700, color: '#2d6a4f' }}>
                 {rm.closing}
               </div>
             </div>
