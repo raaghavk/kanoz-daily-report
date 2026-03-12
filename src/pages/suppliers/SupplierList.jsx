@@ -29,7 +29,7 @@ export default function SupplierList() {
     if (plant?.id) {
       fetchSuppliers()
     }
-  }, [plant])
+  }, [plant]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (searchQuery.trim()) {

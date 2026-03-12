@@ -69,12 +69,18 @@ export function AuthProvider({ children }) {
 
   async function switchPlant(newPlantId) {
     if (!employee || employee.role !== 'admin') return
-    const { data: newPlant } = await supabase
-      .from('plants')
-      .select('*')
-      .eq('id', newPlantId)
-      .single()
-    if (newPlant) setPlant(newPlant)
+    try {
+      const { data: newPlant, error } = await supabase
+        .from('plants')
+        .select('*')
+        .eq('id', newPlantId)
+        .single()
+      if (error) throw error
+      if (newPlant) setPlant(newPlant)
+    } catch (err) {
+      console.error('Error switching plant:', err)
+      throw err
+    }
   }
 
   async function signOut() {

@@ -131,6 +131,7 @@ function SettingsPage() {
     if (can(employee?.role, 'switch_plant') && plant?.org_id) {
       supabase.from('plants').select('id, name').eq('org_id', plant.org_id).order('name')
         .then(({ data }) => setOrgPlants(data || []))
+        .catch(() => {})
     }
   }, [employee?.role, plant?.org_id])
 
@@ -176,8 +177,13 @@ function SettingsPage() {
   async function handlePlantSwitch(plantId) {
     if (plantId === plant?.id) return
     setSwitching(true)
-    await switchPlant(plantId)
-    setSwitching(false)
+    try {
+      await switchPlant(plantId)
+    } catch {
+      alert('Failed to switch plant. Please try again.')
+    } finally {
+      setSwitching(false)
+    }
   }
 
   return (

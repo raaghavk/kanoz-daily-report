@@ -119,7 +119,7 @@ export default function ShiftWizard() {
 
   useEffect(() => {
     if (editId && plant?.id) loadExistingReport()
-  }, [editId, plant])
+  }, [editId, plant]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadPlantData() {
     const [machinesRes, materialsRes, pelletTypesRes, equipmentRes] = await Promise.all([
@@ -525,7 +525,7 @@ export default function ShiftWizard() {
   }
 
   const CurrentStep = STEPS[step - 1].component
-  const allErrors = useMemo(() => getValidationErrors(), [
+  const allErrors = useMemo(() => getValidationErrors(), [ // eslint-disable-line react-hooks/exhaustive-deps
     reportData.date, reportData.shift, reportData.start_time, reportData.end_time,
     reportData.machines, reportData.production, reportData.rawMaterials
   ])

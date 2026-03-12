@@ -27,7 +27,7 @@ export default function ReportView() {
     if (id) {
       fetchReport()
     }
-  }, [id])
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function deleteReport() {
     if (!window.confirm('Are you sure you want to delete this report? This cannot be undone.')) return
@@ -362,7 +362,7 @@ export default function ReportView() {
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{d.truck_number}</td>
                     <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{d.customers?.name || 'N/A'}</td>
                     <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>
-                      {d.dispatch_pellets?.map(p => p.pellet_types?.name).join(', ') || 'N/A'}
+                      {d.dispatch_pellets?.map(p => p.pellet_types?.name).filter(Boolean).join(', ') || 'N/A'}
                     </td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>
                       {d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0).toFixed(1) || 0}

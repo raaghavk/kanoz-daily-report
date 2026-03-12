@@ -28,7 +28,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     if (isAdmin) loadData()
-  }, [isAdmin])
+  }, [isAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check admin access (after all hooks)
   if (!isAdmin) {

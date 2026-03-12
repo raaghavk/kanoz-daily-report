@@ -175,6 +175,10 @@ export default function DispatchForm() {
       showToast('Driver phone is required', 'error')
       return
     }
+    if (!/^\d{10}$/.test(form.driver_phone.trim())) {
+      showToast('Driver phone must be 10 digits', 'error')
+      return
+    }
     if (form.pellets.some(p => !p.pellet_type_id || !p.quantity_mt)) {
       showToast('Fill all pellet entries', 'error')
       return
