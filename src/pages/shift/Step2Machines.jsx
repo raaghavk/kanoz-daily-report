@@ -111,7 +111,7 @@ export default memo(function Step2Machines({ data, updateData }) {
                   value={m.breakdown_hrs || ''}
                   onChange={e => updateMachine(idx, 'breakdown_hrs', e.target.value)}
                   placeholder="0"
-                  style={{ ...inputStyle, height: 44, textAlign: 'center' }}
+                  style={{ width: '100%', height: 44, padding: '0 10px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', textAlign: 'center', boxSizing: 'border-box' }}
                 />
               </div>
               <div style={{ minWidth: 0 }}>

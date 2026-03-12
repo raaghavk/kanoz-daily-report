@@ -125,7 +125,7 @@ export default memo(function Step3Production({ data, updateData }) {
               <select
                 value={entry.machine_id}
                 onChange={e => updateEntry(idx, 'machine_id', e.target.value)}
-                style={{ width: '100%', height: 44, padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${COLORS.border}`, fontSize: 14, outline: 'none', color: COLORS.primary, boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 44, padding: '0 12px', borderRadius: 8, border: `1.5px solid ${COLORS.border}`, fontSize: 14, outline: 'none', color: COLORS.primary, boxSizing: 'border-box' }}
               >
                 <option value="">Select...</option>
                 {data.machines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -139,7 +139,7 @@ export default memo(function Step3Production({ data, updateData }) {
                 value={entry.quantity}
                 onChange={e => updateEntry(idx, 'quantity', e.target.value)}
                 placeholder="0.0"
-                style={{ width: '100%', height: 44, padding: '10px 12px', borderRadius: 8, border: `1.5px solid ${COLORS.border}`, fontSize: 14, outline: 'none', color: COLORS.primary, boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 44, padding: '0 12px', borderRadius: 8, border: `1.5px solid ${COLORS.border}`, fontSize: 14, outline: 'none', color: COLORS.primary, boxSizing: 'border-box' }}
               />
             </div>
           </div>
