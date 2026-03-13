@@ -52,7 +52,7 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey)
     const { data: callerEmployee } = await adminClient
       .from('employees')
-      .select('role, org_id')
+      .select('role, plant_id')
       .eq('auth_user_id', callerUser.id)
       .single()
 
@@ -82,7 +82,7 @@ serve(async (req) => {
     // Verify employee exists, belongs to same org, and has no auth user yet
     const { data: targetEmployee, error: empError } = await adminClient
       .from('employees')
-      .select('id, auth_user_id, org_id')
+      .select('id, auth_user_id, plant_id')
       .eq('id', employee_id)
       .single()
 
@@ -93,8 +93,8 @@ serve(async (req) => {
       })
     }
 
-    if (targetEmployee.org_id !== callerEmployee.org_id) {
-      return new Response(JSON.stringify({ error: 'Employee belongs to a different organization' }), {
+    if (targetEmployee.plant_id !== callerEmployee.plant_id) {
+      return new Response(JSON.stringify({ error: 'Employee belongs to a different plant' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

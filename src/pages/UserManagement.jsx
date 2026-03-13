@@ -125,7 +125,15 @@ export default function UserManagement() {
         }
       })
 
-      if (error) throw error
+      if (error) {
+        // Extract actual error message from edge function response
+        let msg = error.message
+        try {
+          const body = await error.context?.json?.()
+          if (body?.error) msg = body.error
+        } catch {}
+        throw new Error(msg)
+      }
       if (data?.error) throw new Error(data.error)
 
       showToast('Login credentials created!')
