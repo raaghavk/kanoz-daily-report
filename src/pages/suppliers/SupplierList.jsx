@@ -19,7 +19,7 @@ export default function SupplierList() {
     name: '',
     mobile: '',
     address: '',
-    material_type: '',
+    raw_material_type: '',
     rate_offered: '',
     gcv_value: '',
     remarks: ''
@@ -65,7 +65,7 @@ export default function SupplierList() {
   }
 
   async function handleAddSupplier() {
-    if (!formData.name || !formData.mobile || !formData.material_type) {
+    if (!formData.name || !formData.mobile || !formData.raw_material_type) {
       showToast('Please fill in required fields', 'error')
       return
     }
@@ -77,7 +77,7 @@ export default function SupplierList() {
           name: formData.name,
           mobile: formData.mobile,
           address: formData.address,
-          material_type: formData.material_type,
+          raw_material_type: formData.raw_material_type,
           rate_offered: parseFloat(formData.rate_offered) || null,
           gcv_value: parseFloat(formData.gcv_value) || null,
           remarks: formData.remarks,
@@ -93,7 +93,7 @@ export default function SupplierList() {
         name: '',
         mobile: '',
         address: '',
-        material_type: '',
+        raw_material_type: '',
         rate_offered: '',
         gcv_value: '',
         remarks: ''
@@ -189,7 +189,7 @@ export default function SupplierList() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #e5ddd0' }}>
                   <div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Material</span>
-                    <p style={{ fontSize: 12, color: '#2c2c2c', marginTop: 2 }}>{supplier.material_type || 'N/A'}</p>
+                    <p style={{ fontSize: 12, color: '#2c2c2c', marginTop: 2 }}>{supplier.raw_material_type || 'N/A'}</p>
                   </div>
                   <div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Rate</span>
@@ -277,8 +277,8 @@ export default function SupplierList() {
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Material Type *</label>
             <input
               type="text"
-              value={formData.material_type}
-              onChange={e => setFormData({ ...formData, material_type: e.target.value })}
+              value={formData.raw_material_type}
+              onChange={e => setFormData({ ...formData, raw_material_type: e.target.value })}
               placeholder="e.g., Wood Chips, Sawdust"
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />

@@ -20,7 +20,7 @@ export default function SupplierDetail() {
     name: '',
     mobile: '',
     address: '',
-    material_type: '',
+    raw_material_type: '',
     rate_offered: '',
     remarks: ''
   })
@@ -47,7 +47,7 @@ export default function SupplierDetail() {
         name: supplierData.name,
         mobile: supplierData.mobile,
         address: supplierData.address || '',
-        material_type: supplierData.material_type,
+        raw_material_type: supplierData.raw_material_type,
         rate_offered: supplierData.rate_offered?.toString() || '',
         remarks: supplierData.remarks || ''
       })
@@ -57,7 +57,7 @@ export default function SupplierDetail() {
         .select('*')
         .eq('supplier_id', id)
         .eq('plant_id', plant.id)
-        .order('purchase_date', { ascending: false })
+        .order('date', { ascending: false })
         .limit(10)
 
       if (purchasesError) throw purchasesError
@@ -71,7 +71,7 @@ export default function SupplierDetail() {
   }
 
   async function handleUpdateSupplier() {
-    if (!editData.name || !editData.mobile || !editData.material_type) {
+    if (!editData.name || !editData.mobile || !editData.raw_material_type) {
       showToast('Please fill in required fields', 'error')
       return
     }
@@ -83,7 +83,7 @@ export default function SupplierDetail() {
           name: editData.name,
           mobile: editData.mobile,
           address: editData.address,
-          material_type: editData.material_type,
+          raw_material_type: editData.raw_material_type,
           rate_offered: editData.rate_offered ? parseFloat(editData.rate_offered) : null,
           remarks: editData.remarks
         })
@@ -96,7 +96,7 @@ export default function SupplierDetail() {
         name: editData.name,
         mobile: editData.mobile,
         address: editData.address,
-        material_type: editData.material_type,
+        raw_material_type: editData.raw_material_type,
         rate_offered: editData.rate_offered ? parseFloat(editData.rate_offered) : null,
         remarks: editData.remarks
       })
@@ -240,7 +240,7 @@ export default function SupplierDetail() {
 
             <div>
               <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>Material Type</p>
-              <p style={{ fontSize: 13, color: '#2c2c2c' }}>{supplier.material_type}</p>
+              <p style={{ fontSize: 13, color: '#2c2c2c' }}>{supplier.raw_material_type}</p>
             </div>
 
             {supplier.rate_offered && (
@@ -341,14 +341,14 @@ export default function SupplierDetail() {
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div>
                       <p style={{ fontSize: 12, color: '#b5b8a8' }}>
-                        {new Date(purchase.purchase_date).toLocaleDateString('en-IN')}
+                        {new Date(purchase.date).toLocaleDateString('en-IN')}
                       </p>
                       <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
-                        {purchase.material_type}
+                        {purchase.raw_material_type}
                       </p>
                     </div>
                     <p style={{ fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>
-                      ₹{purchase.amount?.toFixed(2) || '-'}
+                      ₹{purchase.total_amount?.toFixed(2) || '-'}
                     </p>
                   </div>
 
@@ -356,19 +356,19 @@ export default function SupplierDetail() {
                     <div>
                       <span style={{ color: '#b5b8a8' }}>Quantity</span>
                       <p style={{ fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
-                        {purchase.quantity} {purchase.unit || 'units'}
+                        {purchase.quantity_kg} kg
                       </p>
                     </div>
                     <div>
                       <span style={{ color: '#b5b8a8' }}>Rate</span>
                       <p style={{ fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
-                        ₹{purchase.rate?.toFixed(2) || '-'}
+                        ₹{purchase.rate_per_kg?.toFixed(2) || '-'}
                       </p>
                     </div>
                     <div>
-                      <span style={{ color: '#b5b8a8' }}>GCV</span>
+                      <span style={{ color: '#b5b8a8' }}>Avg Cost</span>
                       <p style={{ fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
-                        {purchase.gcv_value?.toFixed(2) || '-'}
+                        ₹{purchase.avg_cost_per_kg?.toFixed(2) || '-'}
                       </p>
                     </div>
                   </div>
@@ -416,8 +416,8 @@ export default function SupplierDetail() {
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Material Type *</label>
             <input
               type="text"
-              value={editData.material_type}
-              onChange={e => setEditData({ ...editData, material_type: e.target.value })}
+              value={editData.raw_material_type}
+              onChange={e => setEditData({ ...editData, raw_material_type: e.target.value })}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
