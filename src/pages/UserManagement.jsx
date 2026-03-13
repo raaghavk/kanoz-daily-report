@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { ROLE_OPTIONS } from '../lib/permissions'
-import { UserPlus, Edit2, Shield, ShieldOff, Eye, EyeOff, ChevronLeft, Phone, Mail, MapPin, Check, X, Loader2, Users } from 'lucide-react'
+import { UserPlus, Edit2, Shield, ShieldOff, ChevronLeft, Phone, Mail, MapPin, Check, X, Loader2, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 export default function UserManagement() {
@@ -21,8 +21,7 @@ export default function UserManagement() {
   // Form state
   const [form, setForm] = useState({ name: '', mobile: '', role: 'supervisor', plant_id: '', is_active: true })
   // Invite form state
-  const [inviteForm, setInviteForm] = useState({ email: '', password: '' })
-  const [showPassword, setShowPassword] = useState(false)
+  const [inviteForm, setInviteForm] = useState({ email: '' })
 
   const isAdmin = employee?.role === 'admin'
 
@@ -113,14 +112,12 @@ export default function UserManagement() {
 
   async function inviteUser() {
     if (!inviteForm.email.trim()) { showToast('Email is required', 'error'); return }
-    if (!inviteForm.password || inviteForm.password.length < 6) { showToast('Password must be at least 6 characters', 'error'); return }
 
     setInviting(true)
     try {
       const { data, error } = await supabase.functions.invoke('invite-user', {
         body: {
           email: inviteForm.email.trim(),
-          password: inviteForm.password,
           employee_id: showInvite
         }
       })
@@ -136,9 +133,9 @@ export default function UserManagement() {
       }
       if (data?.error) throw new Error(data.error)
 
-      showToast('Login credentials created!')
+      showToast('Invite email sent! They can set their own password.')
       setShowInvite(null)
-      setInviteForm({ email: '', password: '' })
+      setInviteForm({ email: '' })
       loadData()
     } catch (err) {
       showToast(err.message || 'Failed to create login', 'error')
@@ -253,7 +250,7 @@ export default function UserManagement() {
                 </button>
                 {!emp.auth_user_id && (
                   <button
-                    onClick={() => { setShowInvite(emp.id); setInviteForm({ email: '', password: '' }) }}
+                    onClick={() => { setShowInvite(emp.id); setInviteForm({ email: '' }) }}
                     style={{
                       height: 36, padding: '0 12px', borderRadius: 10, border: 'none',
                       background: '#e8f0ec', color: '#2d6a4f', fontSize: 12, fontWeight: 600,
@@ -352,7 +349,7 @@ export default function UserManagement() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
           <div style={{ background: 'white', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 480, padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Create Login</h2>
+              <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Send Invite</h2>
               <button onClick={() => setShowInvite(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                 <X size={24} color="#595c4a" />
               </button>
@@ -367,25 +364,6 @@ export default function UserManagement() {
                 <input style={inputStyle} type="email" value={inviteForm.email} onChange={e => setInviteForm({ ...inviteForm, email: e.target.value })} placeholder="user@example.com" />
               </div>
 
-              <div>
-                <label style={labelStyle}>Password <span style={{ color: '#d32f2f' }}>*</span></label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    style={inputStyle}
-                    type={showPassword ? 'text' : 'password'}
-                    value={inviteForm.password}
-                    onChange={e => setInviteForm({ ...inviteForm, password: e.target.value })}
-                    placeholder="Min 6 characters"
-                  />
-                  <button
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-                  >
-                    {showPassword ? <EyeOff size={16} color="#595c4a" /> : <Eye size={16} color="#595c4a" />}
-                  </button>
-                </div>
-              </div>
-
               <button
                 onClick={inviteUser}
                 disabled={inviting}
@@ -395,11 +373,11 @@ export default function UserManagement() {
                   opacity: inviting ? 0.7 : 1
                 }}
               >
-                {inviting ? 'Creating...' : 'Create Login Credentials'}
+                {inviting ? 'Sending Invite...' : 'Send Invite Email'}
               </button>
 
               <p style={{ fontSize: 11, color: '#999', textAlign: 'center' }}>
-                Share these credentials with the team member so they can log in to the app.
+                They'll receive an email with a link to set their own password and log in.
               </p>
             </div>
           </div>
