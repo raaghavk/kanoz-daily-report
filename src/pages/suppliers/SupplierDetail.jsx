@@ -29,7 +29,7 @@ export default function SupplierDetail() {
     if (id && plant?.id) {
       fetchSupplierData()
     }
-  }, [id, plant])
+  }, [id, plant]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchSupplierData() {
     try {

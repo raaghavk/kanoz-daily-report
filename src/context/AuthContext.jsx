@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [employee, setEmployee] = useState(null)
   const [plant, setPlant] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [noEmployeeRecord, setNoEmployeeRecord] = useState(false)
 
   useEffect(() => {
     // Check active session
@@ -42,9 +43,13 @@ export function AuthProvider({ children }) {
       if (data) {
         setEmployee(data)
         setPlant(data.plants)
+        setNoEmployeeRecord(false)
+      } else {
+        setNoEmployeeRecord(true)
       }
     } catch (err) {
       console.error('Error fetching employee:', err)
+      setNoEmployeeRecord(true)
     } finally {
       setLoading(false)
     }
@@ -64,12 +69,18 @@ export function AuthProvider({ children }) {
 
   async function switchPlant(newPlantId) {
     if (!employee || employee.role !== 'admin') return
-    const { data: newPlant } = await supabase
-      .from('plants')
-      .select('*')
-      .eq('id', newPlantId)
-      .single()
-    if (newPlant) setPlant(newPlant)
+    try {
+      const { data: newPlant, error } = await supabase
+        .from('plants')
+        .select('*')
+        .eq('id', newPlantId)
+        .single()
+      if (error) throw error
+      if (newPlant) setPlant(newPlant)
+    } catch (err) {
+      console.error('Error switching plant:', err)
+      throw err
+    }
   }
 
   async function signOut() {
@@ -80,7 +91,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, employee, plant, loading, signIn, signOut, switchPlant }}>
+    <AuthContext.Provider value={{ user, employee, plant, loading, noEmployeeRecord, signIn, signOut, switchPlant }}>
       {children}
     </AuthContext.Provider>
   )

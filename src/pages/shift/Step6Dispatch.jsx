@@ -15,7 +15,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState 
     if (plant?.id) {
       loadDispatches()
     }
-  }, [plant])
+  }, [plant]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadDispatches() {
     try {

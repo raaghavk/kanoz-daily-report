@@ -31,7 +31,7 @@ function LoadingFallback() {
 }
 
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth()
+  const { user, loading, noEmployeeRecord, signOut } = useAuth()
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>
@@ -42,7 +42,27 @@ function ProtectedRoute({ children }) {
       </div>
     )
   }
-  return user ? children : <Navigate to="/login" replace />
+  if (!user) return <Navigate to="/login" replace />
+  if (noEmployeeRecord) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>
+        <div style={{ textAlign: 'center', padding: 32, maxWidth: 360 }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>🔒</div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2c2c2c', marginBottom: 8 }}>No Access</h2>
+          <p style={{ fontSize: 14, color: '#595c4a', marginBottom: 20, lineHeight: 1.5 }}>
+            Your account is not linked to an employee profile. Please contact your admin to get access.
+          </p>
+          <button
+            onClick={signOut}
+            style={{ padding: '12px 32px', background: '#d32f2f', color: 'white', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    )
+  }
+  return children
 }
 
 function PermissionGuard({ action, children }) {
@@ -82,7 +102,7 @@ export default function App() {
         path="/shift/new"
         element={
           <ProtectedRoute>
-            <ShiftWizard />
+            <PermissionGuard action="create_report"><ShiftWizard /></PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -90,7 +110,7 @@ export default function App() {
         path="/shift/edit/:id"
         element={
           <ProtectedRoute>
-            <ShiftWizard />
+            <PermissionGuard action="create_report"><ShiftWizard /></PermissionGuard>
           </ProtectedRoute>
         }
       />
@@ -111,6 +131,7 @@ function SettingsPage() {
     if (can(employee?.role, 'switch_plant') && plant?.org_id) {
       supabase.from('plants').select('id, name').eq('org_id', plant.org_id).order('name')
         .then(({ data }) => setOrgPlants(data || []))
+        .catch(() => {})
     }
   }, [employee?.role, plant?.org_id])
 
@@ -156,8 +177,13 @@ function SettingsPage() {
   async function handlePlantSwitch(plantId) {
     if (plantId === plant?.id) return
     setSwitching(true)
-    await switchPlant(plantId)
-    setSwitching(false)
+    try {
+      await switchPlant(plantId)
+    } catch {
+      alert('Failed to switch plant. Please try again.')
+    } finally {
+      setSwitching(false)
+    }
   }
 
   return (

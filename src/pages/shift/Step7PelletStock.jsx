@@ -32,7 +32,7 @@ export default memo(function Step7PelletStock({ data, updateData }) {
     if (hasChanged) {
       updateData('pelletStock', stock)
     }
-  }, [data.production, data.dispatchTotals])
+  }, [data.production, data.dispatchTotals]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateStock(idx, field, value) {
     const stock = [...data.pelletStock]

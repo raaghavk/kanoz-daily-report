@@ -40,7 +40,7 @@ export default function PurchaseList() {
     if (plant?.id) {
       fetchPurchases()
     }
-  }, [plant?.id, filterTab, filterSupplier, filterRMType, filterDateFrom, filterDateTo])
+  }, [plant?.id, filterTab, filterSupplier, filterRMType, filterDateFrom, filterDateTo]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchPurchases() {
     try {
