@@ -96,8 +96,8 @@ export default function ReportView() {
       setMachineProduction(machData || [])
 
       const { data: matData } = await supabase
-        .from('raw_material_purchases')
-        .select('*, raw_materials(name)')
+        .from('raw_material_usage')
+        .select('*, raw_material_types(name)')
         .eq('shift_report_id', id)
 
       setRawMaterials(matData || [])
@@ -155,10 +155,8 @@ export default function ReportView() {
 
   const machineTimings = machineProduction.map(m => ({
     name: m.machines?.name || 'Unknown',
-    from: m.from_time || '-',
-    to: m.to_time || '-',
-    hours: m.hours || 0,
-    breakdown_hours: m.breakdown_hours || 0
+    hours_run: m.hours_run || 0,
+    production_mt: m.production_mt || 0,
   }))
 
   return (
@@ -213,10 +211,8 @@ export default function ReportView() {
             <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Machine</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>From</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>To</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Hours</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Breakdown</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Hours Run</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Production (MT)</th>
               </tr>
             </thead>
             <tbody>
@@ -224,15 +220,13 @@ export default function ReportView() {
                 machineTimings.map((m, idx) => (
                   <tr key={idx} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.name}</td>
-                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.from}</td>
-                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.to}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.hours}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.breakdown_hours}h</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.hours_run}h</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.production_mt}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
+                  <td colSpan="3" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
@@ -289,11 +283,11 @@ export default function ReportView() {
               {rawMaterials.length > 0 ? (
                 rawMaterials.map(m => (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.raw_materials?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.opening_qty || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.purchased_qty || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.used_qty || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.closing_qty || 0}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.raw_material_types?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.opening_kg || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.purchased_kg || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.quantity_kg || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.closing_kg || 0}</td>
                   </tr>
                 ))
               ) : (

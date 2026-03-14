@@ -438,6 +438,7 @@ export default function ShiftWizard() {
           production_mt: sanitizeNumber(ps.production),
           dispatch_mt: sanitizeNumber(ps.dispatch),
           wastage_mt: sanitizeNumber(ps.wastage),
+          closing_mt: sanitizeNumber(ps.closing),
         }))
         if (stockRows.length) {
           await supabase.from('pellet_stock').insert(stockRows)
