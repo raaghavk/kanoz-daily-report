@@ -1,9 +1,30 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')!
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')!
-const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') || 'mailto:admin@kanoz.in'
+// VAPID keys are loaded from app_config table (cached after first load)
+let VAPID_PUBLIC_KEY = ''
+let VAPID_PRIVATE_KEY = ''
+let VAPID_SUBJECT = 'mailto:admin@kanoz.in'
+let configLoaded = false
+
+async function loadVapidConfig(supabase: any) {
+  if (configLoaded) return
+  const { data, error } = await supabase
+    .from('app_config')
+    .select('key, value')
+    .in('key', ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT'])
+  if (error) throw new Error(`Failed to load VAPID config: ${error.message}`)
+  if (!data || data.length === 0) throw new Error('VAPID keys not found in app_config table')
+  for (const row of data) {
+    if (row.key === 'VAPID_PUBLIC_KEY') VAPID_PUBLIC_KEY = row.value
+    else if (row.key === 'VAPID_PRIVATE_KEY') VAPID_PRIVATE_KEY = row.value
+    else if (row.key === 'VAPID_SUBJECT') VAPID_SUBJECT = row.value
+  }
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    throw new Error('VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY missing in app_config')
+  }
+  configLoaded = true
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -246,6 +267,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+
+    // Load VAPID keys from app_config table (cached after first call)
+    await loadVapidConfig(supabase)
 
     const { data: subscriptions, error } = await supabase
       .from('push_subscriptions')
