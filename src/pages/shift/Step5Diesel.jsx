@@ -11,8 +11,6 @@ function numVal(v) {
 }
 
 export default memo(function Step5Diesel({ data, updateData }) {
-  const dieselStock = data.diesel_stock || { opening: 0, purchases: [], closing: 0 }
-
   // Initialize diesel_stock if not exists (via useEffect, not during render)
   useEffect(() => {
     if (!data.diesel_stock) {
