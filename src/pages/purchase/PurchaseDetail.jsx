@@ -8,7 +8,7 @@ export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
 
-  const { data: purchase, isLoading } = useQuery({
+  const { data: purchase, isLoading, isError } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -38,6 +38,15 @@ export default function PurchaseDetail() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
           <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
         </div>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#fefae0' }}>
+        <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
+        <div style={{ padding: 20, textAlign: 'center', color: '#d32f2f' }}>Failed to load purchase. Please go back and try again.</div>
       </div>
     )
   }

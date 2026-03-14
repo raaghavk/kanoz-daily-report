@@ -273,6 +273,7 @@ export default function PurchaseForm() {
         showToast('Purchase saved successfully', 'success')
       }
 
+      if (id) queryClient.invalidateQueries({ queryKey: ['purchase', id] })
       navigate(id ? `/purchase/${id}` : '/purchase')
     } catch (err) {
       console.error('Error saving purchase:', err)
