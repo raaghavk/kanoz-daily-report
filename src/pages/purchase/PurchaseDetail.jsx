@@ -1,12 +1,14 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../../components/PageHeader'
-import { Loader2, Edit3 } from 'lucide-react'
+import { Loader2, Edit3, X } from 'lucide-react'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [showPhoto, setShowPhoto] = useState(false)
 
   const { data: purchase, isLoading } = useQuery({
     queryKey: ['purchase', id],
@@ -207,7 +209,47 @@ export default function PurchaseDetail() {
         {purchase.katta_parchi_photo && (
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>Weight Bridge Photo</div>
-            <img src={purchase.katta_parchi_photo} alt="Weight bridge" style={{ width: '100%', borderRadius: 8, maxHeight: 200, objectFit: 'cover' }} />
+            <img
+              src={purchase.katta_parchi_photo}
+              alt="Weight bridge"
+              style={{ width: '100%', borderRadius: 8, maxHeight: 200, objectFit: 'cover', cursor: 'pointer' }}
+              onClick={() => setShowPhoto(true)}
+            />
+          </div>
+        )}
+
+        {/* Fullscreen Photo Overlay */}
+        {showPhoto && purchase.katta_parchi_photo && (
+          <div
+            onClick={() => setShowPhoto(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9999,
+              background: 'rgba(0,0,0,0.9)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 16,
+            }}
+          >
+            <button
+              onClick={() => setShowPhoto(false)}
+              style={{
+                position: 'absolute', top: 16, right: 16,
+                width: 40, height: 40, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.2)', border: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', zIndex: 10000,
+              }}
+            >
+              <X size={22} color="white" />
+            </button>
+            <img
+              src={purchase.katta_parchi_photo}
+              alt="Weight bridge"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth: '100%', maxHeight: '90vh',
+                objectFit: 'contain', borderRadius: 8,
+              }}
+            />
           </div>
         )}
 
