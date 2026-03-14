@@ -73,7 +73,7 @@ export default function PurchaseForm() {
     enabled: !!plant?.id,
   })
 
-  const { data: purchaseData, isLoading: loading } = useQuery({
+  const { data: purchaseData, isLoading: loading, isError } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
       const { data, error } = await supabase.from('raw_material_purchases').select('*').eq('id', id).single()
@@ -195,6 +195,9 @@ export default function PurchaseForm() {
 
       queryClient.invalidateQueries({ queryKey: ['suppliers', plant?.id] })
       handleFieldChange('supplier_id', data.id)
+      if (supplierForm.raw_material_type_id) {
+        handleFieldChange('raw_material_type_id', supplierForm.raw_material_type_id)
+      }
       setShowAddSupplier(false)
       setSupplierForm({
         name: '',
@@ -234,6 +237,7 @@ export default function PurchaseForm() {
         supplier_id: formData.supplier_id,
         raw_material_type_id: formData.raw_material_type_id,
         vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
+        vehicle_type: formData.vehicle_type,
         gross_weight: null,
         tare_weight: null,
         net_weight: sanitizeNumber(formData.net_weight),
@@ -269,13 +273,24 @@ export default function PurchaseForm() {
         showToast('Purchase saved successfully', 'success')
       }
 
-      navigate('/purchase')
+      navigate(id ? `/purchase/${id}` : '/purchase')
     } catch (err) {
       console.error('Error saving purchase:', err)
       showToast('Failed to save purchase', 'error')
     } finally {
       setSaving(false)
     }
+  }
+
+  if (id && isError) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#fefae0' }}>
+        <PageHeader title="Error" backTo="/purchase" />
+        <div style={{ padding: 24, textAlign: 'center', color: '#d32f2f' }}>
+          Failed to load purchase. Please go back and try again.
+        </div>
+      </div>
+    )
   }
 
   if (loading || (id && !purchaseData)) {
