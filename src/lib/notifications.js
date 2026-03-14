@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BLdPehJlH7XhX3UUJyR54_0PLgnHAW2udJXZaJig5jmH4WNUZobXcQV5FyjQH5HHTNohflrlPSm8j8JR2FvGTCA'
 
 /**
  * Convert a base64 URL string to a Uint8Array (for applicationServerKey).
