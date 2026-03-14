@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Plus } from 'lucide-react'
@@ -73,36 +73,40 @@ export default function PurchaseForm() {
     enabled: !!plant?.id,
   })
 
-  const { isLoading: loading } = useQuery({
+  const { data: purchaseData, isLoading: loading, isError } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
       const { data, error } = await supabase.from('raw_material_purchases').select('*').eq('id', id).single()
       if (error) throw error
-      setFormData({
-        date: data.date || formData.date,
-        supplier_id: data.supplier_id || '',
-        raw_material_type_id: data.raw_material_type_id || '',
-        vehicle_number: data.vehicle_number || '',
-        vehicle_type: data.vehicle_type || 'company',
-        net_weight: data.net_weight || '',
-        moisture_percentage: data.moisture_percentage || '',
-        deduction_kg: data.deduction_kg || '',
-        final_quantity: data.final_quantity || '',
-        rate_per_kg: data.rate_per_kg || '',
-        rm_amount: data.rm_amount || '',
-        loading_charges: data.loading_charges || 0,
-        unloading_charges: data.unloading_charges || 0,
-        transport_charges: data.transport_charges || 0,
-        total_amount: data.total_amount || '',
-        average_cost_per_kg: data.average_cost_per_kg || '',
-        katta_parchi_photo: data.katta_parchi_photo || null,
-        payment_status: data.payment_status || 'Pending',
-        remarks: data.remarks || '',
-      })
       return data
     },
     enabled: !!id && !!plant?.id,
   })
+
+  useEffect(() => {
+    if (!purchaseData) return
+    setFormData({
+      date: purchaseData.date || new Date().toISOString().split('T')[0],
+      supplier_id: purchaseData.supplier_id || '',
+      raw_material_type_id: purchaseData.raw_material_type_id || '',
+      vehicle_number: purchaseData.vehicle_number || '',
+      vehicle_type: purchaseData.vehicle_type || 'company',
+      net_weight: purchaseData.net_weight ?? '',
+      moisture_percentage: purchaseData.moisture_percentage ?? '',
+      deduction_kg: purchaseData.deduction_kg ?? '',
+      final_quantity: purchaseData.final_quantity ?? '',
+      rate_per_kg: purchaseData.rate_per_kg ?? '',
+      rm_amount: purchaseData.rm_amount ?? '',
+      loading_charges: purchaseData.loading_charges ?? 0,
+      unloading_charges: purchaseData.unloading_charges ?? 0,
+      transport_charges: purchaseData.transport_charges ?? 0,
+      total_amount: purchaseData.total_amount ?? '',
+      average_cost_per_kg: purchaseData.average_cost_per_kg ?? '',
+      katta_parchi_photo: purchaseData.katta_parchi_photo || null,
+      payment_status: purchaseData.payment_status || 'Pending',
+      remarks: purchaseData.remarks || '',
+    })
+  }, [purchaseData])
 
   function handleFieldChange(field, value) {
     const updated = { ...formData, [field]: value }
@@ -191,6 +195,9 @@ export default function PurchaseForm() {
 
       queryClient.invalidateQueries({ queryKey: ['suppliers', plant?.id] })
       handleFieldChange('supplier_id', data.id)
+      if (supplierForm.raw_material_type_id) {
+        handleFieldChange('raw_material_type_id', supplierForm.raw_material_type_id)
+      }
       setShowAddSupplier(false)
       setSupplierForm({
         name: '',
@@ -230,6 +237,7 @@ export default function PurchaseForm() {
         supplier_id: formData.supplier_id,
         raw_material_type_id: formData.raw_material_type_id,
         vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
+        vehicle_type: formData.vehicle_type,
         gross_weight: null,
         tare_weight: null,
         net_weight: sanitizeNumber(formData.net_weight),
@@ -265,7 +273,8 @@ export default function PurchaseForm() {
         showToast('Purchase saved successfully', 'success')
       }
 
-      navigate('/purchase')
+      if (id) queryClient.invalidateQueries({ queryKey: ['purchase', id] })
+      navigate(id ? `/purchase/${id}` : '/purchase')
     } catch (err) {
       console.error('Error saving purchase:', err)
       showToast('Failed to save purchase', 'error')
@@ -274,7 +283,18 @@ export default function PurchaseForm() {
     }
   }
 
-  if (loading) {
+  if (id && isError) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#fefae0' }}>
+        <PageHeader title="Error" backTo="/purchase" />
+        <div style={{ padding: 24, textAlign: 'center', color: '#d32f2f' }}>
+          Failed to load purchase. Please go back and try again.
+        </div>
+      </div>
+    )
+  }
+
+  if (loading || (id && !purchaseData)) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
         <Loader2 size={40} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />

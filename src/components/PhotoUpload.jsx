@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Camera, X, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { showToast } from './Toast'
@@ -16,6 +16,13 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
   const legacy = isLegacyPath(value)
   const [preview, setPreview] = useState(legacy ? null : (value || null))
   const [uploading, setUploading] = useState(false)
+
+  // Sync preview when value prop changes (e.g. when edit form loads existing data)
+  useEffect(() => {
+    if (!isLegacyPath(value)) {
+      setPreview(value || null)
+    }
+  }, [value])
 
   async function handleFile(e) {
     const file = e.target.files[0]
@@ -57,8 +64,9 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
       onChange?.(publicUrl)
     } catch (err) {
       console.error('Upload error:', err)
-      // Still keep the local preview but pass the file for fallback
-      onChange?.(localUrl)
+      showToast('Photo upload failed. Please try again.', 'error')
+      setPreview(null)
+      onChange?.(null)
     } finally {
       setUploading(false)
     }

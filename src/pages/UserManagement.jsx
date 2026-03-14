@@ -126,8 +126,13 @@ export default function UserManagement() {
         // Extract actual error message from edge function response
         let msg = error.message
         try {
-          const body = await error.context?.json?.()
-          if (body?.error) msg = body.error
+          const ctx = error.context
+          if (typeof ctx === 'object' && ctx !== null && typeof ctx.error === 'string') {
+            msg = ctx.error
+          } else if (typeof ctx?.json === 'function') {
+            const body = await ctx.json()
+            if (body?.error) msg = body.error
+          }
         } catch { /* ignore parse failure */ }
         throw new Error(msg)
       }
