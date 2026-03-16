@@ -2,7 +2,7 @@
  * CSV export utilities for shift reports
  */
 
-function escapeCSV(value) {
+export function escapeCSV(value) {
   if (value == null) return ''
   const str = String(value)
   if (str.includes(',') || str.includes('"') || str.includes('\n')) {
@@ -11,7 +11,7 @@ function escapeCSV(value) {
   return str
 }
 
-function buildCSVRow(values) {
+export function buildCSVRow(values) {
   return values.map(escapeCSV).join(',')
 }
 

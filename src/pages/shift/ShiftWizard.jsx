@@ -10,6 +10,7 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
+import { getValidationErrors } from './validation'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
 import Step3Production from './Step3Production'
@@ -349,40 +350,11 @@ export default function ShiftWizard() {
     }
   }
 
-  // Validation: returns array of {step, message} for incomplete required fields
-  function getValidationErrors() {
-    const errors = []
-    // Step 1: Header
-    if (!reportData.date) errors.push({ step: 1, message: 'Date is required' })
-    if (!reportData.shift) errors.push({ step: 1, message: 'Shift is required' })
-    if (!reportData.start_time) errors.push({ step: 1, message: 'Start time is required' })
-    if (!reportData.end_time) errors.push({ step: 1, message: 'End time is required' })
-
-    // Step 2: Machines — at least one machine should have timing
-    const hasAnyMachineTiming = reportData.machines.some(m => m.from_time && m.to_time)
-    if (!hasAnyMachineTiming && reportData.machines.length > 0) {
-      errors.push({ step: 2, message: 'Enter timing for at least one machine' })
-    }
-
-    // Step 3: Production — at least one entry
-    const hasProduction = reportData.production && reportData.production.length > 0 &&
-      reportData.production.some(p => parseFloat(p.quantity) > 0)
-    if (!hasProduction) {
-      errors.push({ step: 3, message: 'Add at least one production entry' })
-    }
-
-    // Step 4: Raw Materials — used field for at least one
-    const hasRMUsage = reportData.rawMaterials.some(rm => parseFloat(rm.used) > 0)
-    if (!hasRMUsage && reportData.rawMaterials.length > 0) {
-      errors.push({ step: 4, message: 'Enter raw material usage for at least one material' })
-    }
-
-    return errors
-  }
+  // Validation is handled by the extracted getValidationErrors(reportData) function
 
   async function saveReport() {
     if (saving) return
-    const errors = getValidationErrors()
+    const errors = getValidationErrors(reportData)
     if (errors.length > 0) {
       showToast(`Please fix ${errors.length} issue${errors.length > 1 ? 's' : ''} before submitting (check Steps ${[...new Set(errors.map(e => e.step))].join(', ')})`, 'error')
       return
@@ -569,7 +541,7 @@ export default function ShiftWizard() {
   }
 
   const CurrentStep = STEPS[step - 1].component
-  const allErrors = useMemo(() => getValidationErrors(), [ // eslint-disable-line react-hooks/exhaustive-deps
+  const allErrors = useMemo(() => getValidationErrors(reportData), [ // eslint-disable-line react-hooks/exhaustive-deps
     reportData.date, reportData.shift, reportData.start_time, reportData.end_time,
     reportData.machines, reportData.production, reportData.rawMaterials
   ])
