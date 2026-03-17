@@ -114,15 +114,15 @@ export default function BottomNav() {
 
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
           <button onClick={() => setShowSheet(!showSheet)} style={{
-            width: 52, height: 52, borderRadius: '50%',
+            width: 50, height: 50, borderRadius: 16,
             background: showSheet ? '#1b4332' : '#2d6a4f',
             color: 'white', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 14px rgba(45,106,79,0.3)',
-            marginTop: -22, transition: 'background 0.2s, transform 0.2s',
+            marginTop: -18, transition: 'background 0.2s, transform 0.2s',
             transform: showSheet ? 'rotate(45deg)' : 'none',
           }}>
-            <Plus size={26} strokeWidth={2.5} />
+            <Plus size={24} strokeWidth={2.5} />
           </button>
         </div>
 

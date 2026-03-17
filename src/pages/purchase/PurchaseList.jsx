@@ -371,19 +371,6 @@ export default function PurchaseList() {
         )}
       </div>
 
-      <button
-        onClick={() => navigate('/purchase/new')}
-        style={{
-          position: 'fixed', bottom: 96, right: 16, width: 56, height: 56,
-          borderRadius: '50%', background: '#2d6a4f', color: 'white',
-          boxShadow: '0 4px 14px rgba(45,106,79,0.3)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: 'none', cursor: 'pointer',
-        }}
-        aria-label="New purchase"
-      >
-        <Plus size={28} />
-      </button>
     </div>
   )
 }
