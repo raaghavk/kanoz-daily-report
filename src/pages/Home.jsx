@@ -197,6 +197,23 @@ export default function Home() {
           </button>
         </div>
 
+        {/* Data Insights Button */}
+        <button
+          onClick={() => navigate('/insights')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',
+            padding: '14px 16px', borderRadius: 14,
+            background: '#2d6a4f', border: 'none', cursor: 'pointer', marginBottom: 8,
+          }}
+        >
+          <span style={{ fontSize: 20 }}>📊</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Data Insights</div>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Stock, purchases, dispatches & more</div>
+          </div>
+          <ChevronRight size={18} color="rgba(255,255,255,0.5)" />
+        </button>
+
         {/* History Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 0 }}>

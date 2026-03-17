@@ -20,6 +20,7 @@ const ReportList = lazy(() => import('./pages/ReportList'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 const DeleteRequests = lazy(() => import('./pages/DeleteRequests'))
+const DataInsights = lazy(() => import('./pages/DataInsights'))
 const CustomerList = lazy(() => import('./pages/customers/CustomerList'))
 const TransporterList = lazy(() => import('./pages/transporters/TransporterList'))
 
@@ -99,6 +100,7 @@ export default function App() {
         <Route path="dispatch/:id" element={<PermissionGuard action="view_dispatches"><DispatchDetail /></PermissionGuard>} />
         <Route path="suppliers" element={<SupplierList />} />
         <Route path="suppliers/:id" element={<SupplierDetail />} />
+        <Route path="insights" element={<DataInsights />} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="transporters" element={<TransporterList />} />
         <Route path="settings" element={<SettingsPage />} />
