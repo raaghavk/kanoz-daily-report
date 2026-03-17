@@ -9,6 +9,7 @@ import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
+import { getLocalDate } from '../../lib/dateUtils'
 
 export default function PurchaseForm() {
   const navigate = useNavigate()
@@ -21,7 +22,7 @@ export default function PurchaseForm() {
   const [scanning, setScanning] = useState(false)
 
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDate(),
     purchase_time: new Date().toTimeString().slice(0, 5),
     supplier_id: '',
     raw_material_type_id: '',
@@ -98,7 +99,7 @@ export default function PurchaseForm() {
   useEffect(() => {
     if (!purchaseData) return
     setFormData({
-      date: purchaseData.date || new Date().toISOString().split('T')[0],
+      date: purchaseData.date || getLocalDate(),
       purchase_time: purchaseData.purchase_time || '',
       supplier_id: purchaseData.supplier_id || '',
       raw_material_type_id: purchaseData.raw_material_type_id || '',

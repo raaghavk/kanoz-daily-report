@@ -8,8 +8,9 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
   const [dispatches, setDispatches] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0]
+  // Get today's date in local timezone (not UTC)
+  const _now = new Date()
+  const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`
 
   useEffect(() => {
     if (plant?.id) {
@@ -41,6 +42,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
           customers(name)
         `)
         .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
         .gte('date', startDate)
         .lte('date', endDate)
         .order('created_at', { ascending: false })

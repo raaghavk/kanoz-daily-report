@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
+import { getLocalDate } from '../../lib/dateUtils'
 
 export default function PurchaseList() {
   const navigate = useNavigate()
@@ -101,25 +102,25 @@ export default function PurchaseList() {
 
     if (tab === 'today') {
       return {
-        start: today.toISOString().split('T')[0],
-        end: today.toISOString().split('T')[0],
+        start: getLocalDate(today),
+        end: getLocalDate(today),
       }
     } else if (tab === 'week') {
       start.setDate(today.getDate() - today.getDay())
       return {
-        start: start.toISOString().split('T')[0],
-        end: today.toISOString().split('T')[0],
+        start: getLocalDate(start),
+        end: getLocalDate(today),
       }
     } else if (tab === 'month') {
       start.setDate(1)
       return {
-        start: start.toISOString().split('T')[0],
-        end: today.toISOString().split('T')[0],
+        start: getLocalDate(start),
+        end: getLocalDate(today),
       }
     } else {
       return {
         start: '2024-01-01',
-        end: today.toISOString().split('T')[0],
+        end: getLocalDate(today),
       }
     }
   }

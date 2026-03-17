@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight, Loader2, AlertTriangle } from 'lucide-react'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
+import { getLocalDate } from '../../lib/dateUtils'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
 import Step3Production from './Step3Production'
@@ -47,12 +48,12 @@ export default function ShiftWizard() {
 
   // Report data state — shared across all steps
   const [reportData, setReportData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDate(),
     shift: 'A',
     start_time: '06:00',
     end_time: '18:00',
-    shift_start_date: new Date().toISOString().split('T')[0],
-    shift_end_date: new Date().toISOString().split('T')[0],
+    shift_start_date: getLocalDate(),
+    shift_end_date: getLocalDate(),
     weather: '',
     machines: [],
     production: [],

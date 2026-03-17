@@ -16,7 +16,9 @@ export default function Home() {
 
   const now = new Date()
   const hour = now.getHours()
-  const today = now.toISOString().split('T')[0]
+  // Use local date (not UTC) — toISOString() returns UTC which is wrong for IST
+  const localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const today = localDate(now)
   // Shift A: 06:00–17:59, Shift B: 18:00–05:59 (overnight)
   const currentShift = (hour >= 6 && hour < 18) ? 'A' : 'B'
   const shiftTime = currentShift === 'A' ? '06:00–18:00' : '18:00–06:00'
@@ -32,12 +34,12 @@ export default function Home() {
       shiftStartDate = today
       const tomorrow = new Date(now)
       tomorrow.setDate(tomorrow.getDate() + 1)
-      shiftEndDate = tomorrow.toISOString().split('T')[0]
+      shiftEndDate = localDate(tomorrow)
     } else {
       // Early morning portion (0-5): started yesterday, ends today
       const yesterday = new Date(now)
       yesterday.setDate(yesterday.getDate() - 1)
-      shiftStartDate = yesterday.toISOString().split('T')[0]
+      shiftStartDate = localDate(yesterday)
       shiftEndDate = today
     }
   }

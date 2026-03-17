@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { Calendar, Clock } from 'lucide-react'
+import { getLocalDate } from '../../lib/dateUtils'
 
 export default memo(function Step1Header({ data, updateData, employee, plant }) {
   function handleShiftChange(shift) {
@@ -22,7 +23,7 @@ export default memo(function Step1Header({ data, updateData, employee, plant }) 
 
   // Get current date and time for readonly fields
   const now = new Date()
-  const currentDateStr = now.toISOString().split('T')[0]
+  const currentDateStr = getLocalDate(now)
   const currentTimeStr = now.toTimeString().split(' ')[0].slice(0, 5)
 
   const inputStyle = {
@@ -149,7 +150,7 @@ export default memo(function Step1Header({ data, updateData, employee, plant }) 
                   if (data.shift === 'B') {
                     const next = new Date(e.target.value)
                     next.setDate(next.getDate() + 1)
-                    updateData('shift_end_date', next.toISOString().split('T')[0])
+                    updateData('shift_end_date', getLocalDate(next))
                   } else {
                     updateData('shift_end_date', e.target.value)
                   }

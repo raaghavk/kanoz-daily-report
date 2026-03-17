@@ -7,6 +7,7 @@ import { can } from '../lib/permissions'
 import { exportReportListToCSV } from '../lib/exportUtils'
 import { FileText, ChevronRight, Calendar, Download } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import { getLocalDate } from '../lib/dateUtils'
 
 function getDateRange(filter, today) {
   let startDate = today
@@ -17,11 +18,11 @@ function getDateRange(filter, today) {
     const dayOfWeek = currentDate.getDay()
     const diff = currentDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
     const monday = new Date(currentDate.setDate(diff))
-    startDate = monday.toISOString().split('T')[0]
+    startDate = getLocalDate(monday)
   } else if (filter === 'month') {
     const currentDate = new Date(today)
     const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
-    startDate = firstDay.toISOString().split('T')[0]
+    startDate = getLocalDate(firstDay)
   }
 
   return { startDate, endDate }
@@ -32,7 +33,7 @@ export default function ReportList() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('today')
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDate()
 
   const { data: reports = [], isLoading: loading } = useQuery({
     queryKey: ['reports', plant?.id, filter, today],

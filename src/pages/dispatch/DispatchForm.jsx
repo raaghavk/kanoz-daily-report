@@ -9,6 +9,7 @@ import PhotoUpload from '../../components/PhotoUpload'
 import { Truck, Phone, Plus, X, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
+import { getLocalDate } from '../../lib/dateUtils'
 
 export default function DispatchForm() {
   const { employee, plant } = useAuth()
@@ -17,7 +18,7 @@ export default function DispatchForm() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const returnToShift = location.state?.returnToShift || false
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDate()
 
   // Filter tab
   const filterTab = searchParams.get('tab') || 'today'
@@ -58,15 +59,15 @@ export default function DispatchForm() {
     const now = new Date()
     const start = new Date(now)
     if (tab === 'today') {
-      return { start: now.toISOString().split('T')[0], end: now.toISOString().split('T')[0] }
+      return { start: getLocalDate(now), end: getLocalDate(now) }
     } else if (tab === 'week') {
       start.setDate(now.getDate() - now.getDay())
-      return { start: start.toISOString().split('T')[0], end: now.toISOString().split('T')[0] }
+      return { start: getLocalDate(start), end: getLocalDate(now) }
     } else if (tab === 'month') {
       start.setDate(1)
-      return { start: start.toISOString().split('T')[0], end: now.toISOString().split('T')[0] }
+      return { start: getLocalDate(start), end: getLocalDate(now) }
     } else {
-      return { start: '2024-01-01', end: now.toISOString().split('T')[0] }
+      return { start: '2024-01-01', end: getLocalDate(now) }
     }
   }
 
