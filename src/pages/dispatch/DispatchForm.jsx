@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
@@ -99,6 +99,17 @@ export default function DispatchForm() {
     groupedDispatches[date].push(d)
   })
   const dateKeys = Object.keys(groupedDispatches).sort((a, b) => new Date(b) - new Date(a))
+
+  // Collapse all dates except the most recent one
+  useEffect(() => {
+    if (dateKeys.length > 1) {
+      const collapsed = {}
+      dateKeys.forEach((date, idx) => {
+        if (idx > 0) collapsed[date] = true
+      })
+      setCollapsedDates(collapsed)
+    }
+  }, [dispatches.length, filterTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleDateCollapse(date) {
     setCollapsedDates(prev => ({ ...prev, [date]: !prev[date] }))

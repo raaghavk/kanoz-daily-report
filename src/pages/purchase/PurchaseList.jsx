@@ -131,6 +131,14 @@ export default function PurchaseList() {
       grouped[date].push(purchase)
     })
     setGroupedPurchases(grouped)
+
+    // Collapse all dates except the most recent one
+    const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a))
+    const collapsed = {}
+    sortedDates.forEach((date, idx) => {
+      if (idx > 0) collapsed[date] = true
+    })
+    setCollapsedDates(collapsed)
   }
 
   function toggleDateCollapse(date) {
