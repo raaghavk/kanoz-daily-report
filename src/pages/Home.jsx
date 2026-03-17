@@ -50,16 +50,19 @@ export default function Home() {
           .from('shift_reports')
           .select('*, machine_production(*), issues(*)')
           .eq('plant_id', plant.id)
+          .eq('is_deleted', false)
           .eq('date', today),
         supabase
           .from('vehicle_dispatches')
           .select('*')
           .eq('plant_id', plant.id)
+          .eq('is_deleted', false)
           .eq('date', today),
         supabase
           .from('shift_reports')
           .select('handover_notes, shift, date')
           .eq('plant_id', plant.id)
+          .eq('is_deleted', false)
           .order('date', { ascending: false })
           .order('shift', { ascending: false })
           .limit(1)
@@ -197,23 +200,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Data Insights Button */}
-        <button
-          onClick={() => navigate('/insights')}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left',
-            padding: '14px 16px', borderRadius: 14,
-            background: '#2d6a4f', border: 'none', cursor: 'pointer', marginBottom: 8,
-          }}
-        >
-          <span style={{ fontSize: 20 }}>📊</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Data Insights</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Stock, purchases, dispatches & more</div>
-          </div>
-          <ChevronRight size={18} color="rgba(255,255,255,0.5)" />
-        </button>
-
         {/* History Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 0 }}>
@@ -304,12 +290,7 @@ export default function Home() {
                     Shift {report.shift} — {report.date}
                   </div>
                   <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 2 }}>
-                    {report.pellet_production_mt || 0} MT &bull; {(() => {
-                      const sd = report.shift_start_date || report.date
-                      const ed = report.shift_end_date || report.date
-                      const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''
-                      return `${fmt(sd)} ${report.start_time?.slice(0,5)} – ${sd !== ed ? fmt(ed) + ' ' : ''}${report.end_time?.slice(0,5)}`
-                    })()}
+                    {parseFloat(report.pellet_production_mt || 0).toFixed(1)} MT &bull; {report.start_time?.slice(0,5) || '?'} – {report.end_time?.slice(0,5) || '?'}
                   </div>
                 </div>
                 <ChevronRight size={18} color="#b5b8a8" />

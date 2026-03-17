@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Settings, Plus, ClipboardList, Truck, Package, X } from 'lucide-react'
+import { Home, Settings, Plus, ClipboardList, Truck, Package, X, MessageCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
 
@@ -12,15 +12,25 @@ export default function BottomNav() {
   const role = employee?.role
 
   const isHome = location.pathname === '/'
+  const isChat = location.pathname === '/insights'
   const isMore = location.pathname === '/settings' ||
     location.pathname.startsWith('/suppliers') ||
+    location.pathname.startsWith('/customers') ||
+    location.pathname.startsWith('/transporters') ||
     location.pathname.startsWith('/users') ||
-    location.pathname.startsWith('/admin')
+    location.pathname.startsWith('/admin') ||
+    location.pathname.startsWith('/delete-requests')
 
   function handleAction(path) {
     setShowSheet(false)
     navigate(path)
   }
+
+  const navBtnStyle = (active) => ({
+    flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', gap: 2, background: 'none', border: 'none', cursor: 'pointer',
+    color: active ? '#2d6a4f' : '#8a8d7a', padding: 0,
+  })
 
   return (
     <>
@@ -97,42 +107,37 @@ export default function BottomNav() {
         </div>
       )}
 
-      {/* Bottom Nav Bar */}
+      {/* Bottom Nav Bar — 4 items: Home | + | Chat | More */}
       <nav style={{
-        flexShrink: 0, display: 'flex', height: 68,
+        flexShrink: 0, display: 'flex', height: 64,
         background: '#FFFFFF', borderTop: '1px solid #e5ddd0',
-        paddingBottom: 6, alignItems: 'center',
+        paddingBottom: 4, alignItems: 'center',
       }}>
-        <button onClick={() => navigate('/')} style={{
-          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', gap: 2, background: 'none', border: 'none', cursor: 'pointer',
-          color: isHome ? '#2d6a4f' : '#8a8d7a',
-        }}>
+        <button onClick={() => navigate('/')} style={navBtnStyle(isHome)}>
           <Home size={22} strokeWidth={isHome ? 2.5 : 1.5} />
-          <span style={{ fontSize: 10, fontWeight: isHome ? 700 : 600 }}>Home</span>
+          <span style={{ fontSize: 10, fontWeight: isHome ? 700 : 500 }}>Home</span>
         </button>
 
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <button onClick={() => setShowSheet(!showSheet)} style={{
-            width: 50, height: 50, borderRadius: 16,
+        <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(showSheet)}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 12,
             background: showSheet ? '#1b4332' : '#2d6a4f',
-            color: 'white', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(45,106,79,0.3)',
-            marginTop: -18, transition: 'background 0.2s, transform 0.2s',
+            transition: 'background 0.2s, transform 0.2s',
             transform: showSheet ? 'rotate(45deg)' : 'none',
           }}>
-            <Plus size={24} strokeWidth={2.5} />
-          </button>
-        </div>
+            <Plus size={22} strokeWidth={2.5} color="#fff" />
+          </div>
+        </button>
 
-        <button onClick={() => navigate('/settings')} style={{
-          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', gap: 2, background: 'none', border: 'none', cursor: 'pointer',
-          color: isMore ? '#2d6a4f' : '#8a8d7a',
-        }}>
+        <button onClick={() => navigate('/insights')} style={navBtnStyle(isChat)}>
+          <MessageCircle size={22} strokeWidth={isChat ? 2.5 : 1.5} />
+          <span style={{ fontSize: 10, fontWeight: isChat ? 700 : 500 }}>Ask</span>
+        </button>
+
+        <button onClick={() => navigate('/settings')} style={navBtnStyle(isMore)}>
           <Settings size={22} strokeWidth={isMore ? 2.5 : 1.5} />
-          <span style={{ fontSize: 10, fontWeight: isMore ? 700 : 600 }}>More</span>
+          <span style={{ fontSize: 10, fontWeight: isMore ? 700 : 500 }}>More</span>
         </button>
       </nav>
     </>
