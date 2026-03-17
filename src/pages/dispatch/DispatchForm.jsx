@@ -142,6 +142,49 @@ export default function DispatchForm() {
     enabled: !!plant?.id,
   })
 
+  const { data: transporters = [] } = useQuery({
+    queryKey: ['transporters', plant?.org_id],
+    queryFn: async () => {
+      const { data } = await supabase.from('transporters').select('*').eq('org_id', plant.org_id).eq('is_active', true).order('name')
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
+
+  const { data: companyVehicles = [] } = useQuery({
+    queryKey: ['companyVehicles', plant?.id],
+    queryFn: async () => {
+      const { data } = await supabase.from('vehicles').select('*').eq('plant_id', plant.id).eq('type', 'company').eq('is_active', true).order('number')
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
+
+  const [showAddTransporter, setShowAddTransporter] = useState(false)
+  const [newTransporterName, setNewTransporterName] = useState('')
+  const [newTransporterPhone, setNewTransporterPhone] = useState('')
+
+  async function addTransporter() {
+    if (!newTransporterName.trim()) { showToast('Transporter name is required', 'error'); return }
+    try {
+      const { data } = await supabase
+        .from('transporters')
+        .insert([{ name: newTransporterName.trim(), phone: newTransporterPhone.trim() || null, org_id: plant.org_id }])
+        .select()
+      if (data?.[0]) {
+        queryClient.invalidateQueries({ queryKey: ['transporters', plant?.org_id] })
+        updateForm('transporter', data[0].name)
+        setNewTransporterName('')
+        setNewTransporterPhone('')
+        setShowAddTransporter(false)
+        showToast('Transporter added', 'success')
+      }
+    } catch (err) {
+      console.error('Error adding transporter:', err)
+      showToast('Failed to add transporter', 'error')
+    }
+  }
+
   const { data: activeShiftReport } = useQuery({
     queryKey: ['activeShiftReport', plant?.id, today],
     queryFn: async () => {
@@ -509,13 +552,47 @@ export default function DispatchForm() {
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Truck Number <span style={{ color: '#D32F2F' }}>*</span>
               </label>
-              <input
-                type="text"
-                placeholder="e.g., MH-01-AB-1234"
-                value={form.truck_number}
-                onChange={e => updateForm('truck_number', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
-              />
+              {companyVehicles.length > 0 ? (
+                <>
+                  <select
+                    value={companyVehicles.some(v => v.number === form.truck_number) ? form.truck_number : (form.truck_number ? '__other__' : '')}
+                    onChange={e => {
+                      if (e.target.value === '__other__') {
+                        updateForm('truck_number', '')
+                        // Focus the text input after render
+                        setTimeout(() => document.getElementById('custom-truck-input')?.focus(), 50)
+                      } else {
+                        updateForm('truck_number', e.target.value)
+                      }
+                    }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                  >
+                    <option value="">Select vehicle...</option>
+                    {companyVehicles.map(v => (
+                      <option key={v.id} value={v.number}>{v.number}</option>
+                    ))}
+                    <option value="__other__">Other (type manually)</option>
+                  </select>
+                  {form.truck_number !== '' && !companyVehicles.some(v => v.number === form.truck_number) && (
+                    <input
+                      id="custom-truck-input"
+                      type="text"
+                      placeholder="Enter truck number"
+                      value={form.truck_number}
+                      onChange={e => updateForm('truck_number', e.target.value)}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', marginTop: 8 }}
+                    />
+                  )}
+                </>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="e.g., MH-01-AB-1234"
+                  value={form.truck_number}
+                  onChange={e => updateForm('truck_number', e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                />
+              )}
             </div>
 
             {/* Customer */}
@@ -592,13 +669,60 @@ export default function DispatchForm() {
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Transporter <span style={{ color: '#D32F2F' }}>*</span>
               </label>
-              <input
-                type="text"
-                placeholder="Transporter name"
-                value={form.transporter}
-                onChange={e => updateForm('transporter', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
-              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                {transporters.length > 0 ? (
+                  <select
+                    value={form.transporter}
+                    onChange={e => updateForm('transporter', e.target.value)}
+                    style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                  >
+                    <option value="">Select transporter</option>
+                    {transporters.map(t => (
+                      <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    placeholder="Transporter name"
+                    value={form.transporter}
+                    onChange={e => updateForm('transporter', e.target.value)}
+                    style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                  />
+                )}
+                <button
+                  onClick={() => setShowAddTransporter(!showAddTransporter)}
+                  style={{ padding: '10px 12px', background: '#1565C0', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+              {showAddTransporter && (
+                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input
+                      type="text"
+                      placeholder="Transporter name"
+                      value={newTransporterName}
+                      onChange={e => setNewTransporterName(e.target.value)}
+                      style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                    />
+                    <button
+                      onClick={addTransporter}
+                      style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="Transporter phone (optional)"
+                    value={newTransporterPhone}
+                    onChange={e => setNewTransporterPhone(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Driver Info */}

@@ -63,6 +63,16 @@ export default function PurchaseForm() {
     enabled: !!plant?.id,
   })
 
+  const { data: companyVehicles = [] } = useQuery({
+    queryKey: ['companyVehicles', plant?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('vehicles').select('*').eq('plant_id', plant.id).eq('type', 'company').eq('is_active', true).order('number')
+      if (error) throw error
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
+
   const { data: rawMaterials = [] } = useQuery({
     queryKey: ['rawMaterials', plant?.id],
     queryFn: async () => {
@@ -90,9 +100,9 @@ export default function PurchaseForm() {
       supplier_id: purchaseData.supplier_id || '',
       raw_material_type_id: purchaseData.raw_material_type_id || '',
       vehicle_number: purchaseData.vehicle_number || '',
-      vehicle_type: purchaseData.vehicle_type || 'company',
+      vehicle_type: 'company',
       net_weight: purchaseData.net_weight ?? '',
-      moisture_percentage: purchaseData.moisture_percentage ?? '',
+      moisture_percentage: purchaseData.moisture_percent ?? '',
       deduction_kg: purchaseData.deduction_kg ?? '',
       final_quantity: purchaseData.final_quantity ?? '',
       rate_per_kg: purchaseData.rate_per_kg ?? '',
@@ -237,11 +247,8 @@ export default function PurchaseForm() {
         supplier_id: formData.supplier_id,
         raw_material_type_id: formData.raw_material_type_id,
         vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
-        vehicle_type: formData.vehicle_type,
-        gross_weight: null,
-        tare_weight: null,
         net_weight: sanitizeNumber(formData.net_weight),
-        moisture_percentage: sanitizeNumber(formData.moisture_percentage) || null,
+        moisture_percent: sanitizeNumber(formData.moisture_percentage) || null,
         deduction_kg: sanitizeNumber(formData.deduction_kg) || null,
         final_quantity: sanitizeNumber(formData.final_quantity),
         rate_per_kg: sanitizeNumber(formData.rate_per_kg) || null,
@@ -400,13 +407,26 @@ export default function PurchaseForm() {
             </button>
           </div>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Number</label>
-          <input
-            type="text"
-            placeholder="e.g., HR-01-AB-1234"
-            value={formData.vehicle_number}
-            onChange={e => handleFieldChange('vehicle_number', e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
-          />
+          {formData.vehicle_type === 'company' && companyVehicles.length > 0 ? (
+            <select
+              value={formData.vehicle_number}
+              onChange={e => handleFieldChange('vehicle_number', e.target.value)}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+            >
+              <option value="">Select vehicle...</option>
+              {companyVehicles.map(v => (
+                <option key={v.id} value={v.number}>{v.number}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              placeholder="e.g., HR-01-AB-1234"
+              value={formData.vehicle_number}
+              onChange={e => handleFieldChange('vehicle_number', e.target.value)}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+            />
+          )}
         </div>
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #e5ddd0' }}>
@@ -438,7 +458,7 @@ export default function PurchaseForm() {
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #e5ddd0' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 16 }}>Moisture & Deduction</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Moisture %</label>
               <input
@@ -446,7 +466,7 @@ export default function PurchaseForm() {
                 step="0.01"
                 value={formData.moisture_percentage}
                 onChange={e => handleFieldChange('moisture_percentage', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
               />
             </div>
             <div>
@@ -455,28 +475,28 @@ export default function PurchaseForm() {
                 type="number"
                 disabled
                 value={formData.deduction_kg}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed', boxSizing: 'border-box' }}
               />
               <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 4 }}>Auto-calculated</div>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
-                Final Quantity (kg) <span style={{ color: '#d32f2f' }}>*</span>
-              </label>
-              <input
-                type="number"
-                disabled
-                value={formData.final_quantity}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed' }}
-              />
-              <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 4 }}>Auto-calculated</div>
-            </div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
+              Final Quantity (kg) <span style={{ color: '#d32f2f' }}>*</span>
+            </label>
+            <input
+              type="number"
+              disabled
+              value={formData.final_quantity}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed', boxSizing: 'border-box' }}
+            />
+            <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 4 }}>Auto-calculated</div>
           </div>
         </div>
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #e5ddd0' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 16 }}>Pricing</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
                 Rate per kg (₹) <span style={{ color: '#d32f2f' }}>*</span>
@@ -486,7 +506,7 @@ export default function PurchaseForm() {
                 step="0.01"
                 value={formData.rate_per_kg}
                 onChange={e => handleFieldChange('rate_per_kg', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
               />
             </div>
             <div>
@@ -495,7 +515,7 @@ export default function PurchaseForm() {
                 type="number"
                 disabled
                 value={formData.rm_amount}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed', boxSizing: 'border-box' }}
               />
               <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 4 }}>Auto-calculated</div>
             </div>
@@ -504,7 +524,7 @@ export default function PurchaseForm() {
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 20, border: '1.5px solid #e5ddd0' }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 16 }}>Charges</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Loading (₹)</label>
               <input
@@ -512,7 +532,7 @@ export default function PurchaseForm() {
                 step="0.01"
                 value={formData.loading_charges}
                 onChange={e => handleFieldChange('loading_charges', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
               />
             </div>
             <div>
@@ -522,19 +542,19 @@ export default function PurchaseForm() {
                 step="0.01"
                 value={formData.unloading_charges}
                 onChange={e => handleFieldChange('unloading_charges', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
               />
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Transport (₹)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.transport_charges}
-                onChange={e => handleFieldChange('transport_charges', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
-              />
-            </div>
+          </div>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Transport (₹)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.transport_charges}
+              onChange={e => handleFieldChange('transport_charges', e.target.value)}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+            />
           </div>
         </div>
 
