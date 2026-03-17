@@ -162,6 +162,16 @@ export default function ReportView() {
     )
   }
 
+  function formatShortDate(dateStr) {
+    if (!dateStr) return ''
+    const d = new Date(dateStr + 'T00:00:00')
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  }
+
+  const startDateLabel = formatShortDate(report.shift_start_date || report.date)
+  const endDateLabel = formatShortDate(report.shift_end_date || report.date)
+  const showBothDates = (report.shift_start_date || report.date) !== (report.shift_end_date || report.date)
+
   const machineTimings = machineProduction.map(m => ({
     name: m.machines?.name || 'Unknown',
     hours_run: m.hours_run || 0,
@@ -189,11 +199,11 @@ export default function ReportView() {
                 Shift {report.shift}
               </div>
             </div>
-            <div>
-              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Time</div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Shift Duration</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
                 <Clock size={16} style={{ color: '#1E3A5F' }} />
-                {report.start_time?.slice(0, 5)} → {report.end_time?.slice(0, 5)}
+                {startDateLabel} {report.start_time?.slice(0, 5)} → {showBothDates ? endDateLabel + ' ' : ''}{report.end_time?.slice(0, 5)}
               </div>
             </div>
             <div>
@@ -217,11 +227,11 @@ export default function ReportView() {
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Machine Timings</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
+            <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Machine</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Hours Run</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Production (MT)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Machine</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Hours Run</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Production (MT)</th>
               </tr>
             </thead>
             <tbody>
@@ -229,8 +239,8 @@ export default function ReportView() {
                 machineTimings.map((m, idx) => (
                   <tr key={idx} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.name}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.hours_run}h</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.production_mt}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>{m.hours_run}h</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>{m.production_mt}</td>
                   </tr>
                 ))
               ) : (
@@ -248,11 +258,11 @@ export default function ReportView() {
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Production</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
+            <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Machine</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Pellet Type</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Quantity (MT)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Machine</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Pellet Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Quantity (MT)</th>
               </tr>
             </thead>
             <tbody>
@@ -261,7 +271,7 @@ export default function ReportView() {
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.machines?.name || 'N/A'}</td>
                     <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.pellet_type || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.quantity_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>{m.quantity_mt || 0}</td>
                   </tr>
                 ))
               ) : (
@@ -279,13 +289,13 @@ export default function ReportView() {
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Raw Materials</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
+            <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Material</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Opening</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Purchased</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Used</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Closing</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Material</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Opening</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Purchased</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Used</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Closing</th>
               </tr>
             </thead>
             <tbody>
@@ -296,7 +306,7 @@ export default function ReportView() {
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.opening_kg || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.purchased_kg || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.quantity_kg || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.closing_kg || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>{m.closing_kg || 0}</td>
                   </tr>
                 ))
               ) : (
@@ -314,13 +324,13 @@ export default function ReportView() {
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Equipment & Diesel</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
+            <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Equipment</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Opening (L)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Added (L)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Closing (L)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Hours</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Equipment</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Opening (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Added (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Closing (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Hours</th>
               </tr>
             </thead>
             <tbody>
@@ -330,7 +340,7 @@ export default function ReportView() {
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{e.equipment_name || 'N/A'}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.opening_litres || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.added_litres || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{e.closing_litres || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>{e.closing_litres || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.hours_operated || 0}h</td>
                   </tr>
                 ))
@@ -349,13 +359,13 @@ export default function ReportView() {
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Vehicle Dispatches</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
+            <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Truck</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Customer</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Pellet Type</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Qty (MT)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Time</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Truck</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Customer</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Pellet Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Qty (MT)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Time</th>
               </tr>
             </thead>
             <tbody>
@@ -367,7 +377,7 @@ export default function ReportView() {
                     <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>
                       {d.dispatch_pellets?.map(p => p.pellet_types?.name).filter(Boolean).join(', ') || 'N/A'}
                     </td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>
                       {d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0).toFixed(1) || 0}
                     </td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{d.dispatch_time?.slice(0, 5) || '-'}</td>
@@ -388,14 +398,14 @@ export default function ReportView() {
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Pellet Stock</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           <table style={{ width: '100%', fontSize: 12 }}>
-            <thead style={{ background: '#fefae0', borderBottom: '1px solid #e5ddd0' }}>
+            <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Type</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Opening</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Production</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Dispatch</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Wastage</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>Closing</th>
+                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Type</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Opening</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Production</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Dispatch</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Wastage</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Closing</th>
               </tr>
             </thead>
             <tbody>
@@ -407,7 +417,7 @@ export default function ReportView() {
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.production_mt || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.dispatch_mt || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.wastage_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{p.closing_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>{p.closing_mt || 0}</td>
                   </tr>
                 ))
               ) : (

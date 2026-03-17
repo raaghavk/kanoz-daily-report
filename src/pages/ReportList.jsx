@@ -163,9 +163,14 @@ export default function ReportList() {
                   paddingTop: 12, borderTop: '1px solid #f0ebe0', fontSize: 12
                 }}>
                   <div>
-                    <span style={{ color: '#8a8d7a' }}>Time: </span>
+                    <span style={{ color: '#8a8d7a' }}>Duration: </span>
                     <span style={{ color: '#2c2c2c', fontWeight: 500 }}>
-                      {report.start_time?.slice(0, 5)} – {report.end_time?.slice(0, 5)}
+                      {(() => {
+                        const sd = report.shift_start_date || report.date
+                        const ed = report.shift_end_date || report.date
+                        const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''
+                        return `${fmt(sd)} ${report.start_time?.slice(0, 5)} – ${sd !== ed ? fmt(ed) + ' ' : ''}${report.end_time?.slice(0, 5)}`
+                      })()}
                     </span>
                   </div>
                   <div style={{ color: '#8a8d7a' }}>

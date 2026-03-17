@@ -279,7 +279,12 @@ export default function Home() {
                       Shift {report.shift} — {report.date}
                     </div>
                     <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 2 }}>
-                      {report.pellet_production_mt || 0} MT &bull; {report.start_time?.slice(0,5)}–{report.end_time?.slice(0,5)}
+                      {report.pellet_production_mt || 0} MT &bull; {(() => {
+                        const sd = report.shift_start_date || report.date
+                        const ed = report.shift_end_date || report.date
+                        const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''
+                        return `${fmt(sd)} ${report.start_time?.slice(0,5)} – ${sd !== ed ? fmt(ed) + ' ' : ''}${report.end_time?.slice(0,5)}`
+                      })()}
                     </div>
                   </div>
                   <ChevronRight size={18} color="#b5b8a8" />
