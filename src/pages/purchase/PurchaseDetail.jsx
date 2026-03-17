@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
+import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
-import { Loader2, Edit3, X } from 'lucide-react'
+import { Loader2, Edit3, X, CheckCircle } from 'lucide-react'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [showPhoto, setShowPhoto] = useState(false)
+  const [markingPaid, setMarkingPaid] = useState(false)
 
   const { data: purchase, isLoading, isError } = useQuery({
     queryKey: ['purchase', id],
@@ -70,6 +73,27 @@ export default function PurchaseDetail() {
     (parseFloat(purchase.unloading_charges) || 0) +
     (parseFloat(purchase.transport_charges) || 0)
 
+  async function markAsPaid() {
+    if (markingPaid) return
+    if (purchase.payment_status === 'Paid') return
+    try {
+      setMarkingPaid(true)
+      const { error } = await supabase
+        .from('raw_material_purchases')
+        .update({ payment_status: 'Paid' })
+        .eq('id', id)
+      if (error) throw error
+      queryClient.invalidateQueries({ queryKey: ['purchase', id] })
+      queryClient.invalidateQueries({ queryKey: ['purchases'] })
+      showToast('Marked as Paid', 'success')
+    } catch (err) {
+      console.error('Error marking paid:', err)
+      showToast('Failed to update status', 'error')
+    } finally {
+      setMarkingPaid(false)
+    }
+  }
+
   const labelStyle = { fontSize: 11, color: '#8a8d7a', fontWeight: 600 }
   const valueStyle = { fontSize: 14, fontWeight: 600, color: '#2c2c2c', marginTop: 2 }
 
@@ -97,13 +121,28 @@ export default function PurchaseDetail() {
               <div style={{ fontSize: 12, opacity: 0.7 }}>Total Amount</div>
               <div style={{ fontSize: 28, fontWeight: 800 }}>{formatCurrency(purchase.total_amount)}</div>
             </div>
-            <div style={{
-              padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-              background: purchase.payment_status === 'Paid' ? 'rgba(255,255,255,0.2)' : 'rgba(255,200,200,0.3)',
-              color: 'white',
-            }}>
-              {purchase.payment_status || 'Pending'}
-            </div>
+            {purchase.payment_status === 'Paid' ? (
+              <div style={{
+                padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                background: 'rgba(255,255,255,0.2)', color: 'white',
+                display: 'flex', alignItems: 'center', gap: 4,
+              }}>
+                <CheckCircle size={12} /> Paid
+              </div>
+            ) : (
+              <button
+                onClick={markAsPaid}
+                disabled={markingPaid}
+                style={{
+                  padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                  background: '#DC2626', color: 'white', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                  opacity: markingPaid ? 0.6 : 1,
+                }}
+              >
+                {markingPaid ? 'Updating...' : 'Pending — Tap to mark Paid'}
+              </button>
+            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>

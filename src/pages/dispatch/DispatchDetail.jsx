@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
-import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image } from 'lucide-react'
+import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function DispatchDetail() {
@@ -42,6 +42,37 @@ export default function DispatchDetail() {
     }
   }
 
+  function formatShortDate(dateStr) {
+    if (!dateStr) return ''
+    const d = new Date(dateStr + 'T00:00:00')
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  }
+
+  function formatDateTime(dateStr, timeStr) {
+    const datePart = dateStr ? formatShortDate(dateStr) : ''
+    const timePart = timeStr ? timeStr.slice(0, 5) : ''
+    if (datePart && timePart) return `${datePart}, ${timePart}`
+    return timePart || datePart || 'N/A'
+  }
+
+  function calculateDuration(loadingDate, loadingTime, dispatchDate, dispatchTime) {
+    if (!loadingTime || !dispatchTime) return null
+    try {
+      const ld = loadingDate || dispatch?.date || ''
+      const dd = dispatchDate || dispatch?.date || ''
+      const loadStart = new Date(`${ld}T${loadingTime}`)
+      const dispEnd = new Date(`${dd}T${dispatchTime}`)
+      const diffMs = dispEnd - loadStart
+      if (diffMs < 0) return null
+      const hours = Math.floor(diffMs / (1000 * 60 * 60))
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
+      if (hours > 0) return `${hours}h ${minutes}m`
+      return `${minutes}m`
+    } catch {
+      return null
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
@@ -60,6 +91,7 @@ export default function DispatchDetail() {
 
   const totalMT = dispatch.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0) || 0
   const formattedDate = dispatch.date ? new Date(dispatch.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'
+  const duration = calculateDuration(dispatch.loading_date, dispatch.loading_time, dispatch.dispatch_date, dispatch.dispatch_time)
 
   return (
     <div style={{ paddingBottom: 80 }}>
@@ -87,8 +119,36 @@ export default function DispatchDetail() {
             <InfoRow label="Destination" value={dispatch.destination || 'N/A'} />
             <InfoRow label="Transporter" value={dispatch.transporter || 'N/A'} />
             <InfoRow label="Invoice No" value={dispatch.invoice_no || 'N/A'} />
-            <InfoRow label="Loading Time" value={dispatch.loading_time?.slice(0, 5) || 'N/A'} icon={<Clock size={12} />} />
-            <InfoRow label="Dispatch Time" value={dispatch.dispatch_time?.slice(0, 5) || 'N/A'} icon={<Clock size={12} />} />
+          </div>
+
+          {/* Loading & Dispatch Times with dates and duration */}
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #f0ebe0' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <InfoRow
+                label="Loading"
+                value={formatDateTime(dispatch.loading_date, dispatch.loading_time)}
+                icon={<Clock size={12} />}
+              />
+              <InfoRow
+                label="Dispatch"
+                value={formatDateTime(dispatch.dispatch_date, dispatch.dispatch_time)}
+                icon={<Clock size={12} />}
+              />
+            </div>
+            {duration && (
+              <div style={{
+                marginTop: 10, padding: '8px 12px', background: '#e8f0ec', borderRadius: 10,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <Timer size={14} style={{ color: '#2d6a4f' }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f' }}>
+                  Duration: {duration}
+                </span>
+                <span style={{ fontSize: 10, color: '#595c4a', marginLeft: 4 }}>
+                  (Loading to Dispatch)
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

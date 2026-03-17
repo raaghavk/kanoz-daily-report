@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
-import { Truck, Phone, Plus, X, ChevronLeft } from 'lucide-react'
+import { Truck, Phone, Plus, X, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 
@@ -15,8 +15,18 @@ export default function DispatchForm() {
   const location = useLocation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const returnToShift = location.state?.returnToShift || false
   const today = new Date().toISOString().split('T')[0]
+
+  // Filter tab
+  const filterTab = searchParams.get('tab') || 'today'
+  function setFilterTab(tab) {
+    setSearchParams({ tab }, { replace: true })
+  }
+
+  // Collapsible date groups
+  const [collapsedDates, setCollapsedDates] = useState({})
 
   // Form state
   const [showForm, setShowForm] = useState(false)
@@ -30,7 +40,9 @@ export default function DispatchForm() {
     driver_phone: '',
     pellets: [{ pellet_type_id: '', quantity_mt: '' }],
     invoice_number: '',
+    loading_date: today,
     loading_time: '',
+    dispatch_date: today,
     dispatch_time: '',
     katta_parchi_photo: null,
     remarks: ''
@@ -41,14 +53,34 @@ export default function DispatchForm() {
   const [newCustomerAddress, setNewCustomerAddress] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  // Date filter logic
+  function getDateFilter(tab) {
+    const now = new Date()
+    const start = new Date(now)
+    if (tab === 'today') {
+      return { start: now.toISOString().split('T')[0], end: now.toISOString().split('T')[0] }
+    } else if (tab === 'week') {
+      start.setDate(now.getDate() - now.getDay())
+      return { start: start.toISOString().split('T')[0], end: now.toISOString().split('T')[0] }
+    } else if (tab === 'month') {
+      start.setDate(1)
+      return { start: start.toISOString().split('T')[0], end: now.toISOString().split('T')[0] }
+    } else {
+      return { start: '2024-01-01', end: now.toISOString().split('T')[0] }
+    }
+  }
+
   const { data: dispatches = [], isLoading: loading } = useQuery({
-    queryKey: ['todayDispatches', plant?.id, today],
+    queryKey: ['dispatches', plant?.id, filterTab],
     queryFn: async () => {
+      const dateFilter = getDateFilter(filterTab)
       const { data } = await supabase
         .from('vehicle_dispatches')
         .select(`*, dispatch_pellets(*), customers(name)`)
         .eq('plant_id', plant.id)
-        .eq('date', today)
+        .gte('date', dateFilter.start)
+        .lte('date', dateFilter.end)
+        .order('date', { ascending: false })
         .order('created_at', { ascending: false })
 
       return (data || []).map(d => ({
@@ -58,6 +90,28 @@ export default function DispatchForm() {
     },
     enabled: !!plant?.id,
   })
+
+  // Group dispatches by date
+  const groupedDispatches = {}
+  dispatches.forEach(d => {
+    const date = d.date || ''
+    if (!groupedDispatches[date]) groupedDispatches[date] = []
+    groupedDispatches[date].push(d)
+  })
+  const dateKeys = Object.keys(groupedDispatches).sort((a, b) => new Date(b) - new Date(a))
+
+  function toggleDateCollapse(date) {
+    setCollapsedDates(prev => ({ ...prev, [date]: !prev[date] }))
+  }
+
+  function formatDate(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00')
+    return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+  }
+
+  function getDateTotalMT(dispatchList) {
+    return dispatchList.reduce((sum, d) => sum + d.total_mt, 0)
+  }
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers', plant?.org_id],
@@ -151,50 +205,17 @@ export default function DispatchForm() {
 
   async function handleSave() {
     if (submitting) return
-    if (!form.truck_number.trim()) {
-      showToast('Truck number is required', 'error')
-      return
-    }
-    if (!form.customer_id) {
-      showToast('Customer is required', 'error')
-      return
-    }
-    if (!form.destination.trim()) {
-      showToast('Destination is required', 'error')
-      return
-    }
-    if (!form.transporter.trim()) {
-      showToast('Transporter is required', 'error')
-      return
-    }
-    if (!form.driver_name.trim()) {
-      showToast('Driver name is required', 'error')
-      return
-    }
-    if (!form.driver_phone.trim()) {
-      showToast('Driver phone is required', 'error')
-      return
-    }
-    if (!/^\d{10}$/.test(form.driver_phone.trim())) {
-      showToast('Driver phone must be 10 digits', 'error')
-      return
-    }
-    if (form.pellets.some(p => !p.pellet_type_id || !p.quantity_mt)) {
-      showToast('Fill all pellet entries', 'error')
-      return
-    }
-    if (!form.invoice_number.trim()) {
-      showToast('Invoice number is required', 'error')
-      return
-    }
-    if (!form.loading_time) {
-      showToast('Loading time is required', 'error')
-      return
-    }
-    if (!form.dispatch_time) {
-      showToast('Dispatch time is required', 'error')
-      return
-    }
+    if (!form.truck_number.trim()) { showToast('Truck number is required', 'error'); return }
+    if (!form.customer_id) { showToast('Customer is required', 'error'); return }
+    if (!form.destination.trim()) { showToast('Destination is required', 'error'); return }
+    if (!form.transporter.trim()) { showToast('Transporter is required', 'error'); return }
+    if (!form.driver_name.trim()) { showToast('Driver name is required', 'error'); return }
+    if (!form.driver_phone.trim()) { showToast('Driver phone is required', 'error'); return }
+    if (!/^\d{10}$/.test(form.driver_phone.trim())) { showToast('Driver phone must be 10 digits', 'error'); return }
+    if (form.pellets.some(p => !p.pellet_type_id || !p.quantity_mt)) { showToast('Fill all pellet entries', 'error'); return }
+    if (!form.invoice_number.trim()) { showToast('Invoice number is required', 'error'); return }
+    if (!form.loading_time) { showToast('Loading time is required', 'error'); return }
+    if (!form.dispatch_time) { showToast('Dispatch time is required', 'error'); return }
     try {
       setSubmitting(true)
 
@@ -203,7 +224,7 @@ export default function DispatchForm() {
         .insert([{
           shift_report_id: activeShiftReport?.id || null,
           plant_id: plant.id,
-          date: today,
+          date: form.dispatch_date || today,
           truck_number: sanitizeText(form.truck_number, 20),
           customer_id: form.customer_id,
           destination: sanitizeText(form.destination, 200),
@@ -211,7 +232,9 @@ export default function DispatchForm() {
           driver_name: sanitizeText(form.driver_name, 100),
           driver_phone: sanitizeText(form.driver_phone, 15),
           invoice_no: sanitizeText(form.invoice_number, 50),
+          loading_date: form.loading_date || today,
           loading_time: form.loading_time || null,
+          dispatch_date: form.dispatch_date || today,
           dispatch_time: form.dispatch_time || null,
           katta_parchi_url: form.katta_parchi_photo || null,
           remarks: sanitizeText(form.remarks, 500),
@@ -257,12 +280,15 @@ export default function DispatchForm() {
           driver_phone: '',
           pellets: [{ pellet_type_id: '', quantity_mt: '' }],
           invoice_number: '',
+          loading_date: today,
           loading_time: '',
+          dispatch_date: today,
           dispatch_time: '',
           katta_parchi_photo: null,
           remarks: ''
         })
         setShowForm(false)
+        queryClient.invalidateQueries({ queryKey: ['dispatches'] })
         queryClient.invalidateQueries({ queryKey: ['todayDispatches'] })
         queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       }
@@ -278,7 +304,7 @@ export default function DispatchForm() {
     <div style={{ paddingBottom: 80 }}>
       <PageHeader
         title="Vehicle Dispatch"
-        subtitle={returnToShift ? "Add dispatches, then go back to shift report" : "Quick dispatch entry for today"}
+        subtitle={returnToShift ? "Add dispatches, then go back to shift report" : "Manage all dispatches"}
         backTo={returnToShift ? undefined : "/"}
         onBack={returnToShift ? () => navigate('/shift/new', { state: { returnToStep: 6 } }) : undefined}
       />
@@ -291,12 +317,12 @@ export default function DispatchForm() {
             onClick={() => navigate('/shift/new', { state: { returnToStep: 6 } })}
             style={{ padding: '6px 12px', background: '#2d6a4f', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
           >
-            ← Back to Shift
+            Back to Shift
           </button>
         </div>
       )}
 
-      {/* Info if no shift report — dispatch still allowed */}
+      {/* Shift warning */}
       {shiftWarning && (
         <div style={{ margin: '16px 20px 0', background: '#fefae0', border: '1.5px solid #e9c46a', borderRadius: 14, padding: 12 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>No Active Shift Report</div>
@@ -304,58 +330,140 @@ export default function DispatchForm() {
         </div>
       )}
 
-      {/* Today's Dispatches List */}
-      <div style={{ padding: '0 20px', marginTop: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1 }}>Today's Dispatches</h2>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2c' }}>{dispatches.length}</span>
-        </div>
+      {/* Filter Tabs */}
+      <div style={{
+        position: 'sticky', top: 0, zIndex: 20,
+        display: 'flex', gap: 8, overflowX: 'auto',
+        background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
+      }}>
+        {['today', 'week', 'month', 'all'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setFilterTab(tab)}
+            style={{
+              padding: '8px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700,
+              whiteSpace: 'nowrap', transition: 'all 0.2s', border: 'none', cursor: 'pointer',
+              ...(filterTab === tab
+                ? { background: '#2d6a4f', color: 'white' }
+                : { background: 'white', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
+            }}
+          >
+            {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
+          </button>
+        ))}
+      </div>
 
+      {/* Dispatches List */}
+      <div style={{ padding: '16px 20px' }}>
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '32px 0' }}>
-            <div style={{ fontSize: 12, color: '#b5b8a8' }}>Loading...</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+            <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
           </div>
-        ) : dispatches.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {dispatches.map(dispatch => (
-              <button
-                key={dispatch.id}
-                onClick={() => navigate(`/dispatch/${dispatch.id}`)}
-                style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 12 }}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>
-                      Truck {dispatch.truck_number}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#595c4a', marginTop: 2 }}>
-                      {dispatch.customers?.name || 'Unknown Customer'}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>
-                      {dispatch.total_mt.toFixed(1)} MT
-                    </div>
-                    {dispatch.dispatch_time && (
-                      <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 2 }}>
-                        {dispatch.dispatch_time.slice(0, 5)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        ) : (
+        ) : dateKeys.length === 0 ? (
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 24, textAlign: 'center' }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Truck size={24} style={{ color: '#b5b8a8' }} /></div>
-            <p style={{ fontSize: 12, color: '#595c4a' }}>No dispatches yet</p>
+            <p style={{ fontSize: 12, color: '#595c4a' }}>No dispatches found</p>
+            <p style={{ fontSize: 11, color: '#b5b8a8', marginTop: 4 }}>Add your first dispatch to get started</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {dateKeys.map(date => {
+              const isCollapsed = collapsedDates[date]
+              const dateDispatches = groupedDispatches[date]
+              const dateTotalMT = getDateTotalMT(dateDispatches)
+
+              return (
+                <div key={date}>
+                  {/* Date Header */}
+                  <button
+                    onClick={() => toggleDateCollapse(date)}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                      padding: '0 0 10px 0', textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {isCollapsed
+                        ? <ChevronRight size={14} style={{ color: '#8a8d7a' }} />
+                        : <ChevronDown size={14} style={{ color: '#8a8d7a' }} />
+                      }
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#b5b8a8', textTransform: 'uppercase', letterSpacing: 1 }}>
+                        {formatDate(date)}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#2d6a4f' }}>
+                      {dateTotalMT.toFixed(1)} MT · {dateDispatches.length} trucks
+                    </span>
+                  </button>
+
+                  {/* Dispatch cards */}
+                  {!isCollapsed && (
+                    <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+                      {dateDispatches.map((dispatch, idx) => (
+                        <div
+                          key={dispatch.id}
+                          style={{
+                            borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none',
+                            padding: '10px 12px',
+                          }}
+                        >
+                          {/* Main row — clickable to detail */}
+                          <button
+                            onClick={() => navigate(`/dispatch/${dispatch.id}`)}
+                            style={{
+                              width: '100%', textAlign: 'left', cursor: 'pointer',
+                              background: 'transparent', border: 'none', padding: 0,
+                              display: 'flex', alignItems: 'center', gap: 10,
+                            }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                Truck {dispatch.truck_number}
+                              </div>
+                              <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
+                                {dispatch.customers?.name || 'Unknown'} · {dispatch.dispatch_time?.slice(0, 5) || '-'}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 800, color: '#2d6a4f' }}>{dispatch.total_mt.toFixed(1)} MT</div>
+                            </div>
+                          </button>
+                          {/* Driver info row with call button */}
+                          {dispatch.driver_name && (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1px dashed #f0ebe0' }}>
+                              <div style={{ fontSize: 10, color: '#8a8d7a' }}>
+                                Driver: <span style={{ color: '#595c4a', fontWeight: 600 }}>{dispatch.driver_name}</span>
+                              </div>
+                              {dispatch.driver_phone && (
+                                <a
+                                  href={`tel:${dispatch.driver_phone}`}
+                                  onClick={e => e.stopPropagation()}
+                                  style={{
+                                    display: 'flex', alignItems: 'center', gap: 4,
+                                    padding: '4px 10px', background: '#e8f0ec', borderRadius: 8,
+                                    fontSize: 10, fontWeight: 700, color: '#2d6a4f',
+                                    textDecoration: 'none', border: 'none', cursor: 'pointer',
+                                  }}
+                                >
+                                  <Phone size={10} /> Call
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
 
       {/* Add Dispatch Button */}
-      <div style={{ padding: '0 20px', marginTop: 16, marginBottom: 16 }}>
+      <div style={{ padding: '0 20px', marginTop: 0, marginBottom: 16 }}>
         <button
           onClick={() => setShowForm(!showForm)}
           style={{
@@ -565,17 +673,30 @@ export default function DispatchForm() {
               </button>
             </div>
 
-            {/* Invoice & Times */}
+            {/* Invoice Number */}
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
+                Invoice Number <span style={{ color: '#D32F2F' }}>*</span>
+              </label>
+              <input
+                type="text"
+                placeholder="Invoice #"
+                value={form.invoice_number}
+                onChange={e => updateForm('invoice_number', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+              />
+            </div>
+
+            {/* Loading Date + Time */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-                  Invoice Number <span style={{ color: '#D32F2F' }}>*</span>
+                  Loading Date <span style={{ color: '#D32F2F' }}>*</span>
                 </label>
                 <input
-                  type="text"
-                  placeholder="Invoice #"
-                  value={form.invoice_number}
-                  onChange={e => updateForm('invoice_number', e.target.value)}
+                  type="date"
+                  value={form.loading_date}
+                  onChange={e => updateForm('loading_date', e.target.value)}
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                 />
               </div>
@@ -592,16 +713,30 @@ export default function DispatchForm() {
               </div>
             </div>
 
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-                Dispatch Time <span style={{ color: '#D32F2F' }}>*</span>
-              </label>
-              <input
-                type="time"
-                value={form.dispatch_time}
-                onChange={e => updateForm('dispatch_time', e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
-              />
+            {/* Dispatch Date + Time */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
+                  Dispatch Date <span style={{ color: '#D32F2F' }}>*</span>
+                </label>
+                <input
+                  type="date"
+                  value={form.dispatch_date}
+                  onChange={e => updateForm('dispatch_date', e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
+                  Dispatch Time <span style={{ color: '#D32F2F' }}>*</span>
+                </label>
+                <input
+                  type="time"
+                  value={form.dispatch_time}
+                  onChange={e => updateForm('dispatch_time', e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                />
+              </div>
             </div>
 
             {/* Photo Upload */}

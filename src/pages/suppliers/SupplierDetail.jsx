@@ -215,6 +215,11 @@ export default function SupplierDetail() {
           <h2 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 12 }}>Supplier Information</h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>Name</p>
+              <p style={{ fontSize: 15, fontWeight: 800, color: '#2c2c2c' }}>{supplier.name}</p>
+            </div>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <Phone size={16} style={{ color: '#2d6a4f', flexShrink: 0 }} />
               <div>

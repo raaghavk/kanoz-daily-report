@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
-import { Search, Plus, Phone, MessageSquare, MapPin, ChevronRight, Loader2, AlertCircle } from 'lucide-react'
+import { Search, Plus, Phone, MessageSquare, MapPin, ChevronRight, Loader2, AlertCircle, Navigation } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function SupplierList() {
@@ -199,6 +199,12 @@ export default function SupplierList() {
                     style={{ width: 34, height: 34, borderRadius: 8, background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <MessageSquare size={14} style={{ color: '#2563EB' }} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleMap(supplier) }}
+                    style={{ width: 34, height: 34, borderRadius: 8, background: '#FEF3C7', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Navigation size={14} style={{ color: '#B45309' }} />
                   </button>
                 </div>
               </div>
