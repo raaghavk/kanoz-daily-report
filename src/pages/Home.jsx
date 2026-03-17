@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
-import { ChevronRight, Plus, Truck, Package } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 
 export default function Home() {
   const { employee, plant } = useAuth()
@@ -197,125 +197,110 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-          {can(employee?.role, 'create_report') && (
+        {/* History Cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 0 }}>
+            History
+          </div>
+
+          {can(employee?.role, 'view_reports') && (
           <button
-            onClick={() => navigate('/shift/new')}
+            onClick={() => navigate('/reports')}
             style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              width: '100%', padding: '15px 0', borderRadius: 14,
-              background: '#2d6a4f', color: 'white',
-              fontSize: 15, fontWeight: 600,
-              boxShadow: '0 4px 14px rgba(45,106,79,0.25)',
-              border: 'none', cursor: 'pointer'
+              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
+              padding: '14px 16px', borderRadius: 14, background: '#fff',
+              border: '1.5px solid #e5ddd0', cursor: 'pointer',
             }}
           >
-            <Plus size={18} strokeWidth={2.5} />
-            New Shift Report
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#e8f0ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+              📊
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Shift Reports</div>
+              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>View all submitted reports</div>
+            </div>
+            <ChevronRight size={18} color="#b5b8a8" />
           </button>
           )}
-          {can(employee?.role, 'create_dispatch') && (
+
+          {can(employee?.role, 'view_dispatches') && (
           <button
             onClick={() => navigate('/dispatch')}
             style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              width: '100%', padding: '14px 0', borderRadius: 14,
-              background: '#e8f0ec', color: '#2d6a4f',
-              fontSize: 14, fontWeight: 600,
-              border: '1.5px solid #b8d4c4',
-              cursor: 'pointer'
+              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
+              padding: '14px 16px', borderRadius: 14, background: '#fff',
+              border: '1.5px solid #e5ddd0', cursor: 'pointer',
             }}
           >
-            <Truck size={16} strokeWidth={2} />
-            Quick Vehicle Dispatch
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+              🚛
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Dispatches</div>
+              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>View vehicle dispatch history</div>
+            </div>
+            <ChevronRight size={18} color="#b5b8a8" />
           </button>
           )}
-          {can(employee?.role, 'create_purchase') && (
+
+          {can(employee?.role, 'view_purchases') && (
           <button
-            onClick={() => navigate('/purchase/new')}
+            onClick={() => navigate('/purchase')}
             style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              width: '100%', padding: '14px 0', borderRadius: 14,
-              background: '#fff', color: '#2c2c2c',
-              fontSize: 14, fontWeight: 600,
-              border: '1.5px solid #e5ddd0',
-              cursor: 'pointer'
+              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
+              padding: '14px 16px', borderRadius: 14, background: '#fff',
+              border: '1.5px solid #e5ddd0', cursor: 'pointer',
             }}
           >
-            <Package size={16} strokeWidth={2} />
-            Raw Material Purchase
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+              📦
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Purchases</div>
+              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>View raw material purchases</div>
+            </div>
+            <ChevronRight size={18} color="#b5b8a8" />
           </button>
           )}
         </div>
 
-        {/* Recent Reports */}
+        {/* Today's Reports */}
+        {todayReports.length > 0 && (
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 12 }}>
-            Recent Reports
+            Today's Reports
           </div>
-
-          {todayReports.length > 0 ? (
-            <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-              {todayReports.map((report, idx) => (
-                <button
-                  key={report.id}
-                  onClick={() => navigate(`/reports/${report.id}`)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
-                    padding: '14px 16px',
-                    borderBottom: idx < todayReports.length - 1 ? '1px solid #f0ebe0' : 'none',
-                    background: 'transparent', border: 'none', cursor: 'pointer'
-                  }}
-                >
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                    width: 44, height: 44, borderRadius: 12, background: '#e8f0ec', fontSize: 20
-                  }}>
-                    📊
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>
-                      Shift {report.shift} — {report.date}
-                    </div>
-                    <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 2 }}>
-                      {report.pellet_production_mt || 0} MT &bull; {(() => {
-                        const sd = report.shift_start_date || report.date
-                        const ed = report.shift_end_date || report.date
-                        const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''
-                        return `${fmt(sd)} ${report.start_time?.slice(0,5)} – ${sd !== ed ? fmt(ed) + ' ' : ''}${report.end_time?.slice(0,5)}`
-                      })()}
-                    </div>
-                  </div>
-                  <ChevronRight size={18} color="#b5b8a8" />
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div style={{
-              textAlign: 'center',
-              background: '#fff', borderRadius: 14,
-              border: '1.5px solid #e5ddd0', padding: '32px 20px'
-            }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>📊</div>
-              <p style={{ fontSize: 14, fontWeight: 500, color: '#595c4a', marginBottom: 4 }}>No reports yet today</p>
-              <p style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 16 }}>Start a shift report to track production</p>
-              {can(employee?.role, 'create_report') && (
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+            {todayReports.map((report, idx) => (
               <button
-                onClick={() => navigate('/shift/new')}
+                key={report.id}
+                onClick={() => navigate(`/reports/${report.id}`)}
                 style={{
-                  padding: '10px 24px', borderRadius: 10,
-                  background: '#2d6a4f', color: 'white',
-                  fontSize: 13, fontWeight: 600,
-                  border: 'none', cursor: 'pointer'
+                  width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+                  padding: '14px 16px',
+                  borderBottom: idx < todayReports.length - 1 ? '1px solid #f0ebe0' : 'none',
+                  background: 'transparent', border: 'none', cursor: 'pointer'
                 }}
               >
-                Start Shift Report
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>
+                    Shift {report.shift} — {report.date}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 2 }}>
+                    {report.pellet_production_mt || 0} MT &bull; {(() => {
+                      const sd = report.shift_start_date || report.date
+                      const ed = report.shift_end_date || report.date
+                      const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''
+                      return `${fmt(sd)} ${report.start_time?.slice(0,5)} – ${sd !== ed ? fmt(ed) + ' ' : ''}${report.end_time?.slice(0,5)}`
+                    })()}
+                  </div>
+                </div>
+                <ChevronRight size={18} color="#b5b8a8" />
               </button>
-              )}
-            </div>
-          )}
+            ))}
+          </div>
         </div>
+        )}
       </div>
 
       {/* Production Modal */}
