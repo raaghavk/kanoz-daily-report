@@ -47,7 +47,12 @@ export default function Home() {
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard', plant?.id, today],
     queryFn: async () => {
-      const [reportsRes, dispatchesRes, lastReportRes] = await Promise.all([
+      // Yesterday's date for summary
+      const yd = new Date(now)
+      yd.setDate(yd.getDate() - 1)
+      const yesterday = localDate(yd)
+
+      const [reportsRes, dispatchesRes, lastReportRes, yesterdayReportsRes, yesterdayDispatchesRes, yesterdayPurchasesRes] = await Promise.all([
         supabase
           .from('shift_reports')
           .select('*, machine_production(*), issues(*)')
@@ -69,6 +74,24 @@ export default function Home() {
           .order('shift', { ascending: false })
           .limit(1)
           .single(),
+        supabase
+          .from('shift_reports')
+          .select('pellet_production_mt')
+          .eq('plant_id', plant.id)
+          .eq('is_deleted', false)
+          .eq('date', yesterday),
+        supabase
+          .from('vehicle_dispatches')
+          .select('dispatch_pellets(quantity_mt)')
+          .eq('plant_id', plant.id)
+          .eq('is_deleted', false)
+          .eq('date', yesterday),
+        supabase
+          .from('raw_material_purchases')
+          .select('total_amount, final_quantity')
+          .eq('plant_id', plant.id)
+          .eq('is_deleted', false)
+          .eq('date', yesterday),
       ])
 
       const reports = reportsRes.data || []
@@ -76,10 +99,21 @@ export default function Home() {
       const totalIssues = reports.reduce((sum, r) => sum + (r.issues?.length || 0), 0)
       const handover = lastReportRes.data?.handover_notes ? lastReportRes.data : null
 
+      // Yesterday summary
+      const yReports = yesterdayReportsRes.data || []
+      const yDispatches = yesterdayDispatchesRes.data || []
+      const yPurchases = yesterdayPurchasesRes.data || []
+      const yProd = yReports.reduce((s, r) => s + (parseFloat(r.pellet_production_mt) || 0), 0)
+      const yTrucks = yDispatches.length
+      const yDispatchMT = yDispatches.reduce((s, d) => s + (d.dispatch_pellets || []).reduce((ss, p) => ss + (parseFloat(p.quantity_mt) || 0), 0), 0)
+      const yPurchaseAmt = yPurchases.reduce((s, p) => s + (parseFloat(p.total_amount) || 0), 0)
+      const yPurchaseKg = yPurchases.reduce((s, p) => s + (parseFloat(p.final_quantity) || 0), 0)
+
       return {
         stats: { production: totalProd, trucks: dispatchesRes.data?.length || 0, issues: totalIssues },
         todayReports: reports,
         handoverNotes: handover,
+        yesterday: (yProd > 0 || yTrucks > 0 || yPurchases.length > 0) ? { production: yProd, trucks: yTrucks, dispatchMT: yDispatchMT, purchaseAmt: yPurchaseAmt, purchaseKg: yPurchaseKg, purchaseCount: yPurchases.length } : null,
       }
     },
     enabled: !!plant?.id,
@@ -88,6 +122,7 @@ export default function Home() {
   const stats = dashboardData?.stats || { production: 0, trucks: 0, issues: 0 }
   const todayReports = dashboardData?.todayReports || []
   const handoverNotes = dashboardData?.handoverNotes || null
+  const yesterday = dashboardData?.yesterday || null
 
   const fmtDate = (d) => new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   const dateStr = currentShift === 'A' || shiftStartDate === shiftEndDate
@@ -268,6 +303,42 @@ export default function Home() {
           </button>
           )}
         </div>
+
+        {/* Yesterday's Summary */}
+        {yesterday && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 10 }}>
+              Yesterday's Summary
+            </div>
+            <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {yesterday.production > 0 && (
+                  <div>
+                    <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600 }}>Production</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#2d6a4f', marginTop: 2 }}>{yesterday.production.toFixed(1)} MT</div>
+                  </div>
+                )}
+                {yesterday.trucks > 0 && (
+                  <div>
+                    <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600 }}>Dispatched</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#d4a373', marginTop: 2 }}>{yesterday.dispatchMT.toFixed(1)} MT ({yesterday.trucks} trucks)</div>
+                  </div>
+                )}
+                {yesterday.purchaseCount > 0 && (
+                  <div style={{ gridColumn: yesterday.production > 0 && yesterday.trucks > 0 ? '1 / -1' : 'auto' }}>
+                    <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600 }}>Purchases</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#595c4a', marginTop: 2 }}>
+                      ₹{Math.round(yesterday.purchaseAmt).toLocaleString('en-IN')}
+                      <span style={{ fontSize: 11, fontWeight: 500, color: '#8a8d7a', marginLeft: 6 }}>
+                        ({yesterday.purchaseCount} entries, {yesterday.purchaseKg >= 1000 ? `${(yesterday.purchaseKg / 1000).toFixed(1)} MT` : `${Math.round(yesterday.purchaseKg)} kg`})
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Today's Reports */}
         {todayReports.length > 0 && (

@@ -71,7 +71,7 @@ export default function DataInsights() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#fefae0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
       <PageHeader title="Data Assistant" subtitle="Ask about your plant data" backTo="/" />
 
       {/* Messages Area */}

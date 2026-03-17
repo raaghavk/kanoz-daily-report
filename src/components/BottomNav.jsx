@@ -118,16 +118,9 @@ export default function BottomNav() {
           <span style={{ fontSize: 10, fontWeight: isHome ? 700 : 500 }}>Home</span>
         </button>
 
-        <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(showSheet)}>
-          <div style={{
-            width: 40, height: 40, borderRadius: 12,
-            background: showSheet ? '#1b4332' : '#2d6a4f',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'background 0.2s, transform 0.2s',
-            transform: showSheet ? 'rotate(45deg)' : 'none',
-          }}>
-            <Plus size={22} strokeWidth={2.5} color="#fff" />
-          </div>
+        <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(false)}>
+          <Plus size={24} strokeWidth={2} style={{ color: '#2d6a4f', transition: 'transform 0.2s', transform: showSheet ? 'rotate(45deg)' : 'none' }} />
+          <span style={{ fontSize: 10, fontWeight: 500, color: '#8a8d7a' }}>New</span>
         </button>
 
         <button onClick={() => navigate('/insights')} style={navBtnStyle(isChat)}>
