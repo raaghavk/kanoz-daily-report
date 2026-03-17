@@ -20,6 +20,8 @@ const ReportList = lazy(() => import('./pages/ReportList'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 const DeleteRequests = lazy(() => import('./pages/DeleteRequests'))
+const CustomerList = lazy(() => import('./pages/customers/CustomerList'))
+const TransporterList = lazy(() => import('./pages/transporters/TransporterList'))
 
 function LoadingFallback() {
   return (
@@ -97,6 +99,8 @@ export default function App() {
         <Route path="dispatch/:id" element={<PermissionGuard action="view_dispatches"><DispatchDetail /></PermissionGuard>} />
         <Route path="suppliers" element={<SupplierList />} />
         <Route path="suppliers/:id" element={<SupplierDetail />} />
+        <Route path="customers" element={<CustomerList />} />
+        <Route path="transporters" element={<TransporterList />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
@@ -227,7 +231,7 @@ function SettingsPage() {
           </div>
         </button>
         <button
-          onClick={() => nav('/suppliers')}
+          onClick={() => nav('/customers')}
           style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
         >
           <span style={{ fontSize: 18 }}>🏭</span>
@@ -237,7 +241,7 @@ function SettingsPage() {
           </div>
         </button>
         <button
-          onClick={() => nav('/suppliers')}
+          onClick={() => nav('/transporters')}
           style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
         >
           <span style={{ fontSize: 18 }}>🚛</span>
