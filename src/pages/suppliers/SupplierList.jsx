@@ -167,60 +167,38 @@ export default function SupplierList() {
             )}
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {filteredSuppliers.map(supplier => (
+          <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+            {filteredSuppliers.map((supplier, idx) => (
               <div
                 key={supplier.id}
-                style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}
+                style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}
               >
-                {/* Card Header */}
+                {/* Name + details — clickable to detail */}
                 <button
                   onClick={() => navigate(`/suppliers/${supplier.id}`)}
-                  style={{ width: '100%', textAlign: 'left', marginBottom: 12, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                  style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <h3 style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>{supplier.name}</h3>
-                    <ChevronRight size={16} style={{ color: '#b5b8a8' }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {supplier.name}
                   </div>
-                  <p style={{ fontSize: 12, color: '#595c4a' }}>{supplier.mobile}</p>
+                  <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
+                    {supplier.raw_material_type || 'N/A'}
+                    {supplier.rate_offered ? ` · ₹${supplier.rate_offered}` : ''}
+                  </div>
                 </button>
-
-                {/* Materials & Rate */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid #e5ddd0' }}>
-                  <div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Material</span>
-                    <p style={{ fontSize: 12, color: '#2c2c2c', marginTop: 2 }}>{supplier.raw_material_type || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Rate</span>
-                    <p style={{ fontSize: 12, color: '#2d6a4f', fontWeight: 600, marginTop: 2 }}>
-                      {supplier.rate_offered ? `₹${supplier.rate_offered}` : 'N/A'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: 8 }}>
+                {/* Quick action icons */}
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   <button
-                    onClick={() => handleCall(supplier.mobile)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#e8f0ec', borderRadius: 8, border: 'none', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); handleCall(supplier.mobile) }}
+                    style={{ width: 34, height: 34, borderRadius: 8, background: '#e8f0ec', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <Phone size={14} style={{ color: '#2d6a4f' }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2d6a4f' }}>Call</span>
                   </button>
                   <button
-                    onClick={() => handleSMS(supplier.mobile)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#EEF2FF', borderRadius: 8, border: 'none', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); handleSMS(supplier.mobile) }}
+                    style={{ width: 34, height: 34, borderRadius: 8, background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <MessageSquare size={14} style={{ color: '#2563EB' }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#2563EB' }}>SMS</span>
-                  </button>
-                  <button
-                    onClick={() => handleMap(supplier)}
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 0', background: '#fefae0', borderRadius: 8, border: 'none', cursor: 'pointer' }}
-                  >
-                    <MapPin size={14} style={{ color: '#d4a373' }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: '#d4a373' }}>Map</span>
                   </button>
                 </div>
               </div>

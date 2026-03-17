@@ -264,39 +264,35 @@ export default function PurchaseList() {
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#b5b8a8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
                   {formatDate(date)}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {groupedPurchases[date].map(purchase => (
+                <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+                  {groupedPurchases[date].map((purchase, pIdx) => (
                     <button
                       key={purchase.id}
                       onClick={() => navigate(`/purchase/${purchase.id}`)}
-                      style={{ background: '#fff', border: '1.5px solid #e5ddd0', borderRadius: 14, padding: 16, width: '100%', textAlign: 'left', cursor: 'pointer' }}
+                      style={{
+                        width: '100%', textAlign: 'left', cursor: 'pointer',
+                        background: 'transparent', border: 'none', padding: '10px 12px',
+                        borderTop: pIdx > 0 ? '1px solid #f0ebe0' : 'none',
+                        display: 'flex', alignItems: 'center', gap: 10,
+                      }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>{purchase.suppliers?.name || 'Unknown Supplier'}</div>
-                          <div style={{ fontSize: 12, color: '#b5b8a8', marginTop: 2 }}>{purchase.raw_material_types?.name || 'N/A'}</div>
+                      {/* Supplier + Material + Qty */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {purchase.suppliers?.name || 'Unknown'}
                         </div>
-                        <div style={
-                          purchase.payment_status === 'Paid'
-                            ? { background: '#DCFCE7', color: '#15803D', padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700 }
-                            : { background: '#FEE2E2', color: '#DC2626', padding: '4px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700 }
-                        }>
-                          {purchase.payment_status || 'Pending'}
+                        <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
+                          {purchase.raw_material_types?.name || 'N/A'} · {Math.round(purchase.final_quantity || 0).toLocaleString('en-IN')} kg
                         </div>
                       </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12 }}>
-                        <div>
-                          <div style={{ color: '#b5b8a8' }}>Quantity</div>
-                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>{Math.round(purchase.final_quantity || 0).toLocaleString('en-IN')} kg</div>
-                        </div>
-                        <div>
-                          <div style={{ color: '#b5b8a8' }}>Avg Rate</div>
-                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>{'\u20B9'}{purchase.final_quantity > 0 ? (purchase.total_amount / purchase.final_quantity).toFixed(2) : '0.00'}/kg</div>
-                        </div>
-                        <div>
-                          <div style={{ color: '#b5b8a8' }}>Amount</div>
-                          <div style={{ fontWeight: 700, color: '#2c2c2c' }}>{formatCurrency(purchase.total_amount)}</div>
+                      {/* Amount + Status */}
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: '#2c2c2c' }}>{formatCurrency(purchase.total_amount)}</div>
+                        <div style={{
+                          fontSize: 9, fontWeight: 700, marginTop: 2,
+                          color: purchase.payment_status === 'Paid' ? '#15803D' : '#DC2626'
+                        }}>
+                          {purchase.payment_status || 'Pending'}
                         </div>
                       </div>
                     </button>

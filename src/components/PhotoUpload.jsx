@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { Camera, X, Loader2 } from 'lucide-react'
+import { Camera, Image, X, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { showToast } from './Toast'
 
@@ -12,7 +12,8 @@ function isLegacyPath(val) {
 }
 
 export default function PhotoUpload({ label, value, onChange, bucket = 'photos', folder = 'issues' }) {
-  const inputRef = useRef()
+  const cameraRef = useRef()
+  const galleryRef = useRef()
   const legacy = isLegacyPath(value)
   const [preview, setPreview] = useState(legacy ? null : (value || null))
   const [uploading, setUploading] = useState(false)
@@ -30,12 +31,12 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
 
     if (!ALLOWED_TYPES.includes(file.type)) {
       showToast('Only JPEG, PNG, or WebP images allowed', 'error')
-      if (inputRef.current) inputRef.current.value = ''
+      resetInputs()
       return
     }
     if (file.size > MAX_FILE_SIZE) {
       showToast('Photo must be under 10MB', 'error')
-      if (inputRef.current) inputRef.current.value = ''
+      resetInputs()
       return
     }
 
@@ -72,16 +73,23 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
     }
   }
 
+  function resetInputs() {
+    if (cameraRef.current) cameraRef.current.value = ''
+    if (galleryRef.current) galleryRef.current.value = ''
+  }
+
   function clear() {
     setPreview(null)
     onChange?.(null)
-    if (inputRef.current) inputRef.current.value = ''
+    resetInputs()
   }
 
   return (
     <div>
       {label && <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#595c4a", marginBottom: 6 }}>{label}</label>}
-      <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" style={{ display: 'none' }} onChange={handleFile} />
+      {/* Hidden file inputs — one for camera, one for gallery */}
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
+      <input ref={galleryRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" style={{ display: 'none' }} onChange={handleFile} />
       {legacy ? (
         <div style={{ borderRadius: 12, border: '1.5px solid #e5ddd0', padding: 16, background: '#f5f0e1', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ width: 44, height: 44, borderRadius: 10, background: '#2d6a4f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -94,7 +102,7 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
             </div>
           </div>
           <button
-            onClick={() => inputRef.current?.click()}
+            onClick={() => cameraRef.current?.click()}
             style={{ padding: '6px 10px', borderRadius: 8, background: '#2d6a4f', color: 'white', fontSize: 10, fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
             Replace
@@ -127,13 +135,32 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
           </button>
         </div>
       ) : (
-        <button
-          onClick={() => inputRef.current?.click()}
-          style={{ width: "100%", padding: "24px 16px", borderRadius: 12, border: "2px dashed #e5ddd0", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, color: "#b5b8a8", cursor: "pointer", background: 'transparent' }}
-        >
-          <Camera size={28} />
-          <span style={{ fontSize: 12 }}>Take photo or upload</span>
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => cameraRef.current?.click()}
+            style={{
+              flex: 1, padding: '16px 12px', borderRadius: 12,
+              border: '2px dashed #b8d4c4', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: 6, color: '#2d6a4f', cursor: 'pointer',
+              background: 'rgba(45, 106, 79, 0.04)', fontWeight: 600
+            }}
+          >
+            <Camera size={24} />
+            <span style={{ fontSize: 11 }}>Take Photo</span>
+          </button>
+          <button
+            onClick={() => galleryRef.current?.click()}
+            style={{
+              flex: 1, padding: '16px 12px', borderRadius: 12,
+              border: '2px dashed #e5ddd0', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: 6, color: '#8a8d7a', cursor: 'pointer',
+              background: 'transparent', fontWeight: 600
+            }}
+          >
+            <Image size={24} />
+            <span style={{ fontSize: 11 }}>Gallery</span>
+          </button>
+        </div>
       )}
     </div>
   )

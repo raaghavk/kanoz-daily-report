@@ -41,7 +41,7 @@ export default function ReportList() {
 
       const { data, error } = await supabase
         .from('shift_reports')
-        .select('*, employees(name)')
+        .select('*, employees!supervisor_id(name)')
         .eq('plant_id', plant.id)
         .gte('date', startDate)
         .lte('date', endDate)

@@ -73,13 +73,22 @@ export default function ReportView() {
     try {
       setLoading(true)
 
+      // Use !supervisor_id hint to disambiguate — shift_reports has 2 FKs to employees
       const { data: reportData, error: reportError } = await supabase
         .from('shift_reports')
-        .select('*, plants(name), employees(name)')
+        .select('*, plants(name), employees!supervisor_id(name)')
         .eq('id', id)
         .single()
 
-      if (reportError) throw reportError
+      if (reportError) {
+        console.error('Report fetch error:', reportError)
+        if (reportError.code === 'PGRST116') {
+          showToast('Report not found', 'error')
+          navigate('/reports')
+          return
+        }
+        throw reportError
+      }
       if (!reportData) {
         showToast('Report not found', 'error')
         navigate('/reports')

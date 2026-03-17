@@ -318,7 +318,11 @@ export default function DispatchForm() {
         ) : dispatches.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {dispatches.map(dispatch => (
-              <div key={dispatch.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 12 }}>
+              <button
+                key={dispatch.id}
+                onClick={() => navigate(`/dispatch/${dispatch.id}`)}
+                style={{ width: '100%', textAlign: 'left', cursor: 'pointer', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 12 }}
+              >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>
@@ -339,7 +343,7 @@ export default function DispatchForm() {
                     )}
                   </div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         ) : (

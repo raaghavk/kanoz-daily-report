@@ -14,6 +14,7 @@ const PurchaseDetail = lazy(() => import('./pages/purchase/PurchaseDetail'))
 const SupplierList = lazy(() => import('./pages/suppliers/SupplierList'))
 const SupplierDetail = lazy(() => import('./pages/suppliers/SupplierDetail'))
 const DispatchForm = lazy(() => import('./pages/dispatch/DispatchForm'))
+const DispatchDetail = lazy(() => import('./pages/dispatch/DispatchDetail'))
 const ReportView = lazy(() => import('./pages/ReportView'))
 const ReportList = lazy(() => import('./pages/ReportList'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
@@ -92,6 +93,7 @@ export default function App() {
         <Route path="purchase/:id" element={<PermissionGuard action="view_purchases"><PurchaseDetail /></PermissionGuard>} />
         <Route path="purchase/:id/edit" element={<PermissionGuard action="create_purchase"><PurchaseForm /></PermissionGuard>} />
         <Route path="dispatch" element={<PermissionGuard action="create_dispatch"><DispatchForm /></PermissionGuard>} />
+        <Route path="dispatch/:id" element={<PermissionGuard action="view_dispatches"><DispatchDetail /></PermissionGuard>} />
         <Route path="suppliers" element={<SupplierList />} />
         <Route path="suppliers/:id" element={<SupplierDetail />} />
         <Route path="settings" element={<SettingsPage />} />

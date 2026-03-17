@@ -147,7 +147,7 @@ export default memo(function Step3Production({ data, updateData }) {
           {/* Pellet type chips */}
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: COLORS.secondary, marginBottom: 8 }}>PELLET TYPE</label>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {data.pelletStock.map(p => (
                 <button
                   key={p.id}
@@ -193,27 +193,30 @@ export default memo(function Step3Production({ data, updateData }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
                 {/* Header row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 0.8fr 40px', gap: 8, alignItems: 'center', paddingBottom: 8, borderBottom: `1px solid ${COLORS.border}` }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(60px, 1fr) minmax(40px, 0.7fr) 32px', gap: 6, alignItems: 'center', paddingBottom: 8, borderBottom: `1px solid ${COLORS.border}` }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.secondary }}>MATERIAL</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.secondary }}>QTY (KG)</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.secondary }}>KG</span>
                   <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.secondary }}>%</span>
                   <span></span>
                 </div>
 
                 {/* Ingredient rows */}
                 {entry.ingredients.map((ingredient, ingIdx) => (
-                  <div key={ingIdx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 0.8fr 40px', gap: 8, alignItems: 'center' }}>
+                  <div key={ingIdx} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(60px, 1fr) minmax(40px, 0.7fr) 32px', gap: 6, alignItems: 'center' }}>
                     <select
                       value={ingredient.material}
                       onChange={e => updateIngredient(idx, ingIdx, 'material', e.target.value)}
                       style={{
-                        padding: '8px 10px',
+                        width: '100%',
+                        minWidth: 0,
+                        padding: '8px 4px',
                         borderRadius: 6,
                         border: `1px solid ${COLORS.border}`,
-                        fontSize: 12,
+                        fontSize: 11,
                         outline: 'none',
                         color: COLORS.primary,
-                        background: '#fff'
+                        background: '#fff',
+                        boxSizing: 'border-box'
                       }}
                     >
                       <option value="">Select...</option>
@@ -227,24 +230,29 @@ export default memo(function Step3Production({ data, updateData }) {
                       onChange={e => updateIngredient(idx, ingIdx, 'quantity_kg', e.target.value)}
                       placeholder="0"
                       style={{
-                        padding: '8px 10px',
+                        width: '100%',
+                        minWidth: 0,
+                        padding: '8px 6px',
                         borderRadius: 6,
                         border: `1px solid ${COLORS.border}`,
                         fontSize: 12,
                         outline: 'none',
-                        color: COLORS.primary
+                        color: COLORS.primary,
+                        boxSizing: 'border-box'
                       }}
                     />
 
                     <div style={{
-                      padding: '8px 8px',
+                      padding: '8px 4px',
                       borderRadius: 6,
                       background: '#fff',
                       border: `1px solid ${COLORS.border}`,
-                      fontSize: 12,
+                      fontSize: 11,
                       fontWeight: 600,
                       color: COLORS.accent,
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      minWidth: 0,
+                      overflow: 'hidden'
                     }}>
                       {calculateIngredientPercentage(ingredient.quantity_kg, idx)}%
                     </div>
