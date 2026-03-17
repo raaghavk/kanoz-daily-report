@@ -57,6 +57,7 @@ export default function PurchaseList() {
           raw_material_types (id, name)
         `)
         .eq('plant_id', plant?.id)
+        .eq('is_deleted', false)
         .order('date', { ascending: false })
 
       // Apply date filter

@@ -19,6 +19,7 @@ const ReportView = lazy(() => import('./pages/ReportView'))
 const ReportList = lazy(() => import('./pages/ReportList'))
 const UserManagement = lazy(() => import('./pages/UserManagement'))
 const AdminPanel = lazy(() => import('./pages/AdminPanel'))
+const DeleteRequests = lazy(() => import('./pages/DeleteRequests'))
 
 function LoadingFallback() {
   return (
@@ -99,6 +100,7 @@ export default function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
+        <Route path="delete-requests" element={<PermissionGuard action="manage_users"><DeleteRequests /></PermissionGuard>} />
       </Route>
       <Route
         path="/shift/new"
@@ -252,6 +254,14 @@ function SettingsPage() {
           style={{ width: '100%', padding: '14px 0', background: '#d4a373', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
         >
           Plant Settings (Admin)
+        </button>
+      )}
+      {can(employee?.role, 'manage_users') && (
+        <button
+          onClick={() => nav('/delete-requests')}
+          style={{ width: '100%', padding: '14px 0', background: '#DC2626', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+        >
+          Delete Requests
         </button>
       )}
       {/* Notifications */}

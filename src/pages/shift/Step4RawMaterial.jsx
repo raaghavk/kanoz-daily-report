@@ -1,6 +1,64 @@
-import { memo } from 'react'
+import { memo, useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
 
-export default memo(function Step4RawMaterial({ data, updateData }) {
+export default memo(function Step4RawMaterial({ data, updateData, plant }) {
+  const [purchasesLoaded, setPurchasesLoaded] = useState(false)
+
+  // Auto-load purchased quantities from raw_material_purchases
+  useEffect(() => {
+    if (!plant?.id || !data.shift_start_date || purchasesLoaded) return
+
+    async function loadPurchases() {
+      try {
+        const { data: purchases } = await supabase
+          .from('raw_material_purchases')
+          .select('raw_material_type_id, final_quantity, purchase_time')
+          .eq('plant_id', plant.id)
+          .eq('is_deleted', false)
+          .gte('date', data.shift_start_date)
+          .lte('date', data.shift_end_date || data.shift_start_date)
+
+        if (!purchases || purchases.length === 0) {
+          setPurchasesLoaded(true)
+          return
+        }
+
+        // Client-side time filtering if shift times are available
+        let filtered = purchases
+        if (data.start_time && data.end_time && data.shift_start_date) {
+          const shiftStart = new Date(`${data.shift_start_date}T${data.start_time}:00`)
+          const shiftEnd = new Date(`${data.shift_end_date || data.shift_start_date}T${data.end_time}:00`)
+          filtered = purchases.filter(p => {
+            if (!p.purchase_time) return true // include purchases without time
+            const pDate = data.shift_start_date
+            const pDt = new Date(`${pDate}T${p.purchase_time}`)
+            return pDt >= shiftStart && pDt <= shiftEnd
+          })
+        }
+
+        // Group by raw_material_type_id
+        const purchasedByType = {}
+        filtered.forEach(p => {
+          const typeId = p.raw_material_type_id
+          purchasedByType[typeId] = (purchasedByType[typeId] || 0) + (parseFloat(p.final_quantity) || 0)
+        })
+
+        // Update rawMaterials
+        const updated = data.rawMaterials.map(rm => {
+          const purchased = Math.round(purchasedByType[rm.id] || 0)
+          return { ...rm, purchased, closing: rm.opening + purchased - rm.used }
+        })
+        updateData('rawMaterials', updated)
+        setPurchasesLoaded(true)
+      } catch (err) {
+        console.error('Error loading purchases for shift:', err)
+        setPurchasesLoaded(true)
+      }
+    }
+
+    loadPurchases()
+  }, [plant?.id, data.shift_start_date, data.shift_end_date, purchasesLoaded, data, updateData])
+
   function updateRM(idx, field, value) {
     const mats = [...data.rawMaterials]
     mats[idx] = { ...mats[idx], [field]: parseFloat(value) || 0 }

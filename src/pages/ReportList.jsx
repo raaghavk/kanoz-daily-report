@@ -43,6 +43,7 @@ export default function ReportList() {
         .from('shift_reports')
         .select('*, employees!supervisor_id(name)')
         .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date', { ascending: false })

@@ -1,6 +1,8 @@
-import { memo, useEffect } from 'react'
-import { ChevronDown, Plus, X, Camera } from 'lucide-react'
+import { memo, useEffect, useState } from 'react'
+import { ChevronDown, Plus, X, Camera, Sparkles } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
+import { supabase } from '../../lib/supabase'
+import { showToast } from '../../components/Toast'
 
 // Helper: format number for display, allow empty string for clearing
 function numVal(v) {
@@ -11,6 +13,8 @@ function numVal(v) {
 }
 
 export default memo(function Step5Diesel({ data, updateData }) {
+  const [scanningIdx, setScanningIdx] = useState(null)
+
   // Initialize diesel_stock if not exists (via useEffect, not during render)
   useEffect(() => {
     if (!data.diesel_stock) {
@@ -19,6 +23,52 @@ export default memo(function Step5Diesel({ data, updateData }) {
       updateData('diesel_stock', { ...data.diesel_stock, purchases: [] })
     }
   }, [data.diesel_stock, updateData])
+
+  async function scanDieselReceipt(idx, receiptUrl) {
+    if (!receiptUrl) return
+    try {
+      setScanningIdx(idx)
+      const { data: result, error } = await supabase.functions.invoke('extract-receipt', {
+        body: { imageUrl: receiptUrl, type: 'diesel_receipt' }
+      })
+
+      if (error) {
+        showToast('Could not extract data from receipt', 'error')
+        return
+      }
+
+      if (result?.success) {
+        if (result.data?.litres || result.data?.cost_per_litre || result.data?.time) {
+          const stock = { ...data.diesel_stock }
+          const purchases = [...(stock.purchases || [])]
+          if (result.data?.litres) {
+            purchases[idx] = { ...purchases[idx], litres: result.data.litres }
+          }
+          if (result.data?.cost_per_litre) {
+            purchases[idx] = { ...purchases[idx], cost_per_litre: result.data.cost_per_litre }
+          }
+          if (result.data?.time) {
+            purchases[idx] = { ...purchases[idx], purchase_time: result.data.time }
+          }
+          stock.purchases = purchases
+          // Recalculate totals
+          const tp = purchases.reduce((sum, p) => sum + (parseFloat(p.litres) || 0), 0)
+          stock.purchased = tp
+          const totalUsed = (data.diesel || []).reduce((sum, eq) => sum + (parseFloat(eq.used) || 0), 0)
+          stock.closing = (parseFloat(stock.opening) || 0) + tp - totalUsed
+          updateData('diesel_stock', stock)
+          showToast('Fields auto-filled from receipt', 'success')
+        }
+      } else {
+        showToast('Could not extract data from receipt', 'error')
+      }
+    } catch (err) {
+      console.error('Error scanning receipt:', err)
+      showToast('Could not extract data from receipt', 'error')
+    } finally {
+      setScanningIdx(null)
+    }
+  }
 
   // Equipment list is loaded from Supabase in ShiftWizard
   if (!data.diesel || data.diesel.length === 0) {
@@ -43,7 +93,7 @@ export default memo(function Step5Diesel({ data, updateData }) {
 
   function addPurchase() {
     const stock = { ...data.diesel_stock }
-    stock.purchases = [...(stock.purchases || []), { litres: '', cost_per_litre: '', receipt_url: null }]
+    stock.purchases = [...(stock.purchases || []), { litres: '', cost_per_litre: '', purchase_time: '', receipt_url: null }]
     updateData('diesel_stock', stock)
   }
 
@@ -185,6 +235,15 @@ export default memo(function Step5Diesel({ data, updateData }) {
                     <X size={16} color="#d32f2f" />
                   </button>
                 </div>
+                <div style={{ marginBottom: 8 }}>
+                  <label style={labelStyle}>Time of Purchase</label>
+                  <input
+                    type="time"
+                    value={p.purchase_time || ''}
+                    onChange={e => updatePurchase(idx, 'purchase_time', e.target.value)}
+                    style={inputStyle}
+                  />
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
                   <div>
                     <label style={labelStyle}>Litres</label>
@@ -219,6 +278,33 @@ export default memo(function Step5Diesel({ data, updateData }) {
                   onChange={url => updatePurchase(idx, 'receipt_url', url)}
                   bucket="photos"
                 />
+                {p.receipt_url && (
+                  <button
+                    type="button"
+                    onClick={() => scanDieselReceipt(idx, p.receipt_url)}
+                    disabled={scanningIdx === idx}
+                    style={{
+                      marginTop: 12,
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: '#FEF3C7',
+                      color: '#92400E',
+                      border: '1.5px solid #F59E0B',
+                      borderRadius: 12,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: scanningIdx === idx ? 'not-allowed' : 'pointer',
+                      opacity: scanningIdx === idx ? 0.6 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 8,
+                    }}
+                  >
+                    <Sparkles size={16} />
+                    {scanningIdx === idx ? 'Scanning...' : '✨ Auto-fill from Receipt'}
+                  </button>
+                )}
               </div>
             ))}
           </div>

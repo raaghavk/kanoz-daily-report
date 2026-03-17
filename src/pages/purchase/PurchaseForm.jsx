@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Loader2, Plus } from 'lucide-react'
+import { Loader2, Plus, Sparkles } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -18,9 +18,11 @@ export default function PurchaseForm() {
 
   const [saving, setSaving] = useState(false)
   const [showAddSupplier, setShowAddSupplier] = useState(false)
+  const [scanning, setScanning] = useState(false)
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
+    purchase_time: new Date().toTimeString().slice(0, 5),
     supplier_id: '',
     raw_material_type_id: '',
     vehicle_number: '',
@@ -97,6 +99,7 @@ export default function PurchaseForm() {
     if (!purchaseData) return
     setFormData({
       date: purchaseData.date || new Date().toISOString().split('T')[0],
+      purchase_time: purchaseData.purchase_time || '',
       supplier_id: purchaseData.supplier_id || '',
       raw_material_type_id: purchaseData.raw_material_type_id || '',
       vehicle_number: purchaseData.vehicle_number || '',
@@ -122,6 +125,44 @@ export default function PurchaseForm() {
     const updated = { ...formData, [field]: value }
     updateCalculatedFields(updated)
     setFormData(updated)
+  }
+
+  async function scanKattaParchi() {
+    if (!formData.katta_parchi_photo) return
+    try {
+      setScanning(true)
+      const { data: result, error } = await supabase.functions.invoke('extract-receipt', {
+        body: { imageUrl: formData.katta_parchi_photo, type: 'katta_parchi' }
+      })
+
+      if (error) {
+        showToast('Could not extract data from photo', 'error')
+        return
+      }
+
+      if (result?.success) {
+        const updated = { ...formData }
+        if (result.data?.vehicle_number) {
+          updated.vehicle_number = result.data.vehicle_number
+        }
+        if (result.data?.net_weight) {
+          updated.net_weight = result.data.net_weight
+        }
+        if (result.data?.time) {
+          updated.purchase_time = result.data.time
+        }
+        updateCalculatedFields(updated)
+        setFormData(updated)
+        showToast('Fields auto-filled from photo', 'success')
+      } else {
+        showToast('Could not extract data from photo', 'error')
+      }
+    } catch (err) {
+      console.error('Error scanning photo:', err)
+      showToast('Could not extract data from photo', 'error')
+    } finally {
+      setScanning(false)
+    }
   }
 
   function updateCalculatedFields(data) {
@@ -244,6 +285,7 @@ export default function PurchaseForm() {
         plant_id: plant?.id,
         employee_id: employee?.id,
         date: formData.date,
+        purchase_time: formData.purchase_time || null,
         supplier_id: formData.supplier_id,
         raw_material_type_id: formData.raw_material_type_id,
         vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
@@ -315,15 +357,28 @@ export default function PurchaseForm() {
 
       <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
-          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
-            Date <span style={{ color: '#d32f2f' }}>*</span>
-          </label>
-          <input
-            type="date"
-            value={formData.date}
-            onChange={e => handleFieldChange('date', e.target.value)}
-            style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
-          />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
+                Date <span style={{ color: '#d32f2f' }}>*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.date}
+                onChange={e => handleFieldChange('date', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Time</label>
+              <input
+                type="time"
+                value={formData.purchase_time}
+                onChange={e => handleFieldChange('purchase_time', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+              />
+            </div>
+          </div>
         </div>
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
@@ -453,6 +508,33 @@ export default function PurchaseForm() {
               folder="purchases"
             />
             <div style={{ fontSize: 10, color: '#d32f2f', marginTop: 4 }}>* Weight bridge photo is mandatory</div>
+            {formData.katta_parchi_photo && (
+              <button
+                type="button"
+                onClick={scanKattaParchi}
+                disabled={scanning}
+                style={{
+                  marginTop: 12,
+                  width: '100%',
+                  padding: '12px 16px',
+                  background: '#FEF3C7',
+                  color: '#92400E',
+                  border: '1.5px solid #F59E0B',
+                  borderRadius: 12,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: scanning ? 'not-allowed' : 'pointer',
+                  opacity: scanning ? 0.6 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                <Sparkles size={18} />
+                {scanning ? 'Scanning...' : '✨ Auto-fill from Photo'}
+              </button>
+            )}
           </div>
         </div>
 

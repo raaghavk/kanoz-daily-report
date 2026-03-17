@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
+import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Loader2, Edit3, X, CheckCircle } from 'lucide-react'
 
 export default function PurchaseDetail() {
@@ -308,6 +309,13 @@ export default function PurchaseDetail() {
             <p style={{ fontSize: 13, color: '#595c4a', margin: 0, lineHeight: 1.5 }}>{purchase.remarks}</p>
           </div>
         )}
+
+        <DeleteRequestButton
+          entityType="purchase"
+          entityId={id}
+          entityLabel={`${purchase.suppliers?.name || 'Purchase'} — ${formatDate(purchase.date)}`}
+          onRequestSent={() => navigate('/purchase')}
+        />
       </div>
     </div>
   )

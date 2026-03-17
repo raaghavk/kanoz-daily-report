@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
+import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
@@ -231,6 +232,13 @@ export default function DispatchDetail() {
             <p style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5, margin: 0 }}>{dispatch.remarks}</p>
           </div>
         )}
+
+        <DeleteRequestButton
+          entityType="dispatch"
+          entityId={id}
+          entityLabel={`Truck ${dispatch.truck_number} — ${formattedDate}`}
+          onRequestSent={() => navigate('/dispatch')}
+        />
       </div>
     </div>
   )

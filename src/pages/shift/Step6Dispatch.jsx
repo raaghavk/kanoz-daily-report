@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Loader2, TrendingUp, ExternalLink } from 'lucide-react'
 
-export default memo(function Step6Dispatch({ updateData, plant, saveWizardState }) {
+export default memo(function Step6Dispatch({ updateData, plant, saveWizardState, data }) {
   const navigate = useNavigate()
   const [dispatches, setDispatches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -20,6 +20,19 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState 
   async function loadDispatches() {
     try {
       setLoading(true)
+
+      // Build shift time window
+      const shiftStart = data?.shift_start_date && data?.start_time
+        ? `${data.shift_start_date}T${data.start_time}:00`
+        : null
+      const shiftEnd = data?.shift_end_date && data?.end_time
+        ? `${data.shift_end_date}T${data.end_time}:00`
+        : null
+
+      // Get date range from shift
+      const startDate = data?.shift_start_date || today
+      const endDate = data?.shift_end_date || today
+
       const { data: dispatchData, error } = await supabase
         .from('vehicle_dispatches')
         .select(`
@@ -28,12 +41,24 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState 
           customers(name)
         `)
         .eq('plant_id', plant.id)
-        .eq('date', today)
+        .gte('date', startDate)
+        .lte('date', endDate)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      const processedDispatches = (dispatchData || []).map(d => ({
+      // Client-side time filtering if shift times are available
+      let filtered = dispatchData || []
+      if (shiftStart && shiftEnd) {
+        filtered = filtered.filter(d => {
+          const dDate = d.dispatch_date || d.date
+          const dTime = d.dispatch_time || '00:00:00'
+          const dt = new Date(`${dDate}T${dTime}`)
+          return dt >= new Date(shiftStart) && dt <= new Date(shiftEnd)
+        })
+      }
+
+      const processedDispatches = filtered.map(d => ({
         ...d,
         total_mt: d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0) || 0
       }))
@@ -81,7 +106,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState 
       {/* Info Box */}
       <div style={{ background: '#e8f0ec', borderRadius: 12, padding: 14, border: '1.5px solid #2d6a4f' }}>
         <p style={{ fontSize: 13, color: '#2c2c2c', margin: 0, lineHeight: '1.5' }}>
-          Dispatches are managed in the <strong>Dispatch</strong> tab. This is a read-only summary of today's vehicle dispatches.
+          Dispatches are managed in the <strong>Dispatch</strong> tab. This is a read-only summary of this shift's vehicle dispatches.
         </p>
       </div>
 
@@ -96,7 +121,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState 
       {/* Empty State */}
       {!loading && dispatches.length === 0 && (
         <div style={{ background: '#fefae0', borderRadius: 14, border: '2px dashed #e5ddd0', padding: 24, textAlign: 'center' }}>
-          <div style={{ color: '#595c4a', fontSize: 14, marginBottom: 12 }}>No dispatches yet today.</div>
+          <div style={{ color: '#595c4a', fontSize: 14, marginBottom: 12 }}>No dispatches in this shift period.</div>
           <button
             onClick={goToDispatchTab}
             style={{

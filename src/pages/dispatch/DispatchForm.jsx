@@ -78,6 +78,7 @@ export default function DispatchForm() {
         .from('vehicle_dispatches')
         .select(`*, dispatch_pellets(*), customers(name)`)
         .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
         .gte('date', dateFilter.start)
         .lte('date', dateFilter.end)
         .order('date', { ascending: false })
