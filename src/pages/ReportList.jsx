@@ -75,43 +75,46 @@ export default function ReportList() {
   ]
 
   return (
-    <div style={{ paddingBottom: 80 }}>
-      <PageHeader title="Shift Reports" subtitle="View and manage all reports" backTo="/" />
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      {/* Header + Filter Tabs (sticky) */}
+      <div style={{ flexShrink: 0 }}>
+        <PageHeader title="Shift Reports" subtitle="View and manage all reports" backTo="/" />
 
-      {/* Filter Tabs + Export */}
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '16px 20px 0', alignItems: 'center' }}>
-        {filterTabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setFilter(tab.id)}
-            style={{
-              padding: '8px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700,
-              whiteSpace: 'nowrap', transition: 'all 0.2s',
-              ...(filter === tab.id
-                ? { background: '#2d6a4f', color: 'white' }
-                : { background: '#fff', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-        {can(employee?.role, 'export') && reports.length > 0 && (
-          <button
-            onClick={() => exportReportListToCSV(reports)}
-            style={{
-              marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4,
-              padding: '8px 12px', borderRadius: 12, fontSize: 11, fontWeight: 700,
-              background: '#e8f0ec', color: '#2d6a4f', border: 'none', cursor: 'pointer',
-              whiteSpace: 'nowrap', flexShrink: 0,
-            }}
-          >
-            <Download size={14} /> Export CSV
-          </button>
-        )}
+        {/* Filter Tabs + Export */}
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '16px 20px 0', alignItems: 'center' }}>
+          {filterTabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setFilter(tab.id)}
+              style={{
+                padding: '8px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700,
+                whiteSpace: 'nowrap', transition: 'all 0.2s',
+                ...(filter === tab.id
+                  ? { background: '#2d6a4f', color: 'white' }
+                  : { background: '#fff', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+          {can(employee?.role, 'export') && reports.length > 0 && (
+            <button
+              onClick={() => exportReportListToCSV(reports)}
+              style={{
+                marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4,
+                padding: '8px 12px', borderRadius: 12, fontSize: 11, fontWeight: 700,
+                background: '#e8f0ec', color: '#2d6a4f', border: 'none', cursor: 'pointer',
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}
+            >
+              <Download size={14} /> Export CSV
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Reports List */}
-      <div style={{ padding: '16px 20px' }}>
+      {/* Scrollable Content Area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '32px 0' }}>
             <div style={{ fontSize: 13, color: '#8a8d7a' }}>Loading reports...</div>
@@ -207,11 +210,10 @@ export default function ReportList() {
             </button>
           </div>
         )}
-      </div>
 
-      {/* Summary Stats */}
-      {reports.length > 0 && (
-        <div style={{ padding: '0 20px 16px' }}>
+        {/* Summary Stats */}
+        {reports.length > 0 && (
+          <div style={{ padding: '0 20px 16px' }}>
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
               Summary
@@ -236,7 +238,8 @@ export default function ReportList() {
             </div>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

@@ -179,7 +179,7 @@ export default function ReportView() {
   }))
 
   return (
-    <div style={{ paddingBottom: 80 }}>
+    <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       <PageHeader title="Shift Report" subtitle={`Shift ${report.shift} · ${report.date}`} backTo="/reports" />
 
       {/* Report Header Info */}

@@ -124,25 +124,28 @@ export default function SupplierList() {
   }
 
   return (
-    <div style={{ paddingBottom: 80 }}>
-      <PageHeader title="Supplier Database" subtitle="Manage your suppliers" backTo="/purchase" />
+    <div style={{ minHeight: '100%', background: '#fefae0' }}>
+      {/* Header + Search (sticky) */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+        <PageHeader title="Supplier Database" subtitle="Manage your suppliers" backTo="/purchase" />
 
-      {/* Search Bar */}
-      <div style={{ padding: '0 20px', marginTop: 12 }}>
-        <div style={{ position: 'relative' }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8a8d7a' }} />
-          <input
-            type="text"
-            placeholder="Search by name or mobile..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 12, fontSize: 14, outline: 'none', background: '#fffdf5', border: '1.5px solid #e5ddd0', color: '#2c2c2c' }}
-          />
+        {/* Search Bar */}
+        <div style={{ padding: '0 20px', marginTop: 12 }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8a8d7a' }} />
+            <input
+              type="text"
+              placeholder="Search by name or mobile..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 12, fontSize: 14, outline: 'none', background: '#fffdf5', border: '1.5px solid #e5ddd0', color: '#2c2c2c' }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ padding: '0 20px', marginTop: 16 }}>
+      {/* Scrollable Content Area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', marginTop: 16 }}>
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
             <Loader2 size={32} style={{ color: '#2d6a4f', marginBottom: 8, animation: 'spin 1s linear infinite' }} />
@@ -216,7 +219,7 @@ export default function SupplierList() {
       {/* Floating Action Button */}
       <button
         onClick={() => setShowAddModal(true)}
-        style={{ position: 'fixed', display: 'flex', alignItems: 'center', justifyContent: 'center', bottom: 96, right: 16, width: 56, height: 56, background: '#2d6a4f', borderRadius: '50%', boxShadow: '0 4px 14px rgba(45,106,79,0.3)', border: 'none', cursor: 'pointer' }}
+        style={{ position: 'fixed', display: 'flex', alignItems: 'center', justifyContent: 'center', bottom: 96, right: 16, width: 56, height: 56, background: '#2d6a4f', borderRadius: '50%', boxShadow: '0 4px 14px rgba(45,106,79,0.3)', border: 'none', cursor: 'pointer', zIndex: 50 }}
       >
         <Plus size={24} color="white" />
       </button>

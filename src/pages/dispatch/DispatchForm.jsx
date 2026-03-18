@@ -357,60 +357,62 @@ export default function DispatchForm() {
   }
 
   return (
-    <div style={{ paddingBottom: 80 }}>
-      <PageHeader
-        title="Vehicle Dispatch"
-        subtitle={returnToShift ? "Add dispatches, then go back to shift report" : "Manage all dispatches"}
-        backTo={returnToShift ? undefined : "/"}
-        onBack={returnToShift ? () => navigate('/shift/new', { state: { returnToStep: 6 } }) : undefined}
-      />
+    <div style={{ minHeight: '100%', background: '#fefae0' }}>
+      {/* Header + Filter Tabs (sticky) */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+        <PageHeader
+          title="Vehicle Dispatch"
+          subtitle={returnToShift ? "Add dispatches, then go back to shift report" : "Manage all dispatches"}
+          backTo={returnToShift ? undefined : "/"}
+          onBack={returnToShift ? () => navigate('/shift/new', { state: { returnToStep: 6 } }) : undefined}
+        />
 
-      {/* Return to Shift Banner */}
-      {returnToShift && (
-        <div style={{ margin: '12px 20px 0', background: '#e8f0ec', border: '1.5px solid #2d6a4f', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ fontSize: 12, color: '#2d6a4f', fontWeight: 600 }}>You came from the Shift Report wizard.</div>
-          <button
-            onClick={() => navigate('/shift/new', { state: { returnToStep: 6 } })}
-            style={{ padding: '6px 12px', background: '#2d6a4f', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-          >
-            Back to Shift
-          </button>
+        {/* Return to Shift Banner */}
+        {returnToShift && (
+          <div style={{ margin: '12px 20px 0', background: '#e8f0ec', border: '1.5px solid #2d6a4f', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 12, color: '#2d6a4f', fontWeight: 600 }}>You came from the Shift Report wizard.</div>
+            <button
+              onClick={() => navigate('/shift/new', { state: { returnToStep: 6 } })}
+              style={{ padding: '6px 12px', background: '#2d6a4f', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+            >
+              Back to Shift
+            </button>
+          </div>
+        )}
+
+        {/* Shift warning */}
+        {shiftWarning && (
+          <div style={{ margin: '16px 20px 0', background: '#fefae0', border: '1.5px solid #e9c46a', borderRadius: 14, padding: 12 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>No Active Shift Report</div>
+            <div style={{ fontSize: 11, color: '#A16207', marginTop: 4 }}>Dispatch will be saved independently. It will be linked to a shift report when one is created.</div>
+          </div>
+        )}
+
+        {/* Filter Tabs */}
+        <div style={{
+          display: 'flex', gap: 8, overflowX: 'auto',
+          background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
+        }}>
+          {['today', 'week', 'month', 'all'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setFilterTab(tab)}
+              style={{
+                padding: '8px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700,
+                whiteSpace: 'nowrap', transition: 'all 0.2s', border: 'none', cursor: 'pointer',
+                ...(filterTab === tab
+                  ? { background: '#2d6a4f', color: 'white' }
+                  : { background: 'white', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
+              }}
+            >
+              {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
+            </button>
+          ))}
         </div>
-      )}
-
-      {/* Shift warning */}
-      {shiftWarning && (
-        <div style={{ margin: '16px 20px 0', background: '#fefae0', border: '1.5px solid #e9c46a', borderRadius: 14, padding: 12 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>No Active Shift Report</div>
-          <div style={{ fontSize: 11, color: '#A16207', marginTop: 4 }}>Dispatch will be saved independently. It will be linked to a shift report when one is created.</div>
-        </div>
-      )}
-
-      {/* Filter Tabs */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 20,
-        display: 'flex', gap: 8, overflowX: 'auto',
-        background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
-      }}>
-        {['today', 'week', 'month', 'all'].map(tab => (
-          <button
-            key={tab}
-            onClick={() => setFilterTab(tab)}
-            style={{
-              padding: '8px 16px', borderRadius: 12, fontSize: 12, fontWeight: 700,
-              whiteSpace: 'nowrap', transition: 'all 0.2s', border: 'none', cursor: 'pointer',
-              ...(filterTab === tab
-                ? { background: '#2d6a4f', color: 'white' }
-                : { background: 'white', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
-            }}
-          >
-            {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
-          </button>
-        ))}
       </div>
 
-      {/* Dispatches List */}
-      <div style={{ padding: '16px 20px' }}>
+      {/* Scrollable Content Area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
             <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
@@ -516,37 +518,36 @@ export default function DispatchForm() {
             })}
           </div>
         )}
-      </div>
 
-      {/* Add Dispatch Button */}
-      <div style={{ padding: '0 20px', marginTop: 0, marginBottom: 16 }}>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          style={{
-            width: '100%',
-            padding: '14px 0',
-            borderRadius: 14,
-            fontWeight: 700,
-            fontSize: 14,
-            background: showForm ? '#d4a373' : '#2d6a4f',
-            color: 'white',
-            cursor: 'pointer',
-            border: 'none',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            transition: 'all 0.2s'
-          }}
-        >
-          <Plus size={18} />
-          {showForm ? 'Cancel' : 'Add Dispatch'}
-        </button>
-      </div>
+        {/* Add Dispatch Button */}
+        <div style={{ padding: '0 20px', marginTop: 0, marginBottom: 16 }}>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            style={{
+              width: '100%',
+              padding: '14px 0',
+              borderRadius: 14,
+              fontWeight: 700,
+              fontSize: 14,
+              background: showForm ? '#d4a373' : '#2d6a4f',
+              color: 'white',
+              cursor: 'pointer',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              transition: 'all 0.2s'
+            }}
+          >
+            <Plus size={18} />
+            {showForm ? 'Cancel' : 'Add Dispatch'}
+          </button>
+        </div>
 
-      {/* Dispatch Form */}
-      {showForm && (
-        <div style={{ padding: '0 20px', paddingBottom: 16 }}>
+        {/* Dispatch Form */}
+        {showForm && (
+          <div style={{ padding: '0 20px', paddingBottom: 16 }}>
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Truck Number */}
@@ -908,7 +909,8 @@ export default function DispatchForm() {
             </button>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

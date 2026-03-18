@@ -101,14 +101,14 @@ const CustomerList = () => {
   }
 
   const containerStyle = {
+    minHeight: '100%',
     background: '#fefae0',
-    minHeight: '100vh',
-    padding: '16px',
     fontFamily: 'Inter, sans-serif',
   }
 
   const headerStyle = {
-    marginBottom: '24px',
+    flexShrink: 0,
+    padding: '0 16px',
   }
 
   const searchContainerStyle = {
@@ -119,7 +119,8 @@ const CustomerList = () => {
     border: `1px solid #e5ddd0`,
     borderRadius: '12px',
     padding: '12px 16px',
-    marginBottom: '24px',
+    margin: '16px',
+    marginBottom: '0',
   }
 
   const searchInputStyle = {
@@ -136,7 +137,7 @@ const CustomerList = () => {
     display: 'flex',
     flexDirection: 'column',
     gap: '12px',
-    marginBottom: '100px',
+    padding: '16px',
   }
 
   const rowStyle = {
@@ -282,7 +283,7 @@ const CustomerList = () => {
         <div style={headerStyle}>
           <PageHeader title="Customers" subtitle="Dispatch destinations" backTo="/settings" />
         </div>
-        <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+        <div style={{ textAlign: 'center', padding: '48px 24px', flex: 1, overflowY: 'auto' }}>
           <Loader2 style={{ width: '32px', height: '32px', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
         </div>
       </div>
@@ -303,30 +304,35 @@ const CustomerList = () => {
         `}
       </style>
 
-      <div style={headerStyle}>
-        <PageHeader title="Customers" subtitle="Dispatch destinations" backTo="/settings" />
-      </div>
-
-      <div style={searchContainerStyle}>
-        <Search size={20} color="#595c4a" />
-        <input
-          type="text"
-          placeholder="Search by name or mobile..."
-          value={searchTerm}
-          onChange={(e) => handleSearch(e.target.value)}
-          style={searchInputStyle}
-        />
-      </div>
-
-      {filteredCustomers.length === 0 ? (
-        <div style={emptyStateStyle}>
-          <AlertCircle style={emptyIconStyle} />
-          <p style={{ margin: 0 }}>
-            {searchTerm ? 'No customers match your search' : 'No customers yet. Add one to get started.'}
-          </p>
+      {/* Header + Search (sticky) */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+        <div style={headerStyle}>
+          <PageHeader title="Customers" subtitle="Dispatch destinations" backTo="/settings" />
         </div>
-      ) : (
-        <div style={listContainerStyle}>
+
+        <div style={searchContainerStyle}>
+          <Search size={20} color="#595c4a" />
+          <input
+            type="text"
+            placeholder="Search by name or mobile..."
+            value={searchTerm}
+            onChange={(e) => handleSearch(e.target.value)}
+            style={searchInputStyle}
+          />
+        </div>
+      </div>
+
+      {/* Scrollable Content Area */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {filteredCustomers.length === 0 ? (
+          <div style={emptyStateStyle}>
+            <AlertCircle style={emptyIconStyle} />
+            <p style={{ margin: 0 }}>
+              {searchTerm ? 'No customers match your search' : 'No customers yet. Add one to get started.'}
+            </p>
+          </div>
+        ) : (
+          <div style={listContainerStyle}>
           {filteredCustomers.map((customer) => (
             <div key={customer.id} style={rowStyle}>
               <div style={rowInfoStyle}>
@@ -361,12 +367,13 @@ const CustomerList = () => {
               </div>
             </div>
           ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       <button
         onClick={() => setShowAddModal(true)}
-        style={fabStyle}
+        style={{ ...fabStyle, zIndex: 50 }}
         title="Add customer"
         aria-label="Add customer"
       >

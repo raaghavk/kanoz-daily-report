@@ -120,9 +120,7 @@ export default function DeleteRequests() {
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
+        minHeight: '100%',
         background: '#fefae0',
       }}
     >

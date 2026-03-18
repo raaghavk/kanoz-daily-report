@@ -39,9 +39,11 @@ export default function PurchaseDetail() {
 
   if (isLoading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#fefae0' }}>
-        <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
+        <div style={{ flexShrink: 0 }}>
+          <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
         </div>
       </div>
@@ -50,18 +52,22 @@ export default function PurchaseDetail() {
 
   if (isError) {
     return (
-      <div style={{ minHeight: '100vh', background: '#fefae0' }}>
-        <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
-        <div style={{ padding: 20, textAlign: 'center', color: '#d32f2f' }}>Failed to load purchase. Please go back and try again.</div>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
+        <div style={{ flexShrink: 0 }}>
+          <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20, textAlign: 'center', color: '#d32f2f' }}>Failed to load purchase. Please go back and try again.</div>
       </div>
     )
   }
 
   if (!purchase) {
     return (
-      <div style={{ minHeight: '100vh', background: '#fefae0' }}>
-        <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
-        <div style={{ padding: 20, textAlign: 'center', color: '#595c4a' }}>Purchase not found</div>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
+        <div style={{ flexShrink: 0 }}>
+          <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20, textAlign: 'center', color: '#595c4a' }}>Purchase not found</div>
       </div>
     )
   }
@@ -99,22 +105,26 @@ export default function PurchaseDetail() {
   const valueStyle = { fontSize: 14, fontWeight: 600, color: '#2c2c2c', marginTop: 2 }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fefae0', paddingBottom: 80 }}>
-      <PageHeader
-        title={purchase.suppliers?.name || 'Purchase Detail'}
-        subtitle={formatDate(purchase.date)}
-        onBack={() => navigate(-1)}
-        rightAction={
-          <button
-            onClick={() => navigate(`/purchase/${id}/edit`)}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-          >
-            <Edit3 size={14} /> Edit
-          </button>
-        }
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
+      {/* Header (sticky) */}
+      <div style={{ flexShrink: 0 }}>
+        <PageHeader
+          title={purchase.suppliers?.name || 'Purchase Detail'}
+          subtitle={formatDate(purchase.date)}
+          onBack={() => navigate(-1)}
+          rightAction={
+            <button
+              onClick={() => navigate(`/purchase/${id}/edit`)}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+            >
+              <Edit3 size={14} /> Edit
+            </button>
+          }
+        />
+      </div>
 
-      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* Scrollable Content Area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Summary Card */}
         <div style={{ background: '#2d6a4f', borderRadius: 14, padding: 20, color: 'white' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>

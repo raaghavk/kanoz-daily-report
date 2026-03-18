@@ -130,9 +130,9 @@ export default function Home() {
     : `${fmtDate(shiftStartDate)} – ${fmtDate(shiftEndDate)}`
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+    <div style={{ minHeight: '100%', background: '#fefae0' }}>
       {/* Dark App Bar */}
-      <div style={{ flexShrink: 0, background: '#1b4332', paddingTop: 'env(safe-area-inset-top)' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#1b4332', paddingTop: 'env(safe-area-inset-top)' }}>
         <div style={{ padding: '14px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{

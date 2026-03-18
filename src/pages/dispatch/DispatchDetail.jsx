@@ -76,16 +76,26 @@ export default function DispatchDetail() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <div style={{ color: '#595c4a', fontSize: 13 }}>Loading dispatch...</div>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <div style={{ flexShrink: 0 }}>
+          <PageHeader title="Dispatch Details" subtitle="Loading..." backTo="/dispatch" />
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ color: '#595c4a', fontSize: 13 }}>Loading dispatch...</div>
+        </div>
       </div>
     )
   }
 
   if (!dispatch) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <div style={{ color: '#595c4a', fontSize: 13 }}>Dispatch not found</div>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <div style={{ flexShrink: 0 }}>
+          <PageHeader title="Dispatch Details" subtitle="Not found" backTo="/dispatch" />
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ color: '#595c4a', fontSize: 13 }}>Dispatch not found</div>
+        </div>
       </div>
     )
   }
@@ -95,10 +105,14 @@ export default function DispatchDetail() {
   const duration = calculateDuration(dispatch.loading_date, dispatch.loading_time, dispatch.dispatch_date, dispatch.dispatch_time)
 
   return (
-    <div style={{ paddingBottom: 80 }}>
-      <PageHeader title="Dispatch Details" subtitle={`Truck ${dispatch.truck_number}`} backTo="/dispatch" />
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      {/* Header (sticky) */}
+      <div style={{ flexShrink: 0 }}>
+        <PageHeader title="Dispatch Details" subtitle={`Truck ${dispatch.truck_number}`} backTo="/dispatch" />
+      </div>
 
-      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Scrollable Content Area */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Main Info Card */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>

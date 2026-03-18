@@ -171,7 +171,7 @@ export default function AdminPanel() {
   const selectedPlantName = plants.find(p => p.id === selectedPlantId)?.name || 'Plant'
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fefae0', paddingBottom: 80 }}>
+    <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       <PageHeader title="Plant Settings" subtitle={`Admin · ${selectedPlantName}`} backTo="/settings" />
 
       {/* Plant Selector */}

@@ -172,15 +172,16 @@ export default function PurchaseList() {
   const hasActiveFilters = filterSupplier || filterRMType || filterPaymentStatus || filterDateFrom || filterDateTo
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fefae0', paddingBottom: 80 }}>
-      <PageHeader title="RM Purchase" subtitle="Raw Material Purchases" backTo="/" />
+    <div style={{ minHeight: '100%', background: '#fefae0' }}>
+      {/* Sticky Header + Tabs */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+        <PageHeader title="RM Purchase" subtitle="Raw Material Purchases" backTo="/" />
 
-      {/* Filter Tabs */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 20,
-        display: 'flex', gap: 8, overflowX: 'auto',
-        background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
-      }}>
+        {/* Filter Tabs */}
+        <div style={{
+          display: 'flex', gap: 8, overflowX: 'auto',
+          background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
+        }}>
         {['today', 'week', 'month', 'all'].map(tab => (
           <button
             key={tab}
@@ -212,80 +213,54 @@ export default function PurchaseList() {
         )}
       </div>
 
-      {/* Filters Panel */}
-      {filterTab === 'all' && showFilters && (
-        <div style={{ padding: '12px 20px', background: '#fff', borderBottom: '1px solid #e5ddd0', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>Supplier</label>
-              <select
-                value={filterSupplier}
-                onChange={e => setFilterSupplier(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
-              >
-                <option value="">All Suppliers</option>
-                {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+        {/* Filters Panel */}
+        {filterTab === 'all' && showFilters && (
+          <div style={{ padding: '12px 20px', background: '#fff', borderBottom: '1px solid #e5ddd0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>Supplier</label>
+                <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}>
+                  <option value="">All Suppliers</option>
+                  {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>RM Type</label>
+                <select value={filterRMType} onChange={e => setFilterRMType(e.target.value)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}>
+                  <option value="">All Types</option>
+                  {rmTypes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                </select>
+              </div>
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>RM Type</label>
-              <select
-                value={filterRMType}
-                onChange={e => setFilterRMType(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
-              >
-                <option value="">All Types</option>
-                {rmTypes.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>Status</label>
+                <select value={filterPaymentStatus} onChange={e => setFilterPaymentStatus(e.target.value)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}>
+                  <option value="">All</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Paid">Paid</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>From</label>
+                <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)} style={{ width: '100%', padding: '8px 6px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>To</label>
+                <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)} style={{ width: '100%', padding: '8px 6px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 11, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
             </div>
+            {hasActiveFilters && (
+              <button onClick={clearFilters} style={{ padding: '6px 12px', background: '#fefae0', border: '1px solid #e5ddd0', borderRadius: 8, fontSize: 11, fontWeight: 600, color: '#595c4a', cursor: 'pointer', alignSelf: 'flex-start' }}>
+                Clear Filters
+              </button>
+            )}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>Payment Status</label>
-              <select
-                value={filterPaymentStatus}
-                onChange={e => setFilterPaymentStatus(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
-              >
-                <option value="">All Status</option>
-                <option value="Pending">Pending</option>
-                <option value="Paid">Paid</option>
-              </select>
-            </div>
-            <div />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>From Date</label>
-              <input
-                type="date"
-                value={filterDateFrom}
-                onChange={e => setFilterDateFrom(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>To Date</label>
-              <input
-                type="date"
-                value={filterDateTo}
-                onChange={e => setFilterDateTo(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-          </div>
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              style={{ padding: '6px 12px', background: '#fefae0', border: '1px solid #e5ddd0', borderRadius: 8, fontSize: 11, fontWeight: 600, color: '#595c4a', cursor: 'pointer', alignSelf: 'flex-start' }}
-            >
-              Clear Filters
-            </button>
-          )}
-        </div>
-      )}
+        )}
+      </div>
 
-      <div style={{ padding: '16px 20px' }}>
+      {/* Scrollable Content */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
             <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
@@ -371,7 +346,6 @@ export default function PurchaseList() {
           </div>
         )}
       </div>
-
     </div>
   )
 }
