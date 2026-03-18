@@ -511,30 +511,6 @@ export default function DispatchForm() {
           </div>
         )}
 
-        {/* Add Dispatch Button */}
-        <div style={{ padding: '0 20px', marginTop: 0, marginBottom: 16 }}>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            style={{
-              width: '100%',
-              padding: '12px 0',
-              borderRadius: 12,
-              fontWeight: 600,
-              fontSize: 13,
-              background: showForm ? '#fefae0' : '#fff',
-              color: showForm ? '#d4a373' : '#2d6a4f',
-              cursor: 'pointer',
-              border: showForm ? '1.5px solid #d4a373' : '1.5px solid #2d6a4f',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-            }}
-          >
-            <Plus size={16} style={{ transform: showForm ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
-            {showForm ? 'Cancel' : 'New Dispatch'}
-          </button>
-        </div>
 
         {/* Dispatch Form */}
         {showForm && (

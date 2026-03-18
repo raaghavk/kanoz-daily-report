@@ -47,7 +47,7 @@ export default function Login() {
         {/* Top decorative curve */}
         <div style={{
           position: 'absolute',
-          top: -60,
+          top: -20,
           left: -40,
           right: -40,
           height: 320,
@@ -315,7 +315,7 @@ export default function Login() {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'flex-end',
-            paddingBottom: 32,
+            paddingBottom: 48,
             paddingTop: 24,
           }}>
             {/* Small tagline */}

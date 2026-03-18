@@ -213,9 +213,12 @@ export default function ReportList() {
 
         {/* Summary Bar */}
         {reports.length > 0 && (
-          <div style={{ marginTop: 12, padding: '10px 16px', background: '#e8f0ec', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
-            <span style={{ color: '#595c4a', fontWeight: 600 }}>{reports.length} report{reports.length > 1 ? 's' : ''}</span>
-            <span style={{ color: '#2d6a4f', fontWeight: 800 }}>{reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT total</span>
+          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #e5ddd0', display: 'flex', gap: 12, fontSize: 11, color: '#8a8d7a', fontWeight: 500 }}>
+            <span>{reports.length} report{reports.length > 1 ? 's' : ''}</span>
+            <span>·</span>
+            <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT</span>
+            <span>·</span>
+            <span>{reports.filter(r => r.status === 'submitted').length} submitted</span>
           </div>
         )}
       </div>
