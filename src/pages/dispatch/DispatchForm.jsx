@@ -428,110 +428,114 @@ export default function DispatchForm() {
 
       {/* Scrollable Content Area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
-            <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
-          </div>
-        ) : dateKeys.length === 0 ? (
-          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 24, textAlign: 'center' }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Truck size={24} style={{ color: '#b5b8a8' }} /></div>
-            <p style={{ fontSize: 12, color: '#595c4a' }}>No dispatches found</p>
-            <p style={{ fontSize: 11, color: '#b5b8a8', marginTop: 4 }}>Add your first dispatch to get started</p>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {dateKeys.map(date => {
-              const isCollapsed = collapsedDates[date]
-              const dateDispatches = groupedDispatches[date]
-              const dateTotalMT = getDateTotalMT(dateDispatches)
+        {!showForm && (
+          <>
+            {loading ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+                <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
+              </div>
+            ) : dateKeys.length === 0 ? (
+              <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 24, textAlign: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}><Truck size={24} style={{ color: '#b5b8a8' }} /></div>
+                <p style={{ fontSize: 12, color: '#595c4a' }}>No dispatches found</p>
+                <p style={{ fontSize: 11, color: '#b5b8a8', marginTop: 4 }}>Add your first dispatch to get started</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {dateKeys.map(date => {
+                  const isCollapsed = collapsedDates[date]
+                  const dateDispatches = groupedDispatches[date]
+                  const dateTotalMT = getDateTotalMT(dateDispatches)
 
-              return (
-                <div key={date}>
-                  {/* Date Header */}
-                  <button
-                    onClick={() => toggleDateCollapse(date)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      width: '100%', background: 'none', border: 'none', cursor: 'pointer',
-                      padding: '0 0 10px 0', textAlign: 'left',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {isCollapsed
-                        ? <ChevronRight size={14} style={{ color: '#8a8d7a' }} />
-                        : <ChevronDown size={14} style={{ color: '#8a8d7a' }} />
-                      }
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#b5b8a8', textTransform: 'uppercase', letterSpacing: 1 }}>
-                        {formatDate(date)}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#2d6a4f' }}>
-                      {dateTotalMT.toFixed(1)} MT · {dateDispatches.length} trucks
-                    </span>
-                  </button>
+                  return (
+                    <div key={date}>
+                      {/* Date Header */}
+                      <button
+                        onClick={() => toggleDateCollapse(date)}
+                        style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                          padding: '0 0 10px 0', textAlign: 'left',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {isCollapsed
+                            ? <ChevronRight size={14} style={{ color: '#8a8d7a' }} />
+                            : <ChevronDown size={14} style={{ color: '#8a8d7a' }} />
+                          }
+                          <span style={{ fontSize: 11, fontWeight: 700, color: '#b5b8a8', textTransform: 'uppercase', letterSpacing: 1 }}>
+                            {formatDate(date)}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#2d6a4f' }}>
+                          {dateTotalMT.toFixed(1)} MT · {dateDispatches.length} trucks
+                        </span>
+                      </button>
 
-                  {/* Dispatch cards */}
-                  {!isCollapsed && (
-                    <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-                      {dateDispatches.map((dispatch, idx) => (
-                        <div
-                          key={dispatch.id}
-                          style={{
-                            borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none',
-                            padding: '10px 12px',
-                          }}
-                        >
-                          {/* Main row — clickable to detail */}
-                          <button
-                            onClick={() => navigate(`/dispatch/${dispatch.id}`)}
-                            style={{
-                              width: '100%', textAlign: 'left', cursor: 'pointer',
-                              background: 'transparent', border: 'none', padding: 0,
-                              display: 'flex', alignItems: 'center', gap: 10,
-                            }}
-                          >
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                Truck {dispatch.truck_number}
-                              </div>
-                              <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
-                                {dispatch.customers?.name || 'Unknown'} · {dispatch.dispatch_time?.slice(0, 5) || '-'}
-                              </div>
-                            </div>
-                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                              <div style={{ fontSize: 13, fontWeight: 800, color: '#2d6a4f' }}>{dispatch.total_mt.toFixed(1)} MT</div>
-                            </div>
-                          </button>
-                          {/* Driver info row with call button */}
-                          {dispatch.driver_name && (
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1px dashed #f0ebe0' }}>
-                              <div style={{ fontSize: 10, color: '#8a8d7a' }}>
-                                Driver: <span style={{ color: '#595c4a', fontWeight: 600 }}>{dispatch.driver_name}</span>
-                              </div>
-                              {dispatch.driver_phone && (
-                                <a
-                                  href={`tel:${dispatch.driver_phone}`}
-                                  onClick={e => e.stopPropagation()}
-                                  style={{
-                                    display: 'flex', alignItems: 'center', gap: 4,
-                                    padding: '4px 10px', background: '#e8f0ec', borderRadius: 8,
-                                    fontSize: 10, fontWeight: 700, color: '#2d6a4f',
-                                    textDecoration: 'none', border: 'none', cursor: 'pointer',
-                                  }}
-                                >
-                                  <Phone size={10} /> Call
-                                </a>
+                      {/* Dispatch cards */}
+                      {!isCollapsed && (
+                        <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+                          {dateDispatches.map((dispatch, idx) => (
+                            <div
+                              key={dispatch.id}
+                              style={{
+                                borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none',
+                                padding: '10px 12px',
+                              }}
+                            >
+                              {/* Main row — clickable to detail */}
+                              <button
+                                onClick={() => navigate(`/dispatch/${dispatch.id}`)}
+                                style={{
+                                  width: '100%', textAlign: 'left', cursor: 'pointer',
+                                  background: 'transparent', border: 'none', padding: 0,
+                                  display: 'flex', alignItems: 'center', gap: 10,
+                                }}
+                              >
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    Truck {dispatch.truck_number}
+                                  </div>
+                                  <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
+                                    {dispatch.customers?.name || 'Unknown'} · {dispatch.dispatch_time?.slice(0, 5) || '-'}
+                                  </div>
+                                </div>
+                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 800, color: '#2d6a4f' }}>{dispatch.total_mt.toFixed(1)} MT</div>
+                                </div>
+                              </button>
+                              {/* Driver info row with call button */}
+                              {dispatch.driver_name && (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1px dashed #f0ebe0' }}>
+                                  <div style={{ fontSize: 10, color: '#8a8d7a' }}>
+                                    Driver: <span style={{ color: '#595c4a', fontWeight: 600 }}>{dispatch.driver_name}</span>
+                                  </div>
+                                  {dispatch.driver_phone && (
+                                    <a
+                                      href={`tel:${dispatch.driver_phone}`}
+                                      onClick={e => e.stopPropagation()}
+                                      style={{
+                                        display: 'flex', alignItems: 'center', gap: 4,
+                                        padding: '4px 10px', background: '#e8f0ec', borderRadius: 8,
+                                        fontSize: 10, fontWeight: 700, color: '#2d6a4f',
+                                        textDecoration: 'none', border: 'none', cursor: 'pointer',
+                                      }}
+                                    >
+                                      <Phone size={10} /> Call
+                                    </a>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
+                  )
+                })}
+              </div>
+            )}
+          </>
         )}
 
         {/* FAB Button to open form */}
@@ -547,6 +551,15 @@ export default function DispatchForm() {
         {/* Dispatch Form */}
         {showForm && (
           <div style={{ padding: '0 20px', paddingBottom: 16 }}>
+          {/* Cancel Button */}
+          <div style={{ marginBottom: 16 }}>
+            <button
+              onClick={() => setShowForm(false)}
+              style={{ padding: '10px 16px', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 12, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+            >
+              ← Back to List
+            </button>
+          </div>
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Truck Number */}
@@ -585,7 +598,7 @@ export default function DispatchForm() {
                 </select>
                 <button
                   onClick={() => setShowAddCustomer(!showAddCustomer)}
-                  style={{ padding: '10px 12px', background: '#1565C0', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Plus size={16} />
                 </button>
@@ -660,7 +673,7 @@ export default function DispatchForm() {
                 )}
                 <button
                   onClick={() => setShowAddTransporter(!showAddTransporter)}
-                  style={{ padding: '10px 12px', background: '#1565C0', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   <Plus size={16} />
                 </button>
