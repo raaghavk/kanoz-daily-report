@@ -665,32 +665,6 @@ export default function DispatchForm() {
                   <Plus size={16} />
                 </button>
               </div>
-              {showAddTransporter && (
-                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input
-                      type="text"
-                      placeholder="Transporter name"
-                      value={newTransporterName}
-                      onChange={e => setNewTransporterName(e.target.value)}
-                      style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
-                    />
-                    <button
-                      onClick={addTransporter}
-                      style={{ padding: '10px 12px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-                    >
-                      Add
-                    </button>
-                  </div>
-                  <input
-                    type="tel"
-                    placeholder="Transporter phone (optional)"
-                    value={newTransporterPhone}
-                    onChange={e => setNewTransporterPhone(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
-                  />
-                </div>
-              )}
             </div>
 
             {/* Driver Info */}
@@ -876,6 +850,52 @@ export default function DispatchForm() {
         </div>
         )}
       </div>
+
+      {/* Add Transporter Modal */}
+      <Modal isOpen={showAddTransporter} onClose={() => setShowAddTransporter(false)} title="Add New Transporter">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
+              Transporter Name <span style={{ color: '#D32F2F' }}>*</span>
+            </label>
+            <input
+              type="text"
+              placeholder="e.g., ABC Transport"
+              value={newTransporterName}
+              onChange={e => setNewTransporterName(e.target.value)}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              placeholder="e.g., 9876543210"
+              value={newTransporterPhone}
+              onChange={e => setNewTransporterPhone(e.target.value)}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
+            <button
+              onClick={() => setShowAddTransporter(false)}
+              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={addTransporter}
+              style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+            >
+              Add Transporter
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
