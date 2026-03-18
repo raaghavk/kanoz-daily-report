@@ -47,10 +47,10 @@ export default function Login() {
         {/* Top decorative curve */}
         <div style={{
           position: 'absolute',
-          top: -20,
+          top: 0,
           left: -40,
           right: -40,
-          height: 320,
+          height: 340,
           borderRadius: '0 0 50% 50%',
           background: 'linear-gradient(160deg, #2d6a4f 0%, #1b4332 100%)',
         }} />

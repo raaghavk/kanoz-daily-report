@@ -204,7 +204,7 @@ export default function PurchaseDetail() {
             </div>
             <div>
               <div style={labelStyle}>Moisture %</div>
-              <div style={valueStyle}>{purchase.moisture_percentage ? `${purchase.moisture_percentage}%` : 'N/A'}</div>
+              <div style={valueStyle}>{purchase.moisture_percent ? `${purchase.moisture_percent}%` : 'N/A'}</div>
             </div>
             <div>
               <div style={labelStyle}>Deduction</div>

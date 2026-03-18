@@ -109,9 +109,10 @@ export default function BottomNav() {
 
       {/* Bottom Nav Bar — 4 items: Home | + | Chat | More */}
       <nav style={{
-        flexShrink: 0, display: 'flex', height: 64,
+        flexShrink: 0, display: 'flex',
         background: '#FFFFFF', borderTop: '1px solid #e5ddd0',
-        paddingBottom: 4, alignItems: 'center',
+        padding: '8px 0', paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
+        alignItems: 'center',
       }}>
         <button onClick={() => navigate('/')} style={navBtnStyle(isHome)}>
           <Home size={22} strokeWidth={isHome ? 2.5 : 1.5} />
