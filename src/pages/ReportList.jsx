@@ -211,33 +211,12 @@ export default function ReportList() {
           </div>
         )}
 
-        {/* Summary Stats */}
+        {/* Summary Bar */}
         {reports.length > 0 && (
-          <div style={{ padding: '0 20px 16px' }}>
-          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
-              Summary
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <div>
-                <div style={{ fontSize: 10, color: '#8a8d7a', marginBottom: 4 }}>Total Reports</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#2c2c2c' }}>{reports.length}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: '#8a8d7a', marginBottom: 4 }}>Total Production</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#2d6a4f' }}>
-                  {reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, color: '#8a8d7a', marginBottom: 4 }}>Submitted</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#2563EB' }}>
-                  {reports.filter(r => r.status === 'submitted').length}
-                </div>
-              </div>
-            </div>
+          <div style={{ marginTop: 12, padding: '10px 16px', background: '#e8f0ec', borderRadius: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+            <span style={{ color: '#595c4a', fontWeight: 600 }}>{reports.length} report{reports.length > 1 ? 's' : ''}</span>
+            <span style={{ color: '#2d6a4f', fontWeight: 800 }}>{reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT total</span>
           </div>
-        </div>
         )}
       </div>
     </div>

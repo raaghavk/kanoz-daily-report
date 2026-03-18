@@ -380,14 +380,6 @@ export default function DispatchForm() {
           </div>
         )}
 
-        {/* Shift warning */}
-        {shiftWarning && (
-          <div style={{ margin: '16px 20px 0', background: '#fefae0', border: '1.5px solid #e9c46a', borderRadius: 14, padding: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>No Active Shift Report</div>
-            <div style={{ fontSize: 11, color: '#A16207', marginTop: 4 }}>Dispatch will be saved independently. It will be linked to a shift report when one is created.</div>
-          </div>
-        )}
-
         {/* Filter Tabs */}
         <div style={{
           display: 'flex', gap: 8, overflowX: 'auto',
@@ -525,23 +517,22 @@ export default function DispatchForm() {
             onClick={() => setShowForm(!showForm)}
             style={{
               width: '100%',
-              padding: '14px 0',
-              borderRadius: 14,
-              fontWeight: 700,
-              fontSize: 14,
-              background: showForm ? '#d4a373' : '#2d6a4f',
-              color: 'white',
+              padding: '12px 0',
+              borderRadius: 12,
+              fontWeight: 600,
+              fontSize: 13,
+              background: showForm ? '#fefae0' : '#fff',
+              color: showForm ? '#d4a373' : '#2d6a4f',
               cursor: 'pointer',
-              border: 'none',
+              border: showForm ? '1.5px solid #d4a373' : '1.5px solid #2d6a4f',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
-              transition: 'all 0.2s'
+              gap: 6,
             }}
           >
-            <Plus size={18} />
-            {showForm ? 'Cancel' : 'Add Dispatch'}
+            <Plus size={16} style={{ transform: showForm ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }} />
+            {showForm ? 'Cancel' : 'New Dispatch'}
           </button>
         </div>
 
