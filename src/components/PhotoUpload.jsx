@@ -4,7 +4,33 @@ import { supabase } from '../lib/supabase'
 import { showToast } from './Toast'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_WIDTH = 1200 // Max image width after compression
+const JPEG_QUALITY = 0.75 // 75% quality — good balance of size vs clarity
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+
+// Compress image using Canvas API — reduces 4MB photos to ~200-400KB
+function compressImage(file) {
+  return new Promise((resolve) => {
+    const img = new window.Image()
+    img.onload = () => {
+      let { width, height } = img
+      if (width > MAX_WIDTH) {
+        height = Math.round((height * MAX_WIDTH) / width)
+        width = MAX_WIDTH
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob((blob) => {
+        resolve(blob || file) // fallback to original if compression fails
+      }, 'image/jpeg', JPEG_QUALITY)
+    }
+    img.onerror = () => resolve(file) // fallback to original
+    img.src = URL.createObjectURL(file)
+  })
+}
 
 // Check if value is an old AppSheet-style path (not a real URL)
 function isLegacyPath(val) {
@@ -44,16 +70,16 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
     const localUrl = URL.createObjectURL(file)
     setPreview(localUrl)
 
-    // Upload to Supabase storage
+    // Compress and upload to Supabase storage
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop()
-      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+      const compressed = await compressImage(file)
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
       const filePath = `${folder}/${fileName}`
 
       const { error } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file, { cacheControl: '3600', upsert: false })
+        .upload(filePath, compressed, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' })
 
       if (error) throw error
 
