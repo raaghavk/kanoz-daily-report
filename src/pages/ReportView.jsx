@@ -33,8 +33,8 @@ export default function ReportView() {
     if (!window.confirm('Are you sure you want to delete this report? This cannot be undone.')) return
     try {
       setDeleting(true)
-      // Delete child records first
-      await Promise.all([
+      // Delete child records first — check for errors
+      const childDeletes = await Promise.all([
         supabase.from('machine_production').delete().eq('shift_report_id', id),
         supabase.from('raw_material_usage').delete().eq('shift_report_id', id),
         supabase.from('equipment_diesel_log').delete().eq('shift_report_id', id),
@@ -42,7 +42,11 @@ export default function ReportView() {
         supabase.from('diesel_stock').delete().eq('shift_report_id', id),
         supabase.from('issues').delete().eq('shift_report_id', id),
       ])
-      await supabase.from('shift_reports').delete().eq('id', id)
+      const childError = childDeletes.find(r => r.error)
+      if (childError) throw childError.error
+
+      const { error: parentError } = await supabase.from('shift_reports').delete().eq('id', id)
+      if (parentError) throw parentError
       showToast('Report deleted', 'success')
       navigate('/reports')
     } catch (err) {
@@ -97,47 +101,29 @@ export default function ReportView() {
 
       setReport(reportData)
 
-      const { data: machData } = await supabase
-        .from('machine_production')
-        .select('*, machines(name)')
-        .eq('shift_report_id', id)
+      // Fetch all child data in parallel
+      const [machRes, matRes, dispatchRes, dieselRes, stockRes, issuesRes] = await Promise.all([
+        supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', id),
+        supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', id),
+        supabase.from('vehicle_dispatches').select('*, dispatch_pellets(*, pellet_types(name)), customers(name)').eq('shift_report_id', id),
+        supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', id),
+        supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', id),
+        supabase.from('issues').select('*').eq('shift_report_id', id),
+      ])
 
-      setMachineProduction(machData || [])
+      if (machRes.error) console.error('Failed to load machine data:', machRes.error)
+      if (matRes.error) console.error('Failed to load raw materials:', matRes.error)
+      if (dispatchRes.error) console.error('Failed to load dispatches:', dispatchRes.error)
+      if (dieselRes.error) console.error('Failed to load diesel data:', dieselRes.error)
+      if (stockRes.error) console.error('Failed to load pellet stock:', stockRes.error)
+      if (issuesRes.error) console.error('Failed to load issues:', issuesRes.error)
 
-      const { data: matData } = await supabase
-        .from('raw_material_usage')
-        .select('*, raw_material_types(name)')
-        .eq('shift_report_id', id)
-
-      setRawMaterials(matData || [])
-
-      const { data: dispatchData } = await supabase
-        .from('vehicle_dispatches')
-        .select('*, dispatch_pellets(*, pellet_types(name)), customers(name)')
-        .eq('shift_report_id', id)
-
-      setDispatches(dispatchData || [])
-
-      const { data: dieselData } = await supabase
-        .from('equipment_diesel_log')
-        .select('*')
-        .eq('shift_report_id', id)
-
-      setEquipmentDiesel(dieselData || [])
-
-      const { data: stockData } = await supabase
-        .from('pellet_stock')
-        .select('*, pellet_types(name)')
-        .eq('shift_report_id', id)
-
-      setPelletStock(stockData || [])
-
-      const { data: issuesData } = await supabase
-        .from('issues')
-        .select('*')
-        .eq('shift_report_id', id)
-
-      setIssues(issuesData || [])
+      setMachineProduction(machRes.data || [])
+      setRawMaterials(matRes.data || [])
+      setDispatches(dispatchRes.data || [])
+      setEquipmentDiesel(dieselRes.data || [])
+      setPelletStock(stockRes.data || [])
+      setIssues(issuesRes.data || [])
     } catch (err) {
       console.error('Error fetching report:', err)
       showToast('Failed to load report', 'error')

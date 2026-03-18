@@ -71,20 +71,27 @@ export default function AdminPanel() {
     if (!selectedPlantId || employee?.role !== 'admin') return
     let cancelled = false
     ;(async () => {
-      setLoading(true)
-      const results = {}
-      for (const section of SECTIONS) {
-        const orderBy = section.hasSort ? 'sort_order' : 'name'
-        const { data: items } = await supabase
-          .from(section.table)
-          .select('*')
-          .eq('plant_id', selectedPlantId)
-          .order(orderBy)
-        results[section.key] = items || []
-      }
-      if (!cancelled) {
-        setData(results)
-        setLoading(false)
+      try {
+        setLoading(true)
+        const results = {}
+        for (const section of SECTIONS) {
+          const orderBy = section.hasSort ? 'sort_order' : 'name'
+          const { data: items, error } = await supabase
+            .from(section.table)
+            .select('*')
+            .eq('plant_id', selectedPlantId)
+            .order(orderBy)
+          if (error) console.error(`Failed to load ${section.label}:`, error)
+          results[section.key] = items || []
+        }
+        if (!cancelled) {
+          setData(results)
+        }
+      } catch (err) {
+        console.error('Error loading admin data:', err)
+        if (!cancelled) showToast('Failed to load plant settings', 'error')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     })()
     return () => { cancelled = true }

@@ -197,7 +197,7 @@ export default function DispatchForm() {
         .eq('date', today)
         .order('shift', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       return data
     },
     enabled: !!plant?.id,

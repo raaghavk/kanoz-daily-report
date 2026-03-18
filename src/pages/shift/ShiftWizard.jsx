@@ -160,7 +160,7 @@ export default function ShiftWizard() {
 
     if (machinesRes.data) {
       updateData('machines', machinesRes.data.map(m => ({
-        id: m.id, name: m.name, from_time: '', to_time: '', breakdown_min: 0, production_hours: 0, remarks: '',
+        id: m.id, name: m.name, from_time: '', to_time: '', breakdown_hrs: 0, production_hours: 0, remarks: '',
       })))
     }
     if (materialsRes.data) {
@@ -217,6 +217,7 @@ export default function ShiftWizard() {
       updateData('shift_end_date', report.shift_end_date || report.date)
       updateData('handover_notes', report.handover_notes || '')
       updateData('remarks', report.remarks || '')
+      updateData('weather', report.weather || '')
 
       // Load machines, materials, equipment first (needed for merging data)
       const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
@@ -244,7 +245,15 @@ export default function ShiftWizard() {
           const machinesWithProduction = initialMachines.map(m => {
             const prod = machProd.data.find(mp => mp.machine_id === m.id)
             if (prod) {
-              return { ...m, production_hours: parseFloat(prod.hours_run) || 0, total_hours: parseFloat(prod.hours_run) || 0 }
+              return {
+                ...m,
+                production_hours: parseFloat(prod.hours_run) || 0,
+                total_hours: parseFloat(prod.hours_run) || 0,
+                from_time: prod.from_time || '',
+                to_time: prod.to_time || '',
+                breakdown_hrs: parseFloat(prod.breakdown_hours) || 0,
+                remarks: prod.remarks || '',
+              }
             }
             return m
           })
@@ -375,6 +384,7 @@ export default function ShiftWizard() {
         created_by: employee?.id,
         handover_notes: sanitizeText(reportData.handover_notes, 1000),
         remarks: sanitizeText(reportData.remarks, 1000),
+        weather: sanitizeText(reportData.weather, 100),
       }
 
       let report
@@ -393,11 +403,15 @@ export default function ShiftWizard() {
       if (reportData.machines.length) {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
         const machineRows = reportData.machines
-          .filter(m => sanitizeNumber(m.production_hours) > 0)
+          .filter(m => sanitizeNumber(m.production_hours) > 0 || m.from_time || m.to_time)
           .map(m => ({
             shift_report_id: report.id,
             machine_id: m.id,
             hours_run: sanitizeNumber(m.production_hours),
+            from_time: m.from_time || null,
+            to_time: m.to_time || null,
+            breakdown_hours: sanitizeNumber(m.breakdown_hrs),
+            remarks: sanitizeText(m.remarks, 500),
             production_mt: reportData.production
               .filter(p => p.machine_id === m.id)
               .reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),

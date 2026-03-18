@@ -73,7 +73,7 @@ export default function Home() {
           .order('date', { ascending: false })
           .order('shift', { ascending: false })
           .limit(1)
-          .single(),
+          .maybeSingle(),
         supabase
           .from('shift_reports')
           .select('pellet_production_mt')

@@ -12,7 +12,9 @@ function formatDate(isoStr) {
 
 export default memo(function Step9Submit({ data, updateData }) {
   const totalProd = data.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
-  const totalDispatches = data.dispatches.length
+  const totalDispatches = Object.keys(data.dispatchTotals || {}).length > 0
+    ? Object.values(data.dispatchTotals).reduce((sum, qty) => sum + (parseFloat(qty) || 0), 0)
+    : data.dispatches.length
   const totalIssues = data.issues.length
 
   return (
@@ -24,7 +26,7 @@ export default memo(function Step9Submit({ data, updateData }) {
           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#595c4a' }}>Date</span><span style={{ fontWeight: 600 }}>{formatDate(data.shift_start_date)}{data.shift === 'B' ? ` → ${formatDate(data.shift_end_date)}` : ''}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#595c4a' }}>Shift</span><span style={{ fontWeight: 600 }}>Shift {data.shift} ({data.start_time} – {data.end_time})</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#595c4a' }}>Total Production</span><span style={{ fontWeight: 700, color: '#2d6a4f' }}>{totalProd.toFixed(1)} MT</span></div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#595c4a' }}>Dispatches</span><span style={{ fontWeight: 600 }}>{totalDispatches} trucks</span></div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#595c4a' }}>Dispatches</span><span style={{ fontWeight: 600 }}>{typeof totalDispatches === 'number' && totalDispatches > 0 ? `${totalDispatches.toFixed(1)} MT` : 'None'}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#595c4a' }}>Issues</span><span style={{ fontWeight: 600, color: totalIssues > 0 ? '#d32f2f' : '#2d6a4f' }}>{totalIssues || 'None'}</span></div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#595c4a' }}>Machines Active</span><span style={{ fontWeight: 600 }}>{data.machines.filter(m => m.production_hours > 0).length}/{data.machines.length}</span></div>
         </div>
