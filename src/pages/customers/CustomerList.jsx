@@ -6,33 +6,34 @@ import Modal from '../../components/Modal'
 import { Search, Plus, Phone, MessageSquare, Navigation, Loader2, AlertCircle } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
-const CustomerList = () => {
+export default function CustomerList() {
   const { plant } = useAuth()
   const [customers, setCustomers] = useState([])
   const [filteredCustomers, setFilteredCustomers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [formData, setFormData] = useState({ name: '', mobile: '', address: '' })
-  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    fetchCustomers()
-  }, [])
+    if (plant?.org_id) fetchCustomers()
+  }, [plant]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchCustomers = async () => {
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      setFilteredCustomers(customers.filter(c => c.name.toLowerCase().includes(q) || (c.mobile || '').includes(q)))
+    } else {
+      setFilteredCustomers(customers)
+    }
+  }, [searchQuery, customers])
+
+  async function fetchCustomers() {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('org_id', plant.org_id)
-        .eq('is_active', true)
-        .order('name')
-
+      const { data, error } = await supabase.from('customers').select('*').eq('org_id', plant.org_id).eq('is_active', true).order('name')
       if (error) throw error
       setCustomers(data || [])
-      setFilteredCustomers(data || [])
     } catch (err) {
       console.error('Error fetching customers:', err)
       showToast('Failed to load customers', 'error')
@@ -41,435 +42,123 @@ const CustomerList = () => {
     }
   }
 
-  const handleSearch = (value) => {
-    setSearchTerm(value)
-    const filtered = customers.filter(
-      (customer) =>
-        customer.name.toLowerCase().includes(value.toLowerCase()) ||
-        customer.mobile.includes(value)
-    )
-    setFilteredCustomers(filtered)
-  }
-
-  const handleAddCustomer = async () => {
+  async function handleAddCustomer() {
     if (!formData.name.trim() || !formData.mobile.trim()) {
       showToast('Name and mobile are required', 'error')
       return
     }
-
     try {
-      setSubmitting(true)
-      const { error } = await supabase.from('customers').insert([
-        {
-          org_id: plant.org_id,
-          name: formData.name.trim(),
-          mobile: formData.mobile.trim(),
-          address: formData.address.trim() || null,
-          is_active: true,
-        },
-      ])
-
+      const { data, error } = await supabase.from('customers').insert([{ org_id: plant.org_id, name: formData.name.trim(), mobile: formData.mobile.trim(), address: formData.address.trim() || null, is_active: true }]).select()
       if (error) throw error
-
-      showToast('Customer added successfully', 'success')
+      setCustomers([...customers, data[0]])
       setFormData({ name: '', mobile: '', address: '' })
       setShowAddModal(false)
-      fetchCustomers()
+      showToast('Customer added', 'success')
     } catch (err) {
       console.error('Error adding customer:', err)
       showToast('Failed to add customer', 'error')
-    } finally {
-      setSubmitting(false)
     }
   }
 
-  const handleCall = (mobile) => {
-    window.location.href = `tel:${mobile}`
-  }
-
-  const handleSMS = (mobile) => {
-    window.location.href = `sms:${mobile}`
-  }
-
-  const handleMap = (address) => {
-    if (!address) {
-      showToast('No address available', 'error')
-      return
+  function handleCall(mobile) { window.location.href = `tel:${mobile}` }
+  function handleSMS(mobile) { window.location.href = `sms:${mobile}` }
+  function handleMap(customer) {
+    if (customer.address) {
+      window.open(`https://www.google.com/maps/search/${encodeURIComponent(customer.address)}`, '_blank')
+    } else {
+      showToast('No address available', 'info')
     }
-    const encodedAddress = encodeURIComponent(address)
-    window.open(`https://maps.google.com/?q=${encodedAddress}`, '_blank')
-  }
-
-  const containerStyle = {
-    minHeight: '100%',
-    background: '#fefae0',
-    fontFamily: 'Inter, sans-serif',
-  }
-
-  const headerStyle = {
-    flexShrink: 0,
-    padding: '0 16px',
-  }
-
-  const searchContainerStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    background: '#fff',
-    border: `1px solid #e5ddd0`,
-    borderRadius: '12px',
-    padding: '12px 16px',
-    margin: '16px',
-    marginBottom: '0',
-  }
-
-  const searchInputStyle = {
-    flex: 1,
-    border: 'none',
-    background: 'transparent',
-    outline: 'none',
-    fontSize: '16px',
-    color: '#2c2c2c',
-    fontFamily: 'Inter, sans-serif',
-  }
-
-  const listContainerStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '12px',
-    padding: '16px',
-  }
-
-  const rowStyle = {
-    background: '#fff',
-    border: `1px solid #e5ddd0`,
-    borderRadius: '14px',
-    padding: '16px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '12px',
-  }
-
-  const rowInfoStyle = {
-    flex: 1,
-    minWidth: 0,
-  }
-
-  const rowNameStyle = {
-    fontSize: '16px',
-    fontWeight: '500',
-    color: '#2c2c2c',
-    margin: '0 0 4px 0',
-  }
-
-  const rowAddressStyle = {
-    fontSize: '13px',
-    color: '#595c4a',
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    margin: 0,
-  }
-
-  const rowButtonsStyle = {
-    display: 'flex',
-    gap: '8px',
-    flexShrink: 0,
-  }
-
-  const phoneButtonStyle = {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    background: '#e8f0ec',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  }
-
-  const smsButtonStyle = {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    background: '#EEF2FF',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  }
-
-  const mapButtonStyle = {
-    width: 34,
-    height: 34,
-    borderRadius: 8,
-    background: '#FEF3C7',
-    border: 'none',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  }
-
-  const fabStyle = {
-    position: 'fixed',
-    bottom: '80px',
-    right: '16px',
-    background: '#2d6a4f',
-    border: 'none',
-    borderRadius: '50%',
-    width: '56px',
-    height: '56px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(45, 106, 79, 0.3)',
-    zIndex: 40,
-  }
-
-  const emptyStateStyle = {
-    textAlign: 'center',
-    padding: '48px 24px',
-    color: '#595c4a',
-  }
-
-  const emptyIconStyle = {
-    width: '48px',
-    height: '48px',
-    margin: '0 auto 16px',
-    opacity: 0.5,
-  }
-
-  const modalButtonsStyle = {
-    display: 'flex',
-    gap: '12px',
-    marginTop: '24px',
-  }
-
-  const cancelButtonStyle = {
-    flex: 1,
-    padding: '12px 16px',
-    border: `1px solid #e5ddd0`,
-    background: '#fff',
-    borderRadius: '12px',
-    color: '#2c2c2c',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '500',
-    fontFamily: 'Inter, sans-serif',
-  }
-
-  const submitButtonStyle = {
-    flex: 1,
-    padding: '12px 16px',
-    border: 'none',
-    background: '#2d6a4f',
-    borderRadius: '12px',
-    color: '#fff',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: '500',
-    fontFamily: 'Inter, sans-serif',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-  }
-
-  const inputStyle = {
-    width: '100%',
-    padding: '12px 16px',
-    border: `1px solid #e5ddd0`,
-    borderRadius: '12px',
-    fontSize: '14px',
-    fontFamily: 'Inter, sans-serif',
-    color: '#2c2c2c',
-    marginBottom: '16px',
-    boxSizing: 'border-box',
-  }
-
-  const labelStyle = {
-    fontSize: '14px',
-    fontWeight: '500',
-    color: '#2c2c2c',
-    marginBottom: '6px',
-    display: 'block',
-  }
-
-  if (loading) {
-    return (
-      <div style={containerStyle}>
-        <div style={headerStyle}>
-          <PageHeader title="Customers" subtitle="Dispatch destinations" backTo="/settings" />
-        </div>
-        <div style={{ textAlign: 'center', padding: '48px 24px', flex: 1, overflowY: 'auto' }}>
-          <Loader2 style={{ width: '32px', height: '32px', animation: 'spin 1s linear infinite', margin: '0 auto' }} />
-        </div>
-      </div>
-    )
   }
 
   return (
-    <div style={containerStyle}>
-      <style>
-        {`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-          button:hover {
-            opacity: 0.9;
-          }
-        `}
-      </style>
-
-      {/* Header + Search (sticky) */}
+    <div style={{ minHeight: '100%', background: '#fefae0' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <div style={headerStyle}>
-          <PageHeader title="Customers" subtitle="Dispatch destinations" backTo="/settings" />
-        </div>
-
-        <div style={searchContainerStyle}>
-          <Search size={20} color="#595c4a" />
-          <input
-            type="text"
-            placeholder="Search by name or mobile..."
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            style={searchInputStyle}
-          />
+        <PageHeader title="Customers" subtitle="Dispatch destinations" backTo="/settings" />
+        <div style={{ padding: '12px 20px 0' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8a8d7a' }} />
+            <input
+              type="text"
+              placeholder="Search by name or mobile..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 12, fontSize: 14, outline: 'none', background: '#fffdf5', border: '1.5px solid #e5ddd0', color: '#2c2c2c', boxSizing: 'border-box' }}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Scrollable Content Area */}
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        {filteredCustomers.length === 0 ? (
-          <div style={emptyStateStyle}>
-            <AlertCircle style={emptyIconStyle} />
-            <p style={{ margin: 0 }}>
-              {searchTerm ? 'No customers match your search' : 'No customers yet. Add one to get started.'}
+      <div style={{ padding: '16px 20px', paddingBottom: 100 }}>
+        {loading ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+            <Loader2 size={32} style={{ color: '#2d6a4f', marginBottom: 8, animation: 'spin 1s linear infinite' }} />
+            <p style={{ fontSize: 13, color: '#595c4a' }}>Loading customers...</p>
+          </div>
+        ) : filteredCustomers.length === 0 ? (
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 32, textAlign: 'center' }}>
+            <AlertCircle size={32} style={{ color: '#b5b8a8', margin: '0 auto 8px' }} />
+            <p style={{ fontSize: 14, color: '#595c4a', marginBottom: 4 }}>
+              {searchQuery ? 'No customers found' : 'No customers added yet'}
+            </p>
+            <p style={{ fontSize: 12, color: '#b5b8a8', marginBottom: 16 }}>
+              {searchQuery ? 'Try a different search' : 'Add your first customer to get started'}
             </p>
           </div>
         ) : (
-          <div style={listContainerStyle}>
-          {filteredCustomers.map((customer) => (
-            <div key={customer.id} style={rowStyle}>
-              <div style={rowInfoStyle}>
-                <h3 style={rowNameStyle}>{customer.name}</h3>
-                {customer.address && <p style={rowAddressStyle}>{customer.address}</p>}
+          <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+            {filteredCustomers.map((customer, idx) => (
+              <div key={customer.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {customer.name}
+                  </div>
+                  {customer.address && (
+                    <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {customer.address}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                  <button onClick={() => handleCall(customer.mobile)} style={{ width: 34, height: 34, borderRadius: 8, background: '#e8f0ec', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Phone size={14} style={{ color: '#2d6a4f' }} />
+                  </button>
+                  <button onClick={() => handleSMS(customer.mobile)} style={{ width: 34, height: 34, borderRadius: 8, background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <MessageSquare size={14} style={{ color: '#2563EB' }} />
+                  </button>
+                  <button onClick={() => handleMap(customer)} style={{ width: 34, height: 34, borderRadius: 8, background: '#FEF3C7', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Navigation size={14} style={{ color: '#B45309' }} />
+                  </button>
+                </div>
               </div>
-              <div style={rowButtonsStyle}>
-                <button
-                  onClick={() => handleCall(customer.mobile)}
-                  style={phoneButtonStyle}
-                  title="Call"
-                  aria-label="Call customer"
-                >
-                  <Phone size={14} style={{ color: '#2d6a4f' }} />
-                </button>
-                <button
-                  onClick={() => handleSMS(customer.mobile)}
-                  style={smsButtonStyle}
-                  title="SMS"
-                  aria-label="Send SMS to customer"
-                >
-                  <MessageSquare size={14} style={{ color: '#2563EB' }} />
-                </button>
-                <button
-                  onClick={() => handleMap(customer.address)}
-                  style={mapButtonStyle}
-                  title="Map"
-                  aria-label="Open in maps"
-                >
-                  <Navigation size={14} style={{ color: '#B45309' }} />
-                </button>
-              </div>
-            </div>
-          ))}
+            ))}
           </div>
         )}
       </div>
 
-      <button
-        onClick={() => setShowAddModal(true)}
-        style={{ ...fabStyle, zIndex: 50 }}
-        title="Add customer"
-        aria-label="Add customer"
-      >
-        <Plus size={28} color="#fff" />
+      <button onClick={() => setShowAddModal(true)} style={{ position: 'fixed', display: 'flex', alignItems: 'center', justifyContent: 'center', bottom: 96, right: 16, width: 56, height: 56, background: '#2d6a4f', borderRadius: '50%', boxShadow: '0 4px 14px rgba(45,106,79,0.3)', border: 'none', cursor: 'pointer', zIndex: 50 }}>
+        <Plus size={24} color="white" />
       </button>
 
-      <Modal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false)
-          setFormData({ name: '', mobile: '', address: '' })
-        }}
-        title="Add Customer"
-      >
-        <div>
-          <label style={labelStyle}>
-            Name <span style={{ color: '#d32f2f' }}>*</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Customer name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            style={inputStyle}
-          />
-
-          <label style={labelStyle}>
-            Mobile <span style={{ color: '#d32f2f' }}>*</span>
-          </label>
-          <input
-            type="tel"
-            placeholder="Mobile number"
-            value={formData.mobile}
-            onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-            style={inputStyle}
-          />
-
-          <label style={labelStyle}>Address</label>
-          <textarea
-            placeholder="Address (optional)"
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
-          />
-
-          <div style={modalButtonsStyle}>
-            <button
-              onClick={() => {
-                setShowAddModal(false)
-                setFormData({ name: '', mobile: '', address: '' })
-              }}
-              style={cancelButtonStyle}
-            >
-              Cancel
-            </button>
-            <button onClick={handleAddCustomer} style={submitButtonStyle} disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                  Adding...
-                </>
-              ) : (
-                <>
-                  <Plus size={16} />
-                  Add Customer
-                </>
-              )}
-            </button>
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Customer">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Name <span style={{ color: '#d32f2f' }}>*</span></label>
+            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Customer name" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Mobile <span style={{ color: '#d32f2f' }}>*</span></label>
+            <input type="tel" value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} placeholder="Phone number" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>
+            <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Address (optional)" rows={2} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
+            <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Cancel</button>
+            <button onClick={handleAddCustomer} style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Add Customer</button>
           </div>
         </div>
       </Modal>
     </div>
   )
 }
-
-export default CustomerList
