@@ -186,6 +186,9 @@ export default function Home() {
         )}
 
         {/* Stat Cards */}
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 8 }}>
+          Today's Activity
+        </div>
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           <button
             onClick={() => setShowProductionModal(true)}
@@ -308,7 +311,7 @@ export default function Home() {
         {yesterday && (
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 10 }}>
-              Yesterday's Summary
+              Yesterday's Summary (All Shifts)
             </div>
             <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

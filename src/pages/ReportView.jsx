@@ -180,7 +180,7 @@ export default function ReportView() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
-      <PageHeader title="Shift Report" subtitle={`Shift ${report.shift} · ${report.date}`} backTo="/reports" />
+      <PageHeader title="Shift Report" subtitle={`Shift ${report.shift} · ${report.date}`} onBack={() => navigate(-1)} />
 
       {/* Report Header Info */}
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>

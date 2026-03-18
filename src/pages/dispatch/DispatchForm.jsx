@@ -511,6 +511,15 @@ export default function DispatchForm() {
           </div>
         )}
 
+        {/* FAB Button to open form */}
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            style={{ position: 'fixed', bottom: 96, right: 16, width: 56, height: 56, borderRadius: '50%', background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(45,106,79,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}
+          >
+            <Plus size={24} />
+          </button>
+        )}
 
         {/* Dispatch Form */}
         {showForm && (

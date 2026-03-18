@@ -78,7 +78,7 @@ export default function DispatchDetail() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flexShrink: 0 }}>
-          <PageHeader title="Dispatch Details" subtitle="Loading..." backTo="/dispatch" />
+          <PageHeader title="Dispatch Details" subtitle="Loading..." onBack={() => navigate(-1)} />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ color: '#595c4a', fontSize: 13 }}>Loading dispatch...</div>
@@ -91,7 +91,7 @@ export default function DispatchDetail() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flexShrink: 0 }}>
-          <PageHeader title="Dispatch Details" subtitle="Not found" backTo="/dispatch" />
+          <PageHeader title="Dispatch Details" subtitle="Not found" onBack={() => navigate(-1)} />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ color: '#595c4a', fontSize: 13 }}>Dispatch not found</div>
@@ -108,7 +108,7 @@ export default function DispatchDetail() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {/* Header (sticky) */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title="Dispatch Details" subtitle={`Truck ${dispatch.truck_number}`} backTo="/dispatch" />
+        <PageHeader title="Dispatch Details" subtitle={`Truck ${dispatch.truck_number}`} onBack={() => navigate(-1)} />
       </div>
 
       {/* Scrollable Content Area */}

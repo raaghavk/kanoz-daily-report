@@ -155,8 +155,11 @@ export default function ReportList() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: '#2d6a4f' }}>
-                      {report.total_mt.toFixed(1)} MT
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                      <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600 }}>Production:</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: '#2d6a4f' }}>
+                        {report.total_mt.toFixed(1)} MT
+                      </div>
                     </div>
                     <ChevronRight size={16} color="#b5b8a8" />
                   </div>
@@ -216,9 +219,7 @@ export default function ReportList() {
           <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #e5ddd0', display: 'flex', gap: 12, fontSize: 11, color: '#8a8d7a', fontWeight: 500 }}>
             <span>{reports.length} report{reports.length > 1 ? 's' : ''}</span>
             <span>·</span>
-            <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT</span>
-            <span>·</span>
-            <span>{reports.filter(r => r.status === 'submitted').length} submitted</span>
+            <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT production</span>
           </div>
         )}
       </div>

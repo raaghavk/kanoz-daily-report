@@ -393,17 +393,21 @@ export default function PurchaseForm() {
               value={formData.supplier_id}
               onChange={e => {
                 const supplierId = e.target.value
-                handleFieldChange('supplier_id', supplierId)
-                // Auto-fill raw material type from supplier
                 const selectedSupplier = suppliers.find(s => s.id === supplierId)
+                const updated = { ...formData, supplier_id: supplierId }
+
+                // Auto-fill raw material type from supplier
                 if (selectedSupplier?.raw_material_type_id) {
-                  handleFieldChange('raw_material_type_id', selectedSupplier.raw_material_type_id)
+                  updated.raw_material_type_id = selectedSupplier.raw_material_type_id
                 } else if (selectedSupplier?.raw_material_type) {
                   const matchingRM = rawMaterials.find(m => m.name === selectedSupplier.raw_material_type)
                   if (matchingRM) {
-                    handleFieldChange('raw_material_type_id', matchingRM.id)
+                    updated.raw_material_type_id = matchingRM.id
                   }
                 }
+
+                updateCalculatedFields(updated)
+                setFormData(updated)
               }}
               style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
             >

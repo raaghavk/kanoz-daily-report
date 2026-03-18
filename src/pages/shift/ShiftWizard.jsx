@@ -217,8 +217,12 @@ export default function ShiftWizard() {
       updateData('handover_notes', report.handover_notes || '')
       updateData('remarks', report.remarks || '')
 
-      // Load child data
-      const [machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
+      // Load machines, materials, equipment first (needed for merging data)
+      const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
+        supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
+        supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
+        supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
+        supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', editId),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', editId),
@@ -228,56 +232,94 @@ export default function ShiftWizard() {
         supabase.from('diesel_purchases').select('*').eq('shift_report_id', editId),
       ])
 
-      // Merge machine production hours back into machines
-      if (machProd.data?.length) {
-        setReportData(prev => ({
-          ...prev,
-          machines: prev.machines.map(m => {
+      // Initialize machines array from active machines
+      if (machinesRes.data) {
+        const initialMachines = machinesRes.data.map(m => ({
+          id: m.id, name: m.name, from_time: '', to_time: '', breakdown_hrs: 0, total_hours: 0, production_hours: 0, remarks: '',
+        }))
+
+        // Merge machine production hours back into machines
+        if (machProd.data?.length) {
+          const machinesWithProduction = initialMachines.map(m => {
             const prod = machProd.data.find(mp => mp.machine_id === m.id)
             if (prod) {
-              return { ...m, production_hours: parseFloat(prod.hours_run) || 0 }
+              return { ...m, production_hours: parseFloat(prod.hours_run) || 0, total_hours: parseFloat(prod.hours_run) || 0 }
             }
             return m
           })
-        }))
+          updateData('machines', machinesWithProduction)
+        } else {
+          updateData('machines', initialMachines)
+        }
       }
 
-      if (rmUsage.data?.length) {
-        updateData('rawMaterials', rmUsage.data.map(rm => ({
-          id: rm.raw_material_type_id,
-          name: rm.raw_material_types?.name || 'Unknown',
-          opening: parseFloat(rm.opening_kg) || 0,
-          purchased: 0,
-          used: parseFloat(rm.quantity_kg) || 0,
-          closing: parseFloat(rm.closing_kg) || 0,
-        })))
+      // Initialize raw materials and pellet stock for editing
+      if (materialsRes.data) {
+        const materialRows = materialsRes.data.map(m => {
+          const rmData = rmUsage.data?.find(r => r.raw_material_type_id === m.id)
+          return {
+            id: m.id,
+            name: m.name,
+            opening: rmData ? parseFloat(rmData.opening_kg) || 0 : 0,
+            purchased: rmData ? parseFloat(rmData.purchased_kg) || 0 : 0,
+            used: rmData ? parseFloat(rmData.quantity_kg) || 0 : 0,
+            closing: rmData ? parseFloat(rmData.closing_kg) || 0 : 0,
+          }
+        })
+        updateData('rawMaterials', materialRows)
       }
 
-      if (diesel.data?.length) {
-        updateData('diesel', diesel.data.map(d => ({
-          id: d.id,
-          equipment_name: d.equipment_name,
-          opening: parseFloat(d.opening_litres) || 0,
-          added: parseFloat(d.added_litres) || 0,
-          used: (parseFloat(d.opening_litres) || 0) + (parseFloat(d.added_litres) || 0) - (parseFloat(d.closing_litres) || 0),
-          closing: parseFloat(d.closing_litres) || 0,
-          hours: parseFloat(d.hours_worked) || 0,
-          avg_per_hr: 0,
-          collapsed: false,
-        })))
+      if (pelletTypesRes.data) {
+        const pelletRows = pelletTypesRes.data.map(p => {
+          const psData = pStock.data?.find(ps => ps.pellet_type_id === p.id)
+          return {
+            id: p.id,
+            name: p.name,
+            opening: psData ? parseFloat(psData.opening_mt) || 0 : 0,
+            production: psData ? parseFloat(psData.production_mt) || 0 : 0,
+            dispatch: psData ? parseFloat(psData.dispatch_mt) || 0 : 0,
+            wastage: psData ? parseFloat(psData.wastage_mt) || 0 : 0,
+            closing: psData ? parseFloat(psData.closing_mt) || 0 : 0,
+          }
+        })
+        updateData('pelletStock', pelletRows)
       }
 
-      if (pStock.data?.length) {
-        updateData('pelletStock', pStock.data.map(ps => ({
-          id: ps.pellet_type_id,
-          name: ps.pellet_types?.name || 'Unknown',
-          opening: parseFloat(ps.opening_mt) || 0,
-          production: parseFloat(ps.production_mt) || 0,
-          dispatch: parseFloat(ps.dispatch_mt) || 0,
-          wastage: parseFloat(ps.wastage_mt) || 0,
-          closing: parseFloat(ps.closing_mt) || 0,
-        })))
+      if (equipmentRes.data) {
+        const equipmentRows = equipmentRes.data.map(eq => {
+          const dieselData = diesel.data?.find(d => d.equipment_name === eq.name)
+          return {
+            id: eq.id,
+            equipment_name: eq.name,
+            opening: dieselData ? parseFloat(dieselData.opening_litres) || 0 : 0,
+            added: dieselData ? parseFloat(dieselData.added_litres) || 0 : 0,
+            used: dieselData ? (parseFloat(dieselData.opening_litres) || 0) + (parseFloat(dieselData.added_litres) || 0) - (parseFloat(dieselData.closing_litres) || 0) : 0,
+            closing: dieselData ? parseFloat(dieselData.closing_litres) || 0 : 0,
+            hours: dieselData ? parseFloat(dieselData.hours_worked) || 0 : 0,
+            avg_per_hr: 0,
+            collapsed: false,
+          }
+        })
+        updateData('diesel', equipmentRows)
       }
+
+      // Load production entries (Step 3)
+      if (machProd.data?.length) {
+        const productionEntries = machProd.data
+          .filter(mp => parseFloat(mp.production_mt) > 0)
+          .map(mp => ({
+            id: mp.id,
+            machine_id: mp.machine_id,
+            machine_name: mp.machines?.name || 'Unknown',
+            pellet_type: '', // Not stored in DB, user must re-enter
+            quantity: parseFloat(mp.production_mt) || 0,
+            ingredients: '',
+          }))
+        if (productionEntries.length > 0) {
+          updateData('production', productionEntries)
+        }
+      }
+
 
       if (issuesData.data?.length) {
         updateData('issues', issuesData.data.map(i => ({
@@ -540,7 +582,16 @@ export default function ShiftWizard() {
       <PageHeader
         title={STEPS[step - 1].title}
         subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
-        onBack={() => step === 1 ? navigate('/') : setStep(step - 1)}
+        onBack={() => {
+          if (step === 1) {
+            if (window.confirm('Stop editing? Any unsaved changes will be lost.')) {
+              sessionStorage.removeItem(WIZARD_STORAGE_KEY)
+              navigate('/')
+            }
+          } else {
+            setStep(step - 1)
+          }
+        }}
       />
 
       <Stepper currentStep={step} onStepClick={setStep} stepsWithErrors={stepsWithErrors} />
