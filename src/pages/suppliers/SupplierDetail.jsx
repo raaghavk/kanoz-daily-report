@@ -38,7 +38,7 @@ export default function SupplierDetail() {
         .from('suppliers')
         .select('*')
         .eq('id', id)
-        .eq('org_id', plant.org_id)
+        .eq('plant_id', plant.id)
         .single()
 
       if (supplierError) throw supplierError

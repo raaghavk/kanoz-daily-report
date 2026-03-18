@@ -32,8 +32,8 @@ export default function DeleteRequestButton({ entityType, entityId, entityLabel,
   }, [entityType, entityId])
 
   const handleSubmit = async () => {
-    if (reason.trim().length < 10) {
-      showToast('Reason must be at least 10 characters', 'error')
+    if (!reason.trim()) {
+      showToast('Please provide a reason', 'error')
       return
     }
 
@@ -200,7 +200,7 @@ export default function DeleteRequestButton({ entityType, entityId, entityLabel,
             <textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Explain why this item needs to be deleted (min. 10 characters)"
+              placeholder="Explain why this item needs to be deleted"
               style={{
                 width: '100%',
                 height: 100,
@@ -222,7 +222,7 @@ export default function DeleteRequestButton({ entityType, entityId, entityLabel,
                 marginBottom: 20,
               }}
             >
-              {reason.length}/10 characters minimum
+              Reason is required
             </div>
 
             <div
@@ -251,16 +251,16 @@ export default function DeleteRequestButton({ entityType, entityId, entityLabel,
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={loading || reason.trim().length < 10}
+                disabled={loading || !reason.trim()}
                 style={{
                   padding: '10px 16px',
                   borderRadius: 8,
                   border: 'none',
-                  background: reason.trim().length < 10 ? '#ccc' : '#d32f2f',
+                  background: !reason.trim() ? '#ccc' : '#d32f2f',
                   color: 'white',
                   fontSize: 13,
                   fontWeight: 600,
-                  cursor: reason.trim().length < 10 || loading ? 'not-allowed' : 'pointer',
+                  cursor: !reason.trim() || loading ? 'not-allowed' : 'pointer',
                   opacity: loading ? 0.8 : 1,
                 }}
               >

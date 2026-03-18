@@ -2,16 +2,21 @@ import { useEffect, useRef } from 'react'
 
 export default function Modal({ isOpen, onClose, title, children }) {
   const modalRef = useRef()
+  const onCloseRef = useRef(onClose)
+
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
 
   useEffect(() => {
     if (!isOpen) return
 
-    // Focus the modal on open
+    // Focus the modal only on initial open (not on every re-render)
     modalRef.current?.focus()
 
     function handleKeyDown(e) {
       if (e.key === 'Escape') {
-        onClose()
+        onCloseRef.current()
         return
       }
 
@@ -40,7 +45,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = ''
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 

@@ -15,15 +15,42 @@ export default function SupplierList() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    mobile: '',
-    address: '',
-    raw_material_type: '',
-    rate_offered: '',
-    gcv_value: '',
-    remarks: ''
+  const [formData, setFormData] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('supplier_form_draft')
+      if (saved) return JSON.parse(saved)
+    } catch { /* ignore parse errors */ }
+    return {
+      name: '',
+      mobile: '',
+      address: '',
+      raw_material_type: '',
+      rate_offered: '',
+      gcv_value: '',
+      remarks: ''
+    }
   })
+
+  // Persist form data to sessionStorage so it survives app switches
+  useEffect(() => {
+    const hasData = Object.values(formData).some(v => v !== '')
+    if (hasData) {
+      sessionStorage.setItem('supplier_form_draft', JSON.stringify(formData))
+    }
+  }, [formData])
+
+  // Re-open modal if there was a saved draft (user was mid-entry before app switch)
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('supplier_form_draft')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Object.values(parsed).some(v => v !== '')) {
+          setShowAddModal(true)
+        }
+      }
+    } catch { /* ignore parse errors */ }
+  }, [])
 
   useEffect(() => {
     if (plant?.id) {
@@ -50,7 +77,7 @@ export default function SupplierList() {
       const { data, error } = await supabase
         .from('suppliers')
         .select('*')
-        .eq('org_id', plant.org_id)
+        .eq('plant_id', plant.id)
         .eq('is_active', true)
         .order('name', { ascending: true })
 
@@ -64,13 +91,17 @@ export default function SupplierList() {
     }
   }
 
+  const [submitting, setSubmitting] = useState(false)
+
   async function handleAddSupplier() {
-    if (!formData.name || !formData.mobile || !formData.raw_material_type) {
+    if (submitting) return
+    if (!formData.name.trim() || !formData.mobile.trim() || !formData.raw_material_type.trim()) {
       showToast('Please fill in required fields', 'error')
       return
     }
 
     try {
+      setSubmitting(true)
       const { data, error } = await supabase
         .from('suppliers')
         .insert([{
@@ -81,6 +112,7 @@ export default function SupplierList() {
           rate_offered: parseFloat(formData.rate_offered) || null,
           gcv_value: parseFloat(formData.gcv_value) || null,
           remarks: formData.remarks,
+          plant_id: plant.id,
           org_id: plant.org_id,
           is_active: true
         }])
@@ -98,11 +130,14 @@ export default function SupplierList() {
         gcv_value: '',
         remarks: ''
       })
+      sessionStorage.removeItem('supplier_form_draft')
       setShowAddModal(false)
       showToast('Supplier added successfully', 'success')
     } catch (err) {
       console.error('Error adding supplier:', err)
       showToast('Failed to add supplier', 'error')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -315,9 +350,10 @@ export default function SupplierList() {
             </button>
             <button
               onClick={handleAddSupplier}
-              style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+              disabled={submitting}
+              style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer', opacity: submitting ? 0.6 : 1 }}
             >
-              Add Supplier
+              {submitting ? 'Adding...' : 'Add Supplier'}
             </button>
           </div>
         </div>
