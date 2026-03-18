@@ -33,6 +33,11 @@ export default function DispatchForm() {
   // Form state — open directly if navigated from "New Dispatch"
   const [showForm, setShowForm] = useState(openFormDirectly)
 
+  // Also handle re-navigation to this page with showForm state
+  useEffect(() => {
+    if (location.state?.showForm) setShowForm(true)
+  }, [location.state])
+
   const [form, setForm] = useState({
     truck_number: '',
     customer_id: '',
@@ -538,15 +543,7 @@ export default function DispatchForm() {
           </>
         )}
 
-        {/* FAB Button to open form */}
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            style={{ position: 'fixed', bottom: 96, right: 16, width: 56, height: 56, borderRadius: '50%', background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(45,106,79,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}
-          >
-            <Plus size={24} />
-          </button>
-        )}
+        {/* No FAB — user adds dispatch via bottom nav "New" button */}
 
         {/* Dispatch Form */}
         {showForm && (

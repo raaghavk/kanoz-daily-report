@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer } from 'lucide-react'
+import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function DispatchDetail() {
@@ -11,6 +11,9 @@ export default function DispatchDetail() {
   const navigate = useNavigate()
   const [dispatch, setDispatch] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editForm, setEditForm] = useState({})
 
   useEffect(() => {
     if (id) fetchDispatch()
@@ -74,6 +77,46 @@ export default function DispatchDetail() {
     }
   }
 
+  function startEdit() {
+    setEditForm({
+      driver_name: dispatch.driver_name || '',
+      driver_phone: dispatch.driver_phone || '',
+      transporter: dispatch.transporter || '',
+      invoice_no: dispatch.invoice_no || '',
+      loading_time: dispatch.loading_time?.slice(0, 5) || '',
+      dispatch_time: dispatch.dispatch_time?.slice(0, 5) || '',
+      remarks: dispatch.remarks || '',
+    })
+    setEditing(true)
+  }
+
+  async function saveEdit() {
+    try {
+      setSaving(true)
+      const { error } = await supabase
+        .from('vehicle_dispatches')
+        .update({
+          driver_name: editForm.driver_name,
+          driver_phone: editForm.driver_phone,
+          transporter: editForm.transporter,
+          invoice_no: editForm.invoice_no,
+          loading_time: editForm.loading_time || null,
+          dispatch_time: editForm.dispatch_time || null,
+          remarks: editForm.remarks || null,
+        })
+        .eq('id', id)
+      if (error) throw error
+      showToast('Dispatch updated', 'success')
+      setEditing(false)
+      fetchDispatch()
+    } catch (err) {
+      console.error('Error updating dispatch:', err)
+      showToast('Failed to update', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -108,7 +151,27 @@ export default function DispatchDetail() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {/* Header (sticky) */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title="Dispatch Details" subtitle={`Truck ${dispatch.truck_number}`} onBack={() => navigate(-1)} />
+        <PageHeader
+          title="Dispatch Details"
+          subtitle={`Truck ${dispatch.truck_number}`}
+          onBack={() => navigate(-1)}
+          rightAction={
+            editing ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button onClick={() => setEditing(false)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  <X size={14} /> Cancel
+                </button>
+                <button onClick={saveEdit} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+                  <Save size={14} /> {saving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            ) : (
+              <button onClick={startEdit} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                <Edit3 size={14} /> Edit
+              </button>
+            )
+          }
+        />
       </div>
 
       {/* Scrollable Content Area */}
@@ -129,6 +192,20 @@ export default function DispatchDetail() {
             </div>
           </div>
 
+          {editing ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <EditField label="Transporter" value={editForm.transporter} onChange={v => setEditForm({ ...editForm, transporter: v })} />
+              <EditField label="Invoice No" value={editForm.invoice_no} onChange={v => setEditForm({ ...editForm, invoice_no: v })} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <EditField label="Loading Time" value={editForm.loading_time} onChange={v => setEditForm({ ...editForm, loading_time: v })} type="time" />
+                <EditField label="Dispatch Time" value={editForm.dispatch_time} onChange={v => setEditForm({ ...editForm, dispatch_time: v })} type="time" />
+              </div>
+              <EditField label="Driver Name" value={editForm.driver_name} onChange={v => setEditForm({ ...editForm, driver_name: v })} />
+              <EditField label="Driver Phone" value={editForm.driver_phone} onChange={v => setEditForm({ ...editForm, driver_phone: v })} type="tel" />
+              <EditField label="Remarks" value={editForm.remarks} onChange={v => setEditForm({ ...editForm, remarks: v })} />
+            </div>
+          ) : (
+          <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <InfoRow label="Customer" value={dispatch.customers?.name || 'N/A'} />
             <InfoRow label="Destination" value={dispatch.destination || 'N/A'} />
@@ -165,6 +242,8 @@ export default function DispatchDetail() {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
 
         {/* Driver Card */}
@@ -266,6 +345,20 @@ function InfoRow({ label, value, icon }) {
         {icon}
         {value}
       </div>
+    </div>
+  )
+}
+
+function EditField({ label, value, onChange, type = 'text' }) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+      />
     </div>
   )
 }
