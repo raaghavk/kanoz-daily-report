@@ -327,6 +327,11 @@ export default function PurchaseForm() {
         loading_charges: sanitizeNumber(formData.loading_charges),
         unloading_charges: sanitizeNumber(formData.unloading_charges),
         transport_charges: sanitizeNumber(formData.transport_charges),
+        // Also populate old columns used by generated formulas (total_amount, avg_cost_per_kg)
+        quantity_kg: sanitizeNumber(formData.final_quantity),
+        loading_expense: sanitizeNumber(formData.loading_charges),
+        transport_expense: sanitizeNumber(formData.transport_charges),
+        other_expense: sanitizeNumber(formData.unloading_charges),
         katta_parchi_photo: formData.katta_parchi_photo,
         payment_status: formData.payment_status,
         remarks: sanitizeText(remarksText, 500) || null,
