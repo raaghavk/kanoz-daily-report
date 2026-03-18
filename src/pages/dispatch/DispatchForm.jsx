@@ -197,13 +197,11 @@ export default function DispatchForm() {
         .eq('date', today)
         .order('shift', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
       return data
     },
     enabled: !!plant?.id,
   })
-
-  const shiftWarning = activeShiftReport === undefined ? false : !activeShiftReport
 
   async function addCustomer() {
     if (!newCustomer.trim()) {

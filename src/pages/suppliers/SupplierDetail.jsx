@@ -115,43 +115,42 @@ export default function SupplierDetail() {
       return
     }
 
-    try {
-      setGettingLocation(true)
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords
-          try {
-            const { error } = await supabase
-              .from('suppliers')
-              .update({
-                location_lat: latitude,
-                location_lng: longitude
-              })
-              .eq('id', id)
-
-            if (error) throw error
-
-            setSupplier({
-              ...supplier,
+    setGettingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        try {
+          const { error } = await supabase
+            .from('suppliers')
+            .update({
               location_lat: latitude,
               location_lng: longitude
             })
+            .eq('id', id)
 
-            showToast('Location saved successfully', 'success')
-          } catch (err) {
-            console.error('Error saving location:', err)
-            showToast('Failed to save location', 'error')
-          }
-        },
-        (error) => {
-          console.error('Geolocation error:', error)
-          showToast('Failed to get location. Check permissions.', 'error')
-        },
-        { enableHighAccuracy: true }
-      )
-    } finally {
-      setGettingLocation(false)
-    }
+          if (error) throw error
+
+          setSupplier(prev => ({
+            ...prev,
+            location_lat: latitude,
+            location_lng: longitude
+          }))
+
+          showToast('Location saved successfully', 'success')
+        } catch (err) {
+          console.error('Error saving location:', err)
+          showToast('Failed to save location', 'error')
+        } finally {
+          setGettingLocation(false)
+        }
+      },
+      (error) => {
+        console.error('Geolocation error:', error)
+        showToast('Failed to get location. Check permissions.', 'error')
+        setGettingLocation(false)
+      },
+      { enableHighAccuracy: true }
+    )
   }
 
   function handleGetDirections() {

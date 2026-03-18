@@ -34,8 +34,10 @@ export default function PurchaseList() {
   // Load filter options
   useEffect(() => {
     if (plant?.id) {
-      supabase.from('suppliers').select('id, name').eq('plant_id', plant.id).eq('is_active', true).order('name').then(({ data }) => setSuppliers(data || []))
-      supabase.from('raw_material_types').select('id, name').eq('plant_id', plant.id).eq('is_active', true).order('name').then(({ data }) => setRmTypes(data || []))
+      supabase.from('suppliers').select('id, name').eq('plant_id', plant.id).eq('is_active', true).order('name')
+        .then(({ data, error }) => { if (error) console.error('Failed to load suppliers:', error); setSuppliers(data || []) })
+      supabase.from('raw_material_types').select('id, name').eq('plant_id', plant.id).eq('is_active', true).order('name')
+        .then(({ data, error }) => { if (error) console.error('Failed to load RM types:', error); setRmTypes(data || []) })
     }
   }, [plant?.id])
 

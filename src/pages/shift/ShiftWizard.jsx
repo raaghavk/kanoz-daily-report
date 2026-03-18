@@ -10,6 +10,7 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
+import { getValidationErrors } from './validation'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
 import Step3Production from './Step3Production'
@@ -90,7 +91,7 @@ export default function ShiftWizard() {
       const saved = sessionStorage.getItem(WIZARD_STORAGE_KEY)
       if (saved) {
         const { reportData: savedData, step: savedStep, reportId: savedId } = JSON.parse(saved)
-        if (savedData && savedData.machines?.length > 0) {
+        if (savedData && (savedData.date || savedData.machines?.length > 0)) {
           setReportData(savedData)
           setStep(returnToStep || savedStep || 1)
           if (savedId) setReportId(savedId)
@@ -107,7 +108,7 @@ export default function ShiftWizard() {
 
   // Load machines and raw material types for this plant
   useEffect(() => {
-    if (plant?.id && initDone && !restoredFromStorage) loadPlantData()
+    if (plant?.id && initDone && !restoredFromStorage && !editId) loadPlantData()
   }, [plant, initDone, restoredFromStorage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save wizard state to sessionStorage on changes (so it survives navigation)
@@ -118,8 +119,11 @@ export default function ShiftWizard() {
     } catch { /* ignore */ }
   }, [reportData, step, reportId, initDone, editId])
 
+  // For edit mode: load plant data first, then merge existing report on top
   useEffect(() => {
-    if (editId && plant?.id) loadExistingReport()
+    if (editId && plant?.id) {
+      loadPlantData().then(() => loadExistingReport())
+    }
   }, [editId, plant]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadPlantData() {
@@ -159,7 +163,7 @@ export default function ShiftWizard() {
 
     if (machinesRes.data) {
       updateData('machines', machinesRes.data.map(m => ({
-        id: m.id, name: m.name, from_time: '', to_time: '', breakdown_min: 0, production_hours: 0, remarks: '',
+        id: m.id, name: m.name, from_time: '', to_time: '', breakdown_hrs: 0, production_hours: 0, remarks: '',
       })))
     }
     if (materialsRes.data) {
@@ -216,6 +220,7 @@ export default function ShiftWizard() {
       updateData('shift_end_date', report.shift_end_date || report.date)
       updateData('handover_notes', report.handover_notes || '')
       updateData('remarks', report.remarks || '')
+      updateData('weather', report.weather || '')
 
       // Load machines, materials, equipment first (needed for merging data)
       const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
@@ -243,7 +248,15 @@ export default function ShiftWizard() {
           const machinesWithProduction = initialMachines.map(m => {
             const prod = machProd.data.find(mp => mp.machine_id === m.id)
             if (prod) {
-              return { ...m, production_hours: parseFloat(prod.hours_run) || 0, total_hours: parseFloat(prod.hours_run) || 0 }
+              return {
+                ...m,
+                production_hours: parseFloat(prod.hours_run) || 0,
+                total_hours: parseFloat(prod.hours_run) || 0,
+                from_time: prod.from_time || '',
+                to_time: prod.to_time || '',
+                breakdown_hrs: parseFloat(prod.breakdown_hours) || 0,
+                remarks: prod.remarks || '',
+              }
             }
             return m
           })
@@ -349,40 +362,11 @@ export default function ShiftWizard() {
     }
   }
 
-  // Validation: returns array of {step, message} for incomplete required fields
-  function getValidationErrors() {
-    const errors = []
-    // Step 1: Header
-    if (!reportData.date) errors.push({ step: 1, message: 'Date is required' })
-    if (!reportData.shift) errors.push({ step: 1, message: 'Shift is required' })
-    if (!reportData.start_time) errors.push({ step: 1, message: 'Start time is required' })
-    if (!reportData.end_time) errors.push({ step: 1, message: 'End time is required' })
-
-    // Step 2: Machines — at least one machine should have timing
-    const hasAnyMachineTiming = reportData.machines.some(m => m.from_time && m.to_time)
-    if (!hasAnyMachineTiming && reportData.machines.length > 0) {
-      errors.push({ step: 2, message: 'Enter timing for at least one machine' })
-    }
-
-    // Step 3: Production — at least one entry
-    const hasProduction = reportData.production && reportData.production.length > 0 &&
-      reportData.production.some(p => parseFloat(p.quantity) > 0)
-    if (!hasProduction) {
-      errors.push({ step: 3, message: 'Add at least one production entry' })
-    }
-
-    // Step 4: Raw Materials — used field for at least one
-    const hasRMUsage = reportData.rawMaterials.some(rm => parseFloat(rm.used) > 0)
-    if (!hasRMUsage && reportData.rawMaterials.length > 0) {
-      errors.push({ step: 4, message: 'Enter raw material usage for at least one material' })
-    }
-
-    return errors
-  }
+  // Validation is handled by the extracted getValidationErrors(reportData) function
 
   async function saveReport() {
     if (saving) return
-    const errors = getValidationErrors()
+    const errors = getValidationErrors(reportData)
     if (errors.length > 0) {
       showToast(`Please fix ${errors.length} issue${errors.length > 1 ? 's' : ''} before submitting (check Steps ${[...new Set(errors.map(e => e.step))].join(', ')})`, 'error')
       return
@@ -403,6 +387,7 @@ export default function ShiftWizard() {
         created_by: employee?.id,
         handover_notes: sanitizeText(reportData.handover_notes, 1000),
         remarks: sanitizeText(reportData.remarks, 1000),
+        weather: sanitizeText(reportData.weather, 100),
       }
 
       let report
@@ -421,11 +406,15 @@ export default function ShiftWizard() {
       if (reportData.machines.length) {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
         const machineRows = reportData.machines
-          .filter(m => sanitizeNumber(m.production_hours) > 0)
+          .filter(m => sanitizeNumber(m.production_hours) > 0 || m.from_time || m.to_time)
           .map(m => ({
             shift_report_id: report.id,
             machine_id: m.id,
             hours_run: sanitizeNumber(m.production_hours),
+            from_time: m.from_time || null,
+            to_time: m.to_time || null,
+            breakdown_hours: sanitizeNumber(m.breakdown_hrs),
+            remarks: sanitizeText(m.remarks, 500),
             production_mt: reportData.production
               .filter(p => p.machine_id === m.id)
               .reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
@@ -569,7 +558,7 @@ export default function ShiftWizard() {
   }
 
   const CurrentStep = STEPS[step - 1].component
-  const allErrors = useMemo(() => getValidationErrors(), [ // eslint-disable-line react-hooks/exhaustive-deps
+  const allErrors = useMemo(() => getValidationErrors(reportData), [ // eslint-disable-line react-hooks/exhaustive-deps
     reportData.date, reportData.shift, reportData.start_time, reportData.end_time,
     reportData.machines, reportData.production, reportData.rawMaterials
   ])
