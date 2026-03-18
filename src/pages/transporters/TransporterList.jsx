@@ -172,17 +172,28 @@ const TransporterList = () => {
     flexShrink: 0,
   }
 
-  const iconButtonStyle = {
-    background: '#2d6a4f',
+  const phoneButtonStyle = {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    background: '#e8f0ec',
     border: 'none',
-    borderRadius: '8px',
-    color: '#fff',
     cursor: 'pointer',
-    padding: '8px',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'opacity 0.2s',
+    justifyContent: 'center'
+  }
+
+  const smsButtonStyle = {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    background: '#EEF2FF',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   }
 
   const fabStyle = {
@@ -336,19 +347,19 @@ const TransporterList = () => {
               <div style={rowButtonsStyle}>
                 <button
                   onClick={() => handleCall(transporter.phone)}
-                  style={iconButtonStyle}
+                  style={phoneButtonStyle}
                   title="Call"
                   aria-label="Call transporter"
                 >
-                  <Phone size={18} />
+                  <Phone size={14} style={{ color: '#2d6a4f' }} />
                 </button>
                 <button
                   onClick={() => handleSMS(transporter.phone)}
-                  style={iconButtonStyle}
+                  style={smsButtonStyle}
                   title="SMS"
                   aria-label="Send SMS to transporter"
                 >
-                  <MessageSquare size={18} />
+                  <MessageSquare size={14} style={{ color: '#2563EB' }} />
                 </button>
               </div>
             </div>

@@ -107,7 +107,7 @@ export default function PurchaseDetail() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
       {/* Header (sticky) */}
-      <div style={{ flexShrink: 0 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <PageHeader
           title={purchase.suppliers?.name || 'Purchase Detail'}
           subtitle={formatDate(purchase.date)}

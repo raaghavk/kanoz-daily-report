@@ -77,7 +77,7 @@ export default function ReportList() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {/* Header + Filter Tabs (sticky) */}
-      <div style={{ flexShrink: 0 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <PageHeader title="Shift Reports" subtitle="View and manage all reports" backTo="/" />
 
         {/* Filter Tabs + Export */}

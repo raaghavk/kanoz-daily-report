@@ -354,7 +354,9 @@ export default function PurchaseForm() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
-      <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle="Raw Material Purchase Entry" backTo="/purchase" />
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+        <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle="Raw Material Purchase Entry" backTo="/purchase" />
+      </div>
 
       <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
         <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
@@ -396,6 +398,11 @@ export default function PurchaseForm() {
                 const selectedSupplier = suppliers.find(s => s.id === supplierId)
                 if (selectedSupplier?.raw_material_type_id) {
                   handleFieldChange('raw_material_type_id', selectedSupplier.raw_material_type_id)
+                } else if (selectedSupplier?.raw_material_type) {
+                  const matchingRM = rawMaterials.find(m => m.name === selectedSupplier.raw_material_type)
+                  if (matchingRM) {
+                    handleFieldChange('raw_material_type_id', matchingRM.id)
+                  }
                 }
               }}
               style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}

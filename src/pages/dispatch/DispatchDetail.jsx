@@ -107,7 +107,7 @@ export default function DispatchDetail() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {/* Header (sticky) */}
-      <div style={{ flexShrink: 0 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <PageHeader title="Dispatch Details" subtitle={`Truck ${dispatch.truck_number}`} backTo="/dispatch" />
       </div>
 

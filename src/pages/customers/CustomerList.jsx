@@ -178,17 +178,40 @@ const CustomerList = () => {
     flexShrink: 0,
   }
 
-  const iconButtonStyle = {
-    background: '#2d6a4f',
+  const phoneButtonStyle = {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    background: '#e8f0ec',
     border: 'none',
-    borderRadius: '8px',
-    color: '#fff',
     cursor: 'pointer',
-    padding: '8px',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'opacity 0.2s',
+    justifyContent: 'center'
+  }
+
+  const smsButtonStyle = {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    background: '#EEF2FF',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  }
+
+  const mapButtonStyle = {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    background: '#FEF3C7',
+    border: 'none',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
   }
 
   const fabStyle = {
@@ -342,27 +365,27 @@ const CustomerList = () => {
               <div style={rowButtonsStyle}>
                 <button
                   onClick={() => handleCall(customer.mobile)}
-                  style={iconButtonStyle}
+                  style={phoneButtonStyle}
                   title="Call"
                   aria-label="Call customer"
                 >
-                  <Phone size={18} />
+                  <Phone size={14} style={{ color: '#2d6a4f' }} />
                 </button>
                 <button
                   onClick={() => handleSMS(customer.mobile)}
-                  style={iconButtonStyle}
+                  style={smsButtonStyle}
                   title="SMS"
                   aria-label="Send SMS to customer"
                 >
-                  <MessageSquare size={18} />
+                  <MessageSquare size={14} style={{ color: '#2563EB' }} />
                 </button>
                 <button
                   onClick={() => handleMap(customer.address)}
-                  style={iconButtonStyle}
+                  style={mapButtonStyle}
                   title="Map"
                   aria-label="Open in maps"
                 >
-                  <Navigation size={18} />
+                  <Navigation size={14} style={{ color: '#B45309' }} />
                 </button>
               </div>
             </div>
