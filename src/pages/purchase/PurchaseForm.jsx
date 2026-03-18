@@ -282,6 +282,26 @@ export default function PurchaseForm() {
 
       setSaving(true)
 
+      // Check if this purchase is for a past shift
+      const purchaseDate = formData.date
+      const today = getLocalDate()
+      if (purchaseDate < today && !id) {
+        // This is a new purchase for a past date
+        const confirmed = window.confirm(
+          `This purchase is for ${purchaseDate} (a past date). It will be linked to the shift report for that period.\n\nContinue saving?`
+        )
+        if (!confirmed) {
+          setSaving(false)
+          return
+        }
+      }
+
+      // Add retroactive marker to remarks if needed
+      let remarksText = formData.remarks || ''
+      if (purchaseDate < today && !id) {
+        remarksText = remarksText + (remarksText ? ' ' : '') + '[Added retroactively]'
+      }
+
       const purchaseData = {
         plant_id: plant?.id,
         employee_id: employee?.id,
@@ -303,7 +323,7 @@ export default function PurchaseForm() {
         average_cost_per_kg: sanitizeNumber(formData.average_cost_per_kg) || null,
         katta_parchi_photo: formData.katta_parchi_photo,
         payment_status: formData.payment_status,
-        remarks: sanitizeText(formData.remarks, 500) || null,
+        remarks: sanitizeText(remarksText, 500) || null,
       }
 
       if (id) {

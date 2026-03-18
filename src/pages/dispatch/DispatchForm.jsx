@@ -275,10 +275,41 @@ export default function DispatchForm() {
     try {
       setSubmitting(true)
 
+      // Check if dispatch is for a past date
+      const dispatchDate = form.dispatch_date || today
+      if (dispatchDate < today) {
+        const confirmed = window.confirm(
+          `This dispatch is for ${dispatchDate} (a past date). It will be linked to the shift report for that period.\n\nContinue saving?`
+        )
+        if (!confirmed) {
+          setSubmitting(false)
+          return
+        }
+      }
+
+      // Auto-assign to correct shift report for past dates
+      let shiftReportId = activeShiftReport?.id || null
+      if (dispatchDate < today) {
+        // Find shift report that covers this dispatch date
+        const { data: pastReport } = await supabase
+          .from('shift_reports')
+          .select('id')
+          .eq('plant_id', plant.id)
+          .eq('date', dispatchDate)
+          .eq('is_deleted', false)
+          .order('shift', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (pastReport) {
+          shiftReportId = pastReport.id
+        }
+      }
+
       const { data: dispatch, error: dispatchError } = await supabase
         .from('vehicle_dispatches')
         .insert([{
-          shift_report_id: activeShiftReport?.id || null,
+          shift_report_id: shiftReportId,
           plant_id: plant.id,
           date: form.dispatch_date || today,
           truck_number: sanitizeText(form.truck_number, 20),
