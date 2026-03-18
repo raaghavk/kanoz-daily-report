@@ -75,7 +75,7 @@ export default function BottomNav() {
               </button>
               )}
               {can(role, 'create_dispatch') && (
-              <button onClick={() => handleAction('/dispatch')} style={{
+              <button onClick={() => { setShowSheet(false); navigate('/dispatch', { state: { showForm: true } }) }} style={{
                 display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
                 background: '#fefae0', borderRadius: 14, border: '1px solid #e5ddd0', cursor: 'pointer', width: '100%', textAlign: 'left',
               }}>

@@ -18,6 +18,7 @@ export default function DispatchForm() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const returnToShift = location.state?.returnToShift || false
+  const openFormDirectly = location.state?.showForm || false
   const today = getLocalDate()
 
   // Filter tab
@@ -29,8 +30,8 @@ export default function DispatchForm() {
   // Collapsible date groups
   const [collapsedDates, setCollapsedDates] = useState({})
 
-  // Form state
-  const [showForm, setShowForm] = useState(false)
+  // Form state — open directly if navigated from "New Dispatch"
+  const [showForm, setShowForm] = useState(openFormDirectly)
 
   const [form, setForm] = useState({
     truck_number: '',
@@ -153,14 +154,7 @@ export default function DispatchForm() {
     enabled: !!plant?.id,
   })
 
-  const { data: companyVehicles = [] } = useQuery({
-    queryKey: ['companyVehicles', plant?.id],
-    queryFn: async () => {
-      const { data } = await supabase.from('vehicles').select('*').eq('plant_id', plant.id).eq('type', 'company').eq('is_active', true).order('number')
-      return data || []
-    },
-    enabled: !!plant?.id,
-  })
+  // Company vehicles are only for raw material purchases, not outgoing dispatches
 
   const [showAddTransporter, setShowAddTransporter] = useState(false)
   const [newTransporterName, setNewTransporterName] = useState('')
@@ -560,47 +554,13 @@ export default function DispatchForm() {
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
                 Truck Number <span style={{ color: '#D32F2F' }}>*</span>
               </label>
-              {companyVehicles.length > 0 ? (
-                <>
-                  <select
-                    value={companyVehicles.some(v => v.number === form.truck_number) ? form.truck_number : (form.truck_number ? '__other__' : '')}
-                    onChange={e => {
-                      if (e.target.value === '__other__') {
-                        updateForm('truck_number', '')
-                        // Focus the text input after render
-                        setTimeout(() => document.getElementById('custom-truck-input')?.focus(), 50)
-                      } else {
-                        updateForm('truck_number', e.target.value)
-                      }
-                    }}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
-                  >
-                    <option value="">Select vehicle...</option>
-                    {companyVehicles.map(v => (
-                      <option key={v.id} value={v.number}>{v.number}</option>
-                    ))}
-                    <option value="__other__">Other (type manually)</option>
-                  </select>
-                  {form.truck_number !== '' && !companyVehicles.some(v => v.number === form.truck_number) && (
-                    <input
-                      id="custom-truck-input"
-                      type="text"
-                      placeholder="Enter truck number"
-                      value={form.truck_number}
-                      onChange={e => updateForm('truck_number', e.target.value)}
-                      style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', marginTop: 8 }}
-                    />
-                  )}
-                </>
-              ) : (
-                <input
-                  type="text"
-                  placeholder="e.g., MH-01-AB-1234"
-                  value={form.truck_number}
-                  onChange={e => updateForm('truck_number', e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
-                />
-              )}
+              <input
+                type="text"
+                placeholder="e.g., MH-01-AB-1234"
+                value={form.truck_number}
+                onChange={e => updateForm('truck_number', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+              />
             </div>
 
             {/* Customer */}
