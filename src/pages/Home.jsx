@@ -19,9 +19,9 @@ export default function Home() {
   // Use local date (not UTC) — toISOString() returns UTC which is wrong for IST
   const localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const today = localDate(now)
-  // Shift A: 06:00–17:59, Shift B: 18:00–05:59 (overnight)
-  const currentShift = (hour >= 6 && hour < 18) ? 'A' : 'B'
-  const shiftTime = currentShift === 'A' ? '06:00–18:00' : '18:00–06:00'
+  // Shift A: 08:00–19:59, Shift B: 20:00–07:59 (overnight)
+  const currentShift = (hour >= 8 && hour < 20) ? 'A' : 'B'
+  const shiftTime = currentShift === 'A' ? '08:00–20:00' : '20:00–08:00'
 
   // Compute shift start/end dates
   let shiftStartDate, shiftEndDate
