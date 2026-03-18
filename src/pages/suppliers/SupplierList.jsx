@@ -19,7 +19,7 @@ export default function SupplierList() {
     try {
       const saved = sessionStorage.getItem('supplier_form_draft')
       if (saved) return JSON.parse(saved)
-    } catch {}
+    } catch { /* ignore parse errors */ }
     return {
       name: '',
       mobile: '',
@@ -49,7 +49,7 @@ export default function SupplierList() {
           setShowAddModal(true)
         }
       }
-    } catch {}
+    } catch { /* ignore parse errors */ }
   }, [])
 
   useEffect(() => {
