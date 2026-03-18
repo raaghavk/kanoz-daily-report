@@ -387,7 +387,6 @@ export default function ShiftWizard() {
         created_by: employee?.id,
         handover_notes: sanitizeText(reportData.handover_notes, 1000),
         remarks: sanitizeText(reportData.remarks, 1000),
-        weather: sanitizeText(reportData.weather, 100),
       }
 
       let report

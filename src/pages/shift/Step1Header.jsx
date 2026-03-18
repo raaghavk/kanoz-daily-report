@@ -210,27 +210,6 @@ export default memo(function Step1Header({ data, updateData, employee, plant }) 
         </div>
       </div>
 
-      {/* Weather Dropdown (optional) */}
-      <div>
-        <label style={labelStyle}>
-          Weather <span style={{ color: '#999', fontSize: 11 }}>(Optional)</span>
-        </label>
-        <select
-          value={data.weather || ''}
-          onChange={e => updateData('weather', e.target.value)}
-          style={{
-            ...editableInputStyle,
-            fontWeight: 500,
-            cursor: 'pointer',
-          }}
-        >
-          <option value="">Select Weather</option>
-          <option value="Clear">Clear</option>
-          <option value="Cloudy">Cloudy</option>
-          <option value="Rainy">Rainy</option>
-          <option value="Foggy">Foggy</option>
-        </select>
-      </div>
     </div>
   )
 })
