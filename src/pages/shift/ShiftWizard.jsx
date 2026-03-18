@@ -91,7 +91,7 @@ export default function ShiftWizard() {
       const saved = sessionStorage.getItem(WIZARD_STORAGE_KEY)
       if (saved) {
         const { reportData: savedData, step: savedStep, reportId: savedId } = JSON.parse(saved)
-        if (savedData && savedData.machines?.length > 0) {
+        if (savedData && (savedData.date || savedData.machines?.length > 0)) {
           setReportData(savedData)
           setStep(returnToStep || savedStep || 1)
           if (savedId) setReportId(savedId)
@@ -108,7 +108,7 @@ export default function ShiftWizard() {
 
   // Load machines and raw material types for this plant
   useEffect(() => {
-    if (plant?.id && initDone && !restoredFromStorage) loadPlantData()
+    if (plant?.id && initDone && !restoredFromStorage && !editId) loadPlantData()
   }, [plant, initDone, restoredFromStorage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save wizard state to sessionStorage on changes (so it survives navigation)
@@ -119,8 +119,11 @@ export default function ShiftWizard() {
     } catch { /* ignore */ }
   }, [reportData, step, reportId, initDone, editId])
 
+  // For edit mode: load plant data first, then merge existing report on top
   useEffect(() => {
-    if (editId && plant?.id) loadExistingReport()
+    if (editId && plant?.id) {
+      loadPlantData().then(() => loadExistingReport())
+    }
   }, [editId, plant]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadPlantData() {
