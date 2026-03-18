@@ -225,14 +225,14 @@ export default function PurchaseForm() {
         return
       }
 
-      const selectedRM = rawMaterials.find(m => m.id === supplierForm.raw_material_type_id)
+      // Map raw_material_type_id to the text name (suppliers table uses text column, NOT uuid)
+      const rmName = rawMaterials.find(m => m.id === supplierForm.raw_material_type_id)?.name || ''
       const supplierData = {
         plant_id: plant?.id,
         org_id: plant?.org_id,
         name: supplierForm.name.trim(),
         mobile: supplierForm.mobile.trim(),
-        raw_material_type: selectedRM?.name || null,
-        raw_material_type_id: supplierForm.raw_material_type_id,
+        raw_material_type: rmName,
         rate_offered: supplierForm.rate_offered ? parseFloat(supplierForm.rate_offered) : null,
         address: supplierForm.address || null,
         remarks: supplierForm.remarks || null,
@@ -323,8 +323,6 @@ export default function PurchaseForm() {
         loading_charges: sanitizeNumber(formData.loading_charges),
         unloading_charges: sanitizeNumber(formData.unloading_charges),
         transport_charges: sanitizeNumber(formData.transport_charges),
-        total_amount: sanitizeNumber(formData.total_amount) || null,
-        average_cost_per_kg: sanitizeNumber(formData.average_cost_per_kg) || null,
         katta_parchi_photo: formData.katta_parchi_photo,
         payment_status: formData.payment_status,
         remarks: sanitizeText(remarksText, 500) || null,
