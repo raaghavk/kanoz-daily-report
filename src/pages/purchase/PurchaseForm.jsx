@@ -313,6 +313,7 @@ export default function PurchaseForm() {
       const purchaseData = {
         plant_id: plant?.id,
         employee_id: employee?.id,
+        created_by: employee?.id,
         date: formData.date,
         purchase_time: formData.purchase_time || null,
         supplier_id: formData.supplier_id,
@@ -320,6 +321,7 @@ export default function PurchaseForm() {
         raw_material_type_id: formData.raw_material_type_id,
         raw_material_type: rmTypeName,
         vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
+        tractor_owner: formData.vehicle_type === 'company' ? 'Company Owned' : 'Other owner',
         net_weight: sanitizeNumber(formData.net_weight),
         moisture_percent: sanitizeNumber(formData.moisture_percentage) || null,
         deduction_kg: sanitizeNumber(formData.deduction_kg) || null,
@@ -333,8 +335,11 @@ export default function PurchaseForm() {
         quantity_kg: sanitizeNumber(formData.final_quantity),
         loading_expense: sanitizeNumber(formData.loading_charges),
         transport_expense: sanitizeNumber(formData.transport_charges),
+        unloading_expense: sanitizeNumber(formData.unloading_charges),
         other_expense: sanitizeNumber(formData.unloading_charges),
+        // Photo — populate both old and new columns
         katta_parchi_photo: formData.katta_parchi_photo,
+        katta_parchi_url: formData.katta_parchi_photo,
         payment_status: formData.payment_status,
         remarks: sanitizeText(remarksText, 500) || null,
       }
