@@ -395,8 +395,8 @@ export default function DispatchForm() {
           onBack={returnToShift ? () => navigate('/shift/new', { state: { returnToStep: 6 } }) : undefined}
         />
 
-        {/* Return to Shift Banner */}
-        {returnToShift && (
+        {/* Return to Shift Banner — only when viewing list */}
+        {!showForm && returnToShift && (
           <div style={{ margin: '12px 20px 0', background: '#e8f0ec', border: '1.5px solid #2d6a4f', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: 12, color: '#2d6a4f', fontWeight: 600 }}>You came from the Shift Report wizard.</div>
             <button
@@ -408,7 +408,8 @@ export default function DispatchForm() {
           </div>
         )}
 
-        {/* Filter Tabs */}
+        {/* Filter Tabs — only when viewing list */}
+        {!showForm && (
         <div style={{
           display: 'flex', gap: 8, overflowX: 'auto',
           background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
@@ -429,6 +430,7 @@ export default function DispatchForm() {
             </button>
           ))}
         </div>
+        )}
       </div>
 
       {/* Scrollable Content Area */}
@@ -831,7 +833,8 @@ export default function DispatchForm() {
               label="Katta Parchi Photo"
               value={form.katta_parchi_photo}
               onChange={file => updateForm('katta_parchi_photo', file)}
-              bucket="katta_parchi"
+              bucket="photos"
+              folder="dispatches"
             />
 
             {/* Remarks */}
