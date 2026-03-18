@@ -76,9 +76,9 @@ export default function PurchaseDetail() {
     ? (purchase.total_amount / purchase.final_quantity)
     : 0
 
-  const totalCharges = (parseFloat(purchase.loading_charges) || 0) +
-    (parseFloat(purchase.unloading_charges) || 0) +
-    (parseFloat(purchase.transport_charges) || 0)
+  const totalCharges = (parseFloat((purchase.loading_expense || purchase.loading_charges || 0)) || 0) +
+    (parseFloat((purchase.unloading_expense || purchase.unloading_charges || 0)) || 0) +
+    (parseFloat((purchase.transport_expense || purchase.transport_charges || 0)) || 0)
 
   async function markAsPaid() {
     if (markingPaid) return
@@ -225,24 +225,24 @@ export default function PurchaseDetail() {
               <span style={{ color: '#595c4a' }}>RM Amount</span>
               <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{formatCurrency(purchase.rm_amount)}</span>
             </div>
-            {(purchase.loading_charges > 0 || purchase.unloading_charges > 0 || purchase.transport_charges > 0) && (
+            {((purchase.loading_expense || purchase.loading_charges || 0) > 0 || (purchase.unloading_expense || purchase.unloading_charges || 0) > 0 || (purchase.transport_expense || purchase.transport_charges || 0) > 0) && (
               <>
-                {purchase.loading_charges > 0 && (
+                {(purchase.loading_expense || purchase.loading_charges || 0) > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span style={{ color: '#595c4a' }}>Loading</span>
-                    <span style={{ color: '#2c2c2c' }}>{formatCurrency(purchase.loading_charges)}</span>
+                    <span style={{ color: '#2c2c2c' }}>{formatCurrency((purchase.loading_expense || purchase.loading_charges || 0))}</span>
                   </div>
                 )}
-                {purchase.unloading_charges > 0 && (
+                {(purchase.unloading_expense || purchase.unloading_charges || 0) > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span style={{ color: '#595c4a' }}>Unloading</span>
-                    <span style={{ color: '#2c2c2c' }}>{formatCurrency(purchase.unloading_charges)}</span>
+                    <span style={{ color: '#2c2c2c' }}>{formatCurrency((purchase.unloading_expense || purchase.unloading_charges || 0))}</span>
                   </div>
                 )}
-                {purchase.transport_charges > 0 && (
+                {(purchase.transport_expense || purchase.transport_charges || 0) > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span style={{ color: '#595c4a' }}>Transport</span>
-                    <span style={{ color: '#2c2c2c' }}>{formatCurrency(purchase.transport_charges)}</span>
+                    <span style={{ color: '#2c2c2c' }}>{formatCurrency((purchase.transport_expense || purchase.transport_charges || 0))}</span>
                   </div>
                 )}
                 <div style={{ height: 1, background: '#e5ddd0' }} />
@@ -265,11 +265,11 @@ export default function PurchaseDetail() {
         </div>
 
         {/* Photo */}
-        {purchase.katta_parchi_photo && (
+        {(purchase.katta_parchi_url || purchase.katta_parchi_photo) && (
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>Weight Bridge Photo</div>
             <img
-              src={purchase.katta_parchi_photo}
+              src={(purchase.katta_parchi_url || purchase.katta_parchi_photo)}
               alt="Weight bridge"
               style={{ width: '100%', borderRadius: 8, maxHeight: 200, objectFit: 'cover', cursor: 'pointer' }}
               onClick={() => setShowPhoto(true)}
@@ -278,7 +278,7 @@ export default function PurchaseDetail() {
         )}
 
         {/* Fullscreen Photo Overlay */}
-        {showPhoto && purchase.katta_parchi_photo && (
+        {showPhoto && (purchase.katta_parchi_url || purchase.katta_parchi_photo) && (
           <div
             onClick={() => setShowPhoto(false)}
             style={{
@@ -301,7 +301,7 @@ export default function PurchaseDetail() {
               <X size={22} color="white" />
             </button>
             <img
-              src={purchase.katta_parchi_photo}
+              src={(purchase.katta_parchi_url || purchase.katta_parchi_photo)}
               alt="Weight bridge"
               onClick={(e) => e.stopPropagation()}
               style={{
