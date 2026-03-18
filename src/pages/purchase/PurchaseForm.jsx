@@ -306,6 +306,9 @@ export default function PurchaseForm() {
         remarksText = remarksText + (remarksText ? ' ' : '') + '[Added retroactively]'
       }
 
+      // Get raw material type name (DB has NOT NULL text column alongside the uuid FK)
+      const rmTypeName = rawMaterials.find(m => m.id === formData.raw_material_type_id)?.name || ''
+
       const purchaseData = {
         plant_id: plant?.id,
         employee_id: employee?.id,
@@ -313,6 +316,7 @@ export default function PurchaseForm() {
         purchase_time: formData.purchase_time || null,
         supplier_id: formData.supplier_id,
         raw_material_type_id: formData.raw_material_type_id,
+        raw_material_type: rmTypeName,
         vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
         net_weight: sanitizeNumber(formData.net_weight),
         moisture_percent: sanitizeNumber(formData.moisture_percentage) || null,
