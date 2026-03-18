@@ -1,5 +1,6 @@
 import { lazy, Suspense, useState, useEffect } from 'react'
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { useAuth } from './context/AuthContext'
 import { supabase } from './lib/supabase'
 import { can } from './lib/permissions'
@@ -125,6 +126,7 @@ export default function App() {
         }
       />
     </Routes>
+    <SpeedInsights />
     </Suspense>
   )
 }
