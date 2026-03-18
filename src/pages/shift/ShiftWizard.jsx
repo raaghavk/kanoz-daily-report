@@ -405,14 +405,11 @@ export default function ShiftWizard() {
       if (reportData.machines.length) {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
         const machineRows = reportData.machines
-          .filter(m => sanitizeNumber(m.production_hours) > 0 || m.from_time || m.to_time)
+          .filter(m => sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time)
           .map(m => ({
             shift_report_id: report.id,
             machine_id: m.id,
-            hours_run: sanitizeNumber(m.production_hours),
-            from_time: m.from_time || null,
-            to_time: m.to_time || null,
-            breakdown_hours: sanitizeNumber(m.breakdown_hrs),
+            hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours),
             remarks: sanitizeText(m.remarks, 500),
             production_mt: reportData.production
               .filter(p => p.machine_id === m.id)
@@ -445,7 +442,7 @@ export default function ShiftWizard() {
       if (reportData.diesel && reportData.diesel.length) {
         await supabase.from('equipment_diesel_log').delete().eq('shift_report_id', report.id)
         const dieselRows = reportData.diesel
-          .filter(d => sanitizeNumber(d.used) > 0 || sanitizeNumber(d.hours) > 0)
+          .filter(d => sanitizeNumber(d.used) > 0 || sanitizeNumber(d.hours) > 0 || sanitizeNumber(d.added) > 0 || sanitizeNumber(d.opening) > 0)
           .map(d => ({
             shift_report_id: report.id,
             equipment_name: sanitizeText(d.equipment_name, 100),

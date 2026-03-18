@@ -77,12 +77,14 @@ export default memo(function Step2Machines({ data, updateData }) {
                   type="time"
                   value={m.from_time}
                   onChange={e => updateMachine(idx, 'from_time', e.target.value)}
+                  onBlur={e => updateMachine(idx, 'from_time', e.target.value)}
                   style={{ ...inputStyle, border: 'none', borderRight: '1px solid #e5ddd0', borderRadius: 0 }}
                 />
                 <input
                   type="time"
                   value={m.to_time}
                   onChange={e => updateMachine(idx, 'to_time', e.target.value)}
+                  onBlur={e => updateMachine(idx, 'to_time', e.target.value)}
                   style={{ ...inputStyle, border: 'none', borderRadius: 0 }}
                 />
               </div>

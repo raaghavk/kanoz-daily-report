@@ -4,10 +4,9 @@ import PhotoUpload from '../../components/PhotoUpload'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 
-// Helper: format number for display, allow empty string for clearing
+// Helper: format number for display, strip leading zeros, allow empty
 function numVal(v) {
   if (v === '' || v === null || v === undefined) return ''
-  if (typeof v === 'string') return v
   const n = parseFloat(v)
   return isNaN(n) ? '' : n
 }
