@@ -203,8 +203,6 @@ export default function DispatchForm() {
     enabled: !!plant?.id,
   })
 
-  const shiftWarning = activeShiftReport === undefined ? false : !activeShiftReport
-
   async function addCustomer() {
     if (!newCustomer.trim()) {
       showToast('Customer name cannot be empty', 'error')
