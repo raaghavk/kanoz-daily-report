@@ -22,6 +22,7 @@ export default function ReportView() {
   const [pelletStock, setPelletStock] = useState([])
   const [issues, setIssues] = useState([])
   const [dieselStock, setDieselStock] = useState(null)
+  const [allMachines, setAllMachines] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -102,8 +103,8 @@ export default function ReportView() {
 
       setReport(reportData)
 
-      // Fetch all child data in parallel
-      const [machRes, matRes, dispatchRes, dieselRes, stockRes, issuesRes, dsRes] = await Promise.all([
+      // Fetch all child data + all plant machines in parallel
+      const [machRes, matRes, dispatchRes, dieselRes, stockRes, issuesRes, dsRes, machinesRes] = await Promise.all([
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', id),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', id),
         supabase.from('vehicle_dispatches').select('*, dispatch_pellets(*, pellet_types(name)), customers(name)').eq('shift_report_id', id),
@@ -111,6 +112,7 @@ export default function ReportView() {
         supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', id),
         supabase.from('issues').select('*, machines(name)').eq('shift_report_id', id),
         supabase.from('diesel_stock').select('*').eq('shift_report_id', id).maybeSingle(),
+        supabase.from('machines').select('id, name, sort_order').eq('plant_id', reportData.plant_id).eq('is_active', true).order('sort_order'),
       ])
 
       if (machRes.error) console.error('Failed to load machine data:', machRes.error)
@@ -120,6 +122,7 @@ export default function ReportView() {
       if (stockRes.error) console.error('Failed to load pellet stock:', stockRes.error)
       if (issuesRes.error) console.error('Failed to load issues:', issuesRes.error)
       if (dsRes.error) console.error('Failed to load diesel stock:', dsRes.error)
+      if (machinesRes.error) console.error('Failed to load machines list:', machinesRes.error)
 
       setMachineProduction(machRes.data || [])
       setRawMaterials(matRes.data || [])
@@ -128,6 +131,7 @@ export default function ReportView() {
       setPelletStock(stockRes.data || [])
       setIssues(issuesRes.data || [])
       setDieselStock(dsRes.data || null)
+      setAllMachines(machinesRes.data || [])
     } catch (err) {
       console.error('Error fetching report:', err)
       showToast('Failed to load report', 'error')
@@ -162,11 +166,8 @@ export default function ReportView() {
   const endDateLabel = formatShortDate(report.shift_end_date || report.date)
   const showBothDates = (report.shift_start_date || report.date) !== (report.shift_end_date || report.date)
 
-  const machineTimings = machineProduction.map(m => ({
-    name: m.machines?.name || 'Unknown',
-    hours_run: m.hours_run || 0,
-    production_mt: m.production_mt || 0,
-  }))
+  // Build a lookup from machine_id → production row for quick access
+  const machProdById = Object.fromEntries(machineProduction.map(m => [m.machine_id, m]))
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
@@ -196,31 +197,42 @@ export default function ReportView() {
       </div>
 
       {/* Machine Timings Section */}
+      {/* Machine Timings Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Machine Timings</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+          <table style={{ width: '100%', fontSize: 11 }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Machine</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Hours Run</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Production (MT)</th>
+                <th style={{ padding: '10px 10px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 10 }}>Machine</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Hrs Run</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Prd (MT)</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Avg/Hr</th>
+                <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 10 }}>Remarks</th>
               </tr>
             </thead>
             <tbody>
-              {machineTimings.length > 0 ? (
-                machineTimings.map((m, idx) => (
-                  <tr key={idx} style={{ borderTop: '1px solid #e5ddd0' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.name}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.hours_run}h</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.production_mt}</td>
+              {(allMachines.length > 0 ? allMachines : machineProduction.map(m => ({ id: m.machine_id, name: m.machines?.name || 'N/A' }))).map(m => {
+                const prod = machProdById[m.id]
+                if (!prod) {
+                  return (
+                    <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0', background: '#fafaf8' }}>
+                      <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.name}</td>
+                      <td colSpan="4" style={{ padding: '10px 8px', textAlign: 'center', color: '#b5b8a8', fontSize: 10, fontStyle: 'italic' }}>Did Not Run</td>
+                    </tr>
+                  )
+                }
+                const avgPerHr = prod.hours_run > 0 ? (prod.production_mt / prod.hours_run).toFixed(2) : '—'
+                return (
+                  <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
+                    <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.name}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{prod.hours_run || 0}h</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{prod.production_mt || 0}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{avgPerHr}</td>
+                    <td style={{ padding: '10px 8px', color: '#595c4a', fontSize: 11 }}>{prod.remarks || '—'}</td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="3" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
-                </tr>
-              )}
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -230,28 +242,36 @@ export default function ReportView() {
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Production</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+          <table style={{ width: '100%', fontSize: 11 }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Machine</th>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Pellet Type</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Quantity (MT)</th>
+                <th style={{ padding: '10px 10px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 10 }}>Machine</th>
+                <th style={{ padding: '10px 8px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 10 }}>Pellet Type</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Qty (MT)</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Avg/Hr</th>
               </tr>
             </thead>
             <tbody>
-              {machineProduction.length > 0 ? (
-                machineProduction.map(m => (
+              {(allMachines.length > 0 ? allMachines : machineProduction.map(m => ({ id: m.machine_id, name: m.machines?.name || 'N/A' }))).map(m => {
+                const prod = machProdById[m.id]
+                if (!prod) {
+                  return (
+                    <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0', background: '#fafaf8' }}>
+                      <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.name}</td>
+                      <td colSpan="3" style={{ padding: '10px 8px', textAlign: 'center', color: '#b5b8a8', fontSize: 10, fontStyle: 'italic' }}>No production this shift</td>
+                    </tr>
+                  )
+                }
+                const avgPerHr = prod.hours_run > 0 ? (prod.production_mt / prod.hours_run).toFixed(2) : '—'
+                return (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.machines?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.pellet_type_name || '—'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.production_mt || 0}</td>
+                    <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.name}</td>
+                    <td style={{ padding: '10px 8px', color: '#595c4a', fontSize: 11 }}>{prod.pellet_type_name || '—'}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{prod.production_mt || 0}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{avgPerHr}</td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="3" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
-                </tr>
-              )}
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -261,30 +281,30 @@ export default function ReportView() {
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Raw Materials</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+          <table style={{ width: '100%', fontSize: 11 }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Material</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Opening</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Purchased</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Used</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Closing</th>
+                <th style={{ padding: '10px 10px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 10 }}>Material</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Open</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Purch</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Used</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Close</th>
               </tr>
             </thead>
             <tbody>
               {rawMaterials.length > 0 ? (
                 rawMaterials.map(m => (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.raw_material_types?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.opening_kg || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.purchased_kg || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.quantity_kg || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.closing_kg || 0}</td>
+                    <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.raw_material_types?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.opening_kg || 0}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.purchased_kg || 0}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.quantity_kg || 0}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.closing_kg || 0}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11, fontStyle: 'italic' }}>No raw material data recorded</td>
                 </tr>
               )}
             </tbody>
@@ -391,7 +411,7 @@ export default function ReportView() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11, fontStyle: 'italic' }}>No dispatches this shift</td>
                 </tr>
               )}
             </tbody>
@@ -403,32 +423,32 @@ export default function ReportView() {
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Pellet Stock</h2>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+          <table style={{ width: '100%', fontSize: 11 }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Type</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Opening</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Production</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Dispatch</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Wastage</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Closing</th>
+                <th style={{ padding: '10px 10px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 10 }}>Type</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Open</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Prd</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Disp</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Waste</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10 }}>Close</th>
               </tr>
             </thead>
             <tbody>
               {pelletStock.length > 0 ? (
                 pelletStock.map(p => (
                   <tr key={p.id} style={{ borderTop: '1px solid #e5ddd0' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{p.pellet_types?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.opening_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.production_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.dispatch_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.wastage_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{p.closing_mt || 0}</td>
+                    <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{p.pellet_types?.name || 'N/A'}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.opening_mt || 0}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.production_mt || 0}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.dispatch_mt || 0}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.wastage_mt || 0}</td>
+                    <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{p.closing_mt || 0}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
+                  <td colSpan="6" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11, fontStyle: 'italic' }}>No pellet stock recorded for this shift</td>
                 </tr>
               )}
             </tbody>
