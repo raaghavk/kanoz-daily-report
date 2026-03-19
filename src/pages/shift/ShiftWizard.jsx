@@ -120,6 +120,24 @@ export default function ShiftWizard() {
     } catch { /* ignore */ }
   }, [reportData, step, reportId, initDone, editId])
 
+  // Also save when app goes to background (mobile app switch) or page unloads
+  useEffect(() => {
+    if (!initDone || editId) return
+    function saveOnHide() {
+      try {
+        sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId }))
+      } catch { /* ignore */ }
+    }
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveOnHide() })
+    window.addEventListener('beforeunload', saveOnHide)
+    window.addEventListener('pagehide', saveOnHide)
+    return () => {
+      document.removeEventListener('visibilitychange', saveOnHide)
+      window.removeEventListener('beforeunload', saveOnHide)
+      window.removeEventListener('pagehide', saveOnHide)
+    }
+  }, [reportData, step, reportId, initDone, editId])
+
   // For edit mode: load plant data first, then merge existing report on top
   useEffect(() => {
     if (editId && plant?.id) {
