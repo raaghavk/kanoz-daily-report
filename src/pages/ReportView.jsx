@@ -295,31 +295,39 @@ export default function ReportView() {
       {/* Equipment & Diesel Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Equipment & Diesel</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 11, minWidth: 480 }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
-                <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Equipment</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Opening (L)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Added (L)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Closing (L)</th>
-                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Hours</th>
+                <th style={{ padding: '10px 10px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 10, whiteSpace: 'nowrap' }}>Equipment</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10, whiteSpace: 'nowrap' }}>Opening (L)</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10, whiteSpace: 'nowrap' }}>Added (L)</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10, whiteSpace: 'nowrap' }}>Used (L)</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10, whiteSpace: 'nowrap' }}>Closing (L)</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10, whiteSpace: 'nowrap' }}>Hrs</th>
+                <th style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 10, whiteSpace: 'nowrap' }}>Avg L/Hr</th>
               </tr>
             </thead>
             <tbody>
               {equipmentDiesel.length > 0 ? (
-                equipmentDiesel.map(e => (
-                  <tr key={e.id} style={{ borderTop: '1px solid #e5ddd0' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{e.equipment_name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.opening_litres || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.added_litres || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{e.closing_litres || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.hours_worked || 0}h</td>
-                  </tr>
-                ))
+                equipmentDiesel.map(e => {
+                  const used = (e.opening_litres || 0) + (e.added_litres || 0) - (e.closing_litres || 0)
+                  const avgPerHr = e.hours_worked > 0 ? (used / e.hours_worked).toFixed(2) : '—'
+                  return (
+                    <tr key={e.id} style={{ borderTop: '1px solid #e5ddd0' }}>
+                      <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11, whiteSpace: 'nowrap' }}>{e.equipment_name || 'N/A'}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.opening_litres || 0}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.added_litres || 0}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{used}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{e.closing_litres || 0}</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.hours_worked || 0}h</td>
+                      <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{avgPerHr}</td>
+                    </tr>
+                  )
+                })
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>
+                  <td colSpan="7" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>
                     Per-equipment data not recorded for this shift
                   </td>
                 </tr>
