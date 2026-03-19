@@ -57,7 +57,6 @@ export default function ShiftWizard() {
     shift_end_date: getLocalDate(),
     start_power_reading: 0,
     end_power_reading: 0,
-    weather: '',
     machines: [],
     production: [],
     rawMaterials: [],
@@ -224,7 +223,6 @@ export default function ShiftWizard() {
       updateData('end_power_reading', report.end_power_reading || 0)
       updateData('handover_notes', report.handover_notes || '')
       updateData('remarks', report.remarks || '')
-      updateData('weather', report.weather || '')
 
       // Load machines, materials, equipment first (needed for merging data)
       const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([

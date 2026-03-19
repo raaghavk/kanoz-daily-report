@@ -1,6 +1,8 @@
 export function sanitizeText(input, maxLength = 500) {
   if (typeof input !== 'string') return ''
-  return input.trim().slice(0, maxLength)
+  // Strip HTML tags to prevent stored XSS
+  const stripped = input.replace(/<[^>]*>/g, '')
+  return stripped.trim().slice(0, maxLength)
 }
 
 export function sanitizeNumber(input, { min = 0, max = Infinity } = {}) {

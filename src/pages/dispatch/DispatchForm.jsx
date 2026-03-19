@@ -136,7 +136,7 @@ export default function DispatchForm() {
   const { data: customers = [] } = useQuery({
     queryKey: ['customers', plant?.org_id],
     queryFn: async () => {
-      const { data } = await supabase.from('customers').select('*').eq('org_id', plant.org_id).eq('is_active', true).order('name')
+      const { data } = await supabase.from('customers').select('*').eq('org_id', plant.org_id).eq('is_active', true).eq('is_deleted', false).order('name')
       return data || []
     },
     enabled: !!plant?.id,
@@ -167,6 +167,10 @@ export default function DispatchForm() {
   const [newTransporterPhone, setNewTransporterPhone] = useState('')
 
   async function addTransporter() {
+    if (!plant?.org_id) {
+      showToast('Organization context missing. Please reload.', 'error')
+      return
+    }
     if (!newTransporterName.trim()) { showToast('Transporter name is required', 'error'); return }
     try {
       const { data } = await supabase

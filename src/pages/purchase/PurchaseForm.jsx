@@ -61,7 +61,7 @@ export default function PurchaseForm() {
   const { data: suppliers = [] } = useQuery({
     queryKey: ['suppliers', plant?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('suppliers').select('*').eq('plant_id', plant.id).order('name')
+      const { data, error } = await supabase.from('suppliers').select('*').eq('plant_id', plant.id).eq('is_active', true).order('name')
       if (error) throw error
       return data || []
     },
@@ -81,7 +81,7 @@ export default function PurchaseForm() {
   const { data: rawMaterials = [] } = useQuery({
     queryKey: ['rawMaterials', plant?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).order('name')
+      const { data, error } = await supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true).order('name')
       if (error) throw error
       return data || []
     },
@@ -91,7 +91,7 @@ export default function PurchaseForm() {
   const { data: purchaseData, isLoading: loading, isError } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('raw_material_purchases').select('*').eq('id', id).single()
+      const { data, error } = await supabase.from('raw_material_purchases').select('*').eq('id', id).eq('is_deleted', false).single()
       if (error) throw error
       return data
     },
