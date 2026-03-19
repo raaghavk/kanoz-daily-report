@@ -141,9 +141,11 @@ export default function CustomerList() {
         )}
       </div>
 
-      <button onClick={() => setShowAddModal(true)} style={{ position: 'fixed', display: 'flex', alignItems: 'center', justifyContent: 'center', bottom: 96, right: 16, width: 56, height: 56, background: '#2d6a4f', borderRadius: '50%', boxShadow: '0 4px 14px rgba(45,106,79,0.3)', border: 'none', cursor: 'pointer', zIndex: 50 }}>
-        <Plus size={24} color="white" />
-      </button>
+      <div style={{ padding: '16px 20px', paddingBottom: 100 }}>
+        <button onClick={() => setShowAddModal(true)} style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <Plus size={18} /> Add Customer
+        </button>
+      </div>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Customer">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

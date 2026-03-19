@@ -70,7 +70,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
         tabIndex={-1}
         style={{
           width: '100%',
-          maxHeight: '75%',
+          maxHeight: '90%',
           overflowY: 'auto',
           background: '#FFFFFF',
           borderRadius: '20px 20px 0 0',
