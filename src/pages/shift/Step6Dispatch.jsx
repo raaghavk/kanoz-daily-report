@@ -124,24 +124,43 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
       {!loading && dispatches.length === 0 && (
         <div style={{ background: '#fefae0', borderRadius: 14, border: '2px dashed #e5ddd0', padding: 24, textAlign: 'center' }}>
           <div style={{ color: '#595c4a', fontSize: 14, marginBottom: 12 }}>No dispatches in this shift period.</div>
-          <button
-            onClick={goToDispatchTab}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '10px 16px',
-              background: '#2d6a4f',
-              color: 'white',
-              border: 'none',
-              borderRadius: 10,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            <ExternalLink size={14} /> Go to Dispatch Tab
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              onClick={() => {
+                if (saveWizardState) saveWizardState()
+                navigate('/dispatch', { state: { returnToShift: true, showForm: true } })
+              }}
+              style={{
+                width: '100%', padding: '12px 0',
+                background: '#2d6a4f', color: 'white',
+                borderRadius: 12, fontSize: 14, fontWeight: 600,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                border: 'none',
+              }}
+            >
+              + Add New Dispatch
+            </button>
+            <button
+              onClick={goToDispatchTab}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '10px 16px',
+                background: 'white',
+                color: '#2d6a4f',
+                border: '1.5px solid #2d6a4f',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                width: '100%',
+              }}
+            >
+              <ExternalLink size={14} /> Go to Dispatch Tab
+            </button>
+          </div>
         </div>
       )}
 
@@ -219,18 +238,35 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
             </div>
           </div>
 
-          {/* CTA Button */}
-          <button
-            onClick={goToDispatchTab}
-            style={{
-              width: '100%', padding: '12px 0',
-              background: 'white', border: '1.5px solid #2d6a4f',
-              borderRadius: 12, fontSize: 14, fontWeight: 600, color: '#2d6a4f',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}
-          >
-            <ExternalLink size={14} /> Go to Dispatch Tab
-          </button>
+          {/* CTA Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button
+              onClick={() => {
+                if (saveWizardState) saveWizardState()
+                navigate('/dispatch', { state: { returnToShift: true, showForm: true } })
+              }}
+              style={{
+                width: '100%', padding: '12px 0',
+                background: '#2d6a4f', color: 'white',
+                borderRadius: 12, fontSize: 14, fontWeight: 600,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                border: 'none',
+              }}
+            >
+              + Add New Dispatch
+            </button>
+            <button
+              onClick={goToDispatchTab}
+              style={{
+                width: '100%', padding: '12px 0',
+                background: 'white', border: '1.5px solid #2d6a4f',
+                borderRadius: 12, fontSize: 14, fontWeight: 600, color: '#2d6a4f',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <ExternalLink size={14} /> Go to Dispatch Tab
+            </button>
+          </div>
         </>
       )}
 

@@ -495,7 +495,7 @@ export default function ShiftWizard() {
       // Save diesel stock (overall tank) + diesel purchases
       await supabase.from('diesel_purchases').delete().eq('shift_report_id', report.id)
       await supabase.from('diesel_stock').delete().eq('shift_report_id', report.id)
-      const totalUsed = (reportData.diesel || []).reduce((sum, eq) => sum + sanitizeNumber(eq.used), 0)
+      const totalAddedToEquipment = (reportData.diesel || []).reduce((sum, eq) => sum + sanitizeNumber(eq.added), 0)
       const ds = reportData.diesel_stock || {}
       const purchases = ds.purchases || []
       const totalPurchased = purchases.reduce((sum, p) => sum + sanitizeNumber(p.litres), 0)
@@ -508,8 +508,8 @@ export default function ShiftWizard() {
         opening_litres: dsOpening,
         purchased_litres: totalPurchased,
         purchase_cost: totalCost,
-        used_litres: totalUsed,
-        closing_litres: dsOpening + totalPurchased - totalUsed,
+        used_litres: totalAddedToEquipment,
+        closing_litres: dsOpening + totalPurchased - totalAddedToEquipment,
       })
       // Save individual purchase entries
       if (purchases.length > 0) {

@@ -168,42 +168,25 @@ export default function ReportView() {
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       <PageHeader title="Shift Report" subtitle={`Shift ${report.shift} · ${report.date}`} onBack={() => navigate(-1)} />
 
-      {/* Report Header Info */}
+      {/* Report Header Info - Compact */}
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <div>
-              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Date</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
-                <Calendar size={16} style={{ color: '#2d6a4f' }} />
-                {new Date(report.date).toLocaleDateString('en-IN')}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Shift</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
-                Shift {report.shift}
-              </div>
-            </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Shift Duration</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
-                <Clock size={16} style={{ color: '#1E3A5F' }} />
-                {startDateLabel} {report.start_time?.slice(0, 5)} → {showBothDates ? endDateLabel + ' ' : ''}{report.end_time?.slice(0, 5)}
-              </div>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Supervisor</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
-                {report.employees?.name || 'N/A'}
-              </div>
-            </div>
-            <div style={{ gridColumn: 'span 2' }}>
-              <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600, marginBottom: 4 }}>Plant</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
-                {report.plants?.name || 'N/A'}
-              </div>
-            </div>
+          {/* Row 1: Date | Shift Time */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>
+            <span>{startDateLabel}{showBothDates ? ` – ${endDateLabel}` : ''}</span>
+            <span style={{ color: '#595c4a' }}>Shift {report.shift} ({report.start_time?.slice(0, 5)} – {report.end_time?.slice(0, 5)})</span>
+          </div>
+
+          {/* Row 2: Production | Dispatches */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: 13, fontWeight: 600, color: '#2c2c2c', borderTop: '1px solid #e5ddd0', paddingTop: 12 }}>
+            <span>Production: <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{(report.pellet_production_mt || 0).toFixed(1)} MT</span></span>
+            <span>Dispatches: <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{(dispatches.reduce((sum, d) => sum + (d.dispatch_pellets?.reduce((s, p) => s + (parseFloat(p.quantity_mt) || 0), 0) || 0), 0)).toFixed(1)} MT</span></span>
+          </div>
+
+          {/* Row 3: Supervisor | Plant */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: '#595c4a', borderTop: '1px solid #e5ddd0', paddingTop: 12 }}>
+            <span>Supervisor: <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{report.employees?.name || 'N/A'}</span></span>
+            <span>Plant: <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{report.plants?.name || 'N/A'}</span></span>
           </div>
         </div>
       </div>

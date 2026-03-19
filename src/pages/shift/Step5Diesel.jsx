@@ -83,12 +83,12 @@ export default memo(function Step5Diesel({ data, updateData }) {
     return sum + (l * c)
   }, 0)
 
-  // Calculate total used from all equipment
-  const totalUsed = (data.diesel || []).reduce((sum, eq) => sum + (parseFloat(eq.used) || 0), 0)
+  // Calculate total added to equipment (this is what's issued from stock tank)
+  const totalAddedToEquipment = (data.diesel || []).reduce((sum, eq) => sum + (parseFloat(eq.added) || 0), 0)
 
-  // Closing stock
+  // Closing stock: opening + purchased - issued to equipment
   const opening = parseFloat(data.diesel_stock?.opening) || 0
-  const closingStock = opening + totalPurchased - totalUsed
+  const closingStock = opening + totalPurchased - totalAddedToEquipment
 
   function addPurchase() {
     const stock = { ...data.diesel_stock }
@@ -104,7 +104,7 @@ export default memo(function Step5Diesel({ data, updateData }) {
     // Recalculate total purchased and closing
     const tp = purchases.reduce((sum, p) => sum + (parseFloat(p.litres) || 0), 0)
     stock.purchased = tp
-    stock.closing = (parseFloat(stock.opening) || 0) + tp - totalUsed
+    stock.closing = (parseFloat(stock.opening) || 0) + tp - totalAddedToEquipment
     updateData('diesel_stock', stock)
   }
 
@@ -113,7 +113,7 @@ export default memo(function Step5Diesel({ data, updateData }) {
     stock.purchases = (stock.purchases || []).filter((_, i) => i !== idx)
     const tp = stock.purchases.reduce((sum, p) => sum + (parseFloat(p.litres) || 0), 0)
     stock.purchased = tp
-    stock.closing = (parseFloat(stock.opening) || 0) + tp - totalUsed
+    stock.closing = (parseFloat(stock.opening) || 0) + tp - totalAddedToEquipment
     updateData('diesel_stock', stock)
   }
 
@@ -135,12 +135,12 @@ export default memo(function Step5Diesel({ data, updateData }) {
 
     updateData('diesel', entries)
 
-    // Recalculate closing stock (total used may have changed)
-    if (field === 'used') {
-      const newTotalUsed = entries.reduce((sum, eq) => sum + (parseFloat(eq.used) || 0), 0)
+    // Recalculate closing stock (total added to equipment may have changed)
+    if (field === 'added') {
+      const newTotalAddedToEquipment = entries.reduce((sum, eq) => sum + (parseFloat(eq.added) || 0), 0)
       const stock = { ...data.diesel_stock }
       const tp = (stock.purchases || []).reduce((sum, p) => sum + (parseFloat(p.litres) || 0), 0)
-      stock.closing = (parseFloat(stock.opening) || 0) + tp - newTotalUsed
+      stock.closing = (parseFloat(stock.opening) || 0) + tp - newTotalAddedToEquipment
       updateData('diesel_stock', stock)
     }
   }
@@ -186,8 +186,8 @@ export default memo(function Step5Diesel({ data, updateData }) {
             <div style={{ fontSize: 18, fontWeight: 700, color: '#2d6a4f' }}>{totalPurchased}</div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ fontSize: 10, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>-Used L</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#d32f2f' }}>{totalUsed}</div>
+            <div style={{ fontSize: 10, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>-Issued L</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#d32f2f' }}>{totalAddedToEquipment}</div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
             <div style={{ fontSize: 10, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>Close L</div>
