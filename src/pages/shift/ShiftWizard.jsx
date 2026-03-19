@@ -446,7 +446,6 @@ export default function ShiftWizard() {
       if (reportData.rawMaterials.length) {
         await supabase.from('raw_material_usage').delete().eq('shift_report_id', report.id)
         const rmRows = reportData.rawMaterials
-          .filter(rm => sanitizeNumber(rm.used) > 0 || sanitizeNumber(rm.opening) > 0)
           .map(rm => ({
             shift_report_id: report.id,
             raw_material_type_id: rm.id,
@@ -464,7 +463,7 @@ export default function ShiftWizard() {
       if (reportData.diesel && reportData.diesel.length) {
         await supabase.from('equipment_diesel_log').delete().eq('shift_report_id', report.id)
         const dieselRows = reportData.diesel
-          .filter(d => sanitizeNumber(d.used) > 0 || sanitizeNumber(d.hours) > 0 || sanitizeNumber(d.added) > 0 || sanitizeNumber(d.opening) > 0)
+          .filter(d => !d.did_not_run)
           .map(d => ({
             shift_report_id: report.id,
             equipment_name: sanitizeText(d.equipment_name, 100),
@@ -478,11 +477,10 @@ export default function ShiftWizard() {
         }
       }
 
-      // Save pellet stock (only rows with non-zero values)
+      // Save pellet stock (all entries — closing_mt is GENERATED, don't insert it)
       if (reportData.pelletStock && reportData.pelletStock.length) {
         await supabase.from('pellet_stock').delete().eq('shift_report_id', report.id)
         const stockRows = reportData.pelletStock
-          .filter(ps => sanitizeNumber(ps.opening) > 0 || sanitizeNumber(ps.production) > 0 || sanitizeNumber(ps.dispatch) > 0 || sanitizeNumber(ps.wastage) > 0)
           .map(ps => ({
             shift_report_id: report.id,
             pellet_type_id: ps.id,
@@ -490,7 +488,6 @@ export default function ShiftWizard() {
             production_mt: sanitizeNumber(ps.production),
             dispatch_mt: sanitizeNumber(ps.dispatch),
             wastage_mt: sanitizeNumber(ps.wastage),
-            closing_mt: sanitizeNumber(ps.closing),
           }))
         if (stockRows.length) {
           await supabase.from('pellet_stock').insert(stockRows)
