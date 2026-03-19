@@ -328,30 +328,28 @@ export default function ReportView() {
           </table>
         </div>
 
-        {/* Diesel Stock Tank Summary — shown for all reports (especially useful when equipment rows are absent) */}
-        {dieselStock && (
-          <div style={{ marginTop: 12, background: '#fefae0', borderRadius: 12, border: '1.5px solid #e9c46a', padding: 14 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Diesel Stock Tank</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
-              {[
-                { label: 'Opening (L)', value: dieselStock.opening_litres || 0 },
-                { label: 'Purchased (L)', value: dieselStock.purchased_litres || 0 },
-                { label: 'Issued (L)', value: dieselStock.used_litres || 0 },
-                { label: 'Closing (L)', value: dieselStock.closing_litres || 0 },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <div style={{ fontSize: 9, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>{label}</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#2c2c2c' }}>{value}</div>
-                </div>
-              ))}
-            </div>
-            {dieselStock.purchase_cost > 0 && (
-              <div style={{ marginTop: 10, textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#92400E' }}>
-                Purchase Cost: ₹{Number(dieselStock.purchase_cost).toLocaleString('en-IN')}
+        {/* Diesel Stock Tank Summary — always shown */}
+        <div style={{ marginTop: 12, background: '#fefae0', borderRadius: 12, border: '1.5px solid #e9c46a', padding: 14 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Diesel Stock Tank</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
+            {[
+              { label: 'Opening (L)', value: dieselStock?.opening_litres ?? '—' },
+              { label: 'Purchased (L)', value: dieselStock?.purchased_litres ?? '—' },
+              { label: 'Issued (L)', value: dieselStock?.used_litres ?? '—' },
+              { label: 'Closing (L)', value: dieselStock?.closing_litres ?? '—' },
+            ].map(({ label, value }) => (
+              <div key={label}>
+                <div style={{ fontSize: 9, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#2c2c2c' }}>{value}</div>
               </div>
-            )}
+            ))}
           </div>
-        )}
+          {dieselStock?.purchase_cost > 0 && (
+            <div style={{ marginTop: 10, textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#92400E' }}>
+              Purchase Cost: ₹{Number(dieselStock.purchase_cost).toLocaleString('en-IN')}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Dispatches Section */}
