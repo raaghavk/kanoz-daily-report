@@ -136,7 +136,7 @@ export default function DispatchForm() {
   const { data: customers = [] } = useQuery({
     queryKey: ['customers', plant?.org_id],
     queryFn: async () => {
-      const { data } = await supabase.from('customers').select('*').eq('org_id', plant.org_id).eq('is_active', true).eq('is_deleted', false).order('name')
+      const { data } = await supabase.from('customers').select('*').eq('org_id', plant.org_id).eq('is_active', true).order('name')
       return data || []
     },
     enabled: !!plant?.id,
