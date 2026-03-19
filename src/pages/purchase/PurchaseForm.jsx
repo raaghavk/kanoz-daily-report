@@ -37,6 +37,7 @@ export default function PurchaseForm() {
     loading_charges: 0,
     unloading_charges: 0,
     transport_charges: 0,
+    other_charges: 0,
     total_amount: '',
     average_cost_per_kg: '',
     katta_parchi_photo: null,
@@ -108,14 +109,15 @@ export default function PurchaseForm() {
       net_weight: purchaseData.net_weight ?? '',
       moisture_percentage: purchaseData.moisture_percent ?? '',
       deduction_kg: purchaseData.deduction_kg ?? '',
-      final_quantity: purchaseData.final_quantity ?? '',
+      final_quantity: purchaseData.quantity_kg ?? purchaseData.final_quantity ?? '',
       rate_per_kg: purchaseData.rate_per_kg ?? '',
       rm_amount: purchaseData.rm_amount ?? '',
-      loading_charges: purchaseData.loading_charges ?? 0,
-      unloading_charges: purchaseData.unloading_charges ?? 0,
-      transport_charges: purchaseData.transport_charges ?? 0,
+      loading_charges: purchaseData.loading_expense ?? purchaseData.loading_charges ?? 0,
+      unloading_charges: purchaseData.unloading_expense ?? purchaseData.unloading_charges ?? 0,
+      transport_charges: purchaseData.transport_expense ?? purchaseData.transport_charges ?? 0,
+      other_charges: purchaseData.other_expense ?? 0,
       total_amount: purchaseData.total_amount ?? '',
-      average_cost_per_kg: purchaseData.average_cost_per_kg ?? '',
+      average_cost_per_kg: purchaseData.avg_cost_per_kg ?? purchaseData.average_cost_per_kg ?? '',
       katta_parchi_photo: purchaseData.katta_parchi_url || purchaseData.katta_parchi_photo || null,
       payment_status: purchaseData.payment_status || 'Pending',
       remarks: purchaseData.remarks || '',
@@ -176,7 +178,8 @@ export default function PurchaseForm() {
     const loading = parseFloat(data.loading_charges) || 0
     const unloading = parseFloat(data.unloading_charges) || 0
     const transport = parseFloat(data.transport_charges) || 0
-    const totalAmount = rmAmount + loading + unloading + transport
+    const other = parseFloat(data.other_charges) || 0
+    const totalAmount = rmAmount + loading + unloading + transport + other
     const avgCost = finalQty > 0 ? totalAmount / finalQty : 0
 
     data.deduction_kg = deduction > 0 ? deduction.toFixed(2) : ''
@@ -330,7 +333,7 @@ export default function PurchaseForm() {
         loading_expense: sanitizeNumber(formData.loading_charges) || 0,
         unloading_expense: sanitizeNumber(formData.unloading_charges) || 0,
         transport_expense: sanitizeNumber(formData.transport_charges) || 0,
-        other_expense: 0,
+        other_expense: sanitizeNumber(formData.other_charges) || 0,
         katta_parchi_url: formData.katta_parchi_photo,
         payment_status: formData.payment_status,
         remarks: sanitizeText(remarksText, 500) || null,
@@ -670,15 +673,27 @@ export default function PurchaseForm() {
               />
             </div>
           </div>
-          <div style={{ marginTop: 12 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Transport (₹)</label>
-            <input
-              type="number"
-              step="0.01"
-              value={formData.transport_charges}
-              onChange={e => handleFieldChange('transport_charges', e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
-            />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 12 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Transport (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.transport_charges}
+                onChange={e => handleFieldChange('transport_charges', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Other (₹)</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.other_charges}
+                onChange={e => handleFieldChange('other_charges', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+              />
+            </div>
           </div>
         </div>
 
