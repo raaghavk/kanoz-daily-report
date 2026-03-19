@@ -35,6 +35,31 @@ const STEPS = [
 
 const WIZARD_STORAGE_KEY = 'kanoz_shift_wizard_state'
 
+// Save to both sessionStorage and localStorage for maximum persistence on mobile
+function saveWizardStateToStorage(state) {
+  const serialized = JSON.stringify(state)
+  try { sessionStorage.setItem(WIZARD_STORAGE_KEY, serialized) } catch { /* ignore */ }
+  try { localStorage.setItem(WIZARD_STORAGE_KEY, serialized) } catch { /* ignore */ }
+}
+
+function clearWizardStateFromStorage() {
+  try { sessionStorage.removeItem(WIZARD_STORAGE_KEY) } catch { /* ignore */ }
+  try { localStorage.removeItem(WIZARD_STORAGE_KEY) } catch { /* ignore */ }
+}
+
+function loadWizardStateFromStorage() {
+  // Try sessionStorage first (same session), fall back to localStorage (survives tab kills)
+  try {
+    const s = sessionStorage.getItem(WIZARD_STORAGE_KEY)
+    if (s) return JSON.parse(s)
+  } catch { /* ignore */ }
+  try {
+    const l = localStorage.getItem(WIZARD_STORAGE_KEY)
+    if (l) return JSON.parse(l)
+  } catch { /* ignore */ }
+  return null
+}
+
 export default function ShiftWizard() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -74,13 +99,9 @@ export default function ShiftWizard() {
     setReportData(prev => ({ ...prev, [key]: value }))
   }, [])
 
-  // Save wizard state to sessionStorage (called before navigating away)
+  // Save wizard state to both sessionStorage and localStorage
   const saveWizardState = useCallback(() => {
-    try {
-      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId }))
-    } catch (e) {
-      console.error('Failed to save wizard state:', e)
-    }
+    saveWizardStateToStorage({ reportData, step, reportId })
   }, [reportData, step, reportId])
 
   // Restore from sessionStorage if returning from dispatch
@@ -89,9 +110,9 @@ export default function ShiftWizard() {
     if (editId) { setInitDone(true); return }
     const returnToStep = location.state?.returnToStep
     try {
-      const saved = sessionStorage.getItem(WIZARD_STORAGE_KEY)
+      const saved = loadWizardStateFromStorage()
       if (saved) {
-        const { reportData: savedData, step: savedStep, reportId: savedId } = JSON.parse(saved)
+        const { reportData: savedData, step: savedStep, reportId: savedId } = saved
         if (savedData && (savedData.date || savedData.machines?.length > 0)) {
           setReportData(savedData)
           setStep(returnToStep || savedStep || 1)
@@ -112,21 +133,17 @@ export default function ShiftWizard() {
     if (plant?.id && initDone && !restoredFromStorage && !editId) loadPlantData()
   }, [plant, initDone, restoredFromStorage]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-save wizard state to sessionStorage on changes (so it survives navigation)
+  // Auto-save wizard state on every change (survives navigation and tab kills)
   useEffect(() => {
     if (!initDone || editId) return
-    try {
-      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId }))
-    } catch { /* ignore */ }
+    saveWizardStateToStorage({ reportData, step, reportId })
   }, [reportData, step, reportId, initDone, editId])
 
   // Also save when app goes to background (mobile app switch) or page unloads
   useEffect(() => {
     if (!initDone || editId) return
     function saveOnHide() {
-      try {
-        sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId }))
-      } catch { /* ignore */ }
+      saveWizardStateToStorage({ reportData, step, reportId })
     }
     document.addEventListener('visibilitychange', () => { if (document.hidden) saveOnHide() })
     window.addEventListener('beforeunload', saveOnHide)
@@ -344,7 +361,7 @@ export default function ShiftWizard() {
             id: mp.id,
             machine_id: mp.machine_id,
             machine_name: mp.machines?.name || 'Unknown',
-            pellet_type: '', // Not stored in DB, user must re-enter
+            pellet_type: mp.pellet_type_name || '',
             quantity: parseFloat(mp.production_mt) || 0,
             ingredients: '',
           }))
@@ -361,6 +378,7 @@ export default function ShiftWizard() {
           description: i.description,
           severity: i.severity,
           photo_url: i.photo_url,
+          machine_id: i.machine_id || null,
         })))
       }
 
@@ -428,15 +446,18 @@ export default function ShiftWizard() {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
         const machineRows = reportData.machines
           .filter(m => sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time)
-          .map(m => ({
-            shift_report_id: report.id,
-            machine_id: m.id,
-            hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours),
-            remarks: sanitizeText(m.remarks, 500),
-            production_mt: reportData.production
-              .filter(p => p.machine_id === m.id)
-              .reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
-          }))
+          .map(m => {
+            const machineProds = reportData.production.filter(p => p.machine_id === m.id)
+            const pelletTypes = [...new Set(machineProds.map(p => p.pellet_type).filter(Boolean))]
+            return {
+              shift_report_id: report.id,
+              machine_id: m.id,
+              hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours),
+              remarks: sanitizeText(m.remarks, 500),
+              production_mt: machineProds.reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
+              pellet_type_name: pelletTypes.join(', ') || null,
+            }
+          })
         if (machineRows.length) {
           await supabase.from('machine_production').insert(machineRows)
         }
@@ -503,6 +524,7 @@ export default function ShiftWizard() {
           description: sanitizeText(i.description, 1000),
           severity: sanitizeText(i.severity, 20),
           photo_url: i.photo_url,
+          machine_id: i.machine_id || null,
         }))
         await supabase.from('issues').insert(issueRows)
       }
@@ -543,7 +565,7 @@ export default function ShiftWizard() {
         }
       }
 
-      sessionStorage.removeItem(WIZARD_STORAGE_KEY)
+      clearWizardStateFromStorage()
       showToast(editId ? 'Report updated!' : 'Report submitted!', 'success')
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
@@ -593,7 +615,7 @@ export default function ShiftWizard() {
         onBack={() => {
           if (step === 1) {
             if (window.confirm('Stop editing? Any unsaved changes will be lost.')) {
-              sessionStorage.removeItem(WIZARD_STORAGE_KEY)
+              clearWizardStateFromStorage()
               navigate('/')
             }
           } else {

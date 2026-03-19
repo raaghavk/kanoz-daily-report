@@ -8,7 +8,7 @@ export default memo(function Step8Issues({ data, updateData }) {
 
   function addIssue() {
     updateData('issues', [...data.issues, {
-      id: Date.now(), type: 'Machine', description: '', severity: 'medium', photo_url: null,
+      id: Date.now(), type: 'Machine', description: '', severity: 'medium', photo_url: null, machine_id: null,
     }])
   }
 
@@ -45,6 +45,19 @@ export default memo(function Step8Issues({ data, updateData }) {
               </select>
             </div>
           </div>
+          {issue.type === 'Machine' && data.machines?.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>MACHINE (optional)</label>
+              <select
+                value={issue.machine_id || ''}
+                onChange={e => updateIssue(idx, 'machine_id', e.target.value || null)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+              >
+                <option value="">— Select machine —</option>
+                {data.machines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+          )}
           <div style={{ marginBottom: 12 }}>
             <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>DESCRIPTION</label>
             <textarea value={issue.description} onChange={e => updateIssue(idx, 'description', e.target.value)} placeholder="Describe the issue..." rows={2} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', resize: 'none' }} />

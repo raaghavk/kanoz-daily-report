@@ -21,6 +21,7 @@ export default function ReportView() {
   const [equipmentDiesel, setEquipmentDiesel] = useState([])
   const [pelletStock, setPelletStock] = useState([])
   const [issues, setIssues] = useState([])
+  const [dieselStock, setDieselStock] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -102,13 +103,14 @@ export default function ReportView() {
       setReport(reportData)
 
       // Fetch all child data in parallel
-      const [machRes, matRes, dispatchRes, dieselRes, stockRes, issuesRes] = await Promise.all([
+      const [machRes, matRes, dispatchRes, dieselRes, stockRes, issuesRes, dsRes] = await Promise.all([
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', id),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', id),
         supabase.from('vehicle_dispatches').select('*, dispatch_pellets(*, pellet_types(name)), customers(name)').eq('shift_report_id', id),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', id),
         supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', id),
-        supabase.from('issues').select('*').eq('shift_report_id', id),
+        supabase.from('issues').select('*, machines(name)').eq('shift_report_id', id),
+        supabase.from('diesel_stock').select('*').eq('shift_report_id', id).maybeSingle(),
       ])
 
       if (machRes.error) console.error('Failed to load machine data:', machRes.error)
@@ -117,6 +119,7 @@ export default function ReportView() {
       if (dieselRes.error) console.error('Failed to load diesel data:', dieselRes.error)
       if (stockRes.error) console.error('Failed to load pellet stock:', stockRes.error)
       if (issuesRes.error) console.error('Failed to load issues:', issuesRes.error)
+      if (dsRes.error) console.error('Failed to load diesel stock:', dsRes.error)
 
       setMachineProduction(machRes.data || [])
       setRawMaterials(matRes.data || [])
@@ -124,6 +127,7 @@ export default function ReportView() {
       setEquipmentDiesel(dieselRes.data || [])
       setPelletStock(stockRes.data || [])
       setIssues(issuesRes.data || [])
+      setDieselStock(dsRes.data || null)
     } catch (err) {
       console.error('Error fetching report:', err)
       showToast('Failed to load report', 'error')
@@ -239,7 +243,7 @@ export default function ReportView() {
                 machineProduction.map(m => (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.machines?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>-</td>
+                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.pellet_type_name || '—'}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.production_mt || 0}</td>
                   </tr>
                 ))
@@ -315,12 +319,39 @@ export default function ReportView() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
+                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>
+                    Per-equipment data not recorded for this shift
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Diesel Stock Tank Summary — shown for all reports (especially useful when equipment rows are absent) */}
+        {dieselStock && (
+          <div style={{ marginTop: 12, background: '#fefae0', borderRadius: 12, border: '1.5px solid #e9c46a', padding: 14 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Diesel Stock Tank</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
+              {[
+                { label: 'Opening (L)', value: dieselStock.opening_litres || 0 },
+                { label: 'Purchased (L)', value: dieselStock.purchased_litres || 0 },
+                { label: 'Issued (L)', value: dieselStock.used_litres || 0 },
+                { label: 'Closing (L)', value: dieselStock.closing_litres || 0 },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <div style={{ fontSize: 9, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#2c2c2c' }}>{value}</div>
+                </div>
+              ))}
+            </div>
+            {dieselStock.purchase_cost > 0 && (
+              <div style={{ marginTop: 10, textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#92400E' }}>
+                Purchase Cost: ₹{Number(dieselStock.purchase_cost).toLocaleString('en-IN')}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Dispatches Section */}
@@ -412,7 +443,9 @@ export default function ReportView() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c', textTransform: 'capitalize' }}>{issue.issue_type}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c', textTransform: 'capitalize' }}>
+                        {issue.issue_type}{issue.machines?.name ? ` — ${issue.machines.name}` : ''}
+                      </span>
                       <span style={{
                         fontSize: 10,
                         fontWeight: 700,
