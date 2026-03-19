@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
 
-const MATERIALS = ['Cow Dung', 'Saw Dust', 'Chicken Litter', 'Ash', 'Press Mud', 'Bagasse', 'Rice Husk', 'Other']
+// Raw materials come from data.rawMaterials (plant-specific, loaded by ShiftWizard)
 
 const COLORS = {
   green: '#2d6a4f',
@@ -52,12 +52,38 @@ export default memo(function Step3Production({ data, updateData }) {
       [field]: value
     }
     updateData('production', entries)
+
+    // Auto-update rawMaterials "used" from total ingredients across all production entries
+    if (field === 'quantity_kg' || field === 'material') {
+      syncRawMaterialUsed(entries)
+    }
+  }
+
+  // Sum all ingredient quantities by material name and update Step4 rawMaterials "used"
+  function syncRawMaterialUsed(productionEntries) {
+    const usedByMaterial = {}
+    productionEntries.forEach(entry => {
+      (entry.ingredients || []).forEach(ing => {
+        if (ing.material && ing.quantity_kg) {
+          usedByMaterial[ing.material] = (usedByMaterial[ing.material] || 0) + (parseFloat(ing.quantity_kg) || 0)
+        }
+      })
+    })
+    // Update rawMaterials with calculated "used" values
+    if (data.rawMaterials?.length) {
+      const updated = data.rawMaterials.map(rm => {
+        const used = Math.round(usedByMaterial[rm.name] || 0)
+        return { ...rm, used, closing: rm.opening + rm.purchased - used }
+      })
+      updateData('rawMaterials', updated)
+    }
   }
 
   function removeIngredient(entryIdx, ingredientIdx) {
     const entries = [...data.production]
     entries[entryIdx].ingredients = entries[entryIdx].ingredients.filter((_, i) => i !== ingredientIdx)
     updateData('production', entries)
+    syncRawMaterialUsed(entries)
   }
 
   function calculateIngredientPercentage(quantity_kg, entryIdx) {
@@ -220,7 +246,7 @@ export default memo(function Step3Production({ data, updateData }) {
                       }}
                     >
                       <option value="">Select...</option>
-                      {MATERIALS.map(m => <option key={m} value={m}>{m}</option>)}
+                      {(data.rawMaterials || []).map(m => <option key={m.id || m.name} value={m.name}>{m.name}</option>)}
                     </select>
 
                     <input
