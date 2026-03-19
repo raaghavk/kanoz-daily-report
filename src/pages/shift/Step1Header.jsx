@@ -1,18 +1,17 @@
 import { memo } from 'react'
 import { Calendar, Clock } from 'lucide-react'
-import { getLocalDate } from '../../lib/dateUtils'
 
 export default memo(function Step1Header({ data, updateData, employee, plant }) {
   function handleShiftChange(shift) {
     updateData('shift', shift)
     if (shift === 'A') {
-      updateData('start_time', '06:00')
-      updateData('end_time', '18:00')
+      updateData('start_time', '08:00')
+      updateData('end_time', '20:00')
       updateData('shift_start_date', data.date)
       updateData('shift_end_date', data.date)
     } else {
-      updateData('start_time', '18:00')
-      updateData('end_time', '06:00')
+      updateData('start_time', '20:00')
+      updateData('end_time', '08:00')
       updateData('shift_start_date', data.date)
       // Next day for end date
       const next = new Date(data.date)
@@ -21,10 +20,6 @@ export default memo(function Step1Header({ data, updateData, employee, plant }) 
     }
   }
 
-  // Get current date and time for readonly fields
-  const now = new Date()
-  const currentDateStr = getLocalDate(now)
-  const currentTimeStr = now.toTimeString().split(' ')[0].slice(0, 5)
 
   const inputStyle = {
     width: '100%',
@@ -73,59 +68,24 @@ export default memo(function Step1Header({ data, updateData, employee, plant }) 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, overflow: 'hidden' }}>
-      {/* Report Fill Date & Time (auto/readonly) */}
-      <div>
-        <label style={labelStyle}>Report Fill Date & Time</label>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, minWidth: 0 }}>
-          <div style={{ position: 'relative', minWidth: 0 }}>
-            <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
-            <input type="date" value={currentDateStr} readOnly style={inputWithIconStyle} />
-          </div>
-          <div style={{ position: 'relative', minWidth: 0 }}>
-            <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#b5b8a8', zIndex: 1 }} />
-            <input type="time" value={currentTimeStr} readOnly style={inputWithIconStyle} />
-          </div>
-        </div>
-      </div>
-
-      {/* Plant & Shift (side by side) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, minWidth: 0 }}>
-        {/* Plant (auto/readonly) */}
-        <div style={{ minWidth: 0 }}>
-          <label style={labelStyle}>Plant</label>
-          <input type="text" value={plant?.name || 'Plant'} readOnly style={inputStyle} />
-        </div>
-
-        {/* Shift Dropdown (A Day / B Night) */}
-        <div style={{ minWidth: 0 }}>
-          <label style={labelStyle}>
-            Shift <span style={{ color: '#d32f2f' }}>*</span>
-          </label>
-          <select
-            value={data.shift || ''}
-            onChange={e => handleShiftChange(e.target.value)}
-            style={{
-              ...editableInputStyle,
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
-            <option value="">Select Shift</option>
-            <option value="A">A Day</option>
-            <option value="B">B Night</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Supervisor (auto/readonly - show name) */}
-      <div>
-        <label style={labelStyle}>Supervisor</label>
-        <input
-          type="text"
-          value={employee?.name || 'Loading...'}
-          readOnly
-          style={inputStyle}
-        />
+      {/* Shift Dropdown (A Day / B Night) */}
+      <div style={{ minWidth: 0 }}>
+        <label style={labelStyle}>
+          Shift <span style={{ color: '#d32f2f' }}>*</span>
+        </label>
+        <select
+          value={data.shift || ''}
+          onChange={e => handleShiftChange(e.target.value)}
+          style={{
+            ...editableInputStyle,
+            fontWeight: 500,
+            cursor: 'pointer',
+          }}
+        >
+          <option value="">Select Shift</option>
+          <option value="A">A Day</option>
+          <option value="B">B Night</option>
+        </select>
       </div>
 
       {/* Shift Schedule Box */}

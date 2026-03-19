@@ -51,8 +51,8 @@ export default function ShiftWizard() {
   const [reportData, setReportData] = useState({
     date: getLocalDate(),
     shift: 'A',
-    start_time: '06:00',
-    end_time: '18:00',
+    start_time: '08:00',
+    end_time: '20:00',
     shift_start_date: getLocalDate(),
     shift_end_date: getLocalDate(),
     start_power_reading: 0,

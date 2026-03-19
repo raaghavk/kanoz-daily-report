@@ -65,8 +65,31 @@ export default memo(function Step2Machines({ data, updateData }) {
                 {idx + 1}
               </div>
               {m.name}
-              <span style={{ background: '#e8f0ec', color: '#2d6a4f', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6, marginLeft: 'auto' }}>Active</span>
+              <button
+                onClick={() => {
+                  const machines = [...data.machines]
+                  const didNotRun = !machines[idx].did_not_run
+                  machines[idx] = { ...machines[idx], did_not_run: didNotRun }
+                  if (didNotRun) {
+                    machines[idx].from_time = ''
+                    machines[idx].to_time = ''
+                    machines[idx].total_hours = 0
+                    machines[idx].production_hours = 0
+                    machines[idx].breakdown_hrs = 0
+                  }
+                  updateData('machines', machines)
+                }}
+                style={{
+                  padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 600,
+                  background: m.did_not_run ? '#FEE2E2' : '#e8f0ec',
+                  color: m.did_not_run ? '#DC2626' : '#2d6a4f',
+                  border: 'none', cursor: 'pointer', marginLeft: 'auto'
+                }}
+              >
+                {m.did_not_run ? 'Not Running' : 'Active'}
+              </button>
             </div>
+            {!m.did_not_run && (
             <div style={{ marginBottom: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, marginBottom: 6 }}>
                 <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', paddingLeft: 2 }}>FROM</label>
@@ -89,7 +112,10 @@ export default memo(function Step2Machines({ data, updateData }) {
                 />
               </div>
             </div>
+            )}
 
+            {!m.did_not_run && (
+            <>
             {showWarning && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 10px', background: '#fefae0', border: '1px solid #e9c46a', borderRadius: 8, marginBottom: 12 }}>
                 <AlertTriangle size={14} color="#d4a373" />
@@ -133,6 +159,8 @@ export default memo(function Step2Machines({ data, updateData }) {
                 style={inputStyle}
               />
             </div>
+            </>
+            )}
           </div>
         )
       })}

@@ -12,7 +12,7 @@ export default memo(function Step4RawMaterial({ data, updateData, plant }) {
       try {
         const { data: purchases } = await supabase
           .from('raw_material_purchases')
-          .select('raw_material_type_id, final_quantity, purchase_time')
+          .select('raw_material_type_id, quantity_kg, purchase_time')
           .eq('plant_id', plant.id)
           .eq('is_deleted', false)
           .gte('date', data.shift_start_date)
@@ -40,7 +40,7 @@ export default memo(function Step4RawMaterial({ data, updateData, plant }) {
         const purchasedByType = {}
         filtered.forEach(p => {
           const typeId = p.raw_material_type_id
-          purchasedByType[typeId] = (purchasedByType[typeId] || 0) + (parseFloat(p.final_quantity) || 0)
+          purchasedByType[typeId] = (purchasedByType[typeId] || 0) + (parseFloat(p.quantity_kg) || 0)
         })
 
         // Update rawMaterials

@@ -188,6 +188,10 @@ export default function PurchaseDetail() {
               <div style={valueStyle}>{formatDate(purchase.date)}</div>
             </div>
             <div>
+              <div style={labelStyle}>Time</div>
+              <div style={valueStyle}>{purchase.purchase_time ? purchase.purchase_time.slice(0, 5) : 'N/A'}</div>
+            </div>
+            <div>
               <div style={labelStyle}>Vehicle</div>
               <div style={valueStyle}>{purchase.vehicle_number || 'N/A'}</div>
             </div>
