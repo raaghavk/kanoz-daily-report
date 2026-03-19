@@ -72,8 +72,8 @@ export default function PurchaseDetail() {
     )
   }
 
-  const avgRatePerKg = purchase.final_quantity > 0
-    ? (purchase.total_amount / purchase.final_quantity)
+  const avgRatePerKg = (purchase.quantity_kg || purchase.final_quantity) > 0
+    ? (purchase.total_amount / (purchase.quantity_kg || purchase.final_quantity))
     : 0
 
   const totalCharges = (parseFloat((purchase.loading_expense || purchase.loading_charges || 0)) || 0) +
@@ -158,7 +158,7 @@ export default function PurchaseDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>Final Qty</div>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(purchase.final_quantity || 0).toLocaleString('en-IN')} kg</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round((purchase.quantity_kg || purchase.final_quantity) || 0).toLocaleString('en-IN')} kg</div>
             </div>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>RM Rate</div>
@@ -216,7 +216,7 @@ export default function PurchaseDetail() {
             </div>
             <div>
               <div style={labelStyle}>Final Quantity</div>
-              <div style={valueStyle}>{purchase.final_quantity ? `${Math.round(purchase.final_quantity).toLocaleString('en-IN')} kg` : 'N/A'}</div>
+              <div style={valueStyle}>{(purchase.quantity_kg || purchase.final_quantity) ? `${Math.round((purchase.quantity_kg || purchase.final_quantity)).toLocaleString('en-IN')} kg` : 'N/A'}</div>
             </div>
           </div>
         </div>

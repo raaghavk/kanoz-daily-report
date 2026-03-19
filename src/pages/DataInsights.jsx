@@ -56,12 +56,12 @@ const MATCHERS = [
     defaultTime: 'today',
     run: async (plantId, time) => {
       const df = getDateRange(time)
-      let q = supabase.from('raw_material_purchases').select('final_quantity, total_amount, net_weight, rate_per_kg, suppliers(name), raw_material_types(name)').eq('plant_id', plantId).eq('is_deleted', false)
+      let q = supabase.from('raw_material_purchases').select('quantity_kg, total_amount, net_weight, rate_per_kg, suppliers(name), raw_material_types(name)').eq('plant_id', plantId).eq('is_deleted', false)
       if (df.from) q = q.gte('date', df.from)
       if (df.to) q = q.lte('date', df.to)
       const { data } = await q
       if (!data?.length) return `No purchases ${df.label}.`
-      const totalKg = data.reduce((s, p) => s + (parseFloat(p.final_quantity) || 0), 0)
+      const totalKg = data.reduce((s, p) => s + (parseFloat(p.quantity_kg) || 0), 0)
       const totalAmt = data.reduce((s, p) => s + (parseFloat(p.total_amount) || 0), 0)
       const avgRate = totalKg > 0 ? totalAmt / totalKg : 0
       // Group by material type
@@ -69,7 +69,7 @@ const MATCHERS = [
       data.forEach(p => {
         const name = p.raw_material_types?.name || 'Other'
         if (!byType[name]) byType[name] = { qty: 0, amt: 0 }
-        byType[name].qty += parseFloat(p.final_quantity) || 0
+        byType[name].qty += parseFloat(p.quantity_kg) || 0
         byType[name].amt += parseFloat(p.total_amount) || 0
       })
       let result = `📦 ${data.length} purchase${data.length > 1 ? 's' : ''} ${df.label}\n\n${fmtKg(totalKg)} total quantity\n₹${fmt(totalAmt)} total amount\n₹${avgRate.toFixed(2)}/kg avg cost`
@@ -100,7 +100,7 @@ const MATCHERS = [
     keywords: ['supplier', 'supplier wise', 'supplierwise', 'sabhi supplier', 'supplier summary', 'supplier report'],
     run: async (plantId, time) => {
       const df = getDateRange(time || 'month')
-      let q = supabase.from('raw_material_purchases').select('final_quantity, total_amount, suppliers(name)').eq('plant_id', plantId).eq('is_deleted', false)
+      let q = supabase.from('raw_material_purchases').select('quantity_kg, total_amount, suppliers(name)').eq('plant_id', plantId).eq('is_deleted', false)
       if (df.from) q = q.gte('date', df.from)
       if (df.to) q = q.lte('date', df.to)
       const { data } = await q
@@ -109,7 +109,7 @@ const MATCHERS = [
       data.forEach(p => {
         const n = p.suppliers?.name || 'Unknown'
         if (!bySupplier[n]) bySupplier[n] = { qty: 0, amt: 0, count: 0 }
-        bySupplier[n].qty += parseFloat(p.final_quantity) || 0
+        bySupplier[n].qty += parseFloat(p.quantity_kg) || 0
         bySupplier[n].amt += parseFloat(p.total_amount) || 0
         bySupplier[n].count++
       })
@@ -242,15 +242,15 @@ const MATCHERS = [
     defaultTime: 'month',
     run: async (plantId, time) => {
       const df = getDateRange(time)
-      let q = supabase.from('raw_material_purchases').select('total_amount, loading_charges, unloading_charges, transport_charges').eq('plant_id', plantId).eq('is_deleted', false)
+      let q = supabase.from('raw_material_purchases').select('total_amount, loading_expense, unloading_expense, transport_expense, other_expense').eq('plant_id', plantId).eq('is_deleted', false)
       if (df.from) q = q.gte('date', df.from)
       if (df.to) q = q.lte('date', df.to)
       const { data } = await q
       if (!data?.length) return `No spending data ${df.label}.`
       const totalAmt = data.reduce((s, p) => s + (parseFloat(p.total_amount) || 0), 0)
-      const totalLoading = data.reduce((s, p) => s + (parseFloat(p.loading_charges) || 0), 0)
-      const totalUnloading = data.reduce((s, p) => s + (parseFloat(p.unloading_charges) || 0), 0)
-      const totalTransport = data.reduce((s, p) => s + (parseFloat(p.transport_charges) || 0), 0)
+      const totalLoading = data.reduce((s, p) => s + (parseFloat(p.loading_expense) || 0), 0)
+      const totalUnloading = data.reduce((s, p) => s + (parseFloat(p.unloading_expense) || 0), 0)
+      const totalTransport = data.reduce((s, p) => s + (parseFloat(p.transport_expense) || 0), 0)
       const totalCharges = totalLoading + totalUnloading + totalTransport
       return `💸 Spending ${df.label}:\n\n₹${fmt(totalAmt)} total purchase amount\n₹${fmt(totalCharges)} in charges (loading + unloading + transport)\n\n${data.length} purchases made`
     },
@@ -300,7 +300,7 @@ const MATCHERS = [
     defaultTime: 'month',
     run: async (plantId, time) => {
       const df = getDateRange(time)
-      let q = supabase.from('raw_material_purchases').select('final_quantity, total_amount, raw_material_types(name)').eq('plant_id', plantId).eq('is_deleted', false)
+      let q = supabase.from('raw_material_purchases').select('quantity_kg, total_amount, raw_material_types(name)').eq('plant_id', plantId).eq('is_deleted', false)
       if (df.from) q = q.gte('date', df.from)
       if (df.to) q = q.lte('date', df.to)
       const { data } = await q
@@ -309,7 +309,7 @@ const MATCHERS = [
       data.forEach(p => {
         const name = p.raw_material_types?.name || 'Other'
         if (!byType[name]) byType[name] = { qty: 0, amt: 0, count: 0 }
-        byType[name].qty += parseFloat(p.final_quantity) || 0
+        byType[name].qty += parseFloat(p.quantity_kg) || 0
         byType[name].amt += parseFloat(p.total_amount) || 0
         byType[name].count++
       })
@@ -325,7 +325,7 @@ const MATCHERS = [
     defaultTime: 'month',
     run: async (plantId, time) => {
       const df = getDateRange(time)
-      let q = supabase.from('raw_material_purchases').select('final_quantity, total_amount, raw_material_types(name)').eq('plant_id', plantId).eq('is_deleted', false)
+      let q = supabase.from('raw_material_purchases').select('quantity_kg, total_amount, raw_material_types(name)').eq('plant_id', plantId).eq('is_deleted', false)
       if (df.from) q = q.gte('date', df.from)
       if (df.to) q = q.lte('date', df.to)
       const { data } = await q
@@ -334,7 +334,7 @@ const MATCHERS = [
       data.forEach(p => {
         const name = p.raw_material_types?.name || 'Other'
         if (!byType[name]) byType[name] = { qty: 0, amt: 0 }
-        byType[name].qty += parseFloat(p.final_quantity) || 0
+        byType[name].qty += parseFloat(p.quantity_kg) || 0
         byType[name].amt += parseFloat(p.total_amount) || 0
       })
       let result = `📊 Average purchase rate (${df.label}):\n`
@@ -375,7 +375,7 @@ const MATCHERS = [
     run: async (plantId, time) => {
       const df = getDateRange(time)
       const [pRes, dRes, rRes] = await Promise.all([
-        supabase.from('raw_material_purchases').select('final_quantity, total_amount').eq('plant_id', plantId).eq('is_deleted', false).gte('date', df.from || '2024-01-01').lte('date', df.to || getLocalDate()),
+        supabase.from('raw_material_purchases').select('quantity_kg, total_amount').eq('plant_id', plantId).eq('is_deleted', false).gte('date', df.from || '2024-01-01').lte('date', df.to || getLocalDate()),
         supabase.from('vehicle_dispatches').select('dispatch_pellets(quantity_mt)').eq('plant_id', plantId).eq('is_deleted', false).gte('date', df.from || '2024-01-01').lte('date', df.to || getLocalDate()),
         supabase.from('shift_reports').select('pellet_production_mt').eq('plant_id', plantId).eq('is_deleted', false).gte('date', df.from || '2024-01-01').lte('date', df.to || getLocalDate()),
       ])
@@ -383,7 +383,7 @@ const MATCHERS = [
       const dispatches = dRes.data || []
       const reports = rRes.data || []
       const purchaseAmt = purchases.reduce((s, p) => s + (parseFloat(p.total_amount) || 0), 0)
-      const purchaseKg = purchases.reduce((s, p) => s + (parseFloat(p.final_quantity) || 0), 0)
+      const purchaseKg = purchases.reduce((s, p) => s + (parseFloat(p.quantity_kg) || 0), 0)
       const dispatchMT = dispatches.reduce((s, d) => s + (d.dispatch_pellets || []).reduce((ss, p) => ss + (parseFloat(p.quantity_mt) || 0), 0), 0)
       const prodMT = reports.reduce((s, r) => s + (parseFloat(r.pellet_production_mt) || 0), 0)
       return `📋 Summary (${df.label}):\n\n⚙️ Production: ${prodMT.toFixed(1)} MT\n🚛 Dispatched: ${dispatchMT.toFixed(1)} MT (${dispatches.length} trucks)\n📦 Purchased: ${fmtKg(purchaseKg)} (₹${fmt(purchaseAmt)})\n📝 Shift Reports: ${reports.length}`

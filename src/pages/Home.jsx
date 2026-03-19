@@ -82,7 +82,7 @@ export default function Home() {
         Promise.all([
           supabase.from('shift_reports').select('pellet_production_mt').eq('plant_id', plant.id).eq('is_deleted', false).eq('date', yesterday),
           supabase.from('vehicle_dispatches').select('dispatch_pellets(quantity_mt)').eq('plant_id', plant.id).eq('is_deleted', false).eq('date', yesterday),
-          supabase.from('raw_material_purchases').select('total_amount, final_quantity').eq('plant_id', plant.id).eq('is_deleted', false).eq('date', yesterday),
+          supabase.from('raw_material_purchases').select('total_amount, quantity_kg').eq('plant_id', plant.id).eq('is_deleted', false).eq('date', yesterday),
         ]),
       ])
 
@@ -100,7 +100,7 @@ export default function Home() {
       const yTrucks = yDispatches.length
       const yDispatchMT = yDispatches.reduce((s, d) => s + (d.dispatch_pellets || []).reduce((ss, p) => ss + (parseFloat(p.quantity_mt) || 0), 0), 0)
       const yPurchaseAmt = yPurchases.reduce((s, p) => s + (parseFloat(p.total_amount) || 0), 0)
-      const yPurchaseKg = yPurchases.reduce((s, p) => s + (parseFloat(p.final_quantity) || 0), 0)
+      const yPurchaseKg = yPurchases.reduce((s, p) => s + (parseFloat(p.quantity_kg) || 0), 0)
 
       return {
         stats: { production: totalProd, trucks: dispatchCountRes.count || 0, issues: totalIssues },
