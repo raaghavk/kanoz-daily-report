@@ -456,18 +456,20 @@ export default function ShiftWizard() {
         }
       }
 
-      // Save pellet stock
+      // Save pellet stock (only rows with non-zero values)
       if (reportData.pelletStock && reportData.pelletStock.length) {
         await supabase.from('pellet_stock').delete().eq('shift_report_id', report.id)
-        const stockRows = reportData.pelletStock.map(ps => ({
-          shift_report_id: report.id,
-          pellet_type_id: ps.id,
-          opening_mt: sanitizeNumber(ps.opening),
-          production_mt: sanitizeNumber(ps.production),
-          dispatch_mt: sanitizeNumber(ps.dispatch),
-          wastage_mt: sanitizeNumber(ps.wastage),
-          closing_mt: sanitizeNumber(ps.closing),
-        }))
+        const stockRows = reportData.pelletStock
+          .filter(ps => sanitizeNumber(ps.opening) > 0 || sanitizeNumber(ps.production) > 0 || sanitizeNumber(ps.dispatch) > 0 || sanitizeNumber(ps.wastage) > 0)
+          .map(ps => ({
+            shift_report_id: report.id,
+            pellet_type_id: ps.id,
+            opening_mt: sanitizeNumber(ps.opening),
+            production_mt: sanitizeNumber(ps.production),
+            dispatch_mt: sanitizeNumber(ps.dispatch),
+            wastage_mt: sanitizeNumber(ps.wastage),
+            closing_mt: sanitizeNumber(ps.closing),
+          }))
         if (stockRows.length) {
           await supabase.from('pellet_stock').insert(stockRows)
         }
@@ -513,7 +515,9 @@ export default function ShiftWizard() {
             shift_report_id: report.id,
             litres: sanitizeNumber(p.litres),
             cost_per_litre: sanitizeNumber(p.cost_per_litre),
+            total_cost: sanitizeNumber(p.litres) * sanitizeNumber(p.cost_per_litre),
             receipt_url: p.receipt_url || null,
+            purchase_time: p.purchase_time || null,
           }))
         if (purchaseRows.length > 0) {
           await supabase.from('diesel_purchases').insert(purchaseRows)
