@@ -232,11 +232,12 @@ export default function PurchaseForm() {
 
       // Map raw_material_type_id to the text name (suppliers table uses text column, NOT uuid)
       const rmName = rawMaterials.find(m => m.id === supplierForm.raw_material_type_id)?.name || ''
+      const mobileWithPrefix = '+91' + supplierForm.mobile.replace(/^\+91/, '').trim()
       const supplierData = {
         plant_id: plant?.id,
         org_id: plant?.org_id,
         name: supplierForm.name.trim(),
-        mobile: supplierForm.mobile.trim(),
+        mobile: mobileWithPrefix,
         raw_material_type: rmName,
         rate_offered: supplierForm.rate_offered ? parseFloat(supplierForm.rate_offered) : null,
         address: supplierForm.address || null,
@@ -791,13 +792,16 @@ export default function PurchaseForm() {
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
               Phone <span style={{ color: '#d32f2f' }}>*</span>
             </label>
-            <input
-              type="tel"
-              placeholder="Phone number"
-              value={supplierForm.mobile}
-              onChange={e => setSupplierForm({ ...supplierForm, mobile: e.target.value })}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+              <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
+              <input
+                type="tel"
+                placeholder="10-digit number"
+                value={supplierForm.mobile}
+                onChange={e => setSupplierForm({ ...supplierForm, mobile: e.target.value })}
+                style={{ flex: 1, padding: '10px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
+              />
+            </div>
           </div>
 
           <div>

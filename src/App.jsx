@@ -23,7 +23,9 @@ const AdminPanel = lazy(() => import('./pages/AdminPanel'))
 const DeleteRequests = lazy(() => import('./pages/DeleteRequests'))
 const DataInsights = lazy(() => import('./pages/DataInsights'))
 const CustomerList = lazy(() => import('./pages/customers/CustomerList'))
+const CustomerDetail = lazy(() => import('./pages/customers/CustomerDetail'))
 const TransporterList = lazy(() => import('./pages/transporters/TransporterList'))
+const TransporterDetail = lazy(() => import('./pages/transporters/TransporterDetail'))
 
 function LoadingFallback() {
   return (
@@ -103,7 +105,9 @@ export default function App() {
         <Route path="suppliers/:id" element={<SupplierDetail />} />
         <Route path="insights" element={<DataInsights />} />
         <Route path="customers" element={<CustomerList />} />
+        <Route path="customers/:id" element={<CustomerDetail />} />
         <Route path="transporters" element={<TransporterList />} />
+        <Route path="transporters/:id" element={<TransporterDetail />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />

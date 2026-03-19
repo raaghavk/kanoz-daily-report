@@ -102,11 +102,12 @@ export default function SupplierList() {
 
     try {
       setSubmitting(true)
+      const mobileWithPrefix = '+91' + formData.mobile.replace(/^\+91/, '').trim()
       const { data, error } = await supabase
         .from('suppliers')
         .insert([{
           name: formData.name,
-          mobile: formData.mobile,
+          mobile: mobileWithPrefix,
           address: formData.address,
           raw_material_type: formData.raw_material_type,
           rate_offered: parseFloat(formData.rate_offered) || null,
@@ -275,13 +276,16 @@ export default function SupplierList() {
 
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Mobile Number *</label>
-            <input
-              type="tel"
-              value={formData.mobile}
-              onChange={e => setFormData({ ...formData, mobile: e.target.value })}
-              placeholder="e.g., 9876543210"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+              <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
+              <input
+                type="tel"
+                value={formData.mobile}
+                onChange={e => setFormData({ ...formData, mobile: e.target.value })}
+                placeholder="10-digit number"
+                style={{ flex: 1, padding: '10px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
+              />
+            </div>
           </div>
 
           <div>

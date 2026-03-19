@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -8,6 +9,7 @@ import PageHeader from '../../components/PageHeader'
 
 export default function TransporterList() {
   const { plant } = useAuth()
+  const navigate = useNavigate()
   const [transporters, setTransporters] = useState([])
   const [filteredTransporters, setFilteredTransporters] = useState([])
   const [loading, setLoading] = useState(true)
@@ -48,7 +50,8 @@ export default function TransporterList() {
       return
     }
     try {
-      const { data, error } = await supabase.from('transporters').insert([{ org_id: plant.org_id, name: formData.name.trim(), phone: formData.phone.trim(), address: formData.address.trim() || null, is_active: true }]).select()
+      const phoneWithPrefix = '+91' + formData.phone.replace(/^\+91/, '').trim()
+      const { data, error } = await supabase.from('transporters').insert([{ org_id: plant.org_id, name: formData.name.trim(), phone: phoneWithPrefix, address: formData.address.trim() || null, is_active: true }]).select()
       if (error) throw error
       setTransporters([...transporters, data[0]])
       setFormData({ name: '', phone: '', address: '' })
@@ -101,7 +104,10 @@ export default function TransporterList() {
           <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
             {filteredTransporters.map((transporter, idx) => (
               <div key={transporter.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <button
+                  onClick={() => navigate(`/transporters/${transporter.id}`)}
+                  style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {transporter.name}
                   </div>
@@ -110,12 +116,12 @@ export default function TransporterList() {
                       {transporter.address}
                     </div>
                   )}
-                </div>
+                </button>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => handleCall(transporter.phone)} style={{ width: 34, height: 34, borderRadius: 8, background: '#e8f0ec', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <button onClick={(e) => { e.stopPropagation(); handleCall(transporter.phone) }} style={{ width: 34, height: 34, borderRadius: 8, background: '#e8f0ec', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Phone size={14} style={{ color: '#2d6a4f' }} />
                   </button>
-                  <button onClick={() => handleSMS(transporter.phone)} style={{ width: 34, height: 34, borderRadius: 8, background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <button onClick={(e) => { e.stopPropagation(); handleSMS(transporter.phone) }} style={{ width: 34, height: 34, borderRadius: 8, background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <MessageSquare size={14} style={{ color: '#2563EB' }} />
                   </button>
                 </div>
@@ -137,7 +143,10 @@ export default function TransporterList() {
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Phone <span style={{ color: '#d32f2f' }}>*</span></label>
-            <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="Phone number" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+              <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
+              <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="10-digit number" style={{ flex: 1, padding: '10px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>

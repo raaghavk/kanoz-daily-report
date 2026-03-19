@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -8,6 +9,7 @@ import PageHeader from '../../components/PageHeader'
 
 export default function CustomerList() {
   const { plant } = useAuth()
+  const navigate = useNavigate()
   const [customers, setCustomers] = useState([])
   const [filteredCustomers, setFilteredCustomers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -48,7 +50,8 @@ export default function CustomerList() {
       return
     }
     try {
-      const { data, error } = await supabase.from('customers').insert([{ org_id: plant.org_id, name: formData.name.trim(), mobile: formData.mobile.trim(), address: formData.address.trim() || null, is_active: true }]).select()
+      const mobileWithPrefix = '+91' + formData.mobile.replace(/^\+91/, '').trim()
+      const { data, error } = await supabase.from('customers').insert([{ org_id: plant.org_id, name: formData.name.trim(), mobile: mobileWithPrefix, address: formData.address.trim() || null, is_active: true }]).select()
       if (error) throw error
       setCustomers([...customers, data[0]])
       setFormData({ name: '', mobile: '', address: '' })
@@ -108,7 +111,10 @@ export default function CustomerList() {
           <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
             {filteredCustomers.map((customer, idx) => (
               <div key={customer.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <button
+                  onClick={() => navigate(`/customers/${customer.id}`)}
+                  style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {customer.name}
                   </div>
@@ -117,15 +123,15 @@ export default function CustomerList() {
                       {customer.address}
                     </div>
                   )}
-                </div>
+                </button>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button onClick={() => handleCall(customer.mobile)} style={{ width: 34, height: 34, borderRadius: 8, background: '#e8f0ec', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <button onClick={(e) => { e.stopPropagation(); handleCall(customer.mobile) }} style={{ width: 34, height: 34, borderRadius: 8, background: '#e8f0ec', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Phone size={14} style={{ color: '#2d6a4f' }} />
                   </button>
-                  <button onClick={() => handleSMS(customer.mobile)} style={{ width: 34, height: 34, borderRadius: 8, background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <button onClick={(e) => { e.stopPropagation(); handleSMS(customer.mobile) }} style={{ width: 34, height: 34, borderRadius: 8, background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <MessageSquare size={14} style={{ color: '#2563EB' }} />
                   </button>
-                  <button onClick={() => handleMap(customer)} style={{ width: 34, height: 34, borderRadius: 8, background: '#FEF3C7', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <button onClick={(e) => { e.stopPropagation(); handleMap(customer) }} style={{ width: 34, height: 34, borderRadius: 8, background: '#FEF3C7', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Navigation size={14} style={{ color: '#B45309' }} />
                   </button>
                 </div>
@@ -147,7 +153,10 @@ export default function CustomerList() {
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Mobile <span style={{ color: '#d32f2f' }}>*</span></label>
-            <input type="tel" value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} placeholder="Phone number" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+              <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
+              <input type="tel" value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} placeholder="10-digit number" style={{ flex: 1, padding: '10px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>
