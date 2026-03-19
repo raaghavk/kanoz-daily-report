@@ -24,6 +24,7 @@ export default function PurchaseForm() {
   const [formData, setFormData] = useState({
     date: getLocalDate(),
     purchase_time: new Date().toTimeString().slice(0, 5),
+    serial_no: '',
     supplier_id: '',
     raw_material_type_id: '',
     vehicle_number: '',
@@ -102,6 +103,7 @@ export default function PurchaseForm() {
     setFormData({
       date: purchaseData.date || getLocalDate(),
       purchase_time: purchaseData.purchase_time || '',
+      serial_no: purchaseData.serial_no || '',
       supplier_id: purchaseData.supplier_id || '',
       raw_material_type_id: purchaseData.raw_material_type_id || '',
       vehicle_number: purchaseData.vehicle_number || '',
@@ -319,6 +321,7 @@ export default function PurchaseForm() {
         created_by: employee?.id,
         date: formData.date,
         purchase_time: formData.purchase_time || null,
+        serial_no: sanitizeText(formData.serial_no, 50) || null,
         supplier_id: formData.supplier_id,
         supplier_name: supplierName,
         raw_material_type_id: formData.raw_material_type_id,
@@ -415,6 +418,19 @@ export default function PurchaseForm() {
               />
             </div>
           </div>
+        </div>
+
+        <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
+            Serial No / Parchi No
+          </label>
+          <input
+            type="text"
+            placeholder="e.g., 8501"
+            value={formData.serial_no}
+            onChange={e => handleFieldChange('serial_no', e.target.value)}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+          />
         </div>
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
