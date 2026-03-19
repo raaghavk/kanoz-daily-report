@@ -43,6 +43,7 @@ export default function DispatchForm() {
     customer_id: '',
     destination: '',
     transporter: '',
+    transporter_id: '',
     driver_name: '',
     driver_phone: '',
     pellets: [{ pellet_type_id: '', quantity_mt: '' }],
@@ -174,6 +175,7 @@ export default function DispatchForm() {
         .select()
       if (data?.[0]) {
         queryClient.invalidateQueries({ queryKey: ['transporters', plant?.org_id] })
+        updateForm('transporter_id', data[0].id)
         updateForm('transporter', data[0].name)
         setNewTransporterName('')
         setNewTransporterPhone('')
@@ -313,6 +315,7 @@ export default function DispatchForm() {
           customer_id: form.customer_id,
           destination: sanitizeText(form.destination, 200),
           transporter: sanitizeText(form.transporter, 100),
+          transporter_id: form.transporter_id || null,
           driver_name: sanitizeText(form.driver_name, 100),
           driver_phone: sanitizeText(form.driver_phone, 15),
           invoice_no: sanitizeText(form.invoice_number, 50),
@@ -360,6 +363,7 @@ export default function DispatchForm() {
           customer_id: '',
           destination: '',
           transporter: '',
+          transporter_id: '',
           driver_name: '',
           driver_phone: '',
           pellets: [{ pellet_type_id: '', quantity_mt: '' }],
@@ -652,13 +656,19 @@ export default function DispatchForm() {
               <div style={{ display: 'flex', gap: 8 }}>
                 {transporters.length > 0 ? (
                   <select
-                    value={form.transporter}
-                    onChange={e => updateForm('transporter', e.target.value)}
+                    value={form.transporter_id}
+                    onChange={e => {
+                      const selected = transporters.find(t => t.id === e.target.value)
+                      if (selected) {
+                        updateForm('transporter_id', selected.id)
+                        updateForm('transporter', selected.name)
+                      }
+                    }}
                     style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
                   >
                     <option value="">Select transporter</option>
                     {transporters.map(t => (
-                      <option key={t.id} value={t.name}>{t.name}</option>
+                      <option key={t.id} value={t.id}>{t.name}</option>
                     ))}
                   </select>
                 ) : (

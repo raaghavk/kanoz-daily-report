@@ -210,6 +210,35 @@ export default memo(function Step1Header({ data, updateData, employee, plant }) 
         </div>
       </div>
 
+      {/* Power Readings */}
+      <div style={{ marginTop: 16 }}>
+        <label style={labelStyle}>Power Meter Readings</label>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Start Reading</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={data.start_power_reading || ''}
+              onChange={e => updateData('start_power_reading', e.target.value)}
+              placeholder="0"
+              style={editableInputStyle}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>End Reading</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={data.end_power_reading || ''}
+              onChange={e => updateData('end_power_reading', e.target.value)}
+              placeholder="0"
+              style={editableInputStyle}
+            />
+          </div>
+        </div>
+      </div>
+
     </div>
   )
 })

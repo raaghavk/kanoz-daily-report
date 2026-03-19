@@ -55,6 +55,8 @@ export default function ShiftWizard() {
     end_time: '18:00',
     shift_start_date: getLocalDate(),
     shift_end_date: getLocalDate(),
+    start_power_reading: 0,
+    end_power_reading: 0,
     weather: '',
     machines: [],
     production: [],
@@ -218,6 +220,8 @@ export default function ShiftWizard() {
       updateData('end_time', report.end_time)
       updateData('shift_start_date', report.shift_start_date || report.date)
       updateData('shift_end_date', report.shift_end_date || report.date)
+      updateData('start_power_reading', report.start_power_reading || 0)
+      updateData('end_power_reading', report.end_power_reading || 0)
       updateData('handover_notes', report.handover_notes || '')
       updateData('remarks', report.remarks || '')
       updateData('weather', report.weather || '')
@@ -382,6 +386,8 @@ export default function ShiftWizard() {
         end_time: reportData.end_time,
         shift_start_date: reportData.shift_start_date,
         shift_end_date: reportData.shift_end_date,
+        start_power_reading: sanitizeNumber(reportData.start_power_reading) || 0,
+        end_power_reading: sanitizeNumber(reportData.end_power_reading) || 0,
         pellet_production_mt: reportData.production.reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
         supervisor_id: employee?.id,
         created_by: employee?.id,
