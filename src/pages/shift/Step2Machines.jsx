@@ -86,7 +86,7 @@ export default memo(function Step2Machines({ data, updateData }) {
                   border: 'none', cursor: 'pointer', marginLeft: 'auto'
                 }}
               >
-                {m.did_not_run ? 'Not Running' : 'Active'}
+                {m.did_not_run ? '✕ No Production' : '✓ Running'}
               </button>
             </div>
             {!m.did_not_run && (
