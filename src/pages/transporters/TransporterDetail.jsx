@@ -47,9 +47,9 @@ export default function TransporterDetail() {
 
       const { data: dispatchesData, error: dispatchesError } = await supabase
         .from('vehicle_dispatches')
-        .select('*')
+        .select('*, dispatch_pellets(*)')
         .eq('transporter_id', id)
-        .order('dispatch_date', { ascending: false })
+        .order('date', { ascending: false })
         .limit(10)
 
       if (dispatchesError) throw dispatchesError
@@ -222,29 +222,31 @@ export default function TransporterDetail() {
             <p style={{ fontSize: 13, color: '#595c4a', textAlign: 'center', padding: '16px 0' }}>No dispatches by this transporter yet</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {dispatches.map(dispatch => (
-                <div key={dispatch.id} style={{ background: '#fefae0', borderRadius: 8, padding: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <div>
-                      <p style={{ fontSize: 12, color: '#b5b8a8' }}>
-                        {new Date(dispatch.dispatch_date).toLocaleDateString('en-IN')}
-                      </p>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
-                        {dispatch.vehicle_number || 'N/A'}
+              {dispatches.map(dispatch => {
+                const totalMt = dispatch.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0) || 0
+                return (
+                  <div key={dispatch.id} style={{ background: '#fefae0', borderRadius: 8, padding: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <div>
+                        <p style={{ fontSize: 12, color: '#b5b8a8' }}>
+                          {dispatch.date ? new Date(dispatch.date + 'T00:00:00').toLocaleDateString('en-IN') : '—'}
+                        </p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>
+                          {dispatch.truck_number || 'N/A'}
+                        </p>
+                      </div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>
+                        {totalMt.toFixed(1)} MT
                       </p>
                     </div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>
-                      {dispatch.dispatch_quantity || '-'} MT
-                    </p>
+                    {dispatch.remarks && (
+                      <div style={{ fontSize: 11, color: '#595c4a', marginTop: 6, paddingTop: 6, borderTop: '1px solid #e5ddd0' }}>
+                        {dispatch.remarks}
+                      </div>
+                    )}
                   </div>
-
-                  {dispatch.remarks && (
-                    <div style={{ fontSize: 11, color: '#595c4a', marginTop: 6, paddingTop: 6, borderTop: '1px solid #e5ddd0' }}>
-                      {dispatch.remarks}
-                    </div>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

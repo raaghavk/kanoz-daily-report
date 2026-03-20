@@ -165,7 +165,7 @@ export default function ShiftWizard() {
   async function loadPlantData() {
     const [machinesRes, materialsRes, pelletTypesRes, equipmentRes] = await Promise.all([
       supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
-      supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
+      supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true).order('name', { ascending: true }),
       supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
       supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
     ])
@@ -222,7 +222,7 @@ export default function ShiftWizard() {
         const opening = prev ? parseFloat(prev.closing_litres) || 0 : 0
         return {
           id: eq.id, equipment_name: eq.name, opening, added: 0, used: 0,
-          closing: opening, hours: 0, avg_per_hr: 0, collapsed: false,
+          closing: opening, hours: 0, avg_per_hr: 0, collapsed: true,
         }
       }))
     }
@@ -262,7 +262,7 @@ export default function ShiftWizard() {
       // Load machines, materials, equipment first (needed for merging data)
       const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
         supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
-        supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
+        supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true).order('name', { ascending: true }),
         supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
         supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
@@ -288,7 +288,7 @@ export default function ShiftWizard() {
               return {
                 ...m,
                 production_hours: parseFloat(prod.hours_run) || 0,
-                total_hours: parseFloat(prod.hours_run) || 0,
+                total_hours: parseFloat(prod.total_hours) || 0,
                 from_time: prod.from_time || '',
                 to_time: prod.to_time || '',
                 breakdown_hrs: parseFloat(prod.breakdown_hours) || 0,
@@ -347,7 +347,7 @@ export default function ShiftWizard() {
             closing: dieselData ? parseFloat(dieselData.closing_litres) || 0 : 0,
             hours: dieselData ? parseFloat(dieselData.hours_worked) || 0 : 0,
             avg_per_hr: 0,
-            collapsed: false,
+            collapsed: true,
           }
         })
         updateData('diesel', equipmentRows)

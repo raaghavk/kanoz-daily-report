@@ -31,7 +31,7 @@ function getDateRange(filter, today) {
 export default function ReportList() {
   const { plant, employee } = useAuth()
   const navigate = useNavigate()
-  const [filter, setFilter] = useState('today')
+  const [filter, setFilter] = useState('week')
 
   const today = getLocalDate()
 
@@ -69,7 +69,6 @@ export default function ReportList() {
   }
 
   const filterTabs = [
-    { id: 'today', label: 'Today' },
     { id: 'week', label: 'This Week' },
     { id: 'month', label: 'This Month' }
   ]

@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
-import { Search, Plus, Phone, MessageSquare, Navigation, Loader2, AlertCircle } from 'lucide-react'
+import { Search, Plus, Navigation, Loader2, AlertCircle } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function CustomerList() {
@@ -15,7 +15,7 @@ export default function CustomerList() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
-  const [formData, setFormData] = useState({ name: '', mobile: '', address: '' })
+  const [formData, setFormData] = useState({ name: '', address: '' })
 
   useEffect(() => {
     if (plant?.org_id) fetchCustomers()
@@ -24,7 +24,7 @@ export default function CustomerList() {
   useEffect(() => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
-      setFilteredCustomers(customers.filter(c => c.name.toLowerCase().includes(q) || (c.mobile || '').includes(q)))
+      setFilteredCustomers(customers.filter(c => c.name.toLowerCase().includes(q)))
     } else {
       setFilteredCustomers(customers)
     }
@@ -45,16 +45,15 @@ export default function CustomerList() {
   }
 
   async function handleAddCustomer() {
-    if (!formData.name.trim() || !formData.mobile.trim()) {
-      showToast('Name and mobile are required', 'error')
+    if (!formData.name.trim()) {
+      showToast('Name is required', 'error')
       return
     }
     try {
-      const mobileWithPrefix = '+91' + formData.mobile.replace(/^\+91/, '').trim()
-      const { data, error } = await supabase.from('customers').insert([{ org_id: plant.org_id, name: formData.name.trim(), mobile: mobileWithPrefix, address: formData.address.trim() || null, is_active: true }]).select()
+      const { data, error } = await supabase.from('customers').insert([{ org_id: plant.org_id, name: formData.name.trim(), address: formData.address.trim() || null, is_active: true }]).select()
       if (error) throw error
       setCustomers([...customers, data[0]])
-      setFormData({ name: '', mobile: '', address: '' })
+      setFormData({ name: '', address: '' })
       setShowAddModal(false)
       showToast('Customer added', 'success')
     } catch (err) {
@@ -63,8 +62,6 @@ export default function CustomerList() {
     }
   }
 
-  function handleCall(mobile) { window.location.href = `tel:${mobile}` }
-  function handleSMS(mobile) { window.location.href = `sms:${mobile}` }
   function handleMap(customer) {
     if (customer.address) {
       window.open(`https://www.google.com/maps/search/${encodeURIComponent(customer.address)}`, '_blank')
@@ -82,7 +79,7 @@ export default function CustomerList() {
             <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8a8d7a' }} />
             <input
               type="text"
-              placeholder="Search by name or mobile..."
+              placeholder="Search by name..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               style={{ width: '100%', paddingLeft: 36, paddingRight: 16, paddingTop: 10, paddingBottom: 10, borderRadius: 12, fontSize: 14, outline: 'none', background: '#fffdf5', border: '1.5px solid #e5ddd0', color: '#2c2c2c', boxSizing: 'border-box' }}
@@ -124,17 +121,11 @@ export default function CustomerList() {
                     </div>
                   )}
                 </button>
-                <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button onClick={(e) => { e.stopPropagation(); handleCall(customer.mobile) }} style={{ width: 34, height: 34, borderRadius: 8, background: '#e8f0ec', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Phone size={14} style={{ color: '#2d6a4f' }} />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleSMS(customer.mobile) }} style={{ width: 34, height: 34, borderRadius: 8, background: '#EEF2FF', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <MessageSquare size={14} style={{ color: '#2563EB' }} />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleMap(customer) }} style={{ width: 34, height: 34, borderRadius: 8, background: '#FEF3C7', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {customer.address && (
+                  <button onClick={(e) => { e.stopPropagation(); handleMap(customer) }} style={{ width: 34, height: 34, borderRadius: 8, background: '#FEF3C7', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <Navigation size={14} style={{ color: '#B45309' }} />
                   </button>
-                </div>
+                )}
               </div>
             ))}
           </div>
@@ -152,13 +143,6 @@ export default function CustomerList() {
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Name <span style={{ color: '#d32f2f' }}>*</span></label>
             <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Customer name" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Mobile <span style={{ color: '#d32f2f' }}>*</span></label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-              <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
-              <input type="tel" value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} placeholder="10-digit number" style={{ flex: 1, padding: '10px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
-            </div>
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>

@@ -184,7 +184,7 @@ export default function PurchaseList() {
           display: 'flex', gap: 8, overflowX: 'auto',
           background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
         }}>
-        {['today', 'week', 'month', 'all'].map(tab => (
+        {['week', 'month', 'all'].map(tab => (
           <button
             key={tab}
             onClick={() => setFilterTab(tab)}
@@ -196,7 +196,7 @@ export default function PurchaseList() {
                 : { background: 'white', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
             }}
           >
-            {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
+            {tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
           </button>
         ))}
         {filterTab === 'all' && (

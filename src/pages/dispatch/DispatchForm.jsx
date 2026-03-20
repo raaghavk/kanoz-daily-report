@@ -22,7 +22,7 @@ export default function DispatchForm() {
   const today = getLocalDate()
 
   // Filter tab
-  const filterTab = searchParams.get('tab') || 'today'
+  const filterTab = searchParams.get('tab') || 'week'
   function setFilterTab(tab) {
     setSearchParams({ tab }, { replace: true })
   }
@@ -379,10 +379,15 @@ export default function DispatchForm() {
           katta_parchi_photo: null,
           remarks: ''
         })
-        setShowForm(false)
         queryClient.invalidateQueries({ queryKey: ['dispatches'] })
         queryClient.invalidateQueries({ queryKey: ['todayDispatches'] })
         queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+        // If we came from the shift wizard, go straight back instead of showing list
+        if (returnToShift) {
+          navigate('/shift/new', { state: { returnToStep: 6 } })
+        } else {
+          setShowForm(false)
+        }
       }
     } catch (err) {
       console.error('Error saving dispatch:', err)
@@ -422,7 +427,7 @@ export default function DispatchForm() {
           display: 'flex', gap: 8, overflowX: 'auto',
           background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
         }}>
-          {['today', 'week', 'month', 'all'].map(tab => (
+          {['week', 'month', 'all'].map(tab => (
             <button
               key={tab}
               onClick={() => setFilterTab(tab)}
@@ -434,7 +439,7 @@ export default function DispatchForm() {
                   : { background: 'white', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
               }}
             >
-              {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
+              {tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
             </button>
           ))}
         </div>

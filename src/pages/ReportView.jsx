@@ -178,8 +178,158 @@ export default function ReportView() {
     0
   )
 
+  function generatePrintHTML() {
+    const machineTimingRows = displayMachines.map(m => {
+      const timing = machTimingByMachineId[m.id]
+      if (!timing) return `<tr><td>${m.name}</td><td colspan="5" style="text-align:center;color:#888;font-style:italic">Did Not Run</td></tr>`
+      const allRows = machProdRowsByMachineId[m.id] || []
+      const totalProdMt = allRows.reduce((sum, r) => sum + (parseFloat(r.production_mt) || 0), 0)
+      const prdHrs = parseFloat(timing.hours_run) || 0
+      const totalHrs = parseFloat(timing.total_hours) || prdHrs
+      const avgPerHr = prdHrs > 0 ? (totalProdMt / prdHrs).toFixed(2) : '—'
+      return `<tr><td>${m.name}</td><td>${prdHrs}h</td><td>${totalHrs}h</td><td>${totalProdMt}</td><td>${avgPerHr}</td><td>${timing.remarks || '—'}</td></tr>`
+    }).join('')
+
+    const prodRows = displayMachines.map(m => {
+      const rows = machProdRowsByMachineId[m.id] || []
+      const timing = machTimingByMachineId[m.id]
+      const prdHrs = parseFloat(timing?.hours_run) || 0
+      if (rows.length === 0) return `<tr><td>${m.name}</td><td colspan="3" style="text-align:center;color:#888;font-style:italic">No production this shift</td></tr>`
+      const filtered = rows.filter(r => parseFloat(r.production_mt) > 0 || r.pellet_type_name)
+      if (filtered.length === 0) return `<tr><td>${m.name}</td><td colspan="3" style="text-align:center;color:#888;font-style:italic">No production this shift</td></tr>`
+      return filtered.map((row, idx) => {
+        const qty = parseFloat(row.production_mt) || 0
+        const avg = prdHrs > 0 ? (qty / prdHrs).toFixed(2) : '—'
+        return `<tr><td>${idx === 0 ? m.name : ''}</td><td>${row.pellet_type_name || '—'}</td><td style="text-align:right">${qty}</td><td style="text-align:right">${avg}</td></tr>`
+      }).join('')
+    }).join('')
+
+    const rmSource = allRawMaterialTypes.length > 0 ? allRawMaterialTypes : rawMaterials.map(m => ({ id: m.raw_material_type_id, name: m.raw_material_types?.name || 'N/A' }))
+    const rmRows = rmSource.map(type => {
+      const usage = rawMaterials.find(m => m.raw_material_type_id === type.id)
+      const livePurchased = rmPurchases.filter(p => p.raw_material_type_id === type.id).reduce((sum, p) => sum + (parseFloat(p.quantity_kg) || 0), 0)
+      const purchased = livePurchased > 0 ? livePurchased : (usage?.purchased_kg ?? 0)
+      return `<tr><td>${type.name}</td><td style="text-align:right">${usage?.opening_kg ?? 0}</td><td style="text-align:right">${purchased}</td><td style="text-align:right">${usage?.quantity_kg ?? 0}</td><td style="text-align:right">${usage?.closing_kg ?? 0}</td></tr>`
+    }).join('')
+
+    const eqSource = allEquipment.length > 0 ? allEquipment : equipmentDiesel.map(e => ({ id: e.id, name: e.equipment_name }))
+    const eqRows = eqSource.map(eq => {
+      const log = equipmentDiesel.find(e => e.equipment_name === eq.name)
+      if (!log) return `<tr><td>${eq.name}</td><td colspan="6" style="text-align:center;color:#888;font-style:italic">Not recorded</td></tr>`
+      const used = (log.opening_litres || 0) + (log.added_litres || 0) - (log.closing_litres || 0)
+      const avg = log.hours_worked > 0 ? (used / log.hours_worked).toFixed(2) : '—'
+      return `<tr><td>${eq.name}</td><td style="text-align:right">${log.opening_litres || 0}</td><td style="text-align:right">${log.added_litres || 0}</td><td style="text-align:right">${used}</td><td style="text-align:right">${log.closing_litres || 0}</td><td style="text-align:right">${log.hours_worked || 0}h</td><td style="text-align:right">${avg}</td></tr>`
+    }).join('')
+
+    const dispatchRows = dispatches.length > 0
+      ? dispatches.map(d => {
+          const pelletNames = d.dispatch_pellets?.map(p => p.pellet_types?.name).filter(Boolean).join(', ') || 'N/A'
+          const qty = d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0).toFixed(1) || '0'
+          return `<tr><td>${d.truck_number}</td><td>${d.customers?.name || 'N/A'}</td><td>${pelletNames}</td><td style="text-align:right">${qty}</td><td style="text-align:right">${d.dispatch_time?.slice(0, 5) || '—'}</td></tr>`
+        }).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:#888;font-style:italic">No dispatches this shift</td></tr>'
+
+    const pelletSource = allPelletTypes.length > 0 ? allPelletTypes : pelletStock.map(p => ({ id: p.pellet_type_id, name: p.pellet_types?.name || 'N/A' }))
+    const pelletRows = pelletSource.map(type => {
+      const stock = pelletStock.find(p => p.pellet_type_id === type.id)
+      return `<tr><td>${type.name}</td><td style="text-align:right">${stock?.opening_mt ?? 0}</td><td style="text-align:right">${stock?.production_mt ?? 0}</td><td style="text-align:right">${stock?.dispatch_mt ?? 0}</td><td style="text-align:right">${stock?.wastage_mt ?? 0}</td><td style="text-align:right">${stock?.closing_mt ?? 0}</td></tr>`
+    }).join('')
+
+    const issuesHTML = issues.length > 0
+      ? issues.map(i => `<div class="issue"><strong>${i.issue_type}${i.machines?.name ? ` — ${i.machines.name}` : ''}</strong> [${i.severity}]<p>${i.description}</p></div>`).join('')
+      : ''
+
+    const dieselHTML = dieselStock
+      ? `<div class="diesel-grid">
+          <div><div class="dlabel">Opening (L)</div><div class="dval">${dieselStock.opening_litres ?? '—'}</div></div>
+          <div><div class="dlabel">Purchased (L)</div><div class="dval">${dieselStock.purchased_litres ?? '—'}</div></div>
+          <div><div class="dlabel">Used (L)</div><div class="dval">${dieselStock.used_litres ?? '—'}</div></div>
+          <div><div class="dlabel">Closing (L)</div><div class="dval">${dieselStock.closing_litres ?? '—'}</div></div>
+        </div>`
+      : '<p style="color:#888;font-style:italic">No diesel stock recorded</p>'
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Shift ${report.shift} Report — ${report.date}</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 11pt; color: #2c2c2c; margin: 0; padding: 16px; }
+  h1 { font-size: 16pt; margin: 0 0 4px; }
+  .meta { font-size: 10pt; color: #595c4a; margin-bottom: 16px; }
+  .section { margin-bottom: 20px; }
+  h2 { font-size: 10pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #8a8d7a; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  thead tr { background: #2d6a4f; color: white; }
+  th { padding: 8px; text-align: left; font-size: 9pt; }
+  td { padding: 7px 8px; border-bottom: 1px solid #e5ddd0; }
+  .header-card { border: 1.5px solid #e5ddd0; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+  .header-card .row { display: flex; justify-content: space-between; }
+  .diesel-box { background: #fefae0; border: 1.5px solid #e9c46a; border-radius: 8px; padding: 12px; margin-top: 12px; }
+  .diesel-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
+  .dlabel { font-size: 8pt; color: #595c4a; font-weight: bold; margin-bottom: 2px; }
+  .dval { font-size: 14pt; font-weight: bold; }
+  .issue { padding: 8px; border-left: 3px solid #d32f2f; margin-bottom: 8px; }
+  @media print { body { padding: 0; } @page { margin: 1cm; size: A4; } }
+</style></head><body>
+<h1>Shift ${report.shift} Report</h1>
+<div class="meta">
+  Date: ${startDateLabel} &nbsp;|&nbsp; Start: ${startDateLabel}, ${startTime} &nbsp;|&nbsp; End: ${endDateLabel}, ${endTime}<br>
+  Production: ${(report.pellet_production_mt || 0).toFixed(1)} MT &nbsp;|&nbsp; Dispatches: ${totalDispatchedMt.toFixed(1)} MT<br>
+  Supervisor: ${report.employees?.name || 'N/A'} &nbsp;|&nbsp; Plant: ${report.plants?.name || 'N/A'}
+</div>
+
+<div class="section">
+  <h2>Machine Timings</h2>
+  <table><thead><tr><th>Machine</th><th>Prd Hrs</th><th>Total Hrs</th><th>Prd (MT)</th><th>Avg/Hr</th><th>Remarks</th></tr></thead>
+  <tbody>${machineTimingRows}</tbody></table>
+</div>
+
+<div class="section">
+  <h2>Production</h2>
+  <table><thead><tr><th>Machine</th><th>Pellet Type</th><th style="text-align:right">Qty (MT)</th><th style="text-align:right">Avg/Hr</th></tr></thead>
+  <tbody>${prodRows}</tbody></table>
+</div>
+
+<div class="section">
+  <h2>Raw Materials</h2>
+  <table><thead><tr><th>Material</th><th style="text-align:right">Open</th><th style="text-align:right">Purch</th><th style="text-align:right">Used</th><th style="text-align:right">Close</th></tr></thead>
+  <tbody>${rmRows || '<tr><td colspan="5" style="text-align:center;color:#888;font-style:italic">No data</td></tr>'}</tbody></table>
+</div>
+
+<div class="section">
+  <h2>Equipment &amp; Diesel</h2>
+  <table><thead><tr><th>Equipment</th><th style="text-align:right">Opening (L)</th><th style="text-align:right">Added (L)</th><th style="text-align:right">Used (L)</th><th style="text-align:right">Closing (L)</th><th style="text-align:right">Hrs</th><th style="text-align:right">Avg L/Hr</th></tr></thead>
+  <tbody>${eqRows || '<tr><td colspan="7" style="text-align:center;color:#888;font-style:italic">No data</td></tr>'}</tbody></table>
+  <div class="diesel-box"><h2 style="margin-bottom:8px">Diesel Stock Tank</h2>${dieselHTML}</div>
+</div>
+
+<div class="section">
+  <h2>Vehicle Dispatches</h2>
+  <table><thead><tr><th>Truck</th><th>Customer</th><th>Pellet Type</th><th style="text-align:right">Qty (MT)</th><th style="text-align:right">Time</th></tr></thead>
+  <tbody>${dispatchRows}</tbody></table>
+</div>
+
+<div class="section">
+  <h2>Pellet Stock</h2>
+  <table><thead><tr><th>Type</th><th style="text-align:right">Open</th><th style="text-align:right">Prd</th><th style="text-align:right">Disp</th><th style="text-align:right">Waste</th><th style="text-align:right">Close</th></tr></thead>
+  <tbody>${pelletRows || '<tr><td colspan="6" style="text-align:center;color:#888;font-style:italic">No data</td></tr>'}</tbody></table>
+</div>
+
+${issuesHTML ? `<div class="section"><h2>Issues Reported</h2>${issuesHTML}</div>` : ''}
+${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${report.handover_notes}</p></div>` : ''}
+</body></html>`
+  }
+
   function handlePrint() {
-    window.print()
+    const html = generatePrintHTML()
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      showToast('Please allow popups to export PDF', 'error')
+      return
+    }
+    printWindow.document.write(html)
+    printWindow.document.close()
+    printWindow.focus()
+    setTimeout(() => {
+      printWindow.print()
+    }, 400)
   }
 
   // The display machines list (all active machines, or fallback to production rows)
@@ -463,7 +613,7 @@ export default function ReportView() {
             {[
               { label: 'Opening (L)', value: dieselStock?.opening_litres ?? '—' },
               { label: 'Purchased (L)', value: dieselStock?.purchased_litres ?? '—' },
-              { label: 'Issued (L)', value: dieselStock?.used_litres ?? '—' },
+              { label: 'Used (L)', value: dieselStock?.used_litres ?? '—' },
               { label: 'Closing (L)', value: dieselStock?.closing_litres ?? '—' },
             ].map(({ label, value }) => (
               <div key={label}>
@@ -608,61 +758,64 @@ export default function ReportView() {
       )}
 
       {/* Action Buttons — hidden on print */}
-      <div className="no-print" style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        {/* PDF Export */}
+      <div className="no-print" style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16 }}>
+        {/* PDF Export — full-width primary */}
         {can(employee?.role, 'export') && (
           <button
             onClick={handlePrint}
             style={{
-              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              padding: '14px 0', borderRadius: 14, fontSize: 14, fontWeight: 700,
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '12px 0', borderRadius: 12, fontSize: 14, fontWeight: 700,
               background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer',
-              minWidth: 120,
+              marginBottom: 10,
             }}
           >
             <Printer size={16} /> Export PDF
           </button>
         )}
 
-        {/* CSV Export */}
-        {can(employee?.role, 'export') && (
-          <button
-            onClick={() => exportDetailedReportToCSV({ report, machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues })}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700,
-              background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4',
-              cursor: 'pointer',
-            }}
-          >
-            <Download size={14} /> CSV
-          </button>
-        )}
+        {/* Secondary buttons row */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {/* CSV Export */}
+          {can(employee?.role, 'export') && (
+            <button
+              onClick={() => exportDetailedReportToCSV({ report, machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues })}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4',
+                cursor: 'pointer',
+              }}
+            >
+              <Download size={14} /> CSV
+            </button>
+          )}
 
-        {/* Sheets Sync */}
-        {can(employee?.role, 'export') && (
-          <button
-            onClick={syncToSheets}
-            disabled={syncing}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700,
-              background: '#EDE9FE', color: '#6D28D9', border: '1.5px solid #DDD6FE',
-              cursor: syncing ? 'not-allowed' : 'pointer', opacity: syncing ? 0.6 : 1,
-            }}
-          >
-            <FileSpreadsheet size={14} /> {syncing ? 'Syncing...' : 'Sheets'}
-          </button>
-        )}
+          {/* Sheets Sync */}
+          {can(employee?.role, 'export') && (
+            <button
+              onClick={syncToSheets}
+              disabled={syncing}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+                padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                background: '#EDE9FE', color: '#6D28D9', border: '1.5px solid #DDD6FE',
+                cursor: syncing ? 'not-allowed' : 'pointer', opacity: syncing ? 0.6 : 1,
+              }}
+            >
+              <FileSpreadsheet size={14} /> {syncing ? 'Syncing...' : 'Sheets'}
+            </button>
+          )}
 
-        {/* Request Delete */}
-        {can(employee?.role, 'create_report') && (
-          <DeleteRequestButton
-            entityType="shift_report"
-            entityId={id}
-            entityLabel={`Shift ${report.shift} Report · ${report.date}`}
-          />
-        )}
+          {/* Request Delete */}
+          {can(employee?.role, 'create_report') && (
+            <DeleteRequestButton
+              entityType="shift_report"
+              entityId={id}
+              entityLabel={`Shift ${report.shift} Report · ${report.date}`}
+            />
+          )}
+        </div>
       </div>
     </div>
   )
