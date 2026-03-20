@@ -441,25 +441,41 @@ export default function ShiftWizard() {
         setReportId(report.id)
       }
 
-      // Save machine production
+      // Save machine production — one row per (machine, pellet_type) with timing fields
       if (reportData.machines.length) {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
-        const machineRows = reportData.machines
-          .filter(m => sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time)
-          .map(m => {
-            const machineProds = reportData.production.filter(p => p.machine_id === m.id)
-            const pelletTypes = [...new Set(machineProds.map(p => p.pellet_type).filter(Boolean))]
-            return {
-              shift_report_id: report.id,
-              machine_id: m.id,
-              hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours),
-              remarks: sanitizeText(m.remarks, 500),
-              production_mt: machineProds.reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
-              pellet_type_name: pelletTypes.join(', ') || null,
+        const allMachineRows = []
+        const runningMachines = reportData.machines.filter(m =>
+          sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time
+        )
+        for (const m of runningMachines) {
+          const machineProds = reportData.production.filter(p => p.machine_id === m.id)
+          const timingBase = {
+            shift_report_id: report.id,
+            machine_id: m.id,
+            from_time: sanitizeText(m.from_time, 10) || null,
+            to_time: sanitizeText(m.to_time, 10) || null,
+            breakdown_hours: sanitizeNumber(m.breakdown_hrs) || 0,
+            total_hours: sanitizeNumber(m.total_hours) || 0,
+            hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours) || 0,
+            remarks: sanitizeText(m.remarks, 500),
+          }
+          if (machineProds.length > 0) {
+            // One row per pellet type produced by this machine
+            for (const prod of machineProds) {
+              allMachineRows.push({
+                ...timingBase,
+                production_mt: sanitizeNumber(prod.quantity),
+                pellet_type_name: sanitizeText(prod.pellet_type, 100) || null,
+              })
             }
-          })
-        if (machineRows.length) {
-          await supabase.from('machine_production').insert(machineRows)
+          } else {
+            // Machine ran but no production entries — save timing row with 0 production
+            allMachineRows.push({ ...timingBase, production_mt: 0, pellet_type_name: null })
+          }
+        }
+        if (allMachineRows.length) {
+          await supabase.from('machine_production').insert(allMachineRows)
         }
       }
 
