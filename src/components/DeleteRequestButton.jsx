@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { showToast } from './Toast'
 
-export default function DeleteRequestButton({ entityType, entityId, entityLabel, onRequestSent }) {
+export default function DeleteRequestButton({ entityType, entityId, entityLabel, onRequestSent, style: outerStyle }) {
   const { employee, plant } = useAuth()
   const [showModal, setShowModal] = useState(false)
   const [reason, setReason] = useState('')
@@ -101,6 +101,7 @@ export default function DeleteRequestButton({ entityType, entityId, entityLabel,
         style={{
           display: 'inline-flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: 6,
           padding: '8px 12px',
           borderRadius: 8,
@@ -111,6 +112,7 @@ export default function DeleteRequestButton({ entityType, entityId, entityLabel,
           fontWeight: 500,
           cursor: 'pointer',
           transition: 'background 0.2s',
+          ...outerStyle,
         }}
         onMouseOver={(e) => (e.target.style.background = '#b71c1c')}
         onMouseOut={(e) => (e.target.style.background = '#d32f2f')}

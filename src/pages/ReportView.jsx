@@ -239,40 +239,82 @@ export default function ReportView() {
       ? issues.map(i => `<div class="issue"><strong>${i.issue_type}${i.machines?.name ? ` — ${i.machines.name}` : ''}</strong> [${i.severity}]<p>${i.description}</p></div>`).join('')
       : ''
 
-    const dieselHTML = dieselStock
-      ? `<div class="diesel-grid">
-          <div><div class="dlabel">Opening (L)</div><div class="dval">${dieselStock.opening_litres ?? '—'}</div></div>
-          <div><div class="dlabel">Purchased (L)</div><div class="dval">${dieselStock.purchased_litres ?? '—'}</div></div>
-          <div><div class="dlabel">Used (L)</div><div class="dval">${dieselStock.used_litres ?? '—'}</div></div>
-          <div><div class="dlabel">Closing (L)</div><div class="dval">${dieselStock.closing_litres ?? '—'}</div></div>
-        </div>`
-      : '<p style="color:#888;font-style:italic">No diesel stock recorded</p>'
+    const dieselStockRow = dieselStock
+      ? `<tr style="background:#fffbea">
+          <td><strong>DIESEL STOCK TANK</strong></td>
+          <td style="text-align:right">${dieselStock.opening_litres ?? '—'}</td>
+          <td style="text-align:right">${dieselStock.purchased_litres ?? '—'}</td>
+          <td style="text-align:right"><strong>${dieselStock.used_litres ?? '—'}</strong></td>
+          <td style="text-align:right"><strong>${dieselStock.closing_litres ?? '—'}</strong></td>
+          <td style="text-align:right">—</td>
+          <td style="text-align:right">—</td>
+        </tr>`
+      : ''
 
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Shift ${report.shift} Report — ${report.date}</title>
 <style>
-  body { font-family: Arial, sans-serif; font-size: 11pt; color: #2c2c2c; margin: 0; padding: 16px; }
-  h1 { font-size: 16pt; margin: 0 0 4px; }
-  .meta { font-size: 10pt; color: #595c4a; margin-bottom: 16px; }
-  .section { margin-bottom: 20px; }
-  h2 { font-size: 10pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #8a8d7a; margin: 0 0 8px; }
-  table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; font-size: 12pt; color: #1a1a1a; margin: 0; padding: 20px; }
+  .section { margin-bottom: 22px; }
+  h2 { font-size: 11pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #2d6a4f; margin: 0 0 8px; border-bottom: 2px solid #2d6a4f; padding-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 11pt; }
   thead tr { background: #2d6a4f; color: white; }
-  th { padding: 8px; text-align: left; font-size: 9pt; }
-  td { padding: 7px 8px; border-bottom: 1px solid #e5ddd0; }
-  .header-card { border: 1.5px solid #e5ddd0; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
-  .header-card .row { display: flex; justify-content: space-between; }
-  .diesel-box { background: #fefae0; border: 1.5px solid #e9c46a; border-radius: 8px; padding: 12px; margin-top: 12px; }
-  .diesel-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
-  .dlabel { font-size: 8pt; color: #595c4a; font-weight: bold; margin-bottom: 2px; }
-  .dval { font-size: 14pt; font-weight: bold; }
-  .issue { padding: 8px; border-left: 3px solid #d32f2f; margin-bottom: 8px; }
-  @media print { body { padding: 0; } @page { margin: 1cm; size: A4; } }
+  th { padding: 9px 10px; text-align: left; font-size: 10pt; font-weight: 700; }
+  td { padding: 8px 10px; border-bottom: 1px solid #e5ddd0; font-size: 11pt; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: #f9f7f2; }
+  .issue { padding: 10px 12px; border-left: 3px solid #d32f2f; margin-bottom: 10px; background: #fff5f5; }
+
+  /* Header card */
+  .header-box { border: 2px solid #2d6a4f; border-radius: 6px; margin-bottom: 20px; overflow: hidden; }
+  .header-title { background: #2d6a4f; color: white; padding: 10px 16px; }
+  .header-title h1 { font-size: 18pt; font-weight: 900; margin: 0; letter-spacing: 0.5px; }
+  .header-title .subtitle { font-size: 11pt; opacity: 0.85; margin-top: 2px; }
+  .header-grid { display: grid; grid-template-columns: 1fr 1fr; padding: 12px 16px; gap: 10px 24px; }
+  .header-item { display: flex; flex-direction: column; gap: 1px; }
+  .header-item .lbl { font-size: 9pt; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+  .header-item .val { font-size: 12pt; font-weight: 700; color: #1a1a1a; }
+  .header-divider { border: none; border-top: 1px solid #e5ddd0; margin: 0 16px; }
+  .highlight-val { color: #2d6a4f; }
+
+  @media print { body { padding: 0; } @page { margin: 1.2cm; size: A4; } }
 </style></head><body>
-<h1>Shift ${report.shift} Report</h1>
-<div class="meta">
-  Date: ${startDateLabel} &nbsp;|&nbsp; Start: ${startDateLabel}, ${startTime} &nbsp;|&nbsp; End: ${endDateLabel}, ${endTime}<br>
-  Production: ${(report.pellet_production_mt || 0).toFixed(1)} MT &nbsp;|&nbsp; Dispatches: ${totalDispatchedMt.toFixed(1)} MT<br>
-  Supervisor: ${report.employees?.name || 'N/A'} &nbsp;|&nbsp; Plant: ${report.plants?.name || 'N/A'}
+
+<!-- Report Header -->
+<div class="header-box">
+  <div class="header-title">
+    <h1>Shift ${report.shift} Report</h1>
+    <div class="subtitle">${report.plants?.name || ''} &nbsp;·&nbsp; ${report.date}</div>
+  </div>
+  <div class="header-grid">
+    <div class="header-item">
+      <span class="lbl">Start</span>
+      <span class="val">${startDateLabel}, ${startTime}</span>
+    </div>
+    <div class="header-item">
+      <span class="lbl">End</span>
+      <span class="val">${endDateLabel}, ${endTime}</span>
+    </div>
+    <div class="header-item">
+      <span class="lbl">Production</span>
+      <span class="val highlight-val">${(report.pellet_production_mt || 0).toFixed(1)} MT</span>
+    </div>
+    <div class="header-item">
+      <span class="lbl">Dispatches</span>
+      <span class="val highlight-val">${totalDispatchedMt.toFixed(1)} MT</span>
+    </div>
+  </div>
+  <hr class="header-divider"/>
+  <div class="header-grid" style="padding-top:8px;padding-bottom:12px">
+    <div class="header-item">
+      <span class="lbl">Supervisor</span>
+      <span class="val">${report.employees?.name || 'N/A'}</span>
+    </div>
+    <div class="header-item">
+      <span class="lbl">Plant</span>
+      <span class="val">${report.plants?.name || 'N/A'}</span>
+    </div>
+  </div>
 </div>
 
 <div class="section">
@@ -289,15 +331,14 @@ export default function ReportView() {
 
 <div class="section">
   <h2>Raw Materials</h2>
-  <table><thead><tr><th>Material</th><th style="text-align:right">Open</th><th style="text-align:right">Purch</th><th style="text-align:right">Used</th><th style="text-align:right">Close</th></tr></thead>
+  <table><thead><tr><th>Material</th><th style="text-align:right">Open (kg)</th><th style="text-align:right">Purch (kg)</th><th style="text-align:right">Used (kg)</th><th style="text-align:right">Close (kg)</th></tr></thead>
   <tbody>${rmRows || '<tr><td colspan="5" style="text-align:center;color:#888;font-style:italic">No data</td></tr>'}</tbody></table>
 </div>
 
 <div class="section">
   <h2>Equipment &amp; Diesel</h2>
-  <table><thead><tr><th>Equipment</th><th style="text-align:right">Opening (L)</th><th style="text-align:right">Added (L)</th><th style="text-align:right">Used (L)</th><th style="text-align:right">Closing (L)</th><th style="text-align:right">Hrs</th><th style="text-align:right">Avg L/Hr</th></tr></thead>
-  <tbody>${eqRows || '<tr><td colspan="7" style="text-align:center;color:#888;font-style:italic">No data</td></tr>'}</tbody></table>
-  <div class="diesel-box"><h2 style="margin-bottom:8px">Diesel Stock Tank</h2>${dieselHTML}</div>
+  <table><thead><tr><th>Equipment</th><th style="text-align:right">Open (L)</th><th style="text-align:right">Added (L)</th><th style="text-align:right">Used (L)</th><th style="text-align:right">Close (L)</th><th style="text-align:right">Hrs</th><th style="text-align:right">Avg L/Hr</th></tr></thead>
+  <tbody>${eqRows || '<tr><td colspan="7" style="text-align:center;color:#888;font-style:italic">No data</td></tr>'}${dieselStockRow}</tbody></table>
 </div>
 
 <div class="section">
@@ -759,30 +800,29 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
 
       {/* Action Buttons — hidden on print */}
       <div className="no-print" style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16 }}>
-        {/* PDF Export — full-width primary */}
-        {can(employee?.role, 'export') && (
-          <button
-            onClick={handlePrint}
-            style={{
-              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              padding: '12px 0', borderRadius: 12, fontSize: 14, fontWeight: 700,
-              background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer',
-              marginBottom: 10,
-            }}
-          >
-            <Printer size={16} /> Export PDF
-          </button>
-        )}
+        {/* All 4 buttons on one row */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {/* PDF Export */}
+          {can(employee?.role, 'export') && (
+            <button
+              onClick={handlePrint}
+              style={{
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '10px 4px', borderRadius: 10, fontSize: 12, fontWeight: 700,
+                background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer',
+              }}
+            >
+              <Printer size={14} /> PDF
+            </button>
+          )}
 
-        {/* Secondary buttons row */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {/* CSV Export */}
           {can(employee?.role, 'export') && (
             <button
               onClick={() => exportDetailedReportToCSV({ report, machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues })}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '10px 4px', borderRadius: 10, fontSize: 12, fontWeight: 700,
                 background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4',
                 cursor: 'pointer',
               }}
@@ -797,13 +837,13 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
               onClick={syncToSheets}
               disabled={syncing}
               style={{
-                display: 'inline-flex', alignItems: 'center', gap: 6,
-                padding: '8px 12px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                padding: '10px 4px', borderRadius: 10, fontSize: 12, fontWeight: 700,
                 background: '#EDE9FE', color: '#6D28D9', border: '1.5px solid #DDD6FE',
                 cursor: syncing ? 'not-allowed' : 'pointer', opacity: syncing ? 0.6 : 1,
               }}
             >
-              <FileSpreadsheet size={14} /> {syncing ? 'Syncing...' : 'Sheets'}
+              <FileSpreadsheet size={14} /> {syncing ? '...' : 'Sheets'}
             </button>
           )}
 
@@ -813,6 +853,7 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
               entityType="shift_report"
               entityId={id}
               entityLabel={`Shift ${report.shift} Report · ${report.date}`}
+              style={{ flex: 1, padding: '10px 4px', borderRadius: 10, fontSize: 12, fontWeight: 700 }}
             />
           )}
         </div>
