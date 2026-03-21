@@ -113,7 +113,7 @@ export default function PurchaseForm() {
       deduction_kg: purchaseData.deduction_kg ?? '',
       final_quantity: purchaseData.quantity_kg ?? purchaseData.final_quantity ?? '',
       rate_per_kg: purchaseData.rate_per_kg ?? '',
-      rm_amount: purchaseData.rm_amount ?? '',
+      rm_amount: purchaseData.total_rm_amount ?? purchaseData.rm_amount ?? '',
       loading_charges: purchaseData.loading_expense ?? purchaseData.loading_charges ?? 0,
       unloading_charges: purchaseData.unloading_expense ?? purchaseData.unloading_charges ?? 0,
       transport_charges: purchaseData.transport_expense ?? purchaseData.transport_charges ?? 0,

@@ -78,7 +78,8 @@ export default function PurchaseDetail() {
 
   const totalCharges = (parseFloat((purchase.loading_expense || purchase.loading_charges || 0)) || 0) +
     (parseFloat((purchase.unloading_expense || purchase.unloading_charges || 0)) || 0) +
-    (parseFloat((purchase.transport_expense || purchase.transport_charges || 0)) || 0)
+    (parseFloat((purchase.transport_expense || purchase.transport_charges || 0)) || 0) +
+    (parseFloat(purchase.other_expense || 0) || 0)
 
   async function markAsPaid() {
     if (markingPaid) return
@@ -227,9 +228,9 @@ export default function PurchaseDetail() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
               <span style={{ color: '#595c4a' }}>RM Amount</span>
-              <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{formatCurrency(purchase.rm_amount)}</span>
+              <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{formatCurrency(purchase.total_rm_amount)}</span>
             </div>
-            {((purchase.loading_expense || purchase.loading_charges || 0) > 0 || (purchase.unloading_expense || purchase.unloading_charges || 0) > 0 || (purchase.transport_expense || purchase.transport_charges || 0) > 0) && (
+            {totalCharges > 0 && (
               <>
                 {(purchase.loading_expense || purchase.loading_charges || 0) > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
@@ -247,6 +248,12 @@ export default function PurchaseDetail() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span style={{ color: '#595c4a' }}>Transport</span>
                     <span style={{ color: '#2c2c2c' }}>{formatCurrency((purchase.transport_expense || purchase.transport_charges || 0))}</span>
+                  </div>
+                )}
+                {(purchase.other_expense || 0) > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                    <span style={{ color: '#595c4a' }}>Other</span>
+                    <span style={{ color: '#2c2c2c' }}>{formatCurrency(purchase.other_expense)}</span>
                   </div>
                 )}
                 <div style={{ height: 1, background: '#e5ddd0' }} />
