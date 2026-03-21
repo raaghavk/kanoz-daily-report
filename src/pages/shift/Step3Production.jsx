@@ -21,7 +21,7 @@ export default memo(function Step3Production({ data, updateData }) {
 
   function addEntry() {
     updateData('production', [...data.production, {
-      id: Date.now(),
+      id: performance.now() + Math.floor(Math.random() * 1000), // eslint-disable-line
       machine_id: eligibleMachines[0]?.id || '',
       pellet_type: '',
       quantity: '',
