@@ -404,8 +404,13 @@ export default function DispatchForm() {
         <PageHeader
           title="Vehicle Dispatch"
           subtitle={returnToShift ? "Add dispatches, then go back to shift report" : "Manage all dispatches"}
-          backTo={returnToShift ? undefined : "/"}
-          onBack={returnToShift ? () => navigate('/shift/new', { state: { returnToStep: 6 } }) : undefined}
+          onBack={
+            returnToShift
+              ? () => navigate('/shift/new', { state: { returnToStep: 6 } })
+              : showForm
+                ? () => setShowForm(false)
+                : () => navigate('/')
+          }
         />
 
         {/* Return to Shift Banner — only when viewing list */}
@@ -563,15 +568,6 @@ export default function DispatchForm() {
         {/* Dispatch Form */}
         {showForm && (
           <div style={{ padding: '0 20px', paddingBottom: 16 }}>
-          {/* Cancel Button */}
-          <div style={{ marginBottom: 16 }}>
-            <button
-              onClick={() => setShowForm(false)}
-              style={{ padding: '10px 16px', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 12, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}
-            >
-              ← Back to List
-            </button>
-          </div>
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Truck Number */}

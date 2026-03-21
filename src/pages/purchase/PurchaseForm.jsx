@@ -392,7 +392,7 @@ export default function PurchaseForm() {
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle="Raw Material Purchase Entry" backTo="/purchase" />
+        <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle="Raw Material Purchase Entry" onBack={() => navigate(-1)} />
       </div>
 
       <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
