@@ -131,11 +131,30 @@ export default function TransporterList() {
         )}
       </div>
 
-      <div style={{ padding: '16px 20px', paddingBottom: 100 }}>
-        <button onClick={() => setShowAddModal(true)} style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <Plus size={18} /> Add Transporter
-        </button>
-      </div>
+      {/* FAB — fixed bottom right */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        style={{
+          position: 'fixed',
+          bottom: 88,
+          right: 20,
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          background: '#2d6a4f',
+          color: 'white',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 16px rgba(45,106,79,0.35)',
+          zIndex: 50,
+        }}
+        title="Add Transporter"
+      >
+        <Plus size={24} strokeWidth={2.5} />
+      </button>
 
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Transporter">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
