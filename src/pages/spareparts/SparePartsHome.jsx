@@ -63,7 +63,7 @@ export default function SparePartsHome() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Spare Parts" subtitle="Inventory & maintenance tracking" onBack={() => navigate('/settings')} />
+      <PageHeader title="Spare Parts" subtitle={`${plant?.name || 'Plant'} · Inventory & maintenance tracking`} onBack={() => navigate('/settings')} />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
@@ -86,7 +86,7 @@ export default function SparePartsHome() {
             </div>
             <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '12px 14px' }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#2d6a4f' }}>+{stats.todayIn}</div>
-              <div style={{ fontSize: 11, color: '#8a8d7a' }}>Received Today</div>
+              <div style={{ fontSize: 11, color: '#8a8d7a' }}>Purchased Today</div>
             </div>
             <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '12px 14px' }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#d97706' }}>{stats.todayOut}</div>
