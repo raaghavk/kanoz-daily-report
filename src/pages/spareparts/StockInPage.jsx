@@ -208,8 +208,13 @@ function ReviewScreen({ formData, parts, suppliers, plants, onEdit, onConfirm, s
         {/* Warranty */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '4px 16px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5, padding: '10px 0 4px' }}>Warranty</div>
-          {row('Duration', formData.warranty_months ? `${formData.warranty_months} months` : '—')}
-          {row('Expiry Date', fmt(formData.warranty_expiry_date))}
+          {formData.no_warranty
+            ? <div style={{ fontSize: 13, color: '#b91c1c', fontWeight: 600, padding: '4px 0 12px' }}>No Warranty</div>
+            : <>
+                {row('Duration', formData.warranty_months ? `${formData.warranty_months} months` : '—')}
+                {row('Expiry Date', fmt(formData.warranty_expiry_date))}
+              </>
+          }
         </div>
 
         {formData.notes && (
@@ -235,8 +240,7 @@ function ReviewScreen({ formData, parts, suppliers, plants, onEdit, onConfirm, s
 
 // ── Main StockInPage ──────────────────────────────────────────────────────────
 export default function StockInPage() {
-  const { plant, employee } = useAuth()
-  const isAdmin = employee?.role === 'admin'
+  const { plant } = useAuth()
   const navigate = useNavigate()
   const [parts, setParts] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -258,6 +262,7 @@ export default function StockInPage() {
     gst_percent: '18',
     purchase_date: new Date().toISOString().split('T')[0],
     bill_image_url: '',
+    no_warranty: false,
     warranty_months: '',
     warranty_expiry_date: '',
     purchased_by: '',
@@ -274,7 +279,7 @@ export default function StockInPage() {
       d.setMonth(d.getMonth() + parseInt(formData.warranty_months))
       setFormData(prev => ({ ...prev, warranty_expiry_date: d.toISOString().split('T')[0] }))
     }
-  }, [formData.warranty_months, formData.purchase_date]) // eslint-disable-line
+  }, [formData.warranty_months, formData.purchase_date])
 
   async function loadData() {
     setLoadingData(true)
@@ -318,8 +323,8 @@ export default function StockInPage() {
     if (!formData.purchase_date) { showToast('Purchase date is required', 'error'); return }
     if (!formData.bill_image_url) { showToast('Please upload the bill', 'error'); return }
     if (!formData.purchased_by.trim()) { showToast('Enter who purchased this', 'error'); return }
-    if (!formData.warranty_months) { showToast('Warranty period is required', 'error'); return }
-    if (!formData.warranty_expiry_date) { showToast('Warranty expiry date is required', 'error'); return }
+    if (!formData.no_warranty && !formData.warranty_months) { showToast('Enter warranty duration or select "No Warranty"', 'error'); return }
+    if (!formData.no_warranty && !formData.warranty_expiry_date) { showToast('Warranty expiry date is required', 'error'); return }
     if (formData.min_stock_level === '' || formData.min_stock_level === null) { showToast('Minimum stock level is required', 'error'); return }
     setShowReview(true)
   }
@@ -339,8 +344,8 @@ export default function StockInPage() {
         gst_percent: parseFloat(formData.gst_percent) || 0,
         purchase_date: formData.purchase_date,
         bill_image_url: formData.bill_image_url,
-        warranty_months: parseInt(formData.warranty_months),
-        warranty_expiry_date: formData.warranty_expiry_date,
+        warranty_months: formData.no_warranty ? null : parseInt(formData.warranty_months),
+        warranty_expiry_date: formData.no_warranty ? null : formData.warranty_expiry_date,
         purchased_by: formData.purchased_by.trim(),
         notes: formData.notes.trim() || null,
       }])
@@ -394,23 +399,13 @@ export default function StockInPage() {
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Plant selector — locked for non-admins */}
+        {/* Plant — always locked to current active plant */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Receiving Plant {req}</div>
-          {isAdmin ? (
-            <div>
-              <label style={labelStyle}>Which plant is receiving this stock? {req}</label>
-              <select value={formData.plant_id} onChange={e => setFormData({ ...formData, plant_id: e.target.value, part_id: '', min_stock_level: '' })}
-                style={{ ...inputStyle, color: formData.plant_id ? '#2c2c2c' : '#8a8d7a' }}>
-                <option value="">Select plant</option>
-                {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-          ) : (
-            <div style={{ background: '#e8f0ec', borderRadius: 10, padding: '10px 14px', fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>
-              {plants.find(p => p.id === formData.plant_id)?.name || '—'}
-            </div>
-          )}
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Receiving Plant</div>
+          <div style={{ background: '#e8f0ec', borderRadius: 10, padding: '10px 14px', fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>
+            {plant?.name || '—'}
+          </div>
+          <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 4 }}>To stock in at a different plant, switch your active plant from Settings.</div>
         </div>
 
         {/* Part & Supplier */}
@@ -544,20 +539,35 @@ export default function StockInPage() {
           </div>
         )}
 
-        {/* Warranty — now mandatory */}
+        {/* Warranty */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Warranty {req}</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Duration (Months) {req}</label>
-              <input type="number" value={formData.warranty_months} onChange={e => setFormData({ ...formData, warranty_months: e.target.value })} placeholder="e.g., 12" min="0" style={inputStyle} />
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Warranty</div>
+          {/* No Warranty toggle */}
+          <button
+            type="button"
+            onClick={() => setFormData({ ...formData, no_warranty: !formData.no_warranty, warranty_months: '', warranty_expiry_date: '' })}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, background: formData.no_warranty ? '#fee2e2' : '#f5f5f5', border: `1.5px solid ${formData.no_warranty ? '#fca5a5' : '#e5ddd0'}`, borderRadius: 10, padding: '10px 14px', cursor: 'pointer', width: '100%', textAlign: 'left' }}
+          >
+            <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${formData.no_warranty ? '#b91c1c' : '#b5b8a8'}`, background: formData.no_warranty ? '#b91c1c' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {formData.no_warranty && <span style={{ color: 'white', fontSize: 13, fontWeight: 800, lineHeight: 1 }}>✓</span>}
             </div>
-            <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Expiry Date {req}</label>
-              <input type="date" value={formData.warranty_expiry_date} onChange={e => setFormData({ ...formData, warranty_expiry_date: e.target.value })} style={inputStyle} />
-            </div>
-          </div>
-          <div style={{ fontSize: 11, color: '#8a8d7a' }}>Expiry date auto-fills when you enter months. You can adjust manually.</div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: formData.no_warranty ? '#b91c1c' : '#2c2c2c' }}>No Warranty</span>
+          </button>
+          {!formData.no_warranty && (
+            <>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Duration (Months) {req}</label>
+                  <input type="number" value={formData.warranty_months} onChange={e => setFormData({ ...formData, warranty_months: e.target.value })} placeholder="e.g., 12" min="0" style={inputStyle} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={labelStyle}>Expiry Date {req}</label>
+                  <input type="date" value={formData.warranty_expiry_date} onChange={e => setFormData({ ...formData, warranty_expiry_date: e.target.value })} style={inputStyle} />
+                </div>
+              </div>
+              <div style={{ fontSize: 11, color: '#8a8d7a' }}>Expiry date auto-fills when you enter months. You can adjust manually.</div>
+            </>
+          )}
         </div>
 
         {/* Notes — only optional field */}

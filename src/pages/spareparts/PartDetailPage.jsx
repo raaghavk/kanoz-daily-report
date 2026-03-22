@@ -15,7 +15,6 @@ export default function PartDetailPage() {
   const [usages, setUsages] = useState([])
   const [plantStock, setPlantStock] = useState([]) // [{id, name, stock, min_stock_level}]
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('history')
   const [editingMinPlant, setEditingMinPlant] = useState(null) // plant_id being edited
   const [editMinValue, setEditMinValue] = useState('')
   const [savingMin, setSavingMin] = useState(false)
