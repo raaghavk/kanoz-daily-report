@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
-import { Loader2, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
+import { Loader2, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Building2 } from 'lucide-react'
 
 export default function PartDetailPage() {
   const { plant } = useAuth()
@@ -13,6 +13,7 @@ export default function PartDetailPage() {
   const [part, setPart] = useState(null)
   const [purchases, setPurchases] = useState([])
   const [usages, setUsages] = useState([])
+  const [plantStock, setPlantStock] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('history') // 'history' | 'purchases' | 'usage'
 
@@ -21,15 +22,27 @@ export default function PartDetailPage() {
   async function loadData() {
     setLoading(true)
     try {
-      const [partRes, purchasesRes, usageRes] = await Promise.all([
+      const [partRes, purchasesRes, usageRes, plantsRes] = await Promise.all([
         supabase.from('spare_parts').select('*').eq('id', id).single(),
-        supabase.from('spare_parts_purchases').select('*, spare_parts_suppliers(name)').eq('part_id', id).order('purchase_date', { ascending: false }),
-        supabase.from('spare_parts_usage').select('*').eq('part_id', id).order('usage_date', { ascending: false }),
+        supabase.from('spare_parts_purchases').select('*, spare_parts_suppliers(name), plants(name)').eq('part_id', id).order('purchase_date', { ascending: false }),
+        supabase.from('spare_parts_usage').select('*, plants(name)').eq('part_id', id).order('usage_date', { ascending: false }),
+        supabase.from('plants').select('id, name').eq('org_id', plant.org_id).eq('is_active', true).order('name'),
       ])
       if (partRes.error) throw partRes.error
       setPart(partRes.data)
       setPurchases(purchasesRes.data || [])
       setUsages(usageRes.data || [])
+      // Compute per-plant stock
+      const allPlants = plantsRes.data || []
+      const plantStockMap = {}
+      for (const p of allPlants) plantStockMap[p.id] = { name: p.name, stockIn: 0, stockOut: 0 }
+      for (const r of (purchasesRes.data || [])) {
+        if (r.plant_id && plantStockMap[r.plant_id]) plantStockMap[r.plant_id].stockIn += Number(r.quantity)
+      }
+      for (const r of (usageRes.data || [])) {
+        if (r.plant_id && plantStockMap[r.plant_id]) plantStockMap[r.plant_id].stockOut += Number(r.quantity)
+      }
+      setPlantStock(Object.entries(plantStockMap).map(([pid, v]) => ({ id: pid, name: v.name, stock: v.stockIn - v.stockOut })).filter(p => p.stock !== 0 || allPlants.length <= 3))
     } catch { showToast('Failed to load part', 'error') } finally { setLoading(false) }
   }
 
@@ -47,8 +60,8 @@ export default function PartDetailPage() {
 
   // Merge purchases + usages into a single timeline
   const timeline = [
-    ...purchases.map(p => ({ type: 'in', date: p.purchase_date, qty: p.quantity, label: p.spare_parts_suppliers?.name || 'Unknown supplier', sub: p.bill_number ? `Bill: ${p.bill_number}` : '', amount: p.total_amount, id: p.id })),
-    ...usages.map(u => ({ type: 'out', date: u.usage_date, qty: u.quantity, label: u.machine_name || 'General use', sub: u.purpose || '', issued: u.issued_to, id: u.id })),
+    ...purchases.map(p => ({ type: 'in', date: p.purchase_date, qty: p.quantity, label: p.spare_parts_suppliers?.name || 'Unknown supplier', sub: [p.plants?.name, p.bill_number ? `Bill: ${p.bill_number}` : ''].filter(Boolean).join(' · '), amount: p.total_amount, id: p.id })),
+    ...usages.map(u => ({ type: 'out', date: u.usage_date, qty: u.quantity, label: u.machine_name || 'General use', sub: [u.plants?.name, u.purpose].filter(Boolean).join(' · '), issued: u.issued_to, id: u.id })),
   ].sort((a, b) => new Date(b.date) - new Date(a.date))
 
   function fmt(dateStr) {
@@ -90,11 +103,28 @@ export default function PartDetailPage() {
           </div>
         </div>
 
-        {/* Part number / notes */}
-        {(part.part_number || part.notes) && (
+        {/* Part details — number, brand, notes */}
+        {(part.part_number || part.brand || part.notes) && (
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {part.part_number && <div style={{ fontSize: 13, color: '#595c4a' }}><span style={{ fontWeight: 600, color: '#2c2c2c' }}>Part No:</span> {part.part_number}</div>}
+            {part.brand && <div style={{ fontSize: 13, color: '#595c4a' }}><span style={{ fontWeight: 600, color: '#2c2c2c' }}>Brand:</span> {part.brand}</div>}
             {part.notes && <div style={{ fontSize: 13, color: '#595c4a' }}>{part.notes}</div>}
+          </div>
+        )}
+
+        {/* Per-plant stock breakdown */}
+        {plantStock.length > 1 && (
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', background: '#f0f7f3', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Building2 size={14} style={{ color: '#2d6a4f' }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.4 }}>Stock by Plant</span>
+            </div>
+            {plantStock.map((ps, idx) => (
+              <div key={ps.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 14px' }}>
+                <span style={{ fontSize: 13, color: '#2c2c2c', fontWeight: 600 }}>{ps.name}</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: ps.stock <= 0 ? '#b91c1c' : '#2d6a4f' }}>{ps.stock} <span style={{ fontSize: 10, fontWeight: 400 }}>{part.unit}</span></span>
+              </div>
+            ))}
           </div>
         )}
 

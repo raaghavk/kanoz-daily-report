@@ -10,6 +10,8 @@ export default function IssuePartPage() {
   const { plant } = useAuth()
   const navigate = useNavigate()
   const [parts, setParts] = useState([])
+  const [plants, setPlants] = useState([])
+  const [selectedPlantId, setSelectedPlantId] = useState('')
   const [loadingData, setLoadingData] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -22,39 +24,66 @@ export default function IssuePartPage() {
     notes: '',
   })
 
-  const PURPOSES = ['Breakdown Repair', 'Preventive Maintenance', 'Scheduled Replacement', 'New Installation', 'Other']
+  const PURPOSES = ['Breakdown Repair', 'New Installation', 'Other', 'Preventive Maintenance', 'Scheduled Replacement']
 
-  useEffect(() => { if (plant?.org_id) loadParts() }, [plant]) // eslint-disable-line
+  useEffect(() => { if (plant?.org_id) loadData() }, [plant]) // eslint-disable-line
 
-  async function loadParts() {
+  // Reload stock when selected plant changes
+  useEffect(() => { if (plant?.org_id && parts.length > 0) recomputeStock() }, [selectedPlantId]) // eslint-disable-line
+
+  async function loadData() {
     setLoadingData(true)
     try {
-      const { data: partsData } = await supabase.from('spare_parts').select('id, name, unit, category').eq('org_id', plant.org_id).eq('is_active', true).order('name')
-      const partIds = (partsData || []).map(p => p.id)
-      const [purchasesRes, usageRes] = await Promise.all([
-        supabase.from('spare_parts_purchases').select('part_id, quantity').in('part_id', partIds),
-        supabase.from('spare_parts_usage').select('part_id, quantity').in('part_id', partIds),
-      ])
-      const purchaseMap = {}
-      for (const row of (purchasesRes.data || [])) purchaseMap[row.part_id] = (purchaseMap[row.part_id] || 0) + Number(row.quantity)
-      const usageMap = {}
-      for (const row of (usageRes.data || [])) usageMap[row.part_id] = (usageMap[row.part_id] || 0) + Number(row.quantity)
-      setParts((partsData || []).map(p => ({ ...p, current_stock: (purchaseMap[p.id] || 0) - (usageMap[p.id] || 0) })))
+      const { data: partsData } = await supabase.from('spare_parts').select('id, name, unit, category, brand').eq('org_id', plant.org_id).eq('is_active', true).order('name')
+      const { data: plantsData } = await supabase.from('plants').select('id, name').eq('org_id', plant.org_id).eq('is_active', true).order('name')
+      setPlants(plantsData || [])
+      const defaultPlantId = plant.id || ''
+      setSelectedPlantId(defaultPlantId)
+      await computeStockForPlant(partsData || [], defaultPlantId)
     } catch { showToast('Failed to load parts', 'error') } finally { setLoadingData(false) }
+  }
+
+  async function recomputeStock() {
+    const partIds = parts.map(p => p.id)
+    if (!partIds.length) return
+    const baseData = parts.map(p => ({ id: p.id, name: p.name, unit: p.unit, category: p.category, brand: p.brand }))
+    await computeStockForPlant(baseData, selectedPlantId)
+    // reset part selection when plant changes
+    setFormData(prev => ({ ...prev, part_id: '' }))
+  }
+
+  async function computeStockForPlant(partsData, plantId) {
+    const partIds = (partsData || []).map(p => p.id)
+    if (!partIds.length) { setParts([]); return }
+    // Filter by plant if one is selected, otherwise org-wide
+    let purchasesQuery = supabase.from('spare_parts_purchases').select('part_id, quantity').in('part_id', partIds)
+    let usageQuery = supabase.from('spare_parts_usage').select('part_id, quantity').in('part_id', partIds)
+    if (plantId) {
+      purchasesQuery = purchasesQuery.eq('plant_id', plantId)
+      usageQuery = usageQuery.eq('plant_id', plantId)
+    }
+    const [purchasesRes, usageRes] = await Promise.all([purchasesQuery, usageQuery])
+    const purchaseMap = {}
+    for (const row of (purchasesRes.data || [])) purchaseMap[row.part_id] = (purchaseMap[row.part_id] || 0) + Number(row.quantity)
+    const usageMap = {}
+    for (const row of (usageRes.data || [])) usageMap[row.part_id] = (usageMap[row.part_id] || 0) + Number(row.quantity)
+    setParts((partsData || []).map(p => ({ ...p, current_stock: (purchaseMap[p.id] || 0) - (usageMap[p.id] || 0) })))
   }
 
   async function handleSubmit() {
     if (submitting) return
+    if (!selectedPlantId) { showToast('Please select a plant', 'error'); return }
     if (!formData.part_id) { showToast('Please select a part', 'error'); return }
     if (!formData.quantity || parseFloat(formData.quantity) <= 0) { showToast('Enter a valid quantity', 'error'); return }
     const selectedPart = parts.find(p => p.id === formData.part_id)
     if (selectedPart && parseFloat(formData.quantity) > selectedPart.current_stock) {
-      showToast(`Only ${selectedPart.current_stock} ${selectedPart.unit} available in stock`, 'error'); return
+      showToast(`Only ${selectedPart.current_stock} ${selectedPart.unit} available at this plant`, 'error'); return
     }
     try {
       setSubmitting(true)
       const { error } = await supabase.from('spare_parts_usage').insert([{
         org_id: plant.org_id,
+        plant_id: selectedPlantId || null,
         part_id: formData.part_id,
         quantity: parseFloat(formData.quantity),
         usage_date: formData.usage_date,
@@ -87,6 +116,20 @@ export default function IssuePartPage() {
       <PageHeader title="Issue Part" subtitle="Record parts used / issued" onBack={() => navigate(-1)} />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Plant selector */}
+        <div style={cardStyle}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Issuing Plant <span style={{ color: '#d32f2f' }}>*</span></div>
+          <div>
+            <label style={labelStyle}>Which plant is issuing this part? <span style={{ color: '#d32f2f' }}>*</span></label>
+            <select value={selectedPlantId} onChange={e => setSelectedPlantId(e.target.value)}
+              style={{ ...inputStyle, color: selectedPlantId ? '#2c2c2c' : '#8a8d7a' }}>
+              <option value="">Select plant</option>
+              {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            {selectedPlantId && <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 4 }}>Showing stock available at this plant only</div>}
+          </div>
+        </div>
 
         {/* Part Selection */}
         <div style={cardStyle}>

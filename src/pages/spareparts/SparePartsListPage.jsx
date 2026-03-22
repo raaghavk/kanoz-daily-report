@@ -17,10 +17,11 @@ export default function SparePartsListPage() {
   const [filterLow, setFilterLow] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [formData, setFormData] = useState({ name: '', part_number: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
+  const [formData, setFormData] = useState({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
 
   const CATEGORIES = ['Bearing', 'Belt', 'Coupling', 'Electrical', 'Fasteners', 'Filter', 'Gearbox', 'Hydraulic', 'Motor', 'Pneumatic', 'Sensor', 'Other']
   const UNITS = ['kg', 'litres', 'metres', 'pair', 'pcs', 'set']
+  const BRANDS = ['ABB', 'Bosch', 'Crompton', 'FAG', 'Fenner', 'Havells', 'L&T', 'Rexnord', 'Schneider', 'Siemens', 'SKF', 'Texrope', 'Other']
 
   useEffect(() => { if (plant?.org_id) fetchParts() }, [plant]) // eslint-disable-line
 
@@ -67,17 +68,21 @@ export default function SparePartsListPage() {
     if (submitting) return
     if (!formData.name.trim()) { showToast('Part name is required', 'error'); return }
     if (!formData.part_number.trim()) { showToast('Part number is required', 'error'); return }
+    if (!formData.brand) { showToast('Brand / Manufacturer is required', 'error'); return }
+    if (formData.brand === 'Other' && !formData.brand_other.trim()) { showToast('Please specify the brand', 'error'); return }
     if (!formData.category) { showToast('Category is required', 'error'); return }
     if (formData.category === 'Other' && !formData.category_other.trim()) { showToast('Please specify the category', 'error'); return }
     if (!formData.unit) { showToast('Unit is required', 'error'); return }
     if (formData.min_stock_level === '' || formData.min_stock_level === null) { showToast('Minimum stock level is required', 'error'); return }
     const finalCategory = formData.category === 'Other' ? formData.category_other.trim() : formData.category
+    const finalBrand = formData.brand === 'Other' ? formData.brand_other.trim() : formData.brand
     try {
       setSubmitting(true)
       const { data, error } = await supabase.from('spare_parts').insert([{
         org_id: plant.org_id,
         name: formData.name.trim(),
         part_number: formData.part_number.trim(),
+        brand: finalBrand,
         category: finalCategory,
         unit: formData.unit,
         min_stock_level: parseFloat(formData.min_stock_level) || 0,
@@ -86,7 +91,7 @@ export default function SparePartsListPage() {
       }]).select()
       if (error) throw error
       setParts(prev => [...prev, { ...data[0], current_stock: 0 }])
-      setFormData({ name: '', part_number: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
+      setFormData({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
       setShowAddModal(false)
       showToast('Part added', 'success')
     } catch { showToast('Failed to add part', 'error') } finally { setSubmitting(false) }
@@ -144,7 +149,7 @@ export default function SparePartsListPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{part.name}</div>
                     <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
-                      {part.category || 'General'}{part.part_number ? ` · ${part.part_number}` : ''}
+                      {part.brand ? `${part.brand} · ` : ''}{part.category || 'General'}{part.part_number ? ` · ${part.part_number}` : ''}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -176,6 +181,19 @@ export default function SparePartsListPage() {
             <label style={labelStyle}>Part Number / Code <span style={{ color: '#d32f2f' }}>*</span></label>
             <input type="text" value={formData.part_number} onChange={e => setFormData({ ...formData, part_number: e.target.value })} placeholder="e.g., SKF-6205, B52" style={inputStyle} />
           </div>
+          <div>
+            <label style={labelStyle}>Brand / Manufacturer <span style={{ color: '#d32f2f' }}>*</span></label>
+            <select value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value, brand_other: '' })} style={{ ...inputStyle, color: formData.brand ? '#2c2c2c' : '#8a8d7a' }}>
+              <option value="">Select brand</option>
+              {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          </div>
+          {formData.brand === 'Other' && (
+            <div>
+              <label style={labelStyle}>Specify Brand <span style={{ color: '#d32f2f' }}>*</span></label>
+              <input type="text" value={formData.brand_other} onChange={e => setFormData({ ...formData, brand_other: e.target.value })} placeholder="e.g., Kirloskar, Greaves..." style={inputStyle} autoFocus />
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1 }}>
               <label style={labelStyle}>Category <span style={{ color: '#d32f2f' }}>*</span></label>
