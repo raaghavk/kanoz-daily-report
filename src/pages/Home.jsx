@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, AlertTriangle, Wrench } from 'lucide-react'
 
 export default function Home() {
   const { employee, plant } = useAuth()
@@ -116,6 +116,39 @@ export default function Home() {
   const todayReports = dashboardData?.todayReports || []
   const handoverNotes = dashboardData?.handoverNotes || null
   const yesterday = dashboardData?.yesterday || null
+
+  const { data: sparePartsData } = useQuery({
+    queryKey: ['home-spare-parts', plant?.id],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0]
+      const { data: partsData } = await supabase.from('spare_parts').select('id').eq('org_id', plant.org_id).eq('is_active', true)
+      const partIds = (partsData || []).map(p => p.id)
+      if (!partIds.length) return { totalParts: 0, lowStock: 0, purchasedToday: 0, issuedToday: 0 }
+
+      const [purchasesRes, usageRes, todayInRes, todayOutRes, configRes] = await Promise.all([
+        supabase.from('spare_parts_purchases').select('part_id, quantity').eq('plant_id', plant.id).in('part_id', partIds),
+        supabase.from('spare_parts_usage').select('part_id, quantity').eq('plant_id', plant.id).in('part_id', partIds),
+        supabase.from('spare_parts_purchases').select('quantity').eq('plant_id', plant.id).eq('purchase_date', today),
+        supabase.from('spare_parts_usage').select('quantity').eq('plant_id', plant.id).eq('usage_date', today),
+        supabase.from('spare_parts_plant_config').select('part_id, min_stock_level').eq('plant_id', plant.id).in('part_id', partIds),
+      ])
+
+      const purchaseMap = {}
+      for (const r of (purchasesRes.data || [])) purchaseMap[r.part_id] = (purchaseMap[r.part_id] || 0) + Number(r.quantity)
+      const usageMap = {}
+      for (const r of (usageRes.data || [])) usageMap[r.part_id] = (usageMap[r.part_id] || 0) + Number(r.quantity)
+      const configMap = {}
+      for (const r of (configRes.data || [])) configMap[r.part_id] = Number(r.min_stock_level)
+
+      const lowStock = partIds.filter(id => configMap[id] != null && ((purchaseMap[id] || 0) - (usageMap[id] || 0)) <= configMap[id]).length
+      const purchasedToday = (todayInRes.data || []).reduce((s, r) => s + Number(r.quantity), 0)
+      const issuedToday = (todayOutRes.data || []).reduce((s, r) => s + Number(r.quantity), 0)
+
+      return { totalParts: partIds.length, lowStock, purchasedToday, issuedToday }
+    },
+    enabled: !!plant?.id,
+  })
+  const sp = sparePartsData || { totalParts: 0, lowStock: 0, purchasedToday: 0, issuedToday: 0 }
 
   const fmtDate = (d) => new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   const dateStr = currentShift === 'A' || shiftStartDate === shiftEndDate
@@ -298,6 +331,33 @@ export default function Home() {
             <ChevronRight size={18} color="#b5b8a8" />
           </button>
           )}
+
+          {/* Spare Parts summary card */}
+          <button
+            onClick={() => navigate('/spare-parts')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
+              padding: '14px 16px', borderRadius: 14, cursor: 'pointer',
+              background: sp.lowStock > 0 ? '#fff7f7' : '#fff',
+              border: `1.5px solid ${sp.lowStock > 0 ? '#fca5a5' : '#e5ddd0'}`,
+            }}
+          >
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: sp.lowStock > 0 ? '#fee2e2' : '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {sp.lowStock > 0
+                ? <AlertTriangle size={20} color="#b91c1c" />
+                : <Wrench size={20} color="#2563EB" />}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: sp.lowStock > 0 ? '#b91c1c' : '#2c2c2c' }}>
+                Spare Parts
+                {sp.lowStock > 0 && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, background: '#fee2e2', color: '#b91c1c', borderRadius: 6, padding: '2px 6px' }}>{sp.lowStock} low stock</span>}
+              </div>
+              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>
+                {sp.totalParts} parts · +{sp.purchasedToday} purchased · {sp.issuedToday} issued today
+              </div>
+            </div>
+            <ChevronRight size={18} color="#b5b8a8" />
+          </button>
         </div>
 
         {/* Yesterday's Summary */}
