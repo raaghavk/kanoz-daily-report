@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
-import { Loader2, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Building2 } from 'lucide-react'
+import { Loader2, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Building2, Pencil, Check, X } from 'lucide-react'
 
 export default function PartDetailPage() {
   const { plant } = useAuth()
@@ -13,37 +13,62 @@ export default function PartDetailPage() {
   const [part, setPart] = useState(null)
   const [purchases, setPurchases] = useState([])
   const [usages, setUsages] = useState([])
-  const [plantStock, setPlantStock] = useState([])
+  const [plantStock, setPlantStock] = useState([]) // [{id, name, stock, min_stock_level}]
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('history') // 'history' | 'purchases' | 'usage'
+  const [activeTab, setActiveTab] = useState('history')
+  const [editingMinPlant, setEditingMinPlant] = useState(null) // plant_id being edited
+  const [editMinValue, setEditMinValue] = useState('')
+  const [savingMin, setSavingMin] = useState(false)
 
   useEffect(() => { if (plant?.org_id && id) loadData() }, [plant, id]) // eslint-disable-line
 
   async function loadData() {
     setLoading(true)
     try {
-      const [partRes, purchasesRes, usageRes, plantsRes] = await Promise.all([
+      const [partRes, purchasesRes, usageRes, plantsRes, configRes] = await Promise.all([
         supabase.from('spare_parts').select('*').eq('id', id).single(),
         supabase.from('spare_parts_purchases').select('*, spare_parts_suppliers(name), plants(name)').eq('part_id', id).order('purchase_date', { ascending: false }),
         supabase.from('spare_parts_usage').select('*, plants(name)').eq('part_id', id).order('usage_date', { ascending: false }),
         supabase.from('plants').select('id, name').eq('org_id', plant.org_id).eq('is_active', true).order('name'),
+        supabase.from('spare_parts_plant_config').select('plant_id, min_stock_level').eq('part_id', id),
       ])
       if (partRes.error) throw partRes.error
       setPart(partRes.data)
       setPurchases(purchasesRes.data || [])
       setUsages(usageRes.data || [])
-      // Compute per-plant stock
+
       const allPlants = plantsRes.data || []
+      const configMap = {}
+      for (const c of (configRes.data || [])) configMap[c.plant_id] = Number(c.min_stock_level)
+
       const plantStockMap = {}
-      for (const p of allPlants) plantStockMap[p.id] = { name: p.name, stockIn: 0, stockOut: 0 }
+      for (const p of allPlants) plantStockMap[p.id] = { name: p.name, stockIn: 0, stockOut: 0, min: configMap[p.id] ?? null }
       for (const r of (purchasesRes.data || [])) {
         if (r.plant_id && plantStockMap[r.plant_id]) plantStockMap[r.plant_id].stockIn += Number(r.quantity)
       }
       for (const r of (usageRes.data || [])) {
         if (r.plant_id && plantStockMap[r.plant_id]) plantStockMap[r.plant_id].stockOut += Number(r.quantity)
       }
-      setPlantStock(Object.entries(plantStockMap).map(([pid, v]) => ({ id: pid, name: v.name, stock: v.stockIn - v.stockOut })).filter(p => p.stock !== 0 || allPlants.length <= 3))
+      setPlantStock(
+        Object.entries(plantStockMap)
+          .map(([pid, v]) => ({ id: pid, name: v.name, stock: v.stockIn - v.stockOut, min: v.min }))
+          .filter(p => p.stock !== 0 || p.min !== null || allPlants.length <= 3)
+      )
     } catch { showToast('Failed to load part', 'error') } finally { setLoading(false) }
+  }
+
+  async function saveMinStock(plantId) {
+    if (editMinValue === '' || editMinValue === null) { showToast('Enter a value', 'error'); return }
+    setSavingMin(true)
+    try {
+      await supabase.from('spare_parts_plant_config').upsert({
+        org_id: plant.org_id, plant_id: plantId, part_id: id,
+        min_stock_level: parseFloat(editMinValue) || 0,
+      }, { onConflict: 'plant_id,part_id' })
+      setPlantStock(prev => prev.map(p => p.id === plantId ? { ...p, min: parseFloat(editMinValue) || 0 } : p))
+      setEditingMinPlant(null)
+      showToast('Min stock updated', 'success')
+    } catch { showToast('Failed to update', 'error') } finally { setSavingMin(false) }
   }
 
   if (loading) return (
@@ -56,7 +81,11 @@ export default function PartDetailPage() {
   const totalIn = purchases.reduce((s, p) => s + Number(p.quantity), 0)
   const totalOut = usages.reduce((s, u) => s + Number(u.quantity), 0)
   const currentStock = totalIn - totalOut
-  const isLow = currentStock <= part.min_stock_level
+  // isLow: check against current plant's configured min (if any)
+  const currentPlantConfig = plantStock.find(ps => ps.id === plant.id)
+  const isLow = currentPlantConfig?.min != null
+    ? currentPlantConfig.stock <= currentPlantConfig.min
+    : false
 
   // Merge purchases + usages into a single timeline
   const timeline = [
@@ -112,19 +141,55 @@ export default function PartDetailPage() {
           </div>
         )}
 
-        {/* Per-plant stock breakdown */}
-        {plantStock.length > 1 && (
+        {/* Per-plant stock breakdown with editable min stock */}
+        {plantStock.length > 0 && (
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', background: '#f0f7f3', display: 'flex', alignItems: 'center', gap: 6 }}>
               <Building2 size={14} style={{ color: '#2d6a4f' }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.4 }}>Stock by Plant</span>
             </div>
-            {plantStock.map((ps, idx) => (
-              <div key={ps.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 14px' }}>
-                <span style={{ fontSize: 13, color: '#2c2c2c', fontWeight: 600 }}>{ps.name}</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: ps.stock <= 0 ? '#b91c1c' : '#2d6a4f' }}>{ps.stock} <span style={{ fontSize: 10, fontWeight: 400 }}>{part.unit}</span></span>
-              </div>
-            ))}
+            {plantStock.map((ps, idx) => {
+              const low = ps.min != null && ps.stock <= ps.min
+              return (
+                <div key={ps.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', padding: '10px 14px', background: low ? '#fff9f9' : 'transparent' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 13, color: '#2c2c2c', fontWeight: 600 }}>{ps.name}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: low ? '#b91c1c' : '#2d6a4f' }}>
+                      {ps.stock} <span style={{ fontSize: 10, fontWeight: 400 }}>{part.unit}</span>
+                      {low && <span style={{ fontSize: 9, color: '#b91c1c', fontWeight: 700, marginLeft: 4 }}>LOW</span>}
+                    </span>
+                  </div>
+                  {/* Min stock display / edit */}
+                  {editingMinPlant === ps.id ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                      <span style={{ fontSize: 11, color: '#8a8d7a', flexShrink: 0 }}>Min:</span>
+                      <input type="number" value={editMinValue} onChange={e => setEditMinValue(e.target.value)}
+                        min="0" step="1" autoFocus
+                        style={{ width: 70, padding: '4px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', background: '#fefae0', fontSize: 13, outline: 'none' }} />
+                      <span style={{ fontSize: 11, color: '#8a8d7a' }}>{part.unit}</span>
+                      <button onClick={() => saveMinStock(ps.id)} disabled={savingMin}
+                        style={{ padding: '4px 8px', background: '#2d6a4f', color: 'white', borderRadius: 6, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, fontWeight: 600 }}>
+                        <Check size={12} /> Save
+                      </button>
+                      <button onClick={() => setEditingMinPlant(null)}
+                        style={{ padding: '4px 6px', background: '#f3f4f6', color: '#595c4a', borderRadius: 6, border: 'none', cursor: 'pointer' }}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                      <span style={{ fontSize: 11, color: '#8a8d7a' }}>
+                        Min: {ps.min != null ? `${ps.min} ${part.unit}` : <span style={{ color: '#d97706' }}>not set</span>}
+                      </span>
+                      <button onClick={() => { setEditingMinPlant(ps.id); setEditMinValue(ps.min != null ? String(ps.min) : '') }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '2px 6px', background: 'none', border: '1px solid #e5ddd0', borderRadius: 5, cursor: 'pointer', fontSize: 10, color: '#8a8d7a', fontWeight: 600 }}>
+                        <Pencil size={9} /> Edit
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 

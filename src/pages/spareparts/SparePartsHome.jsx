@@ -18,23 +18,31 @@ export default function SparePartsHome() {
     setLoading(true)
     try {
       const today = new Date().toISOString().split('T')[0]
-      const { data: partsData } = await supabase.from('spare_parts').select('id, name, unit, min_stock_level').eq('org_id', plant.org_id).eq('is_active', true)
+      const { data: partsData } = await supabase.from('spare_parts').select('id, name, unit').eq('org_id', plant.org_id).eq('is_active', true)
       const partIds = (partsData || []).map(p => p.id)
 
-      const [purchasesRes, usageRes, todayInRes, todayOutRes] = await Promise.all([
-        supabase.from('spare_parts_purchases').select('part_id, quantity').in('part_id', partIds),
-        supabase.from('spare_parts_usage').select('part_id, quantity').in('part_id', partIds),
-        supabase.from('spare_parts_purchases').select('quantity').eq('org_id', plant.org_id).eq('purchase_date', today),
-        supabase.from('spare_parts_usage').select('quantity').eq('org_id', plant.org_id).eq('usage_date', today),
+      const [purchasesRes, usageRes, todayInRes, todayOutRes, configRes] = await Promise.all([
+        supabase.from('spare_parts_purchases').select('part_id, quantity').eq('plant_id', plant.id).in('part_id', partIds),
+        supabase.from('spare_parts_usage').select('part_id, quantity').eq('plant_id', plant.id).in('part_id', partIds),
+        supabase.from('spare_parts_purchases').select('quantity').eq('plant_id', plant.id).eq('purchase_date', today),
+        supabase.from('spare_parts_usage').select('quantity').eq('plant_id', plant.id).eq('usage_date', today),
+        supabase.from('spare_parts_plant_config').select('part_id, min_stock_level').eq('plant_id', plant.id).in('part_id', partIds),
       ])
 
       const purchaseMap = {}
       for (const r of (purchasesRes.data || [])) purchaseMap[r.part_id] = (purchaseMap[r.part_id] || 0) + Number(r.quantity)
       const usageMap = {}
       for (const r of (usageRes.data || [])) usageMap[r.part_id] = (usageMap[r.part_id] || 0) + Number(r.quantity)
+      const configMap = {}
+      for (const r of (configRes.data || [])) configMap[r.part_id] = Number(r.min_stock_level)
 
-      const enriched = (partsData || []).map(p => ({ ...p, current_stock: (purchaseMap[p.id] || 0) - (usageMap[p.id] || 0) }))
-      const low = enriched.filter(p => p.current_stock <= p.min_stock_level)
+      const enriched = (partsData || []).map(p => ({
+        ...p,
+        current_stock: (purchaseMap[p.id] || 0) - (usageMap[p.id] || 0),
+        plant_min: configMap[p.id] ?? null,
+      }))
+      // Only flag low stock for parts that have a min configured at this plant
+      const low = enriched.filter(p => p.plant_min != null && p.current_stock <= p.plant_min)
 
       setLowParts(low.slice(0, 5))
       setStats({

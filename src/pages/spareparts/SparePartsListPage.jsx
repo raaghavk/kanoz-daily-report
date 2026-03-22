@@ -17,7 +17,7 @@ export default function SparePartsListPage() {
   const [filterLow, setFilterLow] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [formData, setFormData] = useState({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
+  const [formData, setFormData] = useState({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', notes: '' })
 
   const CATEGORIES = ['Bearing', 'Belt', 'Coupling', 'Electrical', 'Fasteners', 'Filter', 'Gearbox', 'Hydraulic', 'Motor', 'Pneumatic', 'Sensor', 'Other']
   const UNITS = ['kg', 'litres', 'metres', 'pair', 'pcs', 'set']
@@ -27,7 +27,7 @@ export default function SparePartsListPage() {
 
   useEffect(() => {
     let list = parts
-    if (filterLow) list = list.filter(p => p.current_stock <= p.min_stock_level)
+    if (filterLow) list = list.filter(p => p.plant_min != null && p.current_stock <= p.plant_min)
     const q = searchQuery.toLowerCase()
     if (q) list = list.filter(p => p.name.toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q) || (p.part_number || '').toLowerCase().includes(q))
     setFiltered(list)
@@ -36,29 +36,27 @@ export default function SparePartsListPage() {
   async function fetchParts() {
     try {
       setLoading(true)
-      // Get parts + compute current stock from purchases minus usage
       const { data: partsData, error } = await supabase.from('spare_parts').select('*').eq('org_id', plant.org_id).eq('is_active', true).order('name')
       if (error) throw error
 
-      // Get all purchase totals and usage totals in one go
       const partIds = (partsData || []).map(p => p.id)
-      const [purchasesRes, usageRes] = await Promise.all([
-        supabase.from('spare_parts_purchases').select('part_id, quantity').in('part_id', partIds),
-        supabase.from('spare_parts_usage').select('part_id, quantity').in('part_id', partIds),
+      const [purchasesRes, usageRes, configRes] = await Promise.all([
+        supabase.from('spare_parts_purchases').select('part_id, quantity').eq('plant_id', plant.id).in('part_id', partIds),
+        supabase.from('spare_parts_usage').select('part_id, quantity').eq('plant_id', plant.id).in('part_id', partIds),
+        supabase.from('spare_parts_plant_config').select('part_id, min_stock_level').eq('plant_id', plant.id).in('part_id', partIds),
       ])
 
       const purchaseMap = {}
-      for (const row of (purchasesRes.data || [])) {
-        purchaseMap[row.part_id] = (purchaseMap[row.part_id] || 0) + Number(row.quantity)
-      }
+      for (const row of (purchasesRes.data || [])) purchaseMap[row.part_id] = (purchaseMap[row.part_id] || 0) + Number(row.quantity)
       const usageMap = {}
-      for (const row of (usageRes.data || [])) {
-        usageMap[row.part_id] = (usageMap[row.part_id] || 0) + Number(row.quantity)
-      }
+      for (const row of (usageRes.data || [])) usageMap[row.part_id] = (usageMap[row.part_id] || 0) + Number(row.quantity)
+      const configMap = {}
+      for (const row of (configRes.data || [])) configMap[row.part_id] = Number(row.min_stock_level)
 
       const enriched = (partsData || []).map(p => ({
         ...p,
-        current_stock: (purchaseMap[p.id] || 0) - (usageMap[p.id] || 0)
+        current_stock: (purchaseMap[p.id] || 0) - (usageMap[p.id] || 0),
+        plant_min: configMap[p.id] ?? null,
       }))
       setParts(enriched)
     } catch { showToast('Failed to load parts', 'error') } finally { setLoading(false) }
@@ -73,7 +71,6 @@ export default function SparePartsListPage() {
     if (!formData.category) { showToast('Category is required', 'error'); return }
     if (formData.category === 'Other' && !formData.category_other.trim()) { showToast('Please specify the category', 'error'); return }
     if (!formData.unit) { showToast('Unit is required', 'error'); return }
-    if (formData.min_stock_level === '' || formData.min_stock_level === null) { showToast('Minimum stock level is required', 'error'); return }
     const finalCategory = formData.category === 'Other' ? formData.category_other.trim() : formData.category
     const finalBrand = formData.brand === 'Other' ? formData.brand_other.trim() : formData.brand
     try {
@@ -85,19 +82,18 @@ export default function SparePartsListPage() {
         brand: finalBrand,
         category: finalCategory,
         unit: formData.unit,
-        min_stock_level: parseFloat(formData.min_stock_level) || 0,
         notes: formData.notes.trim() || null,
         is_active: true,
       }]).select()
       if (error) throw error
-      setParts(prev => [...prev, { ...data[0], current_stock: 0 }])
-      setFormData({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
+      setParts(prev => [...prev, { ...data[0], current_stock: 0, plant_min: null }])
+      setFormData({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', notes: '' })
       setShowAddModal(false)
       showToast('Part added', 'success')
     } catch { showToast('Failed to add part', 'error') } finally { setSubmitting(false) }
   }
 
-  const lowCount = parts.filter(p => p.current_stock <= p.min_stock_level).length
+  const lowCount = parts.filter(p => p.plant_min != null && p.current_stock <= p.plant_min).length
 
   const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }
   const labelStyle = { display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }
@@ -139,7 +135,7 @@ export default function SparePartsListPage() {
         ) : (
           <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
             {filtered.map((part, idx) => {
-              const isLow = part.current_stock <= part.min_stock_level
+              const isLow = part.plant_min != null && part.current_stock <= part.plant_min
               return (
                 <button key={part.id} onClick={() => navigate(`/spare-parts/parts/${part.id}`)}
                   style={{ width: '100%', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
@@ -215,9 +211,8 @@ export default function SparePartsListPage() {
               <input type="text" value={formData.category_other} onChange={e => setFormData({ ...formData, category_other: e.target.value })} placeholder="e.g., Seals, Lubrication, Pump..." style={inputStyle} autoFocus />
             </div>
           )}
-          <div>
-            <label style={labelStyle}>Minimum Stock Level <span style={{ color: '#d32f2f' }}>*</span></label>
-            <input type="number" value={formData.min_stock_level} onChange={e => setFormData({ ...formData, min_stock_level: e.target.value })} placeholder="Alert when stock falls below this" style={inputStyle} min="0" />
+          <div style={{ background: '#f0f7f3', borderRadius: 10, padding: '8px 12px', fontSize: 11, color: '#2d6a4f' }}>
+            💡 Min stock level is set per plant when you first stock in this part
           </div>
           <div>
             <label style={labelStyle}>Notes <span style={{ color: '#b5b8a8', fontWeight: 400 }}>(optional)</span></label>

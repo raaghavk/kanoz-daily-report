@@ -64,7 +64,7 @@ function BillUpload({ value, onChange, required }) {
 // ── Add New Part modal ────────────────────────────────────────────────────────
 function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
   const [submitting, setSubmitting] = useState(false)
-  const [formData, setFormData] = useState({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
+  const [formData, setFormData] = useState({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', notes: '' })
   const CATEGORIES = ['Bearing', 'Belt', 'Coupling', 'Electrical', 'Fasteners', 'Filter', 'Gearbox', 'Hydraulic', 'Motor', 'Pneumatic', 'Sensor', 'Other']
   const UNITS = ['kg', 'litres', 'metres', 'pair', 'pcs', 'set']
   const BRANDS = ['ABB', 'Bosch', 'Crompton', 'FAG', 'Fenner', 'Havells', 'L&T', 'Rexnord', 'Schneider', 'Siemens', 'SKF', 'Texrope', 'Other']
@@ -81,7 +81,6 @@ function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
     if (!formData.category) { showToast('Category is required', 'error'); return }
     if (formData.category === 'Other' && !formData.category_other.trim()) { showToast('Please specify the category', 'error'); return }
     if (!formData.unit) { showToast('Unit is required', 'error'); return }
-    if (formData.min_stock_level === '' || formData.min_stock_level === null) { showToast('Minimum stock level is required', 'error'); return }
     const finalBrand = formData.brand === 'Other' ? formData.brand_other.trim() : formData.brand
     const finalCategory = formData.category === 'Other' ? formData.category_other.trim() : formData.category
     try {
@@ -89,12 +88,11 @@ function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
       const { data, error } = await supabase.from('spare_parts').insert([{
         org_id: orgId, name: formData.name.trim(), part_number: formData.part_number.trim(),
         brand: finalBrand, category: finalCategory, unit: formData.unit,
-        min_stock_level: parseFloat(formData.min_stock_level) || 0,
         notes: formData.notes.trim() || null, is_active: true,
       }]).select()
       if (error) throw error
-      showToast('Part added', 'success')
-      setFormData({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
+      showToast('Part added — set min stock level when you complete this stock in', 'success')
+      setFormData({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', notes: '' })
       onPartAdded(data[0]); onClose()
     } catch { showToast('Failed to add part', 'error') } finally { setSubmitting(false) }
   }
@@ -128,8 +126,9 @@ function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
           <div><label style={lbl}>Specify Category {req}</label>
             <input type="text" value={formData.category_other} onChange={e => setFormData({ ...formData, category_other: e.target.value })} placeholder="e.g., Seals, Pump..." style={inp} /></div>
         )}
-        <div><label style={lbl}>Minimum Stock Level {req}</label>
-          <input type="number" value={formData.min_stock_level} onChange={e => setFormData({ ...formData, min_stock_level: e.target.value })} placeholder="Alert when stock falls below this" style={inp} min="0" /></div>
+        <div style={{ background: '#f0f7f3', borderRadius: 10, padding: '8px 12px', fontSize: 11, color: '#2d6a4f' }}>
+          💡 Min stock level will be set in the next step when you complete the stock in
+        </div>
         <div><label style={lbl}>Notes <span style={{ color: '#b5b8a8', fontWeight: 400 }}>(optional)</span></label>
           <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} placeholder="Any additional notes" rows={2} style={{ ...inp, resize: 'none' }} /></div>
         <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
@@ -200,6 +199,12 @@ function ReviewScreen({ formData, parts, suppliers, plants, onEdit, onConfirm, s
           {row('Bill', formData.bill_image_url ? '✓ Uploaded' : '—')}
         </div>
 
+        {/* Min stock */}
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '4px 16px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5, padding: '10px 0 4px' }}>Min Stock Level</div>
+          {row('At ' + (receivingPlant?.name || 'Plant'), formData.min_stock_level !== '' ? `${formData.min_stock_level} ${part?.unit || ''}` : '—')}
+        </div>
+
         {/* Warranty */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '4px 16px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5, padding: '10px 0 4px' }}>Warranty</div>
@@ -230,11 +235,13 @@ function ReviewScreen({ formData, parts, suppliers, plants, onEdit, onConfirm, s
 
 // ── Main StockInPage ──────────────────────────────────────────────────────────
 export default function StockInPage() {
-  const { plant } = useAuth()
+  const { plant, employee } = useAuth()
+  const isAdmin = employee?.role === 'admin'
   const navigate = useNavigate()
   const [parts, setParts] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [plants, setPlants] = useState([])
+  const [existingConfigs, setExistingConfigs] = useState({}) // part_id → min_stock_level if already configured
   const [loadingData, setLoadingData] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [showAddPart, setShowAddPart] = useState(false)
@@ -254,6 +261,7 @@ export default function StockInPage() {
     warranty_months: '',
     warranty_expiry_date: '',
     purchased_by: '',
+    min_stock_level: '',
     notes: '',
   })
 
@@ -279,10 +287,27 @@ export default function StockInPage() {
       setParts(partsRes.data || [])
       setSuppliers(suppliersRes.data || [])
       setPlants(plantsRes.data || [])
-      // Default to current plant
       setFormData(prev => ({ ...prev, plant_id: plant.id || '' }))
     } catch { showToast('Failed to load data', 'error') } finally { setLoadingData(false) }
   }
+
+  // When part or plant changes, check if a min stock config already exists
+  useEffect(() => {
+    async function checkConfig() {
+      if (!formData.part_id || !formData.plant_id) return
+      const key = `${formData.plant_id}__${formData.part_id}`
+      if (existingConfigs[key] !== undefined) {
+        setFormData(prev => ({ ...prev, min_stock_level: String(existingConfigs[key]) }))
+        return
+      }
+      const { data } = await supabase.from('spare_parts_plant_config')
+        .select('min_stock_level').eq('plant_id', formData.plant_id).eq('part_id', formData.part_id).maybeSingle()
+      const val = data?.min_stock_level ?? ''
+      setExistingConfigs(prev => ({ ...prev, [key]: val === '' ? null : Number(val) }))
+      setFormData(prev => ({ ...prev, min_stock_level: val === '' ? '' : String(val) }))
+    }
+    checkConfig()
+  }, [formData.part_id, formData.plant_id]) // eslint-disable-line
 
   function handleReview() {
     if (!formData.plant_id) { showToast('Please select a plant / location', 'error'); return }
@@ -295,6 +320,7 @@ export default function StockInPage() {
     if (!formData.purchased_by.trim()) { showToast('Enter who purchased this', 'error'); return }
     if (!formData.warranty_months) { showToast('Warranty period is required', 'error'); return }
     if (!formData.warranty_expiry_date) { showToast('Warranty expiry date is required', 'error'); return }
+    if (formData.min_stock_level === '' || formData.min_stock_level === null) { showToast('Minimum stock level is required', 'error'); return }
     setShowReview(true)
   }
 
@@ -302,6 +328,7 @@ export default function StockInPage() {
     if (submitting) return
     try {
       setSubmitting(true)
+      // Save purchase
       const { error } = await supabase.from('spare_parts_purchases').insert([{
         org_id: plant.org_id,
         plant_id: formData.plant_id || null,
@@ -318,6 +345,15 @@ export default function StockInPage() {
         notes: formData.notes.trim() || null,
       }])
       if (error) throw error
+      // Upsert plant-level min stock config
+      if (formData.plant_id && formData.part_id && formData.min_stock_level !== '') {
+        await supabase.from('spare_parts_plant_config').upsert({
+          org_id: plant.org_id,
+          plant_id: formData.plant_id,
+          part_id: formData.part_id,
+          min_stock_level: parseFloat(formData.min_stock_level) || 0,
+        }, { onConflict: 'plant_id,part_id' })
+      }
       showToast('Stock added successfully', 'success')
       navigate(-1)
     } catch { showToast('Failed to save', 'error') } finally { setSubmitting(false) }
@@ -358,17 +394,23 @@ export default function StockInPage() {
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Plant selector */}
+        {/* Plant selector — locked for non-admins */}
         <div style={cardStyle}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Receiving Plant {req}</div>
-          <div>
-            <label style={labelStyle}>Which plant is receiving this stock? {req}</label>
-            <select value={formData.plant_id} onChange={e => setFormData({ ...formData, plant_id: e.target.value })}
-              style={{ ...inputStyle, color: formData.plant_id ? '#2c2c2c' : '#8a8d7a' }}>
-              <option value="">Select plant</option>
-              {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
+          {isAdmin ? (
+            <div>
+              <label style={labelStyle}>Which plant is receiving this stock? {req}</label>
+              <select value={formData.plant_id} onChange={e => setFormData({ ...formData, plant_id: e.target.value, part_id: '', min_stock_level: '' })}
+                style={{ ...inputStyle, color: formData.plant_id ? '#2c2c2c' : '#8a8d7a' }}>
+                <option value="">Select plant</option>
+                {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div style={{ background: '#e8f0ec', borderRadius: 10, padding: '10px 14px', fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>
+              {plants.find(p => p.id === formData.plant_id)?.name || '—'}
+            </div>
+          )}
         </div>
 
         {/* Part & Supplier */}
@@ -479,6 +521,28 @@ export default function StockInPage() {
             <input type="text" value={formData.purchased_by} onChange={e => setFormData({ ...formData, purchased_by: e.target.value })} placeholder="Name of person who purchased" style={inputStyle} />
           </div>
         </div>
+
+        {/* Min stock level for this plant */}
+        {formData.part_id && formData.plant_id && (
+          <div style={cardStyle}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Min Stock Level at {plants.find(p => p.id === formData.plant_id)?.name || 'Plant'} {req}
+            </div>
+            <div>
+              <label style={labelStyle}>
+                Alert when stock falls below {req}
+                {selectedPart && <span style={{ fontWeight: 800, color: '#2d6a4f', marginLeft: 4, textTransform: 'lowercase' }}>({selectedPart.unit})</span>}
+              </label>
+              <input type="number" value={formData.min_stock_level} onChange={e => setFormData({ ...formData, min_stock_level: e.target.value })}
+                placeholder="e.g., 2" min="0" step="1" style={inputStyle} />
+              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 4 }}>
+                {existingConfigs[`${formData.plant_id}__${formData.part_id}`] != null
+                  ? `Currently set to ${existingConfigs[`${formData.plant_id}__${formData.part_id}`]} — you can update it here`
+                  : 'First time stocking this part here — set your minimum threshold'}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Warranty — now mandatory */}
         <div style={cardStyle}>
