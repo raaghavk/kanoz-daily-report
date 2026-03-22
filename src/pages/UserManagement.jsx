@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { ROLE_OPTIONS } from '../lib/permissions'
-import { UserPlus, Edit2, Shield, ChevronLeft, Phone, MapPin, Check, X, Loader2, Key } from 'lucide-react'
+import { UserPlus, Edit2, Shield, ChevronLeft, Phone, MapPin, Check, X, Loader2, Mail } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 const ROLE_BADGE = {
@@ -27,8 +27,7 @@ export default function UserManagement() {
   const [toast, setToast] = useState(null)
 
   const [form, setForm] = useState({ name: '', mobile: '', role: 'supervisor', plant_id: '', is_active: true })
-  const [accessForm, setAccessForm] = useState({ email: '', password: '', confirmPassword: '' })
-  const [showPw, setShowPw] = useState(false)
+  const [accessEmail, setAccessEmail] = useState('')
 
   const isAdmin = employee?.role === 'admin'
 
@@ -99,22 +98,23 @@ export default function UserManagement() {
   }
 
   async function grantAccess() {
-    const { email, password, confirmPassword } = accessForm
-    if (!email.trim()) { showToast('Email is required', 'error'); return }
-    if (!password) { showToast('Password is required', 'error'); return }
-    if (password.length < 6) { showToast('Password must be at least 6 characters', 'error'); return }
-    if (password !== confirmPassword) { showToast('Passwords do not match', 'error'); return }
+    if (!accessEmail.trim()) { showToast('Email is required', 'error'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accessEmail.trim())) { showToast('Enter a valid email address', 'error'); return }
 
     setInviting(true)
     try {
       const { data, error } = await supabase.functions.invoke('invite-user', {
-        body: { email: email.trim(), password, employee_id: showAccess.id }
+        body: { email: accessEmail.trim(), employee_id: showAccess.id }
       })
       if (error) throw new Error(error.message)
       if (data?.error) throw new Error(data.error)
-      showToast(`✓ Login created for ${showAccess.name}`)
+      if (data?.email_sent) {
+        showToast(`✓ Invite sent to ${accessEmail.trim()}`)
+      } else {
+        showToast(`✓ Account created — send them the app link manually`, 'warn')
+      }
       setShowAccess(null)
-      setAccessForm({ email: '', password: '', confirmPassword: '' })
+      setAccessEmail('')
       loadData()
     } catch (err) {
       showToast(err.message || 'Failed to create login', 'error')
@@ -163,14 +163,45 @@ export default function UserManagement() {
           <UserPlus size={17} /> Add Team Member
         </button>
 
-        {/* Active employees */}
-        {active.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessForm({ email: '', password: '', confirmPassword: '' }); setShowPw(false) }} />)}
+        {/* Active employees — admins first (no plant grouping), then others sorted by plant → role */}
+        {(() => {
+          const ROLE_ORDER = ['admin', 'plant_manager', 'supervisor', 'accountant', 'purchase_manager']
+          const admins = active.filter(e => e.role === 'admin')
+          const others = active.filter(e => e.role !== 'admin').sort((a, b) => {
+            const pa = a.plants?.name || ''
+            const pb = b.plants?.name || ''
+            if (pa !== pb) return pa.localeCompare(pb)
+            return (ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
+          })
+
+          const adminCards = admins.length > 0 ? [
+            <div key="_admin_header" style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, paddingLeft: 4 }}>Admins</div>,
+            ...admins.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} />)
+          ] : []
+
+          let lastPlant = null
+          const otherCards = others.map(emp => {
+            const plantName = emp.plants?.name || 'No Plant'
+            const showHeader = plantName !== lastPlant
+            lastPlant = plantName
+            return (
+              <div key={emp.id}>
+                {showHeader && (
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, paddingLeft: 4 }}>{plantName}</div>
+                )}
+                <EmployeeCard emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} />
+              </div>
+            )
+          })
+
+          return [...adminCards, ...otherCards]
+        })()}
 
         {/* Inactive */}
         {inactive.length > 0 && (
           <>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, paddingLeft: 4 }}>Inactive</div>
-            {inactive.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessForm({ email: '', password: '', confirmPassword: '' }) }} />)}
+            {inactive.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} />)}
           </>
         )}
       </div>
@@ -224,43 +255,36 @@ export default function UserManagement() {
         </div>
       )}
 
-      {/* Grant App Access Modal */}
+      {/* Grant App Access Modal — email only, employee sets own password via email link */}
       {showAccess && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
           <div style={{ background: 'white', borderRadius: '20px 20px 0 0', width: '100%', maxWidth: 480, padding: 24, paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <div style={{ fontSize: 17, fontWeight: 700, color: '#2c2c2c' }}>Grant App Access</div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: '#2c2c2c' }}>Invite to App</div>
               <button onClick={() => setShowAccess(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}><X size={22} color="#8a8d7a" /></button>
             </div>
             <div style={{ fontSize: 13, color: '#595c4a', marginBottom: 18 }}>
-              Setting up login for <strong>{showAccess.name}</strong>. Create their email and password — share these with them directly.
+              Enter <strong>{showAccess.name}</strong>'s email. They'll receive a link to set their own password and log in.
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label style={labelStyle}>Email *</label>
-                <input style={inputStyle} type="email" value={accessForm.email} onChange={e => setAccessForm({ ...accessForm, email: e.target.value })} placeholder="their@email.com" autoComplete="off" />
+                <input
+                  style={inputStyle}
+                  type="email"
+                  value={accessEmail}
+                  onChange={e => setAccessEmail(e.target.value)}
+                  placeholder="their@email.com"
+                  autoComplete="off"
+                />
               </div>
-              <div>
-                <label style={labelStyle}>Password *</label>
-                <div style={{ position: 'relative' }}>
-                  <input style={{ ...inputStyle, paddingRight: 44 }} type={showPw ? 'text' : 'password'} value={accessForm.password} onChange={e => setAccessForm({ ...accessForm, password: e.target.value })} placeholder="Minimum 6 characters" autoComplete="new-password" />
-                  <button onClick={() => setShowPw(p => !p)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#8a8d7a', fontWeight: 600 }}>{showPw ? 'Hide' : 'Show'}</button>
-                </div>
-              </div>
-              <div>
-                <label style={labelStyle}>Confirm Password *</label>
-                <input style={{ ...inputStyle, border: accessForm.confirmPassword && accessForm.confirmPassword !== accessForm.password ? '1.5px solid #d32f2f' : '1.5px solid #e5ddd0' }}
-                  type={showPw ? 'text' : 'password'} value={accessForm.confirmPassword} onChange={e => setAccessForm({ ...accessForm, confirmPassword: e.target.value })} placeholder="Repeat password" autoComplete="new-password" />
-                {accessForm.confirmPassword && accessForm.confirmPassword !== accessForm.password && (
-                  <div style={{ fontSize: 11, color: '#d32f2f', marginTop: 3 }}>Passwords do not match</div>
-                )}
-              </div>
-              <div style={{ background: '#fefae0', border: '1px solid #e5ddd0', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#595c4a' }}>
-                📋 Share the app URL + email + password with {showAccess.name} via WhatsApp or in person.
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#1e40af', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                <Mail size={14} style={{ marginTop: 1, flexShrink: 0 }} />
+                <span>{showAccess.name} will get an email with a "Set Password" link. They set their own password — you never need to know it.</span>
               </div>
               <button onClick={grantAccess} disabled={inviting}
-                style={{ width: '100%', padding: '13px 0', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: inviting ? 0.7 : 1 }}>
-                {inviting ? 'Creating Login...' : 'Create Login'}
+                style={{ width: '100%', padding: '13px 0', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: inviting ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {inviting ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Sending Invite...</> : <><Mail size={16} /> Send Invite</>}
               </button>
             </div>
           </div>
@@ -279,6 +303,7 @@ export default function UserManagement() {
 
 function EmployeeCard({ emp, onEdit, onAccess }) {
   const badge = ROLE_BADGE[emp.role] || { bg: '#EBF4FF', text: '#3B82F6', label: emp.role }
+  const isAdmin = emp.role === 'admin'
   return (
     <div style={{ background: 'white', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '12px 14px', opacity: emp.is_active ? 1 : 0.55 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -292,15 +317,17 @@ function EmployeeCard({ emp, onEdit, onAccess }) {
             <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, padding: '2px 8px', borderRadius: 20, background: badge.bg, color: badge.text }}>
               {badge.label}
             </span>
-            {emp.plants && (
+            {/* Show plant only for non-admins */}
+            {!isAdmin && emp.plants && (
               <span style={{ fontSize: 11, color: '#8a8d7a', display: 'flex', alignItems: 'center', gap: 3 }}>
                 <MapPin size={11} /> {emp.plants.name}
               </span>
             )}
+            {/* Phone icon only — tap to call */}
             {emp.mobile && (
-              <span style={{ fontSize: 11, color: '#8a8d7a', display: 'flex', alignItems: 'center', gap: 3 }}>
-                <Phone size={11} /> {emp.mobile}
-              </span>
+              <a href={`tel:${emp.mobile}`} style={{ fontSize: 11, color: '#8a8d7a', display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+                <Phone size={13} />
+              </a>
             )}
           </div>
           {/* Access status */}
@@ -321,7 +348,7 @@ function EmployeeCard({ emp, onEdit, onAccess }) {
           {!emp.auth_user_id && (
             <button onClick={onAccess}
               style={{ height: 34, padding: '0 12px', borderRadius: 10, border: 'none', background: '#2d6a4f', color: 'white', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
-              <Key size={13} /> Set Login
+              <Mail size={13} /> Invite
             </button>
           )}
         </div>

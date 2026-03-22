@@ -7,16 +7,20 @@ const corsHeaders = {
 }
 
 /**
- * Create a Supabase auth user and link it to an existing employee record.
+ * Create a Supabase auth user and send them a password-setup email.
  *
  * Expected body:
  * {
  *   email: string,
- *   password: string,
  *   employee_id: UUID
  * }
  *
  * Must be called by an authenticated admin user.
+ * Flow:
+ *  1. Create auth user with a random temp password (email_confirm: true)
+ *  2. Link auth user to employee record
+ *  3. Generate a password-recovery link and send it via Supabase Auth email
+ *     → employee receives "Set your password" email and sets their own password
  */
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -63,17 +67,10 @@ serve(async (req) => {
       })
     }
 
-    const { email, password, employee_id } = await req.json()
+    const { email, employee_id } = await req.json()
 
-    if (!email || !password || !employee_id) {
-      return new Response(JSON.stringify({ error: 'email, password, and employee_id are required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    }
-
-    if (password.length < 6) {
-      return new Response(JSON.stringify({ error: 'Password must be at least 6 characters' }), {
+    if (!email || !employee_id) {
+      return new Response(JSON.stringify({ error: 'email and employee_id are required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -100,11 +97,14 @@ serve(async (req) => {
       })
     }
 
-    // Create the auth user using admin API
+    // Generate a secure random temp password — employee will replace it via reset link
+    const tempPassword = crypto.randomUUID() + crypto.randomUUID()
+
+    // Create the auth user
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email,
-      password,
-      email_confirm: true,
+      password: tempPassword,
+      email_confirm: true, // skip email confirmation, we send reset link instead
     })
 
     if (createError) {
@@ -129,9 +129,33 @@ serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
+    // Send password recovery email so the employee sets their own password
+    const { error: resetError } = await adminClient.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+    })
+
+    // Even if the reset email fails, the account is created — return partial success
+    if (resetError) {
+      console.error('Reset email failed:', resetError.message)
+      return new Response(JSON.stringify({
+        success: true,
+        user_id: newUser.user.id,
+        email_sent: false,
+        email_error: resetError.message,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      user_id: newUser.user.id,
+      email_sent: true,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
+
   } catch (err) {
     console.error('Error:', err)
     return new Response(JSON.stringify({ error: err.message }), {
