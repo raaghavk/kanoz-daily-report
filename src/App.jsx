@@ -26,6 +26,12 @@ const CustomerList = lazy(() => import('./pages/customers/CustomerList'))
 const CustomerDetail = lazy(() => import('./pages/customers/CustomerDetail'))
 const TransporterList = lazy(() => import('./pages/transporters/TransporterList'))
 const TransporterDetail = lazy(() => import('./pages/transporters/TransporterDetail'))
+const SparePartsHome = lazy(() => import('./pages/spareparts/SparePartsHome'))
+const SparePartsListPage = lazy(() => import('./pages/spareparts/SparePartsListPage'))
+const SparePartsSuppliersPage = lazy(() => import('./pages/spareparts/SparePartsSuppliersPage'))
+const StockInPage = lazy(() => import('./pages/spareparts/StockInPage'))
+const IssuePartPage = lazy(() => import('./pages/spareparts/IssuePartPage'))
+const PartDetailPage = lazy(() => import('./pages/spareparts/PartDetailPage'))
 
 function LoadingFallback() {
   return (
@@ -108,6 +114,12 @@ export default function App() {
         <Route path="customers/:id" element={<CustomerDetail />} />
         <Route path="transporters" element={<TransporterList />} />
         <Route path="transporters/:id" element={<TransporterDetail />} />
+        <Route path="spare-parts" element={<SparePartsHome />} />
+        <Route path="spare-parts/parts" element={<SparePartsListPage />} />
+        <Route path="spare-parts/parts/:id" element={<PartDetailPage />} />
+        <Route path="spare-parts/suppliers" element={<SparePartsSuppliersPage />} />
+        <Route path="spare-parts/stock-in" element={<StockInPage />} />
+        <Route path="spare-parts/issue" element={<IssuePartPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
@@ -256,6 +268,16 @@ function SettingsPage() {
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Transporters</div>
             <div style={{ fontSize: 11, color: '#8a8d7a' }}>Vehicle transport partners</div>
+          </div>
+        </button>
+        <button
+          onClick={() => nav('/spare-parts')}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
+        >
+          <span style={{ fontSize: 18 }}>🔧</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Spare Parts</div>
+            <div style={{ fontSize: 11, color: '#8a8d7a' }}>Inventory & maintenance tracking</div>
           </div>
         </button>
       </div>

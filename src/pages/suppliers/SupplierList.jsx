@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
-import { Search, Plus, Phone, MessageSquare, MapPin, ChevronRight, Loader2, AlertCircle, Navigation } from 'lucide-react'
+import { Search, Plus, Phone, MessageSquare, MapPin, ChevronRight, Loader2, AlertCircle, Navigation, LocateFixed } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function SupplierList() {
@@ -92,6 +92,38 @@ export default function SupplierList() {
   }
 
   const [submitting, setSubmitting] = useState(false)
+  const [locating, setLocating] = useState(false)
+
+  async function captureLocation() {
+    if (!navigator.geolocation) {
+      showToast('Location not supported on this device', 'error')
+      return
+    }
+    setLocating(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`)
+          const data = await res.json()
+          const addr = data.display_name || `${latitude}, ${longitude}`
+          setFormData(prev => ({ ...prev, address: addr }))
+          showToast('Location captured', 'success')
+        } catch {
+          setFormData(prev => ({ ...prev, address: `${latitude}, ${longitude}` }))
+          showToast('Location captured (coordinates only)', 'info')
+        } finally {
+          setLocating(false)
+        }
+      },
+      (err) => {
+        setLocating(false)
+        if (err.code === 1) showToast('Location permission denied', 'error')
+        else showToast('Could not get location', 'error')
+      },
+      { timeout: 10000 }
+    )
+  }
 
   async function handleAddSupplier() {
     if (submitting) return
@@ -306,12 +338,23 @@ export default function SupplierList() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>Address</label>
+              <button
+                type="button"
+                onClick={captureLocation}
+                disabled={locating}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#e8f0ec', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 600, color: '#2d6a4f', cursor: locating ? 'not-allowed' : 'pointer', opacity: locating ? 0.6 : 1 }}
+              >
+                <LocateFixed size={12} />
+                {locating ? 'Getting location...' : 'Capture Location'}
+              </button>
+            </div>
             <input
               type="text"
               value={formData.address}
               onChange={e => setFormData({ ...formData, address: e.target.value })}
-              placeholder="Supplier address"
+              placeholder="Supplier address or tap Capture Location"
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
