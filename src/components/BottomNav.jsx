@@ -122,7 +122,7 @@ export default function BottomNav() {
         </div>
       )}
 
-      {/* Bottom Nav Bar — 4 items: Home | + | Chat | More */}
+      {/* Bottom Nav Bar — 5 items: Home | Tasks | + | Ask | More */}
       <nav style={{
         flexShrink: 0, display: 'flex',
         background: '#FFFFFF', borderTop: '1px solid #e5ddd0',
@@ -134,14 +134,14 @@ export default function BottomNav() {
           <span style={{ fontSize: 10, fontWeight: isHome ? 700 : 500 }}>Home</span>
         </button>
 
-        <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(false)}>
-          <Plus size={24} strokeWidth={2} style={{ color: '#2d6a4f', transition: 'transform 0.2s', transform: showSheet ? 'rotate(45deg)' : 'none' }} />
-          <span style={{ fontSize: 10, fontWeight: 500, color: '#8a8d7a' }}>New</span>
-        </button>
-
         <button onClick={() => navigate('/tasks')} style={navBtnStyle(isTasks)}>
           <CheckSquare size={22} strokeWidth={isTasks ? 2.5 : 1.5} />
           <span style={{ fontSize: 10, fontWeight: isTasks ? 700 : 500 }}>Tasks</span>
+        </button>
+
+        <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(false)}>
+          <Plus size={24} strokeWidth={2} style={{ color: '#2d6a4f', transition: 'transform 0.2s', transform: showSheet ? 'rotate(45deg)' : 'none' }} />
+          <span style={{ fontSize: 10, fontWeight: 500, color: '#8a8d7a' }}>New</span>
         </button>
 
         <button onClick={() => navigate('/insights')} style={navBtnStyle(isChat)}>
