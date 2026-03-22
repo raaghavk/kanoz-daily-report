@@ -6,6 +6,7 @@ import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import { Loader2, Plus, FileText, X, Upload, Edit2, CheckCircle } from 'lucide-react'
+import { getBrands, saveCustomBrand } from '../../lib/brands'
 
 // ── Bill PDF / Image uploader ─────────────────────────────────────────────────
 function BillUpload({ value, onChange, required }) {
@@ -65,9 +66,9 @@ function BillUpload({ value, onChange, required }) {
 function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', notes: '' })
+  const [brands, setBrands] = useState(() => getBrands())
   const CATEGORIES = ['Bearing', 'Belt', 'Coupling', 'Electrical', 'Fasteners', 'Filter', 'Gearbox', 'Hydraulic', 'Motor', 'Pneumatic', 'Sensor', 'Other']
   const UNITS = ['kg', 'litres', 'metres', 'pair', 'pcs', 'set']
-  const BRANDS = ['ABB', 'Bosch', 'Crompton', 'FAG', 'Fenner', 'Havells', 'L&T', 'Rexnord', 'Schneider', 'Siemens', 'SKF', 'Texrope', 'Other']
   const inp = { width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }
   const lbl = { display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }
   const req = <span style={{ color: '#d32f2f' }}>*</span>
@@ -91,6 +92,10 @@ function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
         notes: formData.notes.trim() || null, is_active: true,
       }]).select()
       if (error) throw error
+      if (formData.brand === 'Other') {
+        saveCustomBrand(finalBrand)
+        setBrands(getBrands())
+      }
       showToast('Part added — set min stock level when you complete this stock in', 'success')
       setFormData({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', notes: '' })
       onPartAdded(data[0]); onClose()
@@ -106,7 +111,7 @@ function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
           <input type="text" value={formData.part_number} onChange={e => setFormData({ ...formData, part_number: e.target.value })} placeholder="e.g., SKF-6205" style={inp} /></div>
         <div><label style={lbl}>Brand / Manufacturer {req}</label>
           <select value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value, brand_other: '' })} style={{ ...inp, color: formData.brand ? '#2c2c2c' : '#8a8d7a' }}>
-            <option value="">Select brand</option>{BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+            <option value="">Select brand</option>{brands.map(b => <option key={b} value={b}>{b}</option>)}
           </select></div>
         {formData.brand === 'Other' && (
           <div><label style={lbl}>Specify Brand {req}</label>

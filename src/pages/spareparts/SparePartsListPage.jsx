@@ -6,6 +6,7 @@ import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import PageHeader from '../../components/PageHeader'
 import { Search, Plus, Package, AlertTriangle, Loader2, AlertCircle, ChevronRight } from 'lucide-react'
+import { getBrands, saveCustomBrand } from '../../lib/brands'
 
 export default function SparePartsListPage() {
   const { plant } = useAuth()
@@ -21,7 +22,7 @@ export default function SparePartsListPage() {
 
   const CATEGORIES = ['Bearing', 'Belt', 'Coupling', 'Electrical', 'Fasteners', 'Filter', 'Gearbox', 'Hydraulic', 'Motor', 'Pneumatic', 'Sensor', 'Other']
   const UNITS = ['kg', 'litres', 'metres', 'pair', 'pcs', 'set']
-  const BRANDS = ['ABB', 'Bosch', 'Crompton', 'FAG', 'Fenner', 'Havells', 'L&T', 'Rexnord', 'Schneider', 'Siemens', 'SKF', 'Texrope', 'Other']
+  const [brands, setBrands] = useState(() => getBrands())
 
   useEffect(() => { if (plant?.org_id) fetchParts() }, [plant]) // eslint-disable-line
 
@@ -86,6 +87,10 @@ export default function SparePartsListPage() {
         is_active: true,
       }]).select()
       if (error) throw error
+      if (formData.brand === 'Other') {
+        saveCustomBrand(finalBrand)
+        setBrands(getBrands())
+      }
       setParts(prev => [...prev, { ...data[0], current_stock: 0, plant_min: null }])
       setFormData({ name: '', part_number: '', brand: '', brand_other: '', category: '', category_other: '', unit: 'pcs', notes: '' })
       setShowAddModal(false)
@@ -181,7 +186,7 @@ export default function SparePartsListPage() {
             <label style={labelStyle}>Brand / Manufacturer <span style={{ color: '#d32f2f' }}>*</span></label>
             <select value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value, brand_other: '' })} style={{ ...inputStyle, color: formData.brand ? '#2c2c2c' : '#8a8d7a' }}>
               <option value="">Select brand</option>
-              {BRANDS.map(b => <option key={b} value={b}>{b}</option>)}
+              {brands.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
           {formData.brand === 'Other' && (
