@@ -317,6 +317,7 @@ export default function Home() {
           </button>
           )}
 
+          {can(employee?.role, 'view_spare_parts') && (
           <button onClick={() => navigate('/spare-parts')} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: sp.lowStock > 0 ? '#fff7f7' : 'none', border: 'none', cursor: 'pointer' }}>
             <div style={{ width: 32, height: 32, borderRadius: 9, background: sp.lowStock > 0 ? '#fee2e2' : '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {sp.lowStock > 0 ? <AlertTriangle size={15} color="#b91c1c" /> : <Wrench size={15} color="#2563EB" />}
@@ -329,6 +330,7 @@ export default function Home() {
             </div>
             <ChevronRight size={15} color="#b5b8a8" />
           </button>
+          )}
           </div>
         </div>
 

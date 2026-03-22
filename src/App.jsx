@@ -118,15 +118,15 @@ export default function App() {
         <Route path="customers/:id" element={<CustomerDetail />} />
         <Route path="transporters" element={<TransporterList />} />
         <Route path="transporters/:id" element={<TransporterDetail />} />
-        <Route path="spare-parts" element={<SparePartsHome />} />
-        <Route path="spare-parts/parts" element={<SparePartsListPage />} />
-        <Route path="spare-parts/parts/:id" element={<PartDetailPage />} />
-        <Route path="spare-parts/suppliers" element={<SparePartsSuppliersPage />} />
-        <Route path="spare-parts/stock-in" element={<StockInPage />} />
-        <Route path="spare-parts/issue" element={<IssuePartPage />} />
-        <Route path="spare-parts/purchase-history" element={<SparePartsPurchaseHistoryPage />} />
-        <Route path="spare-parts/usage-history" element={<SparePartsUsageHistoryPage />} />
-        <Route path="spare-parts/reorder" element={<ReorderRequestsPage />} />
+        <Route path="spare-parts" element={<PermissionGuard action="view_spare_parts"><SparePartsHome /></PermissionGuard>} />
+        <Route path="spare-parts/parts" element={<PermissionGuard action="view_spare_parts"><SparePartsListPage /></PermissionGuard>} />
+        <Route path="spare-parts/parts/:id" element={<PermissionGuard action="view_spare_parts"><PartDetailPage /></PermissionGuard>} />
+        <Route path="spare-parts/suppliers" element={<PermissionGuard action="view_spare_parts"><SparePartsSuppliersPage /></PermissionGuard>} />
+        <Route path="spare-parts/stock-in" element={<PermissionGuard action="create_spare_parts"><StockInPage /></PermissionGuard>} />
+        <Route path="spare-parts/issue" element={<PermissionGuard action="create_spare_parts"><IssuePartPage /></PermissionGuard>} />
+        <Route path="spare-parts/purchase-history" element={<PermissionGuard action="view_spare_parts"><SparePartsPurchaseHistoryPage /></PermissionGuard>} />
+        <Route path="spare-parts/usage-history" element={<PermissionGuard action="view_spare_parts"><SparePartsUsageHistoryPage /></PermissionGuard>} />
+        <Route path="spare-parts/reorder" element={<PermissionGuard action="view_spare_parts"><ReorderRequestsPage /></PermissionGuard>} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
@@ -245,24 +245,31 @@ function SettingsPage() {
           {switching && <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 4 }}>Switching...</div>}
         </div>
       )}
-      {/* Directory Links — 2x2 grid */}
-      <div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Directory</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {[
-            { path: '/suppliers', emoji: '👤', label: 'Suppliers' },
-            { path: '/customers', emoji: '🏭', label: 'Customers' },
-            { path: '/transporters', emoji: '🚛', label: 'Transporters' },
-            { path: '/spare-parts', emoji: '🔧', label: 'Spare Parts' },
-          ].map(item => (
-            <button key={item.path} onClick={() => nav(item.path)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '16px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}>
-              <span style={{ fontSize: 24 }}>{item.emoji}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2c' }}>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Directory Links — filtered by role */}
+      {(() => {
+        const role = employee?.role
+        const dirItems = [
+          { path: '/suppliers', emoji: '👤', label: 'Suppliers', show: true },
+          { path: '/customers', emoji: '🏭', label: 'Customers', show: role !== 'purchase_manager' },
+          { path: '/transporters', emoji: '🚛', label: 'Transporters', show: role !== 'purchase_manager' },
+          { path: '/spare-parts', emoji: '🔧', label: 'Spare Parts', show: can(role, 'view_spare_parts') },
+        ].filter(i => i.show)
+        if (!dirItems.length) return null
+        return (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Directory</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {dirItems.map(item => (
+                <button key={item.path} onClick={() => nav(item.path)}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '16px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 24 }}>{item.emoji}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2c' }}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
       {/* Admin action buttons — single row if multiple, stacked if one */}
       {(can(employee?.role, 'manage_users') || can(employee?.role, 'plant_settings')) && (
         <div style={{ display: 'flex', gap: 8 }}>
