@@ -285,6 +285,10 @@ export default function PurchaseForm() {
         showToast('Please fill in all required fields', 'error')
         return
       }
+      if (!formData.serial_no.trim()) {
+        showToast('Serial No / Parchi No is required', 'error')
+        return
+      }
       if (!formData.katta_parchi_photo) {
         showToast('Weight bridge photo is mandatory', 'error')
         return
@@ -423,7 +427,7 @@ export default function PurchaseForm() {
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
-            Serial No / Parchi No
+            Serial No / Parchi No <span style={{ color: '#d32f2f' }}>*</span>
           </label>
           <input
             type="text"
