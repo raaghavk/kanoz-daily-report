@@ -56,6 +56,15 @@ export default function PartDetailPage() {
     } catch { showToast('Failed to load part', 'error') } finally { setLoading(false) }
   }
 
+  async function deactivatePart() {
+    if (!window.confirm(`Deactivate "${part.name}"? It will no longer appear in stock in or usage forms. This can be undone by contacting admin.`)) return
+    try {
+      await supabase.from('spare_parts').update({ is_active: false }).eq('id', id)
+      showToast('Part deactivated', 'success')
+      navigate('/spare-parts/parts')
+    } catch { showToast('Failed to deactivate', 'error') }
+  }
+
   async function saveMinStock(plantId) {
     if (editMinValue === '' || editMinValue === null) { showToast('Enter a value', 'error'); return }
     setSavingMin(true)
@@ -195,12 +204,17 @@ export default function PartDetailPage() {
         {/* Quick action buttons */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => navigate('/spare-parts/stock-in')} style={{ flex: 1, padding: '12px 0', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <ArrowDownCircle size={16} /> Stock In
+            <ArrowDownCircle size={16} /> Purchase
           </button>
           <button onClick={() => navigate('/spare-parts/issue')} style={{ flex: 1, padding: '12px 0', background: '#d97706', color: 'white', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-            <ArrowUpCircle size={16} /> Issue Part
+            <ArrowUpCircle size={16} /> Record Usage
           </button>
         </div>
+
+        {/* Deactivate */}
+        <button onClick={deactivatePart} style={{ width: '100%', padding: '12px 0', background: 'none', color: '#b91c1c', borderRadius: 12, fontSize: 13, fontWeight: 600, border: '1.5px solid #fca5a5', cursor: 'pointer' }}>
+          Deactivate Part
+        </button>
 
         {/* History */}
         <div>

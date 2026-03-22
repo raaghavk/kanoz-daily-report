@@ -114,28 +114,17 @@ export default function IssuePartPage() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Issue Part" subtitle="Record parts used / issued" onBack={() => navigate(-1)} />
+      <PageHeader title="Record Usage" subtitle="Record parts used" onBack={() => navigate(-1)} />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-        {/* Plant selector — locked for non-admins */}
+        {/* Plant — always locked to current active plant */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Issuing Plant <span style={{ color: '#d32f2f' }}>*</span></div>
-          {isAdmin ? (
-            <div>
-              <label style={labelStyle}>Which plant is issuing this part? <span style={{ color: '#d32f2f' }}>*</span></label>
-              <select value={selectedPlantId} onChange={e => setSelectedPlantId(e.target.value)}
-                style={{ ...inputStyle, color: selectedPlantId ? '#2c2c2c' : '#8a8d7a' }}>
-                <option value="">Select plant</option>
-                {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-          ) : (
-            <div style={{ background: '#e8f0ec', borderRadius: 10, padding: '10px 14px', fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>
-              {plants.find(p => p.id === selectedPlantId)?.name || '—'}
-            </div>
-          )}
-          {selectedPlantId && <div style={{ fontSize: 11, color: '#8a8d7a' }}>Showing stock available at this plant only</div>}
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Plant</div>
+          <div style={{ background: '#e8f0ec', borderRadius: 10, padding: '10px 14px', fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>
+            {plant?.name || '—'}
+          </div>
+          <div style={{ fontSize: 11, color: '#8a8d7a' }}>Showing stock available at this plant only</div>
         </div>
 
         {/* Part Selection */}

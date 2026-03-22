@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../../components/PageHeader'
-import { Package, ArrowDownCircle, ArrowUpCircle, Users, AlertTriangle, Loader2 } from 'lucide-react'
+import { Package, ArrowDownCircle, ArrowUpCircle, Users, AlertTriangle, Loader2, History, ClipboardList, RefreshCw } from 'lucide-react'
 
 export default function SparePartsHome() {
   const { plant } = useAuth()
@@ -56,8 +56,11 @@ export default function SparePartsHome() {
 
   const tiles = [
     { icon: <Package size={22} style={{ color: '#2d6a4f' }} />, label: 'Parts Catalogue', sub: 'View & manage all parts', bg: '#e8f0ec', path: '/spare-parts/parts' },
-    { icon: <ArrowDownCircle size={22} style={{ color: '#2563EB' }} />, label: 'Stock In', sub: 'Record parts received', bg: '#EEF2FF', path: '/spare-parts/stock-in' },
-    { icon: <ArrowUpCircle size={22} style={{ color: '#d97706' }} />, label: 'Issue Part', sub: 'Record parts used', bg: '#FEF3C7', path: '/spare-parts/issue' },
+    { icon: <ArrowDownCircle size={22} style={{ color: '#2563EB' }} />, label: 'Purchase (Stock In)', sub: 'Record parts purchased', bg: '#EEF2FF', path: '/spare-parts/stock-in' },
+    { icon: <ArrowUpCircle size={22} style={{ color: '#d97706' }} />, label: 'Record Usage', sub: 'Record parts used', bg: '#FEF3C7', path: '/spare-parts/issue' },
+    { icon: <History size={22} style={{ color: '#2563EB' }} />, label: 'Purchase History', sub: 'All parts purchased', bg: '#EEF2FF', path: '/spare-parts/purchase-history' },
+    { icon: <ClipboardList size={22} style={{ color: '#d97706' }} />, label: 'Usage History', sub: 'All parts used', bg: '#FEF3C7', path: '/spare-parts/usage-history' },
+    { icon: <RefreshCw size={22} style={{ color: '#b91c1c' }} />, label: 'Reorder Requests', sub: 'Track parts to reorder', bg: '#fee2e2', path: '/spare-parts/reorder' },
     { icon: <Users size={22} style={{ color: '#7c3aed' }} />, label: 'Suppliers', sub: 'Parts vendors directory', bg: '#f3e8ff', path: '/spare-parts/suppliers' },
   ]
 
@@ -90,7 +93,7 @@ export default function SparePartsHome() {
             </div>
             <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '12px 14px' }}>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#d97706' }}>{stats.todayOut}</div>
-              <div style={{ fontSize: 11, color: '#8a8d7a' }}>Issued Today</div>
+              <div style={{ fontSize: 11, color: '#8a8d7a' }}>Used Today</div>
             </div>
           </div>
         )}

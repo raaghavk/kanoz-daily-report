@@ -32,6 +32,9 @@ const SparePartsSuppliersPage = lazy(() => import('./pages/spareparts/SpareParts
 const StockInPage = lazy(() => import('./pages/spareparts/StockInPage'))
 const IssuePartPage = lazy(() => import('./pages/spareparts/IssuePartPage'))
 const PartDetailPage = lazy(() => import('./pages/spareparts/PartDetailPage'))
+const SparePartsPurchaseHistoryPage = lazy(() => import('./pages/spareparts/SparePartsPurchaseHistoryPage'))
+const SparePartsUsageHistoryPage = lazy(() => import('./pages/spareparts/SparePartsUsageHistoryPage'))
+const ReorderRequestsPage = lazy(() => import('./pages/spareparts/ReorderRequestsPage'))
 
 function LoadingFallback() {
   return (
@@ -120,6 +123,9 @@ export default function App() {
         <Route path="spare-parts/suppliers" element={<SparePartsSuppliersPage />} />
         <Route path="spare-parts/stock-in" element={<StockInPage />} />
         <Route path="spare-parts/issue" element={<IssuePartPage />} />
+        <Route path="spare-parts/purchase-history" element={<SparePartsPurchaseHistoryPage />} />
+        <Route path="spare-parts/usage-history" element={<SparePartsUsageHistoryPage />} />
+        <Route path="spare-parts/reorder" element={<ReorderRequestsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />

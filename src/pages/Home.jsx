@@ -353,7 +353,7 @@ export default function Home() {
                 {sp.lowStock > 0 && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, background: '#fee2e2', color: '#b91c1c', borderRadius: 6, padding: '2px 6px' }}>{sp.lowStock} low stock</span>}
               </div>
               <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>
-                {sp.totalParts} parts · +{sp.purchasedToday} purchased · {sp.issuedToday} issued today
+                {sp.totalParts} parts · +{sp.purchasedToday} purchased · {sp.issuedToday} used today
               </div>
             </div>
             <ChevronRight size={18} color="#b5b8a8" />

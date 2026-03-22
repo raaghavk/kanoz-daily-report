@@ -111,8 +111,8 @@ export default function BottomNav() {
                   <ArrowDownCircle size={20} color="white" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Stock In (Spare Parts)</div>
-                  <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>Record parts received</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Purchase (Spare Parts)</div>
+                  <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>Record parts purchased</div>
                 </div>
               </button>
               )}
