@@ -243,73 +243,43 @@ function SettingsPage() {
           {switching && <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 4 }}>Switching...</div>}
         </div>
       )}
-      {/* Directory Links */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5 }}>Directory</div>
-        <button
-          onClick={() => nav('/suppliers')}
-          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
-        >
-          <span style={{ fontSize: 18 }}>👤</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Suppliers</div>
-            <div style={{ fontSize: 11, color: '#8a8d7a' }}>Raw material suppliers</div>
-          </div>
-        </button>
-        <button
-          onClick={() => nav('/customers')}
-          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
-        >
-          <span style={{ fontSize: 18 }}>🏭</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Customers</div>
-            <div style={{ fontSize: 11, color: '#8a8d7a' }}>Dispatch destinations</div>
-          </div>
-        </button>
-        <button
-          onClick={() => nav('/transporters')}
-          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
-        >
-          <span style={{ fontSize: 18 }}>🚛</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Transporters</div>
-            <div style={{ fontSize: 11, color: '#8a8d7a' }}>Vehicle transport partners</div>
-          </div>
-        </button>
-        <button
-          onClick={() => nav('/spare-parts')}
-          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
-        >
-          <span style={{ fontSize: 18 }}>🔧</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Spare Parts</div>
-            <div style={{ fontSize: 11, color: '#8a8d7a' }}>Inventory & maintenance tracking</div>
-          </div>
-        </button>
+      {/* Directory Links — 2x2 grid */}
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Directory</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {[
+            { path: '/suppliers', emoji: '👤', label: 'Suppliers' },
+            { path: '/customers', emoji: '🏭', label: 'Customers' },
+            { path: '/transporters', emoji: '🚛', label: 'Transporters' },
+            { path: '/spare-parts', emoji: '🔧', label: 'Spare Parts' },
+          ].map(item => (
+            <button key={item.path} onClick={() => nav(item.path)}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '16px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}>
+              <span style={{ fontSize: 24 }}>{item.emoji}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2c' }}>{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
-      {can(employee?.role, 'manage_users') && (
-        <button
-          onClick={() => nav('/users')}
-          style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-        >
-          Manage Team Members
-        </button>
-      )}
-      {can(employee?.role, 'plant_settings') && (
-        <button
-          onClick={() => nav('/admin')}
-          style={{ width: '100%', padding: '14px 0', background: '#d4a373', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-        >
-          Plant Settings (Admin)
-        </button>
-      )}
-      {can(employee?.role, 'manage_users') && (
-        <button
-          onClick={() => nav('/delete-requests')}
-          style={{ width: '100%', padding: '14px 0', background: '#DC2626', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-        >
-          Delete Requests
-        </button>
+      {/* Admin action buttons — single row if multiple, stacked if one */}
+      {(can(employee?.role, 'manage_users') || can(employee?.role, 'plant_settings')) && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          {can(employee?.role, 'manage_users') && (
+            <button onClick={() => nav('/users')} style={{ flex: 1, padding: '12px 6px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              Team
+            </button>
+          )}
+          {can(employee?.role, 'plant_settings') && (
+            <button onClick={() => nav('/admin')} style={{ flex: 1, padding: '12px 6px', background: '#d4a373', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              Plant Settings
+            </button>
+          )}
+          {can(employee?.role, 'manage_users') && (
+            <button onClick={() => nav('/delete-requests')} style={{ flex: 1, padding: '12px 6px', background: '#DC2626', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              Deletions
+            </button>
+          )}
+        </div>
       )}
       {/* Notifications */}
       <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

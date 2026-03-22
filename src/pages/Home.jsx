@@ -267,97 +267,47 @@ export default function Home() {
         </div>
 
         {/* History Cards */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 2 }}>
             History
           </div>
 
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           {can(employee?.role, 'view_reports') && (
-          <button
-            onClick={() => navigate('/reports')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
-              padding: '14px 16px', borderRadius: 14, background: '#fff',
-              border: '1.5px solid #e5ddd0', cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#e8f0ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-              📊
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Shift Reports</div>
-              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>View all submitted reports</div>
-            </div>
-            <ChevronRight size={18} color="#b5b8a8" />
+          <button onClick={() => navigate('/reports')} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#e8f0ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📊</div>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Shift Reports</div>
+            <ChevronRight size={15} color="#b5b8a8" />
           </button>
           )}
-
           {can(employee?.role, 'view_dispatches') && (
-          <button
-            onClick={() => navigate('/dispatch')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
-              padding: '14px 16px', borderRadius: 14, background: '#fff',
-              border: '1.5px solid #e5ddd0', cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-              🚛
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Dispatches</div>
-              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>View vehicle dispatch history</div>
-            </div>
-            <ChevronRight size={18} color="#b5b8a8" />
+          <button onClick={() => navigate('/dispatch')} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🚛</div>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Dispatches</div>
+            <ChevronRight size={15} color="#b5b8a8" />
           </button>
           )}
-
           {can(employee?.role, 'view_purchases') && (
-          <button
-            onClick={() => navigate('/purchase')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
-              padding: '14px 16px', borderRadius: 14, background: '#fff',
-              border: '1.5px solid #e5ddd0', cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-              📦
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Purchases</div>
-              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>View raw material purchases</div>
-            </div>
-            <ChevronRight size={18} color="#b5b8a8" />
+          <button onClick={() => navigate('/purchase')} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📦</div>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Purchases</div>
+            <ChevronRight size={15} color="#b5b8a8" />
           </button>
           )}
 
-          {/* Spare Parts summary card */}
-          <button
-            onClick={() => navigate('/spare-parts')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
-              padding: '14px 16px', borderRadius: 14, cursor: 'pointer',
-              background: sp.lowStock > 0 ? '#fff7f7' : '#fff',
-              border: `1.5px solid ${sp.lowStock > 0 ? '#fca5a5' : '#e5ddd0'}`,
-            }}
-          >
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: sp.lowStock > 0 ? '#fee2e2' : '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {sp.lowStock > 0
-                ? <AlertTriangle size={20} color="#b91c1c" />
-                : <Wrench size={20} color="#2563EB" />}
+          <button onClick={() => navigate('/spare-parts')} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: sp.lowStock > 0 ? '#fff7f7' : 'none', border: 'none', cursor: 'pointer' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: sp.lowStock > 0 ? '#fee2e2' : '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {sp.lowStock > 0 ? <AlertTriangle size={15} color="#b91c1c" /> : <Wrench size={15} color="#2563EB" />}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: sp.lowStock > 0 ? '#b91c1c' : '#2c2c2c' }}>
-                Spare Parts
-                {sp.lowStock > 0 && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, background: '#fee2e2', color: '#b91c1c', borderRadius: 6, padding: '2px 6px' }}>{sp.lowStock} low stock</span>}
+              <div style={{ fontSize: 13, fontWeight: 600, color: sp.lowStock > 0 ? '#b91c1c' : '#2c2c2c' }}>
+                Spare Parts {sp.lowStock > 0 && <span style={{ fontSize: 10, fontWeight: 700, background: '#fee2e2', color: '#b91c1c', borderRadius: 5, padding: '1px 5px', marginLeft: 4 }}>{sp.lowStock} low</span>}
               </div>
-              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>
-                {sp.totalParts} parts · +{sp.purchasedToday} purchased · {sp.issuedToday} used today
-              </div>
+              <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>{sp.totalParts} parts · +{sp.purchasedToday} purchased · {sp.issuedToday} used today</div>
             </div>
-            <ChevronRight size={18} color="#b5b8a8" />
+            <ChevronRight size={15} color="#b5b8a8" />
           </button>
+          </div>
         </div>
 
         {/* Yesterday's Summary */}
