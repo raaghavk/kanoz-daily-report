@@ -29,26 +29,39 @@ export default function TasksPage() {
   const navigate = useNavigate()
   const role = employee?.role
   const canAssign = can(role, 'assign_tasks')
+  const isAdmin = role === 'admin'
 
   const [tasks, setTasks] = useState([])
   const [employees, setEmployees] = useState([])
+  const [allPlants, setAllPlants] = useState([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('open')
+  const [filterPlant, setFilterPlant] = useState(plant?.id || '')
 
   // Assign modal
   const [showAssign, setShowAssign] = useState(false)
-  const [assignForm, setAssignForm] = useState({ title: '', due_date: '', assigned_to_employee_id: '' })
+  const [assignForm, setAssignForm] = useState({ title: '', due_date: '', assigned_to_employee_id: '', plant_id: '' })
   const [submitting, setSubmitting] = useState(false)
 
   // Mark done modal
-  const [showDone, setShowDone] = useState(null) // task object
+  const [showDone, setShowDone] = useState(null)
   const [doneNote, setDoneNote] = useState('')
 
   // Close task modal
-  const [showClose, setShowClose] = useState(null) // task object
+  const [showClose, setShowClose] = useState(null)
 
-  useEffect(() => { if (plant?.id) load() }, [plant, filterStatus]) // eslint-disable-line
-  useEffect(() => { if (canAssign && plant?.id) loadEmployees() }, [canAssign, plant]) // eslint-disable-line
+  // Keep filterPlant in sync when plant changes (e.g. first load)
+  useEffect(() => { if (plant?.id && !filterPlant) setFilterPlant(plant.id) }, [plant]) // eslint-disable-line
+  useEffect(() => { if (plant?.id) load() }, [plant, filterStatus, filterPlant]) // eslint-disable-line
+  useEffect(() => { if (isAdmin && plant?.org_id) loadAllPlants() }, [isAdmin, plant]) // eslint-disable-line
+  useEffect(() => { if (canAssign && plant?.id) loadEmployees(assignForm.plant_id || plant.id) }, [canAssign, plant, assignForm.plant_id]) // eslint-disable-line
+
+  async function loadAllPlants() {
+    try {
+      const { data } = await supabase.from('plants').select('id, name').eq('org_id', plant.org_id).eq('is_active', true).order('name')
+      setAllPlants(data || [])
+    } catch { /* silent */ }
+  }
 
   async function load() {
     setLoading(true)
@@ -57,12 +70,19 @@ export default function TasksPage() {
         .from('tasks')
         .select(`
           id, title, due_date, status, completion_note, created_at, done_at, closed_at,
-          assigned_to_employee_id, assigned_by_employee_id,
+          assigned_to_employee_id, assigned_by_employee_id, plant_id,
           assignee:employees!tasks_assigned_to_employee_id_fkey(id, name),
-          assigner:employees!tasks_assigned_by_employee_id_fkey(id, name)
+          assigner:employees!tasks_assigned_by_employee_id_fkey(id, name),
+          plant:plants(name)
         `)
-        .eq('plant_id', plant.id)
         .order('created_at', { ascending: false })
+
+      // Filter by plant — 'all' only available to admin
+      if (filterPlant === 'all' && isAdmin) {
+        query = query.eq('org_id', plant.org_id)
+      } else {
+        query = query.eq('plant_id', filterPlant || plant.id)
+      }
 
       if (filterStatus !== 'all') query = query.eq('status', filterStatus)
 
@@ -78,12 +98,12 @@ export default function TasksPage() {
     } catch { showToast('Failed to load tasks', 'error') } finally { setLoading(false) }
   }
 
-  async function loadEmployees() {
+  async function loadEmployees(plantId) {
     try {
       const { data } = await supabase
         .from('employees')
         .select('id, name, role')
-        .eq('plant_id', plant.id)
+        .eq('plant_id', plantId)
         .eq('is_active', true)
         .order('name')
       setEmployees((data || []).filter(e => e.id !== employee?.id))
@@ -93,11 +113,12 @@ export default function TasksPage() {
   async function handleAssign() {
     if (!assignForm.title.trim()) { showToast('Enter a task title', 'error'); return }
     if (!assignForm.assigned_to_employee_id) { showToast('Select who to assign to', 'error'); return }
+    const targetPlantId = assignForm.plant_id || plant.id
     setSubmitting(true)
     try {
       const { error } = await supabase.from('tasks').insert([{
         org_id: plant.org_id,
-        plant_id: plant.id,
+        plant_id: targetPlantId,
         title: assignForm.title.trim(),
         due_date: assignForm.due_date || null,
         assigned_to_employee_id: assignForm.assigned_to_employee_id,
@@ -106,7 +127,7 @@ export default function TasksPage() {
       }])
       if (error) throw error
       showToast('Task assigned!', 'success')
-      setAssignForm({ title: '', due_date: '', assigned_to_employee_id: '' })
+      setAssignForm({ title: '', due_date: '', assigned_to_employee_id: '', plant_id: '' })
       setShowAssign(false)
       load()
     } catch { showToast('Failed to assign task', 'error') } finally { setSubmitting(false) }
@@ -147,9 +168,37 @@ export default function TasksPage() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Tasks" subtitle={`${plant?.name} · Assigned work`} onBack={() => navigate('/')} />
+      <PageHeader
+        title="Tasks"
+        subtitle={filterPlant === 'all' ? 'All Plants · Assigned work' : `${plant?.name} · Assigned work`}
+        onBack={() => navigate('/')}
+      />
 
-      <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+        {/* Admin: Plant filter */}
+        {isAdmin && allPlants.length > 1 && (
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
+            <button onClick={() => setFilterPlant('all')}
+              style={{
+                padding: '6px 14px', borderRadius: 20, cursor: 'pointer', flexShrink: 0,
+                border: `1.5px solid ${filterPlant === 'all' ? '#d4a373' : '#e5ddd0'}`,
+                background: filterPlant === 'all' ? '#d4a373' : '#fff',
+                color: filterPlant === 'all' ? 'white' : '#595c4a',
+                fontSize: 12, fontWeight: 600,
+              }}>All Plants</button>
+            {allPlants.map(p => (
+              <button key={p.id} onClick={() => setFilterPlant(p.id)}
+                style={{
+                  padding: '6px 14px', borderRadius: 20, cursor: 'pointer', flexShrink: 0,
+                  border: `1.5px solid ${filterPlant === p.id ? '#2d6a4f' : '#e5ddd0'}`,
+                  background: filterPlant === p.id ? '#2d6a4f' : '#fff',
+                  color: filterPlant === p.id ? 'white' : '#595c4a',
+                  fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+                }}>{p.name}</button>
+            ))}
+          </div>
+        )}
 
         {/* Status filter chips */}
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
@@ -227,6 +276,11 @@ export default function TasksPage() {
 
                     {/* Assignee / assigner */}
                     <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {filterPlant === 'all' && task.plant?.name && (
+                        <span style={{ background: '#f0f7f3', color: '#2d6a4f', borderRadius: 5, padding: '1px 6px', fontWeight: 700, fontSize: 10 }}>
+                          {task.plant.name}
+                        </span>
+                      )}
                       {task.assignee?.name && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                           <User size={10} /> {task.assignee.name}
@@ -299,6 +353,21 @@ export default function TasksPage() {
               maxLength={120}
             />
           </div>
+          {/* Admin: plant selector for assigning to any plant */}
+          {isAdmin && allPlants.length > 1 && (
+            <div>
+              <label style={labelStyle}>Plant <span style={{ color: '#d32f2f' }}>*</span></label>
+              <select
+                value={assignForm.plant_id || plant.id}
+                onChange={e => setAssignForm({ ...assignForm, plant_id: e.target.value, assigned_to_employee_id: '' })}
+                style={inputStyle}
+              >
+                {allPlants.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label style={labelStyle}>Assign To <span style={{ color: '#d32f2f' }}>*</span></label>
             <select
