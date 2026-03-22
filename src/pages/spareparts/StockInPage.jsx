@@ -184,7 +184,7 @@ function ReviewScreen({ formData, parts, suppliers, plants, onEdit, onConfirm, s
         {/* Plant, Part & Supplier */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '4px 16px' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5, padding: '10px 0 4px' }}>Part & Supplier</div>
-          {row('Receiving Plant', receivingPlant?.name || '—')}
+          {row('Purchasing Plant', receivingPlant?.name || '—')}
           {row('Part', part?.name || '—')}
           {part?.brand && row('Brand', part.brand)}
           {row('Category', part?.category || '—')}
@@ -406,7 +406,7 @@ export default function StockInPage() {
 
         {/* Plant — always locked to current active plant */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Receiving Plant</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5 }}>Purchasing Plant</div>
           <div style={{ background: '#e8f0ec', borderRadius: 10, padding: '10px 14px', fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>
             {plant?.name || '—'}
           </div>
