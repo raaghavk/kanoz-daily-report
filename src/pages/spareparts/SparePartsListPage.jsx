@@ -17,10 +17,10 @@ export default function SparePartsListPage() {
   const [filterLow, setFilterLow] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [formData, setFormData] = useState({ name: '', part_number: '', category: '', unit: 'pcs', min_stock_level: '', notes: '' })
+  const [formData, setFormData] = useState({ name: '', part_number: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
 
-  const CATEGORIES = ['Bearing', 'Belt', 'Motor', 'Electrical', 'Hydraulic', 'Pneumatic', 'Fasteners', 'Gearbox', 'Coupling', 'Filter', 'Sensor', 'Other']
-  const UNITS = ['pcs', 'metres', 'kg', 'litres', 'set', 'pair']
+  const CATEGORIES = ['Bearing', 'Belt', 'Coupling', 'Electrical', 'Fasteners', 'Filter', 'Gearbox', 'Hydraulic', 'Motor', 'Pneumatic', 'Sensor', 'Other']
+  const UNITS = ['kg', 'litres', 'metres', 'pair', 'pcs', 'set']
 
   useEffect(() => { if (plant?.org_id) fetchParts() }, [plant]) // eslint-disable-line
 
@@ -66,21 +66,27 @@ export default function SparePartsListPage() {
   async function handleAdd() {
     if (submitting) return
     if (!formData.name.trim()) { showToast('Part name is required', 'error'); return }
+    if (!formData.part_number.trim()) { showToast('Part number is required', 'error'); return }
+    if (!formData.category) { showToast('Category is required', 'error'); return }
+    if (formData.category === 'Other' && !formData.category_other.trim()) { showToast('Please specify the category', 'error'); return }
+    if (!formData.unit) { showToast('Unit is required', 'error'); return }
+    if (formData.min_stock_level === '' || formData.min_stock_level === null) { showToast('Minimum stock level is required', 'error'); return }
+    const finalCategory = formData.category === 'Other' ? formData.category_other.trim() : formData.category
     try {
       setSubmitting(true)
       const { data, error } = await supabase.from('spare_parts').insert([{
         org_id: plant.org_id,
         name: formData.name.trim(),
-        part_number: formData.part_number.trim() || null,
-        category: formData.category || null,
-        unit: formData.unit || 'pcs',
+        part_number: formData.part_number.trim(),
+        category: finalCategory,
+        unit: formData.unit,
         min_stock_level: parseFloat(formData.min_stock_level) || 0,
         notes: formData.notes.trim() || null,
         is_active: true,
       }]).select()
       if (error) throw error
       setParts(prev => [...prev, { ...data[0], current_stock: 0 }])
-      setFormData({ name: '', part_number: '', category: '', unit: 'pcs', min_stock_level: '', notes: '' })
+      setFormData({ name: '', part_number: '', category: '', category_other: '', unit: 'pcs', min_stock_level: '', notes: '' })
       setShowAddModal(false)
       showToast('Part added', 'success')
     } catch { showToast('Failed to add part', 'error') } finally { setSubmitting(false) }
@@ -167,30 +173,36 @@ export default function SparePartsListPage() {
             <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., Bearing 6205, V-Belt B52" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Part Number / Code</label>
-            <input type="text" value={formData.part_number} onChange={e => setFormData({ ...formData, part_number: e.target.value })} placeholder="Optional" style={inputStyle} />
+            <label style={labelStyle}>Part Number / Code <span style={{ color: '#d32f2f' }}>*</span></label>
+            <input type="text" value={formData.part_number} onChange={e => setFormData({ ...formData, part_number: e.target.value })} placeholder="e.g., SKF-6205, B52" style={inputStyle} />
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Category</label>
-              <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ ...inputStyle, color: formData.category ? '#2c2c2c' : '#8a8d7a' }}>
+              <label style={labelStyle}>Category <span style={{ color: '#d32f2f' }}>*</span></label>
+              <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value, category_other: '' })} style={{ ...inputStyle, color: formData.category ? '#2c2c2c' : '#8a8d7a' }}>
                 <option value="">Select</option>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div style={{ flex: 1 }}>
-              <label style={labelStyle}>Unit</label>
+              <label style={labelStyle}>Unit <span style={{ color: '#d32f2f' }}>*</span></label>
               <select value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })} style={inputStyle}>
                 {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
           </div>
+          {formData.category === 'Other' && (
+            <div>
+              <label style={labelStyle}>Specify Category <span style={{ color: '#d32f2f' }}>*</span></label>
+              <input type="text" value={formData.category_other} onChange={e => setFormData({ ...formData, category_other: e.target.value })} placeholder="e.g., Seals, Lubrication, Pump..." style={inputStyle} autoFocus />
+            </div>
+          )}
           <div>
-            <label style={labelStyle}>Minimum Stock Level</label>
+            <label style={labelStyle}>Minimum Stock Level <span style={{ color: '#d32f2f' }}>*</span></label>
             <input type="number" value={formData.min_stock_level} onChange={e => setFormData({ ...formData, min_stock_level: e.target.value })} placeholder="Alert when stock falls below this" style={inputStyle} min="0" />
           </div>
           <div>
-            <label style={labelStyle}>Notes</label>
+            <label style={labelStyle}>Notes <span style={{ color: '#b5b8a8', fontWeight: 400 }}>(optional)</span></label>
             <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} placeholder="Any additional notes" rows={2} style={{ ...inputStyle, resize: 'none' }} />
           </div>
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>

@@ -7,6 +7,9 @@ import Modal from '../../components/Modal'
 import PageHeader from '../../components/PageHeader'
 import { Search, Plus, Phone, MessageSquare, Loader2, AlertCircle, LocateFixed } from 'lucide-react'
 
+// Categories sorted A-Z, with Other last
+const CATEGORIES = ['Bearings & Belts', 'Electrical', 'General Hardware', 'Hydraulic', 'Mechanical', 'Pneumatic', 'Other']
+
 export default function SparePartsSuppliersPage() {
   const { plant } = useAuth()
   const navigate = useNavigate()
@@ -19,10 +22,8 @@ export default function SparePartsSuppliersPage() {
   const [locating, setLocating] = useState(false)
   const [formData, setFormData] = useState({
     name: '', contact_person: '', phone: '', alternate_phone: '',
-    email: '', address: '', gst_number: '', category: '', notes: ''
+    address: '', gst_number: '', category: '', category_other: '', notes: ''
   })
-
-  const CATEGORIES = ['Electrical', 'Mechanical', 'Hydraulic', 'Pneumatic', 'Bearings & Belts', 'General Hardware', 'Other']
 
   useEffect(() => { if (plant?.org_id) fetchSuppliers() }, [plant]) // eslint-disable-line
 
@@ -63,25 +64,31 @@ export default function SparePartsSuppliersPage() {
   async function handleAdd() {
     if (submitting) return
     if (!formData.name.trim()) { showToast('Supplier name is required', 'error'); return }
+    if (!formData.category) { showToast('Category is required', 'error'); return }
+    if (formData.category === 'Other' && !formData.category_other.trim()) { showToast('Please specify the category', 'error'); return }
+    if (!formData.contact_person.trim()) { showToast('Contact person is required', 'error'); return }
+    if (!formData.phone.trim()) { showToast('Phone number is required', 'error'); return }
+    if (!formData.gst_number.trim()) { showToast('GST number is required', 'error'); return }
+    if (!formData.address.trim()) { showToast('Address is required', 'error'); return }
     try {
       setSubmitting(true)
-      const phoneVal = formData.phone.trim() ? '+91' + formData.phone.replace(/^\+91/, '').trim() : null
+      const phoneVal = '+91' + formData.phone.replace(/^\+91/, '').trim()
+      const finalCategory = formData.category === 'Other' ? formData.category_other.trim() : formData.category
       const { data, error } = await supabase.from('spare_parts_suppliers').insert([{
         org_id: plant.org_id,
         name: formData.name.trim(),
-        contact_person: formData.contact_person.trim() || null,
+        contact_person: formData.contact_person.trim(),
         phone: phoneVal,
         alternate_phone: formData.alternate_phone.trim() || null,
-        email: formData.email.trim() || null,
-        address: formData.address.trim() || null,
-        gst_number: formData.gst_number.trim() || null,
-        category: formData.category || null,
+        address: formData.address.trim(),
+        gst_number: formData.gst_number.trim(),
+        category: finalCategory,
         notes: formData.notes.trim() || null,
         is_active: true,
       }]).select()
       if (error) throw error
       setSuppliers(prev => [...prev, data[0]])
-      setFormData({ name: '', contact_person: '', phone: '', alternate_phone: '', email: '', address: '', gst_number: '', category: '', notes: '' })
+      setFormData({ name: '', contact_person: '', phone: '', alternate_phone: '', address: '', gst_number: '', category: '', category_other: '', notes: '' })
       setShowAddModal(false)
       showToast('Supplier added', 'success')
     } catch { showToast('Failed to add supplier', 'error') } finally { setSubmitting(false) }
@@ -89,6 +96,7 @@ export default function SparePartsSuppliersPage() {
 
   const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }
   const labelStyle = { display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }
+  const req = <span style={{ color: '#d32f2f' }}>*</span>
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
@@ -149,38 +157,44 @@ export default function SparePartsSuppliersPage() {
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Parts Supplier">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
-            <label style={labelStyle}>Supplier Name <span style={{ color: '#d32f2f' }}>*</span></label>
+            <label style={labelStyle}>Supplier Name {req}</label>
             <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., Rajesh Electricals" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Category</label>
-            <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ ...inputStyle, color: formData.category ? '#2c2c2c' : '#8a8d7a' }}>
+            <label style={labelStyle}>Category {req}</label>
+            <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value, category_other: '' })} style={{ ...inputStyle, color: formData.category ? '#2c2c2c' : '#8a8d7a' }}>
               <option value="">Select category</option>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
+          {formData.category === 'Other' && (
+            <div>
+              <label style={labelStyle}>Specify Category {req}</label>
+              <input type="text" value={formData.category_other} onChange={e => setFormData({ ...formData, category_other: e.target.value })} placeholder="e.g., Lubrication, Seals, Pumps..." style={inputStyle} autoFocus />
+            </div>
+          )}
           <div>
-            <label style={labelStyle}>Contact Person</label>
+            <label style={labelStyle}>Contact Person {req}</label>
             <input type="text" value={formData.contact_person} onChange={e => setFormData({ ...formData, contact_person: e.target.value })} placeholder="Name of contact" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Phone</label>
+            <label style={labelStyle}>Phone {req}</label>
             <div style={{ display: 'flex' }}>
               <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
               <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="10-digit number" style={{ ...inputStyle, borderRadius: '0 12px 12px 0' }} />
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Alternate Phone</label>
+            <label style={labelStyle}>Alternate Phone <span style={{ color: '#b5b8a8', fontWeight: 400 }}>(optional)</span></label>
             <input type="tel" value={formData.alternate_phone} onChange={e => setFormData({ ...formData, alternate_phone: e.target.value })} placeholder="Optional" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>GST Number</label>
-            <input type="text" value={formData.gst_number} onChange={e => setFormData({ ...formData, gst_number: e.target.value })} placeholder="Optional" style={inputStyle} />
+            <label style={labelStyle}>GST Number {req}</label>
+            <input type="text" value={formData.gst_number} onChange={e => setFormData({ ...formData, gst_number: e.target.value })} placeholder="e.g., 27AAPFU0939F1ZV" style={inputStyle} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>Address</label>
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>Address {req}</label>
               <button type="button" onClick={captureLocation} disabled={locating} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#e8f0ec', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 600, color: '#2d6a4f', cursor: locating ? 'not-allowed' : 'pointer', opacity: locating ? 0.6 : 1 }}>
                 <LocateFixed size={12} />{locating ? 'Getting...' : 'Capture Location'}
               </button>
@@ -188,7 +202,7 @@ export default function SparePartsSuppliersPage() {
             <input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Address or tap Capture Location" style={inputStyle} />
           </div>
           <div>
-            <label style={labelStyle}>Notes</label>
+            <label style={labelStyle}>Notes <span style={{ color: '#b5b8a8', fontWeight: 400 }}>(optional)</span></label>
             <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} placeholder="Any additional notes" rows={2} style={{ ...inputStyle, resize: 'none' }} />
           </div>
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
