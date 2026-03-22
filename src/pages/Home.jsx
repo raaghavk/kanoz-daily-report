@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
-import { ChevronRight, AlertTriangle, Wrench } from 'lucide-react'
+import { ChevronRight, AlertTriangle, Wrench, CheckSquare, Circle } from 'lucide-react'
 
 export default function Home() {
   const { employee, plant } = useAuth()
@@ -149,6 +149,28 @@ export default function Home() {
     enabled: !!plant?.id,
   })
   const sp = sparePartsData || { totalParts: 0, lowStock: 0, purchasedToday: 0, issuedToday: 0 }
+
+  const { data: tasksData } = useQuery({
+    queryKey: ['home-tasks', plant?.id, employee?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('tasks')
+        .select('id, title, due_date, status, assigned_to_employee_id, assignee:employees!tasks_assigned_to_employee_id_fkey(name)')
+        .eq('plant_id', plant.id)
+        .in('status', ['open', 'done'])
+        .order('due_date', { ascending: true, nullsFirst: false })
+        .limit(10)
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
+  const allTasks = tasksData || []
+  // Non-assigners only see their own tasks
+  const myTasks = can(employee?.role, 'assign_tasks')
+    ? allTasks
+    : allTasks.filter(t => t.assigned_to_employee_id === employee?.id)
+  const openTasks = myTasks.filter(t => t.status === 'open')
+  const doneTasks = myTasks.filter(t => t.status === 'done')
 
   const fmtDate = (d) => new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   const dateStr = currentShift === 'A' || shiftStartDate === shiftEndDate
@@ -309,6 +331,64 @@ export default function Home() {
           </button>
           </div>
         </div>
+
+        {/* Tasks Section */}
+        {myTasks.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase' }}>
+                Tasks {openTasks.length > 0 && <span style={{ fontSize: 10, fontWeight: 700, background: '#EEF2FF', color: '#2563EB', borderRadius: 5, padding: '1px 6px', marginLeft: 4 }}>{openTasks.length} open</span>}
+              </div>
+              <button onClick={() => navigate('/tasks')} style={{ fontSize: 11, fontWeight: 600, color: '#2d6a4f', background: 'none', border: 'none', cursor: 'pointer' }}>
+                See all →
+              </button>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+              {myTasks.slice(0, 4).map((task, idx) => {
+                const overdue = task.status === 'open' && task.due_date && new Date(task.due_date + 'T00:00') < new Date(new Date().toDateString())
+                return (
+                  <button key={task.id} onClick={() => navigate('/tasks')}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', cursor: 'pointer' }}>
+                    <div style={{ flexShrink: 0 }}>
+                      {task.status === 'done'
+                        ? <CheckSquare size={16} color="#2d6a4f" />
+                        : <Circle size={16} color={overdue ? '#dc2626' : '#d1d5db'} />
+                      }
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+                      {task.assignee?.name && (
+                        <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>→ {task.assignee.name}</div>
+                      )}
+                    </div>
+                    {task.due_date && (
+                      <div style={{ fontSize: 10, fontWeight: 600, color: overdue ? '#dc2626' : '#8a8d7a', flexShrink: 0 }}>
+                        {new Date(task.due_date + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+              {myTasks.length > 4 && (
+                <button onClick={() => navigate('/tasks')} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', borderTop: '1px solid #f0ebe0', fontSize: 12, color: '#2563EB', fontWeight: 600, cursor: 'pointer' }}>
+                  +{myTasks.length - 4} more tasks →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Tasks empty hint for assigners */}
+        {myTasks.length === 0 && can(employee?.role, 'assign_tasks') && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 8 }}>Tasks</div>
+            <button onClick={() => navigate('/tasks')}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '12px 14px', background: '#fff', border: '1.5px solid #e5ddd0', borderRadius: 14, cursor: 'pointer' }}>
+              <CheckSquare size={18} color="#8a8d7a" />
+              <span style={{ fontSize: 13, color: '#8a8d7a' }}>No open tasks · Tap to assign one</span>
+              <ChevronRight size={15} color="#b5b8a8" style={{ marginLeft: 'auto' }} />
+            </button>
+          </div>
+        )}
 
         {/* Yesterday's Summary */}
         {yesterday && (

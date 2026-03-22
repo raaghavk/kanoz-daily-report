@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Settings, Plus, ClipboardList, Truck, Package, X, MessageCircle, ArrowDownCircle } from 'lucide-react'
+import { Home, Settings, Plus, ClipboardList, Truck, Package, X, MessageCircle, ArrowDownCircle, CheckSquare } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
 
@@ -13,6 +13,7 @@ export default function BottomNav() {
 
   const isHome = location.pathname === '/'
   const isChat = location.pathname === '/insights'
+  const isTasks = location.pathname === '/tasks'
   const isMore = location.pathname === '/settings' ||
     location.pathname.startsWith('/suppliers') ||
     location.pathname.startsWith('/customers') ||
@@ -136,6 +137,11 @@ export default function BottomNav() {
         <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(false)}>
           <Plus size={24} strokeWidth={2} style={{ color: '#2d6a4f', transition: 'transform 0.2s', transform: showSheet ? 'rotate(45deg)' : 'none' }} />
           <span style={{ fontSize: 10, fontWeight: 500, color: '#8a8d7a' }}>New</span>
+        </button>
+
+        <button onClick={() => navigate('/tasks')} style={navBtnStyle(isTasks)}>
+          <CheckSquare size={22} strokeWidth={isTasks ? 2.5 : 1.5} />
+          <span style={{ fontSize: 10, fontWeight: isTasks ? 700 : 500 }}>Tasks</span>
         </button>
 
         <button onClick={() => navigate('/insights')} style={navBtnStyle(isChat)}>
