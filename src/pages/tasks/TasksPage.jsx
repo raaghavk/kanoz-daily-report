@@ -86,7 +86,7 @@ export default function TasksPage() {
         .eq('plant_id', plant.id)
         .eq('is_active', true)
         .order('name')
-      setEmployees(data || [])
+      setEmployees((data || []).filter(e => e.id !== employee?.id))
     } catch { /* silent */ }
   }
 
