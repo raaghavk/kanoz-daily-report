@@ -213,10 +213,10 @@ export default function UserManagement() {
                   <span style={{
                     fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5,
                     padding: '2px 8px', borderRadius: 20,
-                    background: emp.role === 'admin' ? '#e8f0ec' : emp.role === 'purchase_manager' ? '#fefae0' : emp.role === 'accountant' ? '#F3E8FF' : '#EBF4FF',
-                    color: emp.role === 'admin' ? '#2d6a4f' : emp.role === 'purchase_manager' ? '#d4a373' : emp.role === 'accountant' ? '#7C3AED' : '#3B82F6'
+                    background: emp.role === 'admin' ? '#e8f0ec' : emp.role === 'plant_manager' ? '#FEF3C7' : emp.role === 'purchase_manager' ? '#fefae0' : emp.role === 'accountant' ? '#F3E8FF' : '#EBF4FF',
+                    color: emp.role === 'admin' ? '#2d6a4f' : emp.role === 'plant_manager' ? '#d97706' : emp.role === 'purchase_manager' ? '#d4a373' : emp.role === 'accountant' ? '#7C3AED' : '#3B82F6'
                   }}>
-                    {emp.role === 'purchase_manager' ? 'Purchase Mgr' : emp.role}
+                    {emp.role === 'purchase_manager' ? 'Purchase Mgr' : emp.role === 'plant_manager' ? 'Plant Mgr' : emp.role}
                   </span>
                   {emp.plants && (
                     <span style={{ fontSize: 12, color: '#595c4a' }}>
