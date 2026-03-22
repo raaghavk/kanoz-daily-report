@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -10,13 +10,15 @@ export default function IssuePartPage() {
   const { plant, employee } = useAuth()
   const isAdmin = employee?.role === 'admin'
   const navigate = useNavigate()
+  const location = useLocation()
+  const preselectedPartId = location.state?.partId || ''
   const [parts, setParts] = useState([])
   const [plants, setPlants] = useState([])
   const [selectedPlantId, setSelectedPlantId] = useState('')
   const [loadingData, setLoadingData] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
-    part_id: '',
+    part_id: preselectedPartId,
     quantity: '',
     usage_date: new Date().toISOString().split('T')[0],
     machine_name: '',
