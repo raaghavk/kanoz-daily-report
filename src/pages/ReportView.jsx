@@ -102,10 +102,9 @@ export default function ReportView() {
       setReport(reportData)
 
       // Fetch all child data in parallel
-      const [machRes, matRes, dispatchRes, dieselRes, stockRes, issuesRes] = await Promise.all([
+      const [machRes, matRes, dieselRes, stockRes, issuesRes] = await Promise.all([
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', id),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', id),
-        supabase.from('vehicle_dispatches').select('*, dispatch_pellets(*, pellet_types(name)), customers(name)').eq('shift_report_id', id),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', id),
         supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', id),
         supabase.from('issues').select('*').eq('shift_report_id', id),
@@ -113,14 +112,44 @@ export default function ReportView() {
 
       if (machRes.error) console.error('Failed to load machine data:', machRes.error)
       if (matRes.error) console.error('Failed to load raw materials:', matRes.error)
-      if (dispatchRes.error) console.error('Failed to load dispatches:', dispatchRes.error)
       if (dieselRes.error) console.error('Failed to load diesel data:', dieselRes.error)
       if (stockRes.error) console.error('Failed to load pellet stock:', stockRes.error)
       if (issuesRes.error) console.error('Failed to load issues:', issuesRes.error)
 
+      // Fetch dispatches by plant_id + date/time range (not shift_report_id)
+      const shiftStart = reportData.shift_start_date && reportData.start_time
+        ? `${reportData.shift_start_date}T${reportData.start_time}:00`
+        : null
+      const shiftEnd = reportData.shift_end_date && reportData.end_time
+        ? `${reportData.shift_end_date}T${reportData.end_time}:00`
+        : null
+      const startDate = reportData.shift_start_date || reportData.date
+      const endDate = reportData.shift_end_date || reportData.date
+
+      const { data: dispatchData, error: dispatchError } = await supabase
+        .from('vehicle_dispatches')
+        .select('*, dispatch_pellets(*, pellet_types(name)), customers(name)')
+        .eq('plant_id', reportData.plant_id)
+        .eq('is_deleted', false)
+        .gte('date', startDate)
+        .lte('date', endDate)
+        .order('created_at', { ascending: false })
+
+      if (dispatchError) console.error('Failed to load dispatches:', dispatchError)
+
+      let filteredDispatches = dispatchData || []
+      if (shiftStart && shiftEnd) {
+        filteredDispatches = filteredDispatches.filter(d => {
+          const dDate = d.dispatch_date || d.date
+          const dTime = d.dispatch_time || '00:00:00'
+          const dt = new Date(`${dDate}T${dTime}`)
+          return dt >= new Date(shiftStart) && dt <= new Date(shiftEnd)
+        })
+      }
+
       setMachineProduction(machRes.data || [])
       setRawMaterials(matRes.data || [])
-      setDispatches(dispatchRes.data || [])
+      setDispatches(filteredDispatches)
       setEquipmentDiesel(dieselRes.data || [])
       setPelletStock(stockRes.data || [])
       setIssues(issuesRes.data || [])
