@@ -23,11 +23,14 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
       setLoading(true)
 
       // Build shift time window
+      // In edit mode, times come from DB as HH:MM:SS; in create mode as HH:MM
+      // Normalize to HH:MM before appending :00 to avoid invalid dates like 08:00:00:00
+      const normalizeTime = (t) => t ? t.substring(0, 5) : t
       const shiftStart = data?.shift_start_date && data?.start_time
-        ? `${data.shift_start_date}T${data.start_time}:00`
+        ? `${data.shift_start_date}T${normalizeTime(data.start_time)}:00`
         : null
       const shiftEnd = data?.shift_end_date && data?.end_time
-        ? `${data.shift_end_date}T${data.end_time}:00`
+        ? `${data.shift_end_date}T${normalizeTime(data.end_time)}:00`
         : null
 
       // Get date range from shift
@@ -187,7 +190,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: 40, height: 40, background: '#e8f0ec', borderRadius: 10, fontSize: 20,
                 }}>
-                  🚛
+                  ð
                 </div>
 
                 {/* Details */}
@@ -233,7 +236,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
               <div style={{ height: '1.5px', background: '#e5ddd0', margin: '8px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>
                 <span>GRAND TOTAL</span>
-                <span>{totalQuantity.toFixed(1)} MT • {totalTrucks} truck{totalTrucks !== 1 ? 's' : ''}</span>
+                <span>{totalQuantity.toFixed(1)} MT â¢ {totalTrucks} truck{totalTrucks !== 1 ? 's' : ''}</span>
               </div>
             </div>
           </div>
@@ -280,7 +283,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
           cursor: 'pointer',
         }}
       >
-        🔄 Refresh Dispatches
+        ð Refresh Dispatches
       </button>
     </div>
   )
