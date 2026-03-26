@@ -62,10 +62,12 @@ export default function DispatchDetail() {
   function calculateDuration(loadingDate, loadingTime, dispatchDate, dispatchTime) {
     if (!loadingTime || !dispatchTime) return null
     try {
+      // Normalize time: DB returns HH:MM:SS, ensure we use HH:MM format
+      const normalizeTime = (t) => t ? t.substring(0, 5) : t
       const ld = loadingDate || dispatch?.date || ''
       const dd = dispatchDate || dispatch?.date || ''
-      const loadStart = new Date(`${ld}T${loadingTime}`)
-      const dispEnd = new Date(`${dd}T${dispatchTime}`)
+      const loadStart = new Date(`${ld}T${normalizeTime(loadingTime)}:00`)
+      const dispEnd = new Date(`${dd}T${normalizeTime(dispatchTime)}:00`)
       const diffMs = dispEnd - loadStart
       if (diffMs < 0) return null
       const hours = Math.floor(diffMs / (1000 * 60 * 60))

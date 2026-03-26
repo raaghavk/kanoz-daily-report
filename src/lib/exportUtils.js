@@ -1,6 +1,7 @@
 /**
  * CSV export utilities for shift reports
  */
+import { getLocalDate } from './dateUtils'
 
 export function escapeCSV(value) {
   if (value == null) return ''
@@ -180,6 +181,6 @@ export function exportReportListToCSV(reports) {
   })
 
   const csv = lines.join('\n')
-  const filename = `shift-reports-export-${new Date().toISOString().split('T')[0]}.csv`
+  const filename = `shift-reports-export-${getLocalDate()}.csv`
   downloadCSV(csv, filename)
 }

@@ -55,12 +55,14 @@ export default function ReportView() {
     if (!report) return
     setSyncingReport(true)
     try {
+      // Normalize time: DB returns HH:MM:SS, we need HH:MM to avoid invalid dates like HH:MM:SS:00
+      const normalizeTime = (t) => t ? t.substring(0, 5) : t
       const shiftStartDate = report.shift_start_date || report.date
       const shiftEndDate = report.shift_end_date || report.date
-      const startTime = report.start_time || '06:00'
-      const endTime = report.end_time || '18:00'
-      const shiftStart = `${shiftStartDate}T${startTime}`
-      const shiftEnd = `${shiftEndDate}T${endTime}`
+      const startTime = normalizeTime(report.start_time) || '06:00'
+      const endTime = normalizeTime(report.end_time) || '18:00'
+      const shiftStart = `${shiftStartDate}T${startTime}:00`
+      const shiftEnd = `${shiftEndDate}T${endTime}:00`
       const { data: matchingDispatches, error: dispErr } = await supabase
         .from('vehicle_dispatches').select('id')
         .eq('plant_id', report.plant_id).eq('is_deleted', false)
