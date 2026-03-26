@@ -364,11 +364,17 @@ export default function ShiftWizard() {
       // Build diesel stock
       let diesel_stock = { opening: 0, purchases: [], closing: 0 }
       if (dStock.data) {
-        const purchases = (dPurchases.data || []).map(dp => ({
+        let purchases = (dPurchases.data || []).map(dp => ({
           litres: parseFloat(dp.litres) || 0,
           cost_per_litre: parseFloat(dp.cost_per_litre) || 0,
           receipt_url: dp.receipt_url || null,
         }))
+        // If no purchase rows but diesel_stock shows purchased amount, create synthetic entry
+        const stockPurchased = parseFloat(dStock.data.purchased_litres) || 0
+        if (purchases.length === 0 && stockPurchased > 0) {
+          const stockCost = parseFloat(dStock.data.purchase_cost) || 0
+          purchases = [{ litres: stockPurchased, cost_per_litre: stockPurchased > 0 ? stockCost / stockPurchased : 0, receipt_url: null }]
+        }
         diesel_stock = {
           opening: parseFloat(dStock.data.opening_litres) || 0,
           purchases,
