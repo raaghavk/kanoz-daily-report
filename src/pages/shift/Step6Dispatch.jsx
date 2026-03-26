@@ -13,10 +13,10 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
   const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`
 
   useEffect(() => {
-    if (plant?.id) {
+    if (plant?.id && data?.shift_start_date) {
       loadDispatches()
     }
-  }, [plant]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [plant, data?.shift_start_date, data?.shift_end_date, data?.start_time, data?.end_time]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadDispatches() {
     try {
