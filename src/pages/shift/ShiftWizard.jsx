@@ -155,10 +155,10 @@ export default function ShiftWizard() {
     }
   }, [reportData, step, reportId, initDone, editId])
 
-  // For edit mode: load plant data first, then merge existing report on top
+  // For edit mode: load everything in one shot to avoid race conditions
   useEffect(() => {
     if (editId && plant?.id) {
-      loadPlantData().then(() => loadExistingReport())
+      loadExistingReportFull()
     }
   }, [editId, plant]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -237,7 +237,7 @@ export default function ShiftWizard() {
     }
   }
 
-  async function loadExistingReport() {
+  async function loadExistingReportFull() {
     try {
       const { data: report } = await supabase
         .from('shift_reports')
@@ -246,20 +246,9 @@ export default function ShiftWizard() {
         .single()
 
       if (!report) { showToast('Report not found', 'error'); navigate('/'); return }
-
       setReportId(editId)
-      updateData('date', report.date)
-      updateData('shift', report.shift)
-      updateData('start_time', report.start_time)
-      updateData('end_time', report.end_time)
-      updateData('shift_start_date', report.shift_start_date || report.date)
-      updateData('shift_end_date', report.shift_end_date || report.date)
-      updateData('start_power_reading', report.start_power_reading || 0)
-      updateData('end_power_reading', report.end_power_reading || 0)
-      updateData('handover_notes', report.handover_notes || '')
-      updateData('remarks', report.remarks || '')
 
-      // Load machines, materials, equipment first (needed for merging data)
+      // Fetch all reference data AND saved data in one shot
       const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
         supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
         supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true).order('name', { ascending: true }),
@@ -274,19 +263,18 @@ export default function ShiftWizard() {
         supabase.from('diesel_purchases').select('*').eq('shift_report_id', editId),
       ])
 
-      // Initialize machines array from active machines
+      // Build machines array
+      let machines = []
       if (machinesRes.data) {
         const initialMachines = machinesRes.data.map(m => ({
-          id: m.id, name: m.name, from_time: '', to_time: '', breakdown_hrs: 0, total_hours: 0, production_hours: 0, remarks: '',
+          id: m.id, name: m.name, from_time: '', to_time: '',
+          breakdown_hrs: 0, total_hours: 0, production_hours: 0, remarks: '',
         }))
-
-        // Merge machine production hours back into machines
         if (machProd.data?.length) {
-          const machinesWithProduction = initialMachines.map(m => {
+          machines = initialMachines.map(m => {
             const prod = machProd.data.find(mp => mp.machine_id === m.id)
             if (prod) {
-              return {
-                ...m,
+              return { ...m,
                 production_hours: parseFloat(prod.hours_run) || 0,
                 total_hours: parseFloat(prod.total_hours) || 0,
                 from_time: prod.from_time || '',
@@ -297,34 +285,33 @@ export default function ShiftWizard() {
             }
             return m
           })
-          updateData('machines', machinesWithProduction)
         } else {
-          updateData('machines', initialMachines)
+          machines = initialMachines
         }
       }
 
-      // Initialize raw materials and pellet stock for editing
+      // Build raw materials array
+      let rawMaterials = []
       if (materialsRes.data) {
-        const materialRows = materialsRes.data.map(m => {
+        rawMaterials = materialsRes.data.map(m => {
           const rmData = rmUsage.data?.find(r => r.raw_material_type_id === m.id)
           return {
-            id: m.id,
-            name: m.name,
+            id: m.id, name: m.name,
             opening: rmData ? parseFloat(rmData.opening_kg) || 0 : 0,
             purchased: rmData ? parseFloat(rmData.purchased_kg) || 0 : 0,
             used: rmData ? parseFloat(rmData.quantity_kg) || 0 : 0,
             closing: rmData ? parseFloat(rmData.closing_kg) || 0 : 0,
           }
         })
-        updateData('rawMaterials', materialRows)
       }
 
+      // Build pellet stock array
+      let pelletStock = []
       if (pelletTypesRes.data) {
-        const pelletRows = pelletTypesRes.data.map(p => {
+        pelletStock = pelletTypesRes.data.map(p => {
           const psData = pStock.data?.find(ps => ps.pellet_type_id === p.id)
           return {
-            id: p.id,
-            name: p.name,
+            id: p.id, name: p.name,
             opening: psData ? parseFloat(psData.opening_mt) || 0 : 0,
             production: psData ? parseFloat(psData.production_mt) || 0 : 0,
             dispatch: psData ? parseFloat(psData.dispatch_mt) || 0 : 0,
@@ -332,68 +319,85 @@ export default function ShiftWizard() {
             closing: psData ? parseFloat(psData.closing_mt) || 0 : 0,
           }
         })
-        updateData('pelletStock', pelletRows)
       }
 
+      // Build diesel equipment array
+      let dieselEquipment = []
       if (equipmentRes.data) {
-        const equipmentRows = equipmentRes.data.map(eq => {
+        dieselEquipment = equipmentRes.data.map(eq => {
           const dieselData = diesel.data?.find(d => d.equipment_name === eq.name)
           return {
-            id: eq.id,
-            equipment_name: eq.name,
+            id: eq.id, equipment_name: eq.name,
             opening: dieselData ? parseFloat(dieselData.opening_litres) || 0 : 0,
             added: dieselData ? parseFloat(dieselData.added_litres) || 0 : 0,
             used: dieselData ? (parseFloat(dieselData.opening_litres) || 0) + (parseFloat(dieselData.added_litres) || 0) - (parseFloat(dieselData.closing_litres) || 0) : 0,
             closing: dieselData ? parseFloat(dieselData.closing_litres) || 0 : 0,
             hours: dieselData ? parseFloat(dieselData.hours_worked) || 0 : 0,
-            avg_per_hr: 0,
-            collapsed: true,
+            avg_per_hr: 0, collapsed: true,
           }
         })
-        updateData('diesel', equipmentRows)
       }
 
-      // Load production entries (Step 3)
+      // Build production entries (Step 3)
+      let production = []
       if (machProd.data?.length) {
-        const productionEntries = machProd.data
+        production = machProd.data
           .filter(mp => parseFloat(mp.production_mt) > 0)
           .map(mp => ({
-            id: mp.id,
-            machine_id: mp.machine_id,
+            id: mp.id, machine_id: mp.machine_id,
             machine_name: mp.machines?.name || 'Unknown',
             pellet_type: mp.pellet_type_name || '',
             quantity: parseFloat(mp.production_mt) || 0,
             ingredients: '',
           }))
-        if (productionEntries.length > 0) {
-          updateData('production', productionEntries)
-        }
       }
 
-
+      // Build issues
+      let issues = []
       if (issuesData.data?.length) {
-        updateData('issues', issuesData.data.map(i => ({
-          id: i.id,
-          type: i.issue_type,
-          description: i.description,
-          severity: i.severity,
-          photo_url: i.photo_url,
-          machine_id: i.machine_id || null,
-        })))
+        issues = issuesData.data.map(i => ({
+          id: i.id, type: i.issue_type, description: i.description,
+          severity: i.severity, photo_url: i.photo_url, machine_id: i.machine_id || null,
+        }))
       }
 
+      // Build diesel stock
+      let diesel_stock = { opening: 0, purchases: [], closing: 0 }
       if (dStock.data) {
         const purchases = (dPurchases.data || []).map(dp => ({
           litres: parseFloat(dp.litres) || 0,
           cost_per_litre: parseFloat(dp.cost_per_litre) || 0,
           receipt_url: dp.receipt_url || null,
         }))
-        updateData('diesel_stock', {
+        diesel_stock = {
           opening: parseFloat(dStock.data.opening_litres) || 0,
           purchases,
           closing: parseFloat(dStock.data.closing_litres) || 0,
-        })
+        }
       }
+
+      // ONE single state update — no race conditions
+      setReportData({
+        date: report.date,
+        shift: report.shift,
+        start_time: report.start_time,
+        end_time: report.end_time,
+        shift_start_date: report.shift_start_date || report.date,
+        shift_end_date: report.shift_end_date || report.date,
+        start_power_reading: report.start_power_reading || 0,
+        end_power_reading: report.end_power_reading || 0,
+        handover_notes: report.handover_notes || '',
+        remarks: report.remarks || '',
+        machines,
+        production,
+        rawMaterials,
+        diesel: dieselEquipment,
+        diesel_stock,
+        dispatches: [],
+        dispatchTotals: {},
+        pelletStock,
+        issues,
+      })
     } catch (err) {
       console.error('Error loading report:', err)
       showToast('Failed to load report', 'error')
