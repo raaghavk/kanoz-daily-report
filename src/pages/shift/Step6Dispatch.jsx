@@ -190,7 +190,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: 40, height: 40, background: '#e8f0ec', borderRadius: 10, fontSize: 20,
                 }}>
-                  ð
+                  🚛
                 </div>
 
                 {/* Details */}
@@ -283,7 +283,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
           cursor: 'pointer',
         }}
       >
-        ð Refresh Dispatches
+        🔄 Refresh Dispatches
       </button>
     </div>
   )
