@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getLocalDate } from '../lib/dateUtils'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
@@ -16,12 +17,12 @@ export default function Home() {
 
   const now = new Date()
   const hour = now.getHours()
-  // Use local date (not UTC) — toISOString() returns UTC which is wrong for IST
+  // Use local date (not UTC) â toISOString() returns UTC which is wrong for IST
   const localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const today = localDate(now)
-  // Shift A: 08:00–19:59, Shift B: 20:00–07:59 (overnight)
+  // Shift A: 08:00â19:59, Shift B: 20:00â07:59 (overnight)
   const currentShift = (hour >= 8 && hour < 20) ? 'A' : 'B'
-  const shiftTime = currentShift === 'A' ? '08:00–20:00' : '20:00–08:00'
+  const shiftTime = currentShift === 'A' ? '08:00â20:00' : '20:00â08:00'
 
   // Compute shift start/end dates
   let shiftStartDate, shiftEndDate
@@ -120,7 +121,7 @@ export default function Home() {
   const { data: sparePartsData } = useQuery({
     queryKey: ['home-spare-parts', plant?.id],
     queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getLocalDate()
       const { data: partsData } = await supabase.from('spare_parts').select('id').eq('org_id', plant.org_id).eq('is_active', true)
       const partIds = (partsData || []).map(p => p.id)
       if (!partIds.length) return { totalParts: 0, lowStock: 0, purchasedToday: 0, issuedToday: 0 }
@@ -175,7 +176,7 @@ export default function Home() {
   const fmtDate = (d) => new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   const dateStr = currentShift === 'A' || shiftStartDate === shiftEndDate
     ? fmtDate(shiftStartDate)
-    : `${fmtDate(shiftStartDate)} – ${fmtDate(shiftEndDate)}`
+    : `${fmtDate(shiftStartDate)} â ${fmtDate(shiftEndDate)}`
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
@@ -297,21 +298,21 @@ export default function Home() {
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           {can(employee?.role, 'view_reports') && (
           <button onClick={() => navigate('/reports')} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#e8f0ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📊</div>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#e8f0ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>ð</div>
             <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Shift Reports</div>
             <ChevronRight size={15} color="#b5b8a8" />
           </button>
           )}
           {can(employee?.role, 'view_dispatches') && (
           <button onClick={() => navigate('/dispatch')} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🚛</div>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>ð</div>
             <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Dispatches</div>
             <ChevronRight size={15} color="#b5b8a8" />
           </button>
           )}
           {can(employee?.role, 'view_purchases') && (
           <button onClick={() => navigate('/purchase')} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📦</div>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>ð¦</div>
             <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Purchases</div>
             <ChevronRight size={15} color="#b5b8a8" />
           </button>
@@ -326,7 +327,7 @@ export default function Home() {
               <div style={{ fontSize: 13, fontWeight: 600, color: sp.lowStock > 0 ? '#b91c1c' : '#2c2c2c' }}>
                 Spare Parts {sp.lowStock > 0 && <span style={{ fontSize: 10, fontWeight: 700, background: '#fee2e2', color: '#b91c1c', borderRadius: 5, padding: '1px 5px', marginLeft: 4 }}>{sp.lowStock} low</span>}
               </div>
-              <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>{sp.totalParts} parts · +{sp.purchasedToday} purchased · {sp.issuedToday} used today</div>
+              <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>{sp.totalParts} parts Â· +{sp.purchasedToday} purchased Â· {sp.issuedToday} used today</div>
             </div>
             <ChevronRight size={15} color="#b5b8a8" />
           </button>
@@ -342,7 +343,7 @@ export default function Home() {
                 Tasks {openTasks.length > 0 && <span style={{ fontSize: 10, fontWeight: 700, background: '#EEF2FF', color: '#2563EB', borderRadius: 5, padding: '1px 6px', marginLeft: 4 }}>{openTasks.length} open</span>}
               </div>
               <button onClick={() => navigate('/tasks')} style={{ fontSize: 11, fontWeight: 600, color: '#2d6a4f', background: 'none', border: 'none', cursor: 'pointer' }}>
-                See all →
+                See all â
               </button>
             </div>
             <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
@@ -360,7 +361,7 @@ export default function Home() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
                       {task.assignee?.name && (
-                        <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>→ {task.assignee.name}</div>
+                        <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>â {task.assignee.name}</div>
                       )}
                     </div>
                     {task.due_date && (
@@ -373,7 +374,7 @@ export default function Home() {
               })}
               {myTasks.length > 4 && (
                 <button onClick={() => navigate('/tasks')} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', borderTop: '1px solid #f0ebe0', fontSize: 12, color: '#2563EB', fontWeight: 600, cursor: 'pointer' }}>
-                  +{myTasks.length - 4} more tasks →
+                  +{myTasks.length - 4} more tasks â
                 </button>
               )}
             </div>
@@ -386,7 +387,7 @@ export default function Home() {
             <button onClick={() => navigate('/tasks')}
               style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '12px 14px', background: '#fff', border: '1.5px solid #e5ddd0', borderRadius: 14, cursor: 'pointer' }}>
               <CheckSquare size={18} color="#8a8d7a" />
-              <span style={{ fontSize: 13, color: '#8a8d7a' }}>No open tasks · Tap to assign one</span>
+              <span style={{ fontSize: 13, color: '#8a8d7a' }}>No open tasks Â· Tap to assign one</span>
               <ChevronRight size={15} color="#b5b8a8" style={{ marginLeft: 'auto' }} />
             </button>
           </div>
@@ -416,7 +417,7 @@ export default function Home() {
                   <div style={{ gridColumn: yesterday.production > 0 && yesterday.trucks > 0 ? '1 / -1' : 'auto' }}>
                     <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600 }}>Purchases</div>
                     <div style={{ fontSize: 16, fontWeight: 800, color: '#595c4a', marginTop: 2 }}>
-                      ₹{Math.round(yesterday.purchaseAmt).toLocaleString('en-IN')}
+                      â¹{Math.round(yesterday.purchaseAmt).toLocaleString('en-IN')}
                       <span style={{ fontSize: 11, fontWeight: 500, color: '#8a8d7a', marginLeft: 6 }}>
                         ({yesterday.purchaseCount} entries, {yesterday.purchaseKg >= 1000 ? `${(yesterday.purchaseKg / 1000).toFixed(1)} MT` : `${Math.round(yesterday.purchaseKg)} kg`})
                       </span>
@@ -448,10 +449,10 @@ export default function Home() {
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>
-                    Shift {report.shift} — {report.date}
+                    Shift {report.shift} â {report.date}
                   </div>
                   <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 2 }}>
-                    {parseFloat(report.pellet_production_mt || 0).toFixed(1)} MT &bull; {report.start_time?.slice(0,5) || '?'} – {report.end_time?.slice(0,5) || '?'}
+                    {parseFloat(report.pellet_production_mt || 0).toFixed(1)} MT &bull; {report.start_time?.slice(0,5) || '?'} â {report.end_time?.slice(0,5) || '?'}
                   </div>
                 </div>
                 <ChevronRight size={18} color="#b5b8a8" />
