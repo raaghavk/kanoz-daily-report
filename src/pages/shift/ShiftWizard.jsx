@@ -545,6 +545,47 @@ export default function ShiftWizard() {
         await supabase.from('issues').insert(issueRows)
       }
 
+      // Link dispatches that fall within this shift's time window to this shift report
+      {
+        const shiftStart = `${reportData.shift_start_date}T${reportData.start_time}:00`
+        const shiftEnd = `${reportData.shift_end_date}T${reportData.end_time}:00`
+        const startDate = reportData.shift_start_date
+        const endDate = reportData.shift_end_date
+
+        // First, unlink any dispatches previously linked to this report (in case of edit/re-submit)
+        await supabase.from('vehicle_dispatches')
+          .update({ shift_report_id: null })
+          .eq('shift_report_id', report.id)
+          .eq('plant_id', plant.id)
+
+        // Fetch dispatches in the date range for this plant
+        const { data: dispatchCandidates } = await supabase
+          .from('vehicle_dispatches')
+          .select('id, dispatch_date, dispatch_time, date')
+          .eq('plant_id', plant.id)
+          .eq('is_deleted', false)
+          .gte('date', startDate)
+          .lte('date', endDate)
+
+        if (dispatchCandidates?.length) {
+          // Filter client-side by exact time window (same logic as Step6Dispatch)
+          const matchingIds = dispatchCandidates
+            .filter(d => {
+              const dDate = d.dispatch_date || d.date
+              const dTime = d.dispatch_time || '00:00:00'
+              const dt = new Date(`${dDate}T${dTime}`)
+              return dt >= new Date(shiftStart) && dt <= new Date(shiftEnd)
+            })
+            .map(d => d.id)
+
+          if (matchingIds.length) {
+            await supabase.from('vehicle_dispatches')
+              .update({ shift_report_id: report.id })
+              .in('id', matchingIds)
+          }
+        }
+      }
+
       // Save diesel stock (overall tank) + diesel purchases
       await supabase.from('diesel_purchases').delete().eq('shift_report_id', report.id)
       await supabase.from('diesel_stock').delete().eq('shift_report_id', report.id)
