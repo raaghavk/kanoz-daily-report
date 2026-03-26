@@ -41,8 +41,10 @@ export default memo(function Step4RawMaterial({ data, updateData, plant }) {
         // Client-side time filtering if shift times are available
         let filtered = purchases
         if (data.start_time && data.end_time && data.shift_start_date) {
-          const shiftStart = new Date(`${data.shift_start_date}T${data.start_time}:00`)
-          const shiftEnd = new Date(`${data.shift_end_date || data.shift_start_date}T${data.end_time}:00`)
+          // Normalize time to HH:MM — DB returns HH:MM:SS, input returns HH:MM
+          const normalizeTime = (t) => t ? t.substring(0, 5) : t
+          const shiftStart = new Date(`${data.shift_start_date}T${normalizeTime(data.start_time)}:00`)
+          const shiftEnd = new Date(`${data.shift_end_date || data.shift_start_date}T${normalizeTime(data.end_time)}:00`)
           filtered = purchases.filter(p => {
             if (!p.purchase_time) return true // include purchases without time
             const pDate = data.shift_start_date
