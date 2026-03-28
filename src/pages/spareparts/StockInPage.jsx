@@ -7,6 +7,7 @@ import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import { Loader2, Plus, FileText, X, Upload, Edit2, CheckCircle } from 'lucide-react'
 import { getBrands, saveCustomBrand } from '../../lib/brands'
+import { getLocalDate } from '../../lib/dateUtils'
 
 // ── Bill PDF / Image uploader ─────────────────────────────────────────────────
 function BillUpload({ value, onChange, required }) {
@@ -265,7 +266,7 @@ export default function StockInPage() {
     quantity: '',
     rate_per_unit: '',
     gst_percent: '18',
-    purchase_date: new Date().toISOString().split('T')[0],
+    purchase_date: getLocalDate(),
     bill_image_url: '',
     no_warranty: false,
     warranty_months: '',
@@ -282,7 +283,7 @@ export default function StockInPage() {
     if (formData.warranty_months && formData.purchase_date) {
       const d = new Date(formData.purchase_date)
       d.setMonth(d.getMonth() + parseInt(formData.warranty_months))
-      setFormData(prev => ({ ...prev, warranty_expiry_date: d.toISOString().split('T')[0] }))
+      setFormData(prev => ({ ...prev, warranty_expiry_date: getLocalDate(d) }))
     }
   }, [formData.warranty_months, formData.purchase_date])
 

@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { Loader2, AlertTriangle } from 'lucide-react'
+import { getLocalDate } from '../../lib/dateUtils'
 
 export default function IssuePartPage() {
   const { plant, employee } = useAuth()
@@ -20,7 +21,7 @@ export default function IssuePartPage() {
   const [formData, setFormData] = useState({
     part_id: preselectedPartId,
     quantity: '',
-    usage_date: new Date().toISOString().split('T')[0],
+    usage_date: getLocalDate(),
     machine_name: '',
     purpose: '',
     issued_to: '',

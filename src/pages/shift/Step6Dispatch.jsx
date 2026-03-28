@@ -236,7 +236,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
               <div style={{ height: '1.5px', background: '#e5ddd0', margin: '8px 0' }} />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>
                 <span>GRAND TOTAL</span>
-                <span>{totalQuantity.toFixed(1)} MT â¢ {totalTrucks} truck{totalTrucks !== 1 ? 's' : ''}</span>
+                <span>{totalQuantity.toFixed(1)} MT • {totalTrucks} truck{totalTrucks !== 1 ? 's' : ''}</span>
               </div>
             </div>
           </div>

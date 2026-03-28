@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../../components/PageHeader'
 import { Loader2, Download } from 'lucide-react'
+import { getLocalDate } from '../../lib/dateUtils'
 
 export default function SparePartsUsageHistoryPage() {
   const { plant } = useAuth()

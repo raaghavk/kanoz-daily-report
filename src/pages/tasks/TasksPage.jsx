@@ -7,6 +7,7 @@ import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
 import { Loader2, Plus, CheckCircle, Circle, Archive, CalendarDays, User } from 'lucide-react'
+import { getLocalDate } from '../../lib/dateUtils'
 
 const STATUS_META = {
   open:   { label: 'Open',     bg: '#EEF2FF', text: '#2563EB', border: '#c7d2fe' },
@@ -388,7 +389,7 @@ export default function TasksPage() {
               value={assignForm.due_date}
               onChange={e => setAssignForm({ ...assignForm, due_date: e.target.value })}
               style={inputStyle}
-              min={new Date().toISOString().split('T')[0]}
+              min={getLocalDate()}
             />
           </div>
           <div style={{ background: '#EEF2FF', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: '#2563EB' }}>

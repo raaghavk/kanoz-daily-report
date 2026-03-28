@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../../components/PageHeader'
 import { Package, ArrowDownCircle, ArrowUpCircle, Users, AlertTriangle, Loader2, History, ClipboardList, RefreshCw } from 'lucide-react'
+import { getLocalDate } from '../../lib/dateUtils'
 
 export default function SparePartsHome() {
   const { plant } = useAuth()
@@ -17,7 +18,7 @@ export default function SparePartsHome() {
   async function loadStats() {
     setLoading(true)
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = getLocalDate()
       const { data: partsData } = await supabase.from('spare_parts').select('id, name, unit').eq('org_id', plant.org_id).eq('is_active', true)
       const partIds = (partsData || []).map(p => p.id)
 
