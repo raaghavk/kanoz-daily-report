@@ -208,8 +208,8 @@ export default function ReportView() {
   const endDate = report.shift_end_date || report.date
   const startDateLabel = formatShortDate(startDate)
   const endDateLabel = formatShortDate(endDate)
-  const startTime = report.start_time?.slice(0, 5) || 'â'
-  const endTime = report.end_time?.slice(0, 5) || 'â'
+  const startTime = report.start_time?.slice(0, 5) || '-'
+  const endTime = report.end_time?.slice(0, 5) || '-'
 
   // Build lookups for machine production
   // machTimingByMachineId: first row per machine (for timing data in Machine Timings section)
@@ -238,8 +238,8 @@ export default function ReportView() {
       const totalProdMt = allRows.reduce((sum, r) => sum + (parseFloat(r.production_mt) || 0), 0)
       const prdHrs = parseFloat(timing.hours_run) || 0
       const totalHrs = parseFloat(timing.total_hours) || prdHrs
-      const avgPerHr = prdHrs > 0 ? (totalProdMt / prdHrs).toFixed(2) : 'â'
-      return `<tr><td>${m.name}</td><td>${prdHrs}h</td><td>${totalHrs}h</td><td>${totalProdMt}</td><td>${avgPerHr}</td><td>${timing.remarks || 'â'}</td></tr>`
+      const avgPerHr = prdHrs > 0 ? (totalProdMt / prdHrs).toFixed(2) : '-'
+      return `<tr><td>${m.name}</td><td>${prdHrs}h</td><td>${totalHrs}h</td><td>${totalProdMt}</td><td>${avgPerHr}</td><td>${timing.remarks || '-'}</td></tr>`
     }).join('')
 
     const prodRows = displayMachines.map(m => {
@@ -251,8 +251,8 @@ export default function ReportView() {
       if (filtered.length === 0) return `<tr><td>${m.name}</td><td colspan="3" style="text-align:center;color:#888;font-style:italic">No production this shift</td></tr>`
       return filtered.map((row, idx) => {
         const qty = parseFloat(row.production_mt) || 0
-        const avg = prdHrs > 0 ? (qty / prdHrs).toFixed(2) : 'â'
-        return `<tr><td>${idx === 0 ? m.name : ''}</td><td>${row.pellet_type_name || 'â'}</td><td style="text-align:right">${qty}</td><td style="text-align:right">${avg}</td></tr>`
+        const avg = prdHrs > 0 ? (qty / prdHrs).toFixed(2) : '-'
+        return `<tr><td>${idx === 0 ? m.name : ''}</td><td>${row.pellet_type_name || '-'}</td><td style="text-align:right">${qty}</td><td style="text-align:right">${avg}</td></tr>`
       }).join('')
     }).join('')
 
@@ -269,7 +269,7 @@ export default function ReportView() {
       const log = equipmentDiesel.find(e => e.equipment_name === eq.name)
       if (!log) return `<tr><td>${eq.name}</td><td colspan="6" style="text-align:center;color:#888;font-style:italic">Not recorded</td></tr>`
       const used = (log.opening_litres || 0) + (log.added_litres || 0) - (log.closing_litres || 0)
-      const avg = log.hours_worked > 0 ? (used / log.hours_worked).toFixed(2) : 'â'
+      const avg = log.hours_worked > 0 ? (used / log.hours_worked).toFixed(2) : '-'
       return `<tr><td>${eq.name}</td><td style="text-align:right">${log.opening_litres || 0}</td><td style="text-align:right">${log.added_litres || 0}</td><td style="text-align:right">${used}</td><td style="text-align:right">${log.closing_litres || 0}</td><td style="text-align:right">${log.hours_worked || 0}h</td><td style="text-align:right">${avg}</td></tr>`
     }).join('')
 
@@ -277,7 +277,7 @@ export default function ReportView() {
       ? dispatches.map(d => {
           const pelletNames = d.dispatch_pellets?.map(p => p.pellet_types?.name).filter(Boolean).join(', ') || 'N/A'
           const qty = d.dispatch_pellets?.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0).toFixed(1) || '0'
-          return `<tr><td>${d.truck_number}</td><td>${d.customers?.name || 'N/A'}</td><td>${pelletNames}</td><td style="text-align:right">${qty}</td><td style="text-align:right">${d.dispatch_time?.slice(0, 5) || 'â'}</td></tr>`
+          return `<tr><td>${d.truck_number}</td><td>${d.customers?.name || 'N/A'}</td><td>${pelletNames}</td><td style="text-align:right">${qty}</td><td style="text-align:right">${d.dispatch_time?.slice(0, 5) || '-'}</td></tr>`
         }).join('')
       : '<tr><td colspan="5" style="text-align:center;color:#888;font-style:italic">No dispatches this shift</td></tr>'
 
@@ -288,22 +288,22 @@ export default function ReportView() {
     }).join('')
 
     const issuesHTML = issues.length > 0
-      ? issues.map(i => `<div class="issue"><strong>${i.issue_type}${i.machines?.name ? ` â ${i.machines.name}` : ''}</strong> [${i.severity}]<p>${i.description}</p></div>`).join('')
+      ? issues.map(i => `<div class="issue"><strong>${i.issue_type}${i.machines?.name ? ` - ${i.machines.name}` : ''}</strong> [${i.severity}]<p>${i.description}</p></div>`).join('')
       : ''
 
     const dieselStockRow = dieselStock
       ? `<tr style="background:#fffbea">
           <td><strong>DIESEL STOCK TANK</strong></td>
-          <td style="text-align:right">${dieselStock.opening_litres ?? 'â'}</td>
-          <td style="text-align:right">${dieselStock.purchased_litres ?? 'â'}</td>
-          <td style="text-align:right"><strong>${dieselStock.used_litres ?? 'â'}</strong></td>
-          <td style="text-align:right"><strong>${dieselStock.closing_litres ?? 'â'}</strong></td>
-          <td style="text-align:right">â</td>
-          <td style="text-align:right">â</td>
+          <td style="text-align:right">${dieselStock.opening_litres ?? '-'}</td>
+          <td style="text-align:right">${dieselStock.purchased_litres ?? '-'}</td>
+          <td style="text-align:right"><strong>${dieselStock.used_litres ?? '-'}</strong></td>
+          <td style="text-align:right"><strong>${dieselStock.closing_litres ?? '-'}</strong></td>
+          <td style="text-align:right">-</td>
+          <td style="text-align:right">-</td>
         </tr>`
       : ''
 
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Shift ${report.shift} Report â ${report.date}</title>
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Shift ${report.shift} Report - ${report.date}</title>
 <style>
   * { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; font-size: 12pt; color: #1a1a1a; margin: 0; padding: 20px; }
@@ -336,7 +336,7 @@ export default function ReportView() {
 <div class="header-box">
   <div class="header-title">
     <h1>Shift ${report.shift} Report</h1>
-    <div class="subtitle">${report.plants?.name || ''} &nbsp;Â·&nbsp; ${report.date}</div>
+    <div class="subtitle">${report.plants?.name || ''} &nbsp;|&nbsp; ${report.date}</div>
   </div>
   <div class="header-grid">
     <div class="header-item">
@@ -444,11 +444,11 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
         }
       ` }} />
 
-      {/* Nav header â hidden on print */}
+      {/* Nav header - hidden on print */}
       <div className="no-print">
         <PageHeader
           title="Shift Report"
-          subtitle={`Shift ${report.shift} Â· ${report.date}`}
+          subtitle={`Shift ${report.shift} | ${report.date}`}
           onBack={() => navigate(-1)}
           rightAction={
             can(employee?.role, 'create_report') ? (
@@ -528,7 +528,7 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
                 const totalProdMt = allRows.reduce((sum, r) => sum + (parseFloat(r.production_mt) || 0), 0)
                 const prdHrs = parseFloat(timing.hours_run) || 0
                 const totalHrs = parseFloat(timing.total_hours) || prdHrs
-                const avgPerHr = prdHrs > 0 ? (totalProdMt / prdHrs).toFixed(2) : 'â'
+                const avgPerHr = prdHrs > 0 ? (totalProdMt / prdHrs).toFixed(2) : '-'
                 return (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.name}</td>
@@ -536,7 +536,7 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
                     <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{totalHrs}h</td>
                     <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{totalProdMt}</td>
                     <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{avgPerHr}</td>
-                    <td style={{ padding: '10px 8px', color: '#595c4a', fontSize: 11 }}>{timing.remarks || 'â'}</td>
+                    <td style={{ padding: '10px 8px', color: '#595c4a', fontSize: 11 }}>{timing.remarks || '-'}</td>
                   </tr>
                 )
               })}
@@ -586,13 +586,13 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
 
                 return prodRows.map((row, idx) => {
                   const qty = parseFloat(row.production_mt) || 0
-                  const avgPerHr = prdHrs > 0 ? (qty / prdHrs).toFixed(2) : 'â'
+                  const avgPerHr = prdHrs > 0 ? (qty / prdHrs).toFixed(2) : '-'
                   return (
                     <tr key={`${m.id}-${idx}`} style={{ borderTop: '1px solid #e5ddd0' }}>
                       <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>
                         {idx === 0 ? m.name : ''}
                       </td>
-                      <td style={{ padding: '10px 8px', color: '#595c4a', fontSize: 11 }}>{row.pellet_type_name || 'â'}</td>
+                      <td style={{ padding: '10px 8px', color: '#595c4a', fontSize: 11 }}>{row.pellet_type_name || '-'}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{qty}</td>
                       <td style={{ padding: '10px 8px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{avgPerHr}</td>
                     </tr>
@@ -677,7 +677,7 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
                   )
                 }
                 const used = (log.opening_litres || 0) + (log.added_litres || 0) - (log.closing_litres || 0)
-                const avgPerHr = log.hours_worked > 0 ? (used / log.hours_worked).toFixed(2) : 'â'
+                const avgPerHr = log.hours_worked > 0 ? (used / log.hours_worked).toFixed(2) : '-'
                 return (
                   <tr key={eq.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 10px', fontWeight: 500, color: '#2c2c2c', fontSize: 11, whiteSpace: 'nowrap' }}>{eq.name}</td>
@@ -699,15 +699,15 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
           </table>
         </div>
 
-        {/* Diesel Stock Tank Summary â always shown */}
+        {/* Diesel Stock Tank Summary - always shown */}
         <div style={{ marginTop: 12, background: '#fefae0', borderRadius: 12, border: '1.5px solid #e9c46a', padding: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>Diesel Stock Tank</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
             {[
-              { label: 'Opening (L)', value: dieselStock?.opening_litres ?? 'â' },
-              { label: 'Purchased (L)', value: dieselStock?.purchased_litres ?? 'â' },
-              { label: 'Used (L)', value: dieselStock?.used_litres ?? 'â' },
-              { label: 'Closing (L)', value: dieselStock?.closing_litres ?? 'â' },
+              { label: 'Opening (L)', value: Math.round((dieselStock?.opening_litres || 0) * 100) / 100 || undefined ?? '-' },
+              { label: 'Purchased (L)', value: dieselStock?.purchased_litres ?? '-' },
+              { label: 'Used (L)', value: dieselStock?.used_litres ?? '-' },
+              { label: 'Closing (L)', value: dieselStock?.closing_litres ?? '-' },
             ].map(({ label, value }) => (
               <div key={label}>
                 <div style={{ fontSize: 9, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>{label}</div>
@@ -717,7 +717,7 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
           </div>
           {dieselStock?.purchase_cost > 0 && (
             <div style={{ marginTop: 10, textAlign: 'center', fontSize: 11, fontWeight: 600, color: '#92400E' }}>
-              Purchase Cost: â¹{Number(dieselStock.purchase_cost).toLocaleString('en-IN')}
+              Purchase Cost: ---{Number(dieselStock.purchase_cost).toLocaleString('en-IN')}
             </div>
           )}
         </div>
@@ -815,7 +815,7 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                       <span style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c', textTransform: 'capitalize' }}>
-                        {issue.issue_type}{issue.machines?.name ? ` â ${issue.machines.name}` : ''}
+                        {issue.issue_type}{issue.machines?.name ? ` - ${issue.machines.name}` : ''}
                       </span>
                       <span style={{
                         fontSize: 10, fontWeight: 700, padding: '4px 8px', borderRadius: 4,
@@ -850,7 +850,20 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
         </div>
       )}
 
-      {/* Action Buttons â hidden on print */}
+      {/* Created By Info */}
+      <div style={{ padding: '0 20px', marginTop: 24 }}>
+        <div style={{ background: '#f5f3eb', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 10, color: '#8a8d7a', fontWeight: 600 }}>Created by</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2c', marginTop: 2 }}>{createdByName || report.employees?.name || 'Unknown'}</div>
+            <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
+              {report.created_at ? new Date(report.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
       <div className="no-print" style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16 }}>
         {/* All 4 buttons on one row */}
         <div style={{ display: 'flex', gap: 8 }}>
@@ -904,7 +917,7 @@ ${report.handover_notes ? `<div class="section"><h2>Handover Notes</h2><p>${repo
             <DeleteRequestButton
               entityType="shift_report"
               entityId={id}
-              entityLabel={`Shift ${report.shift} Report Â· ${report.date}`}
+              entityLabel={`Shift ${report.shift} Report | ${report.date}`}
               style={{ flex: 1, padding: '10px 4px', borderRadius: 10, fontSize: 12, fontWeight: 700 }}
             />
           )}
