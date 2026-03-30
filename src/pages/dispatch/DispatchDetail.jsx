@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X } from 'lucide-react'
+import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X, Download } from 'lucide-react'
+import { exportDispatchPDF } from '../../lib/pdfExport'
 import PageHeader from '../../components/PageHeader'
 
 export default function DispatchDetail() {
@@ -14,6 +15,7 @@ export default function DispatchDetail() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState({})
+  const [createdByName, setCreatedByName] = useState(null)
 
   useEffect(() => {
     if (id) fetchDispatch()
@@ -38,6 +40,11 @@ export default function DispatchDetail() {
         throw error
       }
       setDispatch(data)
+      // Fetch created_by employee name
+      if (data.created_by) {
+        const { data: emp } = await supabase.from('employees').select('name').eq('id', data.created_by).single()
+        if (emp) setCreatedByName(emp.name)
+      }
     } catch (err) {
       console.error('Error fetching dispatch:', err)
       showToast('Failed to load dispatch', 'error')
@@ -331,7 +338,7 @@ export default function DispatchDetail() {
         <DeleteRequestButton
           entityType="dispatch"
           entityId={id}
-          entityLabel={`Truck ${dispatch.truck_number} — ${formattedDate}`}
+          entityLabel={`Truck ${dispatch.truck_number} â ${formattedDate}`}
           onRequestSent={() => navigate('/dispatch')}
         />
       </div>

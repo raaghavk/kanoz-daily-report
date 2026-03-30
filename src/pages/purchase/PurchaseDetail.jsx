@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Loader2, Edit3, X, CheckCircle } from 'lucide-react'
+import { Loader2, Edit3, X, CheckCircle, Download } from 'lucide-react'
+import { exportPurchasePDF } from '../../lib/pdfExport'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
@@ -13,6 +14,7 @@ export default function PurchaseDetail() {
   const queryClient = useQueryClient()
   const [showPhoto, setShowPhoto] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
+  const [createdByName, setCreatedByName] = useState(null)
 
   const { data: purchase, isLoading, isError } = useQuery({
     queryKey: ['purchase', id],
@@ -27,6 +29,14 @@ export default function PurchaseDetail() {
     },
     enabled: !!id,
   })
+
+  useEffect(() => {
+    if (purchase?.created_by) {
+      supabase.from('employees').select('name').eq('id', purchase.created_by).single().then(({ data: emp }) => {
+        if (emp) setCreatedByName(emp.name)
+      })
+    }
+  }, [purchase?.created_by])
 
   function formatCurrency(amount) {
     return '\u20B9' + (Math.round(amount) || 0).toLocaleString('en-IN')
@@ -152,7 +162,7 @@ export default function PurchaseDetail() {
                   opacity: markingPaid ? 0.6 : 1,
                 }}
               >
-                {markingPaid ? 'Updating...' : 'Pending — Tap to mark Paid'}
+                {markingPaid ? 'Updating...' : 'Pending â Tap to mark Paid'}
               </button>
             )}
           </div>
@@ -334,7 +344,7 @@ export default function PurchaseDetail() {
         <DeleteRequestButton
           entityType="purchase"
           entityId={id}
-          entityLabel={`${purchase.suppliers?.name || 'Purchase'} — ${formatDate(purchase.date)}`}
+          entityLabel={`${purchase.suppliers?.name || 'Purchase'} â ${formatDate(purchase.date)}`}
           onRequestSent={() => navigate('/purchase')}
         />
       </div>
