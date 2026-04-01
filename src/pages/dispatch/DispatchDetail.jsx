@@ -338,7 +338,7 @@ export default function DispatchDetail() {
         <DeleteRequestButton
           entityType="dispatch"
           entityId={id}
-          entityLabel={`Truck ${dispatch.truck_number} â ${formattedDate}`}
+          entityLabel={`Truck ${dispatch.truck_number} ------ ${formattedDate}`}
           onRequestSent={() => navigate('/dispatch')}
         />
       </div>

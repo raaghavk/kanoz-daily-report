@@ -162,7 +162,7 @@ export default function PurchaseDetail() {
                   opacity: markingPaid ? 0.6 : 1,
                 }}
               >
-                {markingPaid ? 'Updating...' : 'Pending â Tap to mark Paid'}
+                {markingPaid ? 'Updating...' : 'Pending ------ Tap to mark Paid'}
               </button>
             )}
           </div>
@@ -344,7 +344,7 @@ export default function PurchaseDetail() {
         <DeleteRequestButton
           entityType="purchase"
           entityId={id}
-          entityLabel={`${purchase.suppliers?.name || 'Purchase'} â ${formatDate(purchase.date)}`}
+          entityLabel={`${purchase.suppliers?.name || 'Purchase'} ------ ${formatDate(purchase.date)}`}
           onRequestSent={() => navigate('/purchase')}
         />
       </div>

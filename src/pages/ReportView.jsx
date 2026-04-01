@@ -232,8 +232,14 @@ export default function ReportView() {
         .eq('auth_user_id', report.created_by)
         .single()
         .then(({ data }) => {
-          if (data) setCreatedByName(data.name)
+          if (data) {
+            setCreatedByName(data.name)
+          } else if (report.employees?.name) {
+            setCreatedByName(report.employees.name)
+          }
         })
+    } else if (report?.employees?.name) {
+      setCreatedByName(report.employees.name)
     }
     if (id) {
       supabase
