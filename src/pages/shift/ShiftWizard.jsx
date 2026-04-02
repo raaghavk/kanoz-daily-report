@@ -37,7 +37,7 @@ const WIZARD_STORAGE_KEY = 'kanoz_shift_wizard_state'
 
 // Save to both sessionStorage and localStorage for maximum persistence on mobile
 function saveWizardStateToStorage(state) {
-  const serialized = JSON.stringify(state)
+  const serialized = JSON.stringify({ ...state, savedAt: Date.now() })
   try { sessionStorage.setItem(WIZARD_STORAGE_KEY, serialized) } catch { /* ignore */ }
   try { localStorage.setItem(WIZARD_STORAGE_KEY, serialized) } catch { /* ignore */ }
 }
@@ -72,7 +72,7 @@ export default function ShiftWizard() {
   const [reportId, setReportId] = useState(editId || null)
   const [restoredFromStorage, setRestoredFromStorage] = useState(false)
 
-  // Report data state — shared across all steps
+  // Report data state â shared across all steps
   const [reportData, setReportData] = useState({
     date: getLocalDate(),
     shift: 'A',
@@ -106,19 +106,23 @@ export default function ShiftWizard() {
 
   // Restore from sessionStorage if returning from dispatch
   const [initDone, setInitDone] = useState(false)
+  const [pendingRestore, setPendingRestore] = useState(null)
   useEffect(() => {
     if (editId) { setInitDone(true); return }
     const returnToStep = location.state?.returnToStep
     try {
       const saved = loadWizardStateFromStorage()
       if (saved) {
-        const { reportData: savedData, step: savedStep, reportId: savedId } = saved
-        if (savedData && (savedData.date || savedData.machines?.length > 0)) {
-          setReportData(savedData)
-          setStep(returnToStep || savedStep || 1)
-          if (savedId) setReportId(savedId)
-          setRestoredFromStorage(true)
+        const { reportData: savedData, step: savedStep, reportId: savedId, savedAt } = saved
+        // Discard if older than 12 hours
+        const MAX_AGE_MS = 12 * 60 * 60 * 1000
+        if (savedAt && (Date.now() - savedAt) > MAX_AGE_MS) {
+          clearWizardStateFromStorage()
           setInitDone(true)
+          return
+        }
+        if (savedData && (savedData.machines?.length > 0 || savedData.production?.length > 0)) {
+          setPendingRestore({ savedData, savedStep: returnToStep || savedStep || 1, savedId })
           return
         }
       }
@@ -138,6 +142,25 @@ export default function ShiftWizard() {
     if (!initDone || editId) return
     saveWizardStateToStorage({ reportData, step, reportId })
   }, [reportData, step, reportId, initDone, editId])
+
+
+  // Handle resume/start-fresh for pending restore
+  const handleResume = useCallback(() => {
+    if (pendingRestore) {
+      setReportData(pendingRestore.savedData)
+      setStep(pendingRestore.savedStep)
+      if (pendingRestore.savedId) setReportId(pendingRestore.savedId)
+      setRestoredFromStorage(true)
+      setPendingRestore(null)
+      setInitDone(true)
+    }
+  }, [pendingRestore])
+
+  const handleStartFresh = useCallback(() => {
+    clearWizardStateFromStorage()
+    setPendingRestore(null)
+    setInitDone(true)
+  }, [])
 
   // Also save when app goes to background (mobile app switch) or page unloads
   useEffect(() => {
@@ -382,7 +405,7 @@ export default function ShiftWizard() {
         }
       }
 
-      // ONE single state update — no race conditions
+      // ONE single state update â no race conditions
       setReportData({
         date: report.date,
         shift: report.shift,
@@ -451,7 +474,7 @@ export default function ShiftWizard() {
         setReportId(report.id)
       }
 
-      // Save machine production — one row per (machine, pellet_type) with timing fields
+      // Save machine production â one row per (machine, pellet_type) with timing fields
       if (reportData.machines.length) {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
         const allMachineRows = []
@@ -480,7 +503,7 @@ export default function ShiftWizard() {
               })
             }
           } else {
-            // Machine ran but no production entries — save timing row with 0 production
+            // Machine ran but no production entries â save timing row with 0 production
             allMachineRows.push({ ...timingBase, production_mt: 0, pellet_type_name: null })
           }
         }
@@ -524,7 +547,7 @@ export default function ShiftWizard() {
         }
       }
 
-      // Save pellet stock (all entries — closing_mt is GENERATED, don't insert it)
+      // Save pellet stock (all entries â closing_mt is GENERATED, don't insert it)
       if (reportData.pelletStock && reportData.pelletStock.length) {
         await supabase.from('pellet_stock').delete().eq('shift_report_id', report.id)
         const stockRows = reportData.pelletStock
@@ -673,12 +696,43 @@ export default function ShiftWizard() {
   const stepsWithErrors = useMemo(() => [...new Set(allErrors.map(e => e.step))], [allErrors])
   const currentWarnings = useMemo(() => allErrors.filter(e => e.step === step), [allErrors, step])
 
-  return (
+  // Show resume prompt if there's pending restore data
+  if (pendingRestore) {
+    const savedDate = pendingRestore.savedData?.date || ''
+    const savedShift = pendingRestore.savedData?.shift || ''
+    return (
+      <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#fefae0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, maxWidth: 400, width: '100%', textAlign: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
+          <h2 style={{ fontFamily: 'Inter, sans-serif', color: '#2c2c2c', margin: '0 0 8px', fontSize: 20 }}>Resume Previous Report?</h2>
+          <p style={{ fontFamily: 'Inter, sans-serif', color: '#595c4a', margin: '0 0 24px', fontSize: 14, lineHeight: 1.5 }}>
+            You have an unfinished report for <strong>{savedDate}</strong> (Shift {savedShift}), Step {pendingRestore.savedStep} of 9.
+          </p>
+          <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+            <button
+              onClick={handleStartFresh}
+              style={{ flex: 1, padding: '12px 16px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fff', color: '#2c2c2c', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Start Fresh
+            </button>
+            <button
+              onClick={handleResume}
+              style={{ flex: 1, padding: '12px 16px', borderRadius: 12, border: 'none', background: '#2d6a4f', color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Resume
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+    return (
     <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#f5edd6' }}>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fefae0', width: '100%', maxWidth: 480, boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
       <PageHeader
         title={STEPS[step - 1].title}
-        subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
+        subtitle={`${editId ? 'Editing Â· ' : ''}Step ${step} of 9 Â· ${plant?.name || 'Plant'} Â· Shift ${reportData.shift}`}
         onBack={() => {
           if (step === 1) {
             if (window.confirm('Stop editing? Any unsaved changes will be lost.')) {
