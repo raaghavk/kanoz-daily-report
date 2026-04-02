@@ -156,6 +156,7 @@ export default function ReportView() {
     }
   }, [report, loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (report?.created_by) {
       supabase.from('employees').select('name').eq('auth_user_id', report.created_by).single()

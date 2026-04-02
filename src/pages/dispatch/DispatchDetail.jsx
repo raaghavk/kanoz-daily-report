@@ -14,6 +14,7 @@ export default function DispatchDetail() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState({})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (id) fetchDispatch()
   }, [id])
