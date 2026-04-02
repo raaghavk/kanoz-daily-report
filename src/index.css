@@ -1,6 +1,5 @@
-@import "tailwindcss";
 
-@theme {
+:root {
   --color-kanoz-green: #2d6a4f;
   --color-kanoz-green-dark: #1b4332;
   --color-kanoz-green-light: #e8f0ec;
