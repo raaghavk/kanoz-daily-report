@@ -1,7 +1,8 @@
-import { useState, useMemo, useCallback, startTransition } from 'react'
+import { useState, useCallback, startTransition } from 'react'
 import { getLocalDate } from '../lib/dateUtils'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import usePullToRefresh from '../hooks/usePullToRefresh'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
@@ -11,6 +12,8 @@ import { ChevronRight, AlertTriangle, Wrench, CheckSquare, Circle } from 'lucide
 export default function Home() {
   const { employee, plant } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { containerRef, PullIndicator } = usePullToRefresh(useCallback(() => queryClient.invalidateQueries(), [queryClient]))
   const [showProductionModal, setShowProductionModal] = useState(false)
   const [showTrucksModal, setShowTrucksModal] = useState(false)
   const [showIssuesModal, setShowIssuesModal] = useState(false)
@@ -179,7 +182,8 @@ export default function Home() {
     : `${fmtDate(shiftStartDate)} â ${fmtDate(shiftEndDate)}`
 
   return (
-    <div style={{ minHeight: '100%', background: '#fefae0' }}>
+    <div ref={containerRef} style={{ minHeight: '100%', background: '#fefae0' }}>
+      {PullIndicator}
       {/* Dark App Bar */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#1b4332', paddingTop: 'env(safe-area-inset-top)' }}>
         <div style={{ padding: '14px 20px' }}>
