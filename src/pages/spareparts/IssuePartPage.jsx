@@ -8,7 +8,7 @@ import { Loader2, AlertTriangle } from 'lucide-react'
 import { getLocalDate } from '../../lib/dateUtils'
 
 export default function IssuePartPage() {
-  const { plant, employee } = useAuth()
+  const { plant } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const preselectedPartId = location.state?.partId || ''

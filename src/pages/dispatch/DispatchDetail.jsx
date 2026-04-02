@@ -37,11 +37,6 @@ export default function DispatchDetail() {
         throw error
       }
       setDispatch(data)
-      // Fetch created_by employee name
-      if (data.created_by) {
-        const { data: emp } = await supabase.from('employees').select('name').eq('id', data.created_by).single()
-        if (emp) setCreatedByName(emp.name)
-      }
     } catch (err) {
       console.error('Error fetching dispatch:', err)
       showToast('Failed to load dispatch', 'error')
