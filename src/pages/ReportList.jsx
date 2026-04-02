@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { can } from '../lib/permissions'
-import { exportReportListToCSV } from '../lib/exportUtils'
-import { FileText, ChevronRight, Calendar, Download } from 'lucide-react'
+import { FileText, ChevronRight, Calendar } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 import { getLocalDate } from '../lib/dateUtils'
 
@@ -29,9 +27,9 @@ function getDateRange(filter, today) {
 }
 
 export default function ReportList() {
-  const { plant, employee } = useAuth()
+  const { plant } = useAuth()
   const navigate = useNavigate()
-  const [filter, setFilter] = useState('week')
+  const [filter, setFilter] = useState('today')
 
   const today = getLocalDate()
 
@@ -42,7 +40,7 @@ export default function ReportList() {
 
       const { data, error } = await supabase
         .from('shift_reports')
-        .select('*, employees!supervisor_id(name)')
+        .select('id, date, shift, status, pellet_production_mt, start_time, end_time, shift_start_date, shift_end_date, supervisor_id, employees!supervisor_id(name)')
         .eq('plant_id', plant.id)
         .eq('is_deleted', false)
         .gte('date', startDate)
@@ -69,6 +67,7 @@ export default function ReportList() {
   }
 
   const filterTabs = [
+    { id: 'today', label: 'Today' },
     { id: 'week', label: 'This Week' },
     { id: 'month', label: 'This Month' }
   ]
@@ -79,7 +78,7 @@ export default function ReportList() {
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <PageHeader title="Shift Reports" subtitle="View and manage all reports" backTo="/" />
 
-        {/* Filter Tabs + Export */}
+        {/* Filter Tabs */}
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '16px 20px 0', alignItems: 'center' }}>
           {filterTabs.map(tab => (
             <button
@@ -96,19 +95,6 @@ export default function ReportList() {
               {tab.label}
             </button>
           ))}
-          {can(employee?.role, 'export') && reports.length > 0 && (
-            <button
-              onClick={() => exportReportListToCSV(reports)}
-              style={{
-                marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4,
-                padding: '8px 12px', borderRadius: 12, fontSize: 11, fontWeight: 700,
-                background: '#e8f0ec', color: '#2d6a4f', border: 'none', cursor: 'pointer',
-                whiteSpace: 'nowrap', flexShrink: 0,
-              }}
-            >
-              <Download size={14} /> Export CSV
-            </button>
-          )}
         </div>
       </div>
 
@@ -176,7 +162,7 @@ export default function ReportList() {
                         const sd = report.shift_start_date || report.date
                         const ed = report.shift_end_date || report.date
                         const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''
-                        return `${fmt(sd)} ${report.start_time?.slice(0, 5)} – ${sd !== ed ? fmt(ed) + ' ' : ''}${report.end_time?.slice(0, 5)}`
+                        return `${fmt(sd)} ${report.start_time?.slice(0, 5)} \u2013 ${sd !== ed ? fmt(ed) + ' ' : ''}${report.end_time?.slice(0, 5)}`
                       })()}
                     </span>
                   </div>
@@ -217,7 +203,7 @@ export default function ReportList() {
         {reports.length > 0 && (
           <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #e5ddd0', display: 'flex', gap: 12, fontSize: 11, color: '#8a8d7a', fontWeight: 500 }}>
             <span>{reports.length} report{reports.length > 1 ? 's' : ''}</span>
-            <span>·</span>
+            <span>\u00B7</span>
             <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT production</span>
           </div>
         )}
