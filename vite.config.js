@@ -4,9 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
-    react(),
-    tailwindcss(),
-    VitePWA({
+    react(),    VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['kanoz-icon.svg', 'kanoz-logo.png'],
       manifest: {
