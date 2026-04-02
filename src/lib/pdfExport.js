@@ -1,5 +1,3 @@
-import { getLocalDate } from './dateUtils'
-
 // Load jsPDF from CDN dynamically
 let jsPDFLoaded = null
 async function loadJsPDF() {

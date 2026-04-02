@@ -171,7 +171,6 @@ export default function Home() {
     ? allTasks
     : allTasks.filter(t => t.assigned_to_employee_id === employee?.id)
   const openTasks = myTasks.filter(t => t.status === 'open')
-  const doneTasks = myTasks.filter(t => t.status === 'done')
 
   const fmtDate = (d) => new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   const dateStr = currentShift === 'A' || shiftStartDate === shiftEndDate

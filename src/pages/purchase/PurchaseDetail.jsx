@@ -6,16 +6,12 @@ import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Loader2, Edit3, X, CheckCircle, Download } from 'lucide-react'
-import { exportPurchasePDF } from '../../lib/pdfExport'
-
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [showPhoto, setShowPhoto] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
-  const [createdByName, setCreatedByName] = useState(null)
-
   const { data: purchase, isLoading, isError } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {

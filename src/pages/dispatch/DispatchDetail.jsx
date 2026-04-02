@@ -4,7 +4,6 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X, Download } from 'lucide-react'
-import { exportDispatchPDF } from '../../lib/pdfExport'
 import PageHeader from '../../components/PageHeader'
 
 export default function DispatchDetail() {
@@ -15,8 +14,6 @@ export default function DispatchDetail() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState({})
-  const [createdByName, setCreatedByName] = useState(null)
-
   useEffect(() => {
     if (id) fetchDispatch()
   }, [id])

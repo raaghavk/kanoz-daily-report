@@ -9,12 +9,10 @@ import { getLocalDate } from '../../lib/dateUtils'
 
 export default function IssuePartPage() {
   const { plant, employee } = useAuth()
-  const isAdmin = employee?.role === 'admin'
   const navigate = useNavigate()
   const location = useLocation()
   const preselectedPartId = location.state?.partId || ''
   const [parts, setParts] = useState([])
-  const [plants, setPlants] = useState([])
   const [selectedPlantId, setSelectedPlantId] = useState('')
   const [loadingData, setLoadingData] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -39,8 +37,6 @@ export default function IssuePartPage() {
     setLoadingData(true)
     try {
       const { data: partsData } = await supabase.from('spare_parts').select('id, name, unit, category, brand').eq('org_id', plant.org_id).eq('is_active', true).order('name')
-      const { data: plantsData } = await supabase.from('plants').select('id, name').eq('org_id', plant.org_id).eq('is_active', true).order('name')
-      setPlants(plantsData || [])
       const defaultPlantId = plant.id || ''
       setSelectedPlantId(defaultPlantId)
       await computeStockForPlant(partsData || [], defaultPlantId)

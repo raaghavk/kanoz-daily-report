@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { Calendar, Clock } from 'lucide-react'
 import { getLocalDate } from '../../lib/dateUtils'
 
-export default memo(function Step1Header({ data, updateData, employee, plant }) {
+export default memo(function Step1Header({ data, updateData }) {
   function handleShiftChange(shift) {
     updateData('shift', shift)
     if (shift === 'A') {
@@ -35,12 +35,6 @@ export default memo(function Step1Header({ data, updateData, employee, plant }) 
     cursor: 'not-allowed',
     boxSizing: 'border-box',
   }
-
-  const inputWithIconStyle = {
-    ...inputStyle,
-    paddingLeft: 38,
-  }
-
   const editableInputStyle = {
     width: '100%',
     height: 48,
