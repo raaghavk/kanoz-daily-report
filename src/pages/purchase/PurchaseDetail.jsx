@@ -2,16 +2,20 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Loader2, Edit3, X, CheckCircle, Download } from 'lucide-react'
+import { Loader2, Edit3, X, CheckCircle } from 'lucide-react'
+
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { plant } = useAuth()
   const [showPhoto, setShowPhoto] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
+
   const { data: purchase, isLoading, isError } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
@@ -19,11 +23,12 @@ export default function PurchaseDetail() {
         .from('raw_material_purchases')
         .select(`*, suppliers(id, name, mobile), raw_material_types(id, name)`)
         .eq('id', id)
+        .eq('plant_id', plant.id)
         .single()
       if (error) throw error
       return data
     },
-    enabled: !!id,
+    enabled: !!id && !!plant?.id,
   })
 
   function formatCurrency(amount) {
@@ -76,8 +81,7 @@ export default function PurchaseDetail() {
 
   const totalCharges = (parseFloat((purchase.loading_expense || purchase.loading_charges || 0)) || 0) +
     (parseFloat((purchase.unloading_expense || purchase.unloading_charges || 0)) || 0) +
-    (parseFloat((purchase.transport_expense || purchase.transport_charges || 0)) || 0) +
-    (parseFloat(purchase.other_expense || 0) || 0)
+    (parseFloat((purchase.transport_expense || purchase.transport_charges || 0)) || 0)
 
   async function markAsPaid() {
     if (markingPaid) return
@@ -88,6 +92,7 @@ export default function PurchaseDetail() {
         .from('raw_material_purchases')
         .update({ payment_status: 'Paid' })
         .eq('id', id)
+        .eq('plant_id', plant.id)
       if (error) throw error
       queryClient.invalidateQueries({ queryKey: ['purchase', id] })
       queryClient.invalidateQueries({ queryKey: ['purchases'] })
@@ -150,7 +155,7 @@ export default function PurchaseDetail() {
                   opacity: markingPaid ? 0.6 : 1,
                 }}
               >
-                {markingPaid ? 'Updating...' : 'Pending ------ Tap to mark Paid'}
+                {markingPaid ? 'Updating...' : 'Pending \u2014 Tap to mark Paid'}
               </button>
             )}
           </div>
@@ -226,9 +231,9 @@ export default function PurchaseDetail() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
               <span style={{ color: '#595c4a' }}>RM Amount</span>
-              <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{formatCurrency(purchase.total_rm_amount)}</span>
+              <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{formatCurrency(purchase.rm_amount)}</span>
             </div>
-            {totalCharges > 0 && (
+            {((purchase.loading_expense || purchase.loading_charges || 0) > 0 || (purchase.unloading_expense || purchase.unloading_charges || 0) > 0 || (purchase.transport_expense || purchase.transport_charges || 0) > 0) && (
               <>
                 {(purchase.loading_expense || purchase.loading_charges || 0) > 0 && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
@@ -246,12 +251,6 @@ export default function PurchaseDetail() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span style={{ color: '#595c4a' }}>Transport</span>
                     <span style={{ color: '#2c2c2c' }}>{formatCurrency((purchase.transport_expense || purchase.transport_charges || 0))}</span>
-                  </div>
-                )}
-                {(purchase.other_expense || 0) > 0 && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                    <span style={{ color: '#595c4a' }}>Other</span>
-                    <span style={{ color: '#2c2c2c' }}>{formatCurrency(purchase.other_expense)}</span>
                   </div>
                 )}
                 <div style={{ height: 1, background: '#e5ddd0' }} />
@@ -332,7 +331,7 @@ export default function PurchaseDetail() {
         <DeleteRequestButton
           entityType="purchase"
           entityId={id}
-          entityLabel={`${purchase.suppliers?.name || 'Purchase'} ------ ${formatDate(purchase.date)}`}
+          entityLabel={`${purchase.suppliers?.name || 'Purchase'} \u2014 ${formatDate(purchase.date)}`}
           onRequestSent={() => navigate('/purchase')}
         />
       </div>

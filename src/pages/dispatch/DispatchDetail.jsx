@@ -1,23 +1,25 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../context/AuthContext'
 import { showToast } from '../../components/Toast'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X, Download } from 'lucide-react'
+import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function DispatchDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { plant } = useAuth()
   const [dispatch, setDispatch] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState({})
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useEffect(() => {
-    if (id) fetchDispatch()
-  }, [id])
+    if (id && plant?.id) fetchDispatch()
+  }, [id, plant?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchDispatch() {
     try {
@@ -26,6 +28,7 @@ export default function DispatchDetail() {
         .from('vehicle_dispatches')
         .select('*, dispatch_pellets(*, pellet_types(name)), customers(name, address)')
         .eq('id', id)
+        .eq('plant_id', plant.id)
         .single()
 
       if (error) {
@@ -62,7 +65,6 @@ export default function DispatchDetail() {
   function calculateDuration(loadingDate, loadingTime, dispatchDate, dispatchTime) {
     if (!loadingTime || !dispatchTime) return null
     try {
-      // Normalize time: DB returns HH:MM:SS, ensure we use HH:MM format
       const normalizeTime = (t) => t ? t.substring(0, 5) : t
       const ld = loadingDate || dispatch?.date || ''
       const dd = dispatchDate || dispatch?.date || ''
@@ -107,6 +109,7 @@ export default function DispatchDetail() {
           remarks: editForm.remarks || null,
         })
         .eq('id', id)
+        .eq('plant_id', plant.id)
       if (error) throw error
       showToast('Dispatch updated', 'success')
       setEditing(false)
@@ -331,7 +334,7 @@ export default function DispatchDetail() {
         <DeleteRequestButton
           entityType="dispatch"
           entityId={id}
-          entityLabel={`Truck ${dispatch.truck_number} ------ ${formattedDate}`}
+          entityLabel={`Truck ${dispatch.truck_number} — ${formattedDate}`}
           onRequestSent={() => navigate('/dispatch')}
         />
       </div>

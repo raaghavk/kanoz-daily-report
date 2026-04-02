@@ -12,7 +12,7 @@ const ENTITY_BADGES = {
 }
 
 export default function DeleteRequests() {
-  const { employee } = useAuth()
+  const { employee, plant } = useAuth()
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [showResolved, setShowResolved] = useState(false)
@@ -25,12 +25,11 @@ export default function DeleteRequests() {
       const status = showResolved ? ['approved', 'rejected'] : ['pending']
       const { data, error } = await supabase
         .from('delete_requests')
-        .select(
-          `
+        .select(`
           *,
           employees!requested_by(id, name)
-        `,
-        )
+        `)
+        .eq('org_id', plant.org_id)
         .in('status', status)
         .order('created_at', { ascending: false })
 
@@ -46,8 +45,8 @@ export default function DeleteRequests() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    fetchRequests()
-  }, [showResolved])
+    if (plant?.org_id) fetchRequests()
+  }, [showResolved, plant?.org_id])
 
   const handleApprove = async (request) => {
     if (employee.role !== 'admin') {
@@ -57,7 +56,6 @@ export default function DeleteRequests() {
 
     setApproving(request.id)
     try {
-      // Update delete_requests status
       const { error: updateError } = await supabase
         .from('delete_requests')
         .update({
@@ -69,7 +67,6 @@ export default function DeleteRequests() {
 
       if (updateError) throw updateError
 
-      // Update the entity table to mark as deleted
       const tableMap = { purchase: 'raw_material_purchases', dispatch: 'vehicle_dispatches', shift_report: 'shift_reports' }
       const table = tableMap[request.entity_type]
       const { error: deleteError } = await supabase
