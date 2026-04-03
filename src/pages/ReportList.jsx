@@ -203,7 +203,7 @@ export default function ReportList() {
         {reports.length > 0 && (
           <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #e5ddd0', display: 'flex', gap: 12, fontSize: 11, color: '#8a8d7a', fontWeight: 500 }}>
             <span>{reports.length} report{reports.length > 1 ? 's' : ''}</span>
-            <span>\u00B7</span>
+            <span>·</span>
             <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{reports.reduce((sum, r) => sum + r.total_mt, 0).toFixed(1)} MT production</span>
           </div>
         )}
