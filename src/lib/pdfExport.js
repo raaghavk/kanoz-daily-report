@@ -123,7 +123,7 @@ export async function exportPurchasePDF(purchase, createdByName) {
   doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(45, 106, 79)
   doc.text('Purchase Details', 15, y); y += 8
   doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(44, 44, 44)
-  const qty = purchase.quantity_kg || purchase.final_quantity || 0
+  const qty = purchase.quantity_kg || 0
   const avgRate = qty > 0 ? (purchase.total_amount / qty).toFixed(2) : '0.00'
   const info = [
     ['Supplier', purchase.suppliers?.name || 'N/A'], ['Raw Material', purchase.raw_material_types?.name || 'N/A'],
@@ -132,7 +132,7 @@ export async function exportPurchasePDF(purchase, createdByName) {
     ['Moisture', (purchase.moisture_percent || 'N/A') + '%'], ['Deduction', (purchase.deduction_kg || 0) + ' kg'],
     ['Final Quantity', Math.round(qty).toLocaleString('en-IN') + ' kg'],
     ['Rate/kg', '\u20B9' + (purchase.rate_per_kg || 0).toFixed(2)],
-    ['RM Amount', '\u20B9' + Math.round(purchase.rm_amount || 0).toLocaleString('en-IN')],
+    ['RM Amount', '\u20B9' + Math.round(purchase.total_rm_amount || 0).toLocaleString('en-IN')],
     ['Loading', '\u20B9' + Math.round(purchase.loading_expense || purchase.loading_charges || 0).toLocaleString('en-IN')],
     ['Unloading', '\u20B9' + Math.round(purchase.unloading_expense || purchase.unloading_charges || 0).toLocaleString('en-IN')],
     ['Transport', '\u20B9' + Math.round(purchase.transport_expense || purchase.transport_charges || 0).toLocaleString('en-IN')],

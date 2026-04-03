@@ -75,8 +75,8 @@ export default function PurchaseDetail() {
     )
   }
 
-  const avgRatePerKg = (purchase.quantity_kg || purchase.final_quantity) > 0
-    ? (purchase.total_amount / (purchase.quantity_kg || purchase.final_quantity))
+  const avgRatePerKg = (purchase.quantity_kg) > 0
+    ? (purchase.total_amount / (purchase.quantity_kg))
     : 0
 
   const totalCharges = (parseFloat((purchase.loading_expense || purchase.loading_charges || 0)) || 0) +
@@ -162,7 +162,7 @@ export default function PurchaseDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>Final Qty</div>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round((purchase.quantity_kg || purchase.final_quantity) || 0).toLocaleString('en-IN')} kg</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round((purchase.quantity_kg) || 0).toLocaleString('en-IN')} kg</div>
             </div>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>RM Rate</div>
@@ -220,7 +220,7 @@ export default function PurchaseDetail() {
             </div>
             <div>
               <div style={labelStyle}>Final Quantity</div>
-              <div style={valueStyle}>{(purchase.quantity_kg || purchase.final_quantity) ? `${Math.round((purchase.quantity_kg || purchase.final_quantity)).toLocaleString('en-IN')} kg` : 'N/A'}</div>
+              <div style={valueStyle}>{(purchase.quantity_kg) ? `${Math.round((purchase.quantity_kg)).toLocaleString('en-IN')} kg` : 'N/A'}</div>
             </div>
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function PurchaseDetail() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
               <span style={{ color: '#595c4a' }}>RM Amount</span>
-              <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{formatCurrency(purchase.rm_amount)}</span>
+              <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{formatCurrency(purchase.total_rm_amount)}</span>
             </div>
             {((purchase.loading_expense || purchase.loading_charges || 0) > 0 || (purchase.unloading_expense || purchase.unloading_charges || 0) > 0 || (purchase.transport_expense || purchase.transport_charges || 0) > 0) && (
               <>
