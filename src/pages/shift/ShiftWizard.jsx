@@ -732,7 +732,7 @@ export default function ShiftWizard() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fefae0', width: '100%', maxWidth: 480, boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
       <PageHeader
         title={STEPS[step - 1].title}
-        subtitle={`${editId ? 'Editing Â· ' : ''}Step ${step} of 9 Â· ${plant?.name || 'Plant'} Â· Shift ${reportData.shift}`}
+        subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
         onBack={() => {
           if (step === 1) {
             if (window.confirm('Stop editing? Any unsaved changes will be lost.')) {
