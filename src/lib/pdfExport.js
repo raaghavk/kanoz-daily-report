@@ -417,7 +417,7 @@ export async function exportShiftReportPDF(report, data, createdByName) {
   if (data.equipmentDiesel?.length > 0 || data.dieselStock) {
     const eqRows = (data.equipmentDiesel || []).map(e => {
       const hrs = e.hours_worked || 0
-      const used = e.used_litres || 0
+      const used = (e.opening_litres || 0) + (e.added_litres || 0) - (e.closing_litres || 0)
       const avg = hrs > 0 ? (used / hrs).toFixed(1) : '\u2014'
       return [
         e.equipment_name || 'Unknown',
