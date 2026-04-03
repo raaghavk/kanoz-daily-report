@@ -55,7 +55,7 @@ export default function PurchaseList() {
       let query = supabase
         .from('raw_material_purchases')
         .select(`
-          id, date, total_amount, final_quantity, quantity_kg, payment_status, supplier_id, raw_material_type_id,
+          id, date, total_amount, quantity_kg, payment_status, supplier_id, raw_material_type_id,
           suppliers (id, name),
           raw_material_types (id, name)
         `)
