@@ -180,6 +180,7 @@ export async function exportShiftReportPDF(report, data, createdByName) {
 
   // Section header with green text and underline
   function sectionHeader(title) {
+    y += 6 // breathing room before section
     needsNewPage(25)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(11)
