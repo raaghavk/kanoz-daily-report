@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
-import { AlertTriangle, Eye, Trash2, Edit3, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Eye, Trash2, Edit3, RefreshCw, Download } from 'lucide-react'
 import { exportShiftReportPDF } from '../lib/pdfExport'
 import PageHeader from '../components/PageHeader'
 
