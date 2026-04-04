@@ -192,18 +192,36 @@ export default function ReportView() {
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80, overflowX: 'hidden', maxWidth: '100vw' }}>
       <PageHeader title="Shift Report" subtitle={'Shift ' + report.shift + ' | ' + report.date} onBack={() => navigate(-1)} />
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>
-            <span>{startDateLabel}{showBothDates ? ' - ' + endDateLabel : ''}</span>
-            <span style={{ color: '#595c4a' }}>{'Shift ' + report.shift + ' (' + (report.start_time?.slice(0, 5) || '') + ' - ' + (report.end_time?.slice(0, 5) || '') + ')'}</span>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+          <div style={{ display: 'flex' }}>
+            <div style={{ flex: 1, padding: 16 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Start</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#2c2c2c' }}>{startDateLabel}, {report.start_time?.slice(0, 5) || ''}</div>
+            </div>
+            <div style={{ flex: 1, padding: 16, borderLeft: '1px solid #e5ddd0' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>End</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#2c2c2c' }}>{endDateLabel}, {report.end_time?.slice(0, 5) || ''}</div>
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: 13, fontWeight: 600, color: '#2c2c2c', borderTop: '1px solid #e5ddd0', paddingTop: 12 }}>
-            <span>Production: <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{(report.pellet_production_mt || 0).toFixed(1)} MT</span></span>
-            <span>Dispatches: <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{(dispatches.reduce((sum, d) => sum + (d.dispatch_pellets?.reduce((s, p) => s + (parseFloat(p.quantity_mt) || 0), 0) || 0), 0)).toFixed(1)} MT</span></span>
+          <div style={{ display: 'flex', borderTop: '1px solid #e5ddd0' }}>
+            <div style={{ flex: 1, padding: 16 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Production</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#2d6a4f' }}>{(report.pellet_production_mt || 0).toFixed(1)} MT</div>
+            </div>
+            <div style={{ flex: 1, padding: 16, borderLeft: '1px solid #e5ddd0' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Dispatches</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#2d6a4f' }}>{(dispatches.reduce((sum, d) => sum + (d.dispatch_pellets?.reduce((s, p) => s + (parseFloat(p.quantity_mt) || 0), 0) || 0), 0)).toFixed(1)} MT</div>
+            </div>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: '#595c4a', borderTop: '1px solid #e5ddd0', paddingTop: 12 }}>
-            <span>Supervisor: <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{report.employees?.name || 'N/A'}</span></span>
-            <span>Plant: <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{report.plants?.name || 'N/A'}</span></span>
+          <div style={{ display: 'flex', borderTop: '1px solid #e5ddd0' }}>
+            <div style={{ flex: 1, padding: '12px 16px' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Supervisor</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>{report.employees?.name || 'N/A'}</div>
+            </div>
+            <div style={{ flex: 1, padding: '12px 16px', borderLeft: '1px solid #e5ddd0' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Plant</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>{report.plants?.name || 'N/A'}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -408,23 +426,23 @@ export default function ReportView() {
         </div>
       )}
 
-      <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16, display: 'flex', gap: 12 }}>
+      <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16, display: 'flex', gap: 10 }}>
         {can(employee?.role, 'create_report') && (
           <button onClick={() => navigate('/shift/edit/' + id)}
-            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', borderRadius: 14, fontSize: 14, fontWeight: 700, background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer' }}>
-            <Edit3 size={16} /> Edit Report
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '14px 0', borderRadius: 14, fontSize: 13, fontWeight: 700, background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer' }}>
+            <Edit3 size={15} /> Edit
           </button>
         )}
         {can(employee?.role, 'create_report') && (
           <button onClick={() => syncReport(false)} disabled={syncingReport}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700, background: '#FEF3C7', color: '#92400E', border: '1.5px solid #FDE68A', cursor: syncingReport ? 'not-allowed' : 'pointer', opacity: syncingReport ? 0.6 : 1 }}>
-            <RefreshCw size={14} style={syncingReport ? { animation: 'spin 1s linear infinite' } : {}} /> {syncingReport ? 'Syncing...' : 'Sync'}
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '14px 0', borderRadius: 14, fontSize: 13, fontWeight: 700, background: '#FEF3C7', color: '#92400E', border: '1.5px solid #FDE68A', cursor: syncingReport ? 'not-allowed' : 'pointer', opacity: syncingReport ? 0.6 : 1 }}>
+            <RefreshCw size={15} style={syncingReport ? { animation: 'spin 1s linear infinite' } : {}} /> {syncingReport ? 'Syncing...' : 'Sync'}
           </button>
         )}
         {can(employee?.role, 'create_report') && (
           <button onClick={deleteReport} disabled={deleting}
-            style={{ padding: '14px 20px', borderRadius: 14, fontSize: 14, fontWeight: 700, background: '#FEE2E2', color: '#B91C1C', border: '1.5px solid #FECACA', cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.5 : 1 }}>
-            <Trash2 size={16} />
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '14px 0', borderRadius: 14, fontSize: 13, fontWeight: 700, background: '#FEE2E2', color: '#B91C1C', border: '1.5px solid #FECACA', cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.5 : 1 }}>
+            <Trash2 size={15} /> Delete
           </button>
         )}
       </div>

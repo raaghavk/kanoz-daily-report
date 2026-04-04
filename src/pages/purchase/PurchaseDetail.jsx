@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
@@ -6,7 +6,8 @@ import { useAuth } from '../../context/AuthContext'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Loader2, Edit3, X, CheckCircle } from 'lucide-react'
+import { exportPurchasePDF } from '../../lib/pdfExport'
+import { Loader2, Edit3, X, CheckCircle, Download } from 'lucide-react'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
@@ -15,6 +16,7 @@ export default function PurchaseDetail() {
   const { plant } = useAuth()
   const [showPhoto, setShowPhoto] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
+  const [createdByName, setCreatedByName] = useState(null)
 
   const { data: purchase, isLoading, isError } = useQuery({
     queryKey: ['purchase', id],
@@ -39,6 +41,13 @@ export default function PurchaseDetail() {
     if (!dateStr) return 'N/A'
     return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
   }
+
+  useEffect(() => {
+    if (purchase?.created_by) {
+      supabase.from('employees').select('name').eq('auth_user_id', purchase.created_by).single()
+        .then(({ data }) => { if (data) setCreatedByName(data.name) })
+    }
+  }, [purchase?.created_by])
 
   if (isLoading) {
     return (
@@ -325,6 +334,18 @@ export default function PurchaseDetail() {
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Remarks</div>
             <p style={{ fontSize: 13, color: '#595c4a', margin: 0, lineHeight: 1.5 }}>{purchase.remarks}</p>
+          </div>
+        )}
+
+        {(createdByName || purchase.created_at) && (
+          <div style={{ background: '#f5f0e1', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, color: '#595c4a' }}>
+              {createdByName ? 'Created by ' + createdByName : 'Created'}{purchase.created_at ? ' at ' + new Date(purchase.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+            </span>
+            <button onClick={() => exportPurchasePDF(purchase, createdByName)}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer' }}>
+              <Download size={12} /> PDF
+            </button>
           </div>
         )}
 

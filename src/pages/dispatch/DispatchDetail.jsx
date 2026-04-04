@@ -4,7 +4,8 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../context/AuthContext'
 import { showToast } from '../../components/Toast'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X } from 'lucide-react'
+import { exportDispatchPDF } from '../../lib/pdfExport'
+import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X, Download } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function DispatchDetail() {
@@ -16,6 +17,7 @@ export default function DispatchDetail() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [editForm, setEditForm] = useState({})
+  const [createdByName, setCreatedByName] = useState(null)
 
   useEffect(() => {
     if (id && plant?.id) fetchDispatch()
@@ -48,6 +50,13 @@ export default function DispatchDetail() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (dispatch?.created_by) {
+      supabase.from('employees').select('name').eq('auth_user_id', dispatch.created_by).single()
+        .then(({ data }) => { if (data) setCreatedByName(data.name) })
+    }
+  }, [dispatch?.created_by])
 
   function formatShortDate(dateStr) {
     if (!dateStr) return ''
@@ -328,6 +337,18 @@ export default function DispatchDetail() {
           <div style={{ background: '#fefae0', border: '1.5px solid #e9c46a', borderRadius: 14, padding: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Remarks</div>
             <p style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5, margin: 0 }}>{dispatch.remarks}</p>
+          </div>
+        )}
+
+        {(createdByName || dispatch.created_at) && (
+          <div style={{ background: '#f5f0e1', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, color: '#595c4a' }}>
+              {createdByName ? 'Created by ' + createdByName : 'Created'}{dispatch.created_at ? ' at ' + new Date(dispatch.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+            </span>
+            <button onClick={() => exportDispatchPDF(dispatch, createdByName)}
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer' }}>
+              <Download size={12} /> PDF
+            </button>
           </div>
         )}
 
