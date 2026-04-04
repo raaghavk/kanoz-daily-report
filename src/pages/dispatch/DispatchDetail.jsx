@@ -1,17 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { useAuth } from '../../context/AuthContext'
 import { showToast } from '../../components/Toast'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { exportDispatchPDF } from '../../lib/pdfExport'
-import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X, Download } from 'lucide-react'
+import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function DispatchDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { plant } = useAuth()
   const [dispatch, setDispatch] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
@@ -20,8 +17,15 @@ export default function DispatchDetail() {
   const [createdByName, setCreatedByName] = useState(null)
 
   useEffect(() => {
-    if (id && plant?.id) fetchDispatch()
-  }, [id, plant?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (id) fetchDispatch()
+  }, [id])
+
+  useEffect(() => {
+    if (dispatch?.created_by) {
+      supabase.from('employees').select('name').eq('id', dispatch.created_by).single()
+        .then(({ data }) => { if (data) setCreatedByName(data.name) })
+    }
+  }, [dispatch?.created_by])
 
   async function fetchDispatch() {
     try {
@@ -30,7 +34,6 @@ export default function DispatchDetail() {
         .from('vehicle_dispatches')
         .select('*, dispatch_pellets(*, pellet_types(name)), customers(name, address)')
         .eq('id', id)
-        .eq('plant_id', plant.id)
         .single()
 
       if (error) {
@@ -51,13 +54,6 @@ export default function DispatchDetail() {
     }
   }
 
-  useEffect(() => {
-    if (dispatch?.created_by) {
-      supabase.from('employees').select('name').eq('auth_user_id', dispatch.created_by).single()
-        .then(({ data }) => { if (data) setCreatedByName(data.name) })
-    }
-  }, [dispatch?.created_by])
-
   function formatShortDate(dateStr) {
     if (!dateStr) return ''
     const d = new Date(dateStr + 'T00:00:00')
@@ -74,6 +70,7 @@ export default function DispatchDetail() {
   function calculateDuration(loadingDate, loadingTime, dispatchDate, dispatchTime) {
     if (!loadingTime || !dispatchTime) return null
     try {
+      // Normalize time: DB returns HH:MM:SS, ensure we use HH:MM format
       const normalizeTime = (t) => t ? t.substring(0, 5) : t
       const ld = loadingDate || dispatch?.date || ''
       const dd = dispatchDate || dispatch?.date || ''
@@ -118,7 +115,6 @@ export default function DispatchDetail() {
           remarks: editForm.remarks || null,
         })
         .eq('id', id)
-        .eq('plant_id', plant.id)
       if (error) throw error
       showToast('Dispatch updated', 'success')
       setEditing(false)
@@ -340,15 +336,10 @@ export default function DispatchDetail() {
           </div>
         )}
 
+        {/* Created By */}
         {(createdByName || dispatch.created_at) && (
-          <div style={{ background: '#f5f0e1', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, color: '#595c4a' }}>
-              {createdByName ? 'Created by ' + createdByName : 'Created'}{dispatch.created_at ? ' at ' + new Date(dispatch.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
-            </span>
-            <button onClick={() => exportDispatchPDF(dispatch, createdByName)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer' }}>
-              <Download size={12} /> PDF
-            </button>
+          <div style={{ background: '#f5f0e1', borderRadius: 14, padding: '10px 14px', fontSize: 11, color: '#595c4a' }}>
+            {createdByName ? 'Created by ' + createdByName : 'Created'}{dispatch.created_at ? ' on ' + new Date(dispatch.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
           </div>
         )}
 

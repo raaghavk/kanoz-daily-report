@@ -268,16 +268,28 @@ export default function ReportView() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
-      <PageHeader title="Shift Report" subtitle={`Shift ${report.shift} · ${report.date}`} onBack={() => navigate(-1)} />
+      {/* Sticky Header */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+        <PageHeader
+          title="Shift Report"
+          subtitle={`Shift ${report.shift} · ${startDateLabel}${showBothDates ? ` – ${endDateLabel}` : ''}`}
+          onBack={() => navigate(-1)}
+          rightAction={
+            can(employee?.role, 'create_report') ? (
+              <button
+                onClick={() => navigate(`/shift/edit/${id}`)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                <Edit3 size={14} /> Edit
+              </button>
+            ) : null
+          }
+        />
+      </div>
 
       {/* Report Header Card */}
       <div style={{ padding: '16px 20px' }}>
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          {/* Top green bar with shift info */}
-          <div style={{ background: '#2d6a4f', padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Shift {report.shift}</span>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)' }}>{report.date}</span>
-          </div>
 
           {/* Start / End row */}
           <div style={{ display: 'flex' }}>
@@ -575,75 +587,70 @@ export default function ReportView() {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16, display: 'flex', gap: 12 }}>
-        {can(employee?.role, 'create_report') && (
-        <button
-          onClick={() => navigate(`/shift/edit/${id}`)}
-          style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '14px 0', borderRadius: 14, fontSize: 14, fontWeight: 700,
-            background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer'
-          }}
-        >
-          <Edit3 size={16} /> Edit Report
-        </button>
-        )}
-        {can(employee?.role, 'export') && (
+      {/* Created By + Supervisor info */}
+      <div style={{ padding: '0 20px', marginTop: 24 }}>
+        <div style={{ background: '#f5f0e1', borderRadius: 14, padding: '10px 14px', fontSize: 11, color: '#595c4a' }}>
+          Created by {report.employees?.name || 'N/A'}{report.created_at ? ' on ' + new Date(report.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+        </div>
+      </div>
+
+      {/* Action Buttons — Row 1: CSV + Sheets */}
+      {can(employee?.role, 'export') && (
+      <div style={{ padding: '0 20px', marginTop: 12, display: 'flex', gap: 10 }}>
         <button
           onClick={() => exportDetailedReportToCSV({ report, machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues })}
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700,
-            background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4',
-            cursor: 'pointer'
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
+            background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4', cursor: 'pointer'
           }}
         >
           <Download size={14} /> CSV
         </button>
-        )}
-        {can(employee?.role, 'export') && (
         <button
           onClick={syncToSheets}
           disabled={syncing}
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700,
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
             background: '#EDE9FE', color: '#6D28D9', border: '1.5px solid #DDD6FE',
             cursor: syncing ? 'not-allowed' : 'pointer', opacity: syncing ? 0.6 : 1,
           }}
         >
           <FileSpreadsheet size={14} /> {syncing ? 'Syncing...' : 'Sheets'}
         </button>
-        )}
-        {can(employee?.role, 'create_report') && (
+      </div>
+      )}
+
+      {/* Action Buttons — Row 2: Sync + Delete (equal width) */}
+      {can(employee?.role, 'create_report') && (
+      <div style={{ padding: '0 20px', marginTop: 10, paddingBottom: 16, display: 'flex', gap: 10 }}>
         <button
           onClick={syncReport}
           disabled={syncingReport}
           style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700,
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
             background: '#FEF3C7', color: '#92400E', border: '1.5px solid #FDE68A',
             cursor: syncingReport ? 'not-allowed' : 'pointer', opacity: syncingReport ? 0.6 : 1,
           }}
         >
           <RefreshCw size={14} style={syncingReport ? { animation: 'spin 1s linear infinite' } : {}} /> {syncingReport ? 'Syncing...' : 'Sync'}
         </button>
-        )}
-        {can(employee?.role, 'create_report') && (
         <button
           onClick={deleteReport}
           disabled={deleting}
           style={{
-            padding: '14px 20px', borderRadius: 14, fontSize: 14, fontWeight: 700,
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
             background: '#FEE2E2', color: '#B91C1C', border: '1.5px solid #FECACA',
             cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.5 : 1
           }}
         >
-          <Trash2 size={16} />
+          <Trash2 size={14} /> Delete
         </button>
-        )}
       </div>
+      )}
     </div>
   )
 }

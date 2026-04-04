@@ -2,18 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
-import { useAuth } from '../../context/AuthContext'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { exportPurchasePDF } from '../../lib/pdfExport'
 import { Loader2, Edit3, X, CheckCircle, Download } from 'lucide-react'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { plant } = useAuth()
   const [showPhoto, setShowPhoto] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
   const [createdByName, setCreatedByName] = useState(null)
@@ -25,13 +22,19 @@ export default function PurchaseDetail() {
         .from('raw_material_purchases')
         .select(`*, suppliers(id, name, mobile), raw_material_types(id, name)`)
         .eq('id', id)
-        .eq('plant_id', plant.id)
         .single()
       if (error) throw error
       return data
     },
-    enabled: !!id && !!plant?.id,
+    enabled: !!id,
   })
+
+  useEffect(() => {
+    if (purchase?.created_by) {
+      supabase.from('employees').select('name').eq('id', purchase.created_by).single()
+        .then(({ data }) => { if (data) setCreatedByName(data.name) })
+    }
+  }, [purchase?.created_by])
 
   function formatCurrency(amount) {
     return '\u20B9' + (Math.round(amount) || 0).toLocaleString('en-IN')
@@ -41,13 +44,6 @@ export default function PurchaseDetail() {
     if (!dateStr) return 'N/A'
     return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
   }
-
-  useEffect(() => {
-    if (purchase?.created_by) {
-      supabase.from('employees').select('name').eq('auth_user_id', purchase.created_by).single()
-        .then(({ data }) => { if (data) setCreatedByName(data.name) })
-    }
-  }, [purchase?.created_by])
 
   if (isLoading) {
     return (
@@ -84,8 +80,8 @@ export default function PurchaseDetail() {
     )
   }
 
-  const avgRatePerKg = (purchase.quantity_kg) > 0
-    ? (purchase.total_amount / (purchase.quantity_kg))
+  const avgRatePerKg = (purchase.quantity_kg || purchase.final_quantity) > 0
+    ? (purchase.total_amount / (purchase.quantity_kg || purchase.final_quantity))
     : 0
 
   const totalCharges = (parseFloat((purchase.loading_expense || purchase.loading_charges || 0)) || 0) +
@@ -101,7 +97,6 @@ export default function PurchaseDetail() {
         .from('raw_material_purchases')
         .update({ payment_status: 'Paid' })
         .eq('id', id)
-        .eq('plant_id', plant.id)
       if (error) throw error
       queryClient.invalidateQueries({ queryKey: ['purchase', id] })
       queryClient.invalidateQueries({ queryKey: ['purchases'] })
@@ -164,14 +159,14 @@ export default function PurchaseDetail() {
                   opacity: markingPaid ? 0.6 : 1,
                 }}
               >
-                {markingPaid ? 'Updating...' : 'Pending \u2014 Tap to mark Paid'}
+                {markingPaid ? 'Updating...' : 'Pending — Tap to mark Paid'}
               </button>
             )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>Final Qty</div>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round((purchase.quantity_kg) || 0).toLocaleString('en-IN')} kg</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round((purchase.quantity_kg || purchase.final_quantity) || 0).toLocaleString('en-IN')} kg</div>
             </div>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>RM Rate</div>
@@ -229,7 +224,7 @@ export default function PurchaseDetail() {
             </div>
             <div>
               <div style={labelStyle}>Final Quantity</div>
-              <div style={valueStyle}>{(purchase.quantity_kg) ? `${Math.round((purchase.quantity_kg)).toLocaleString('en-IN')} kg` : 'N/A'}</div>
+              <div style={valueStyle}>{(purchase.quantity_kg || purchase.final_quantity) ? `${Math.round((purchase.quantity_kg || purchase.final_quantity)).toLocaleString('en-IN')} kg` : 'N/A'}</div>
             </div>
           </div>
         </div>
@@ -337,22 +332,17 @@ export default function PurchaseDetail() {
           </div>
         )}
 
+        {/* Created By */}
         {(createdByName || purchase.created_at) && (
-          <div style={{ background: '#f5f0e1', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, color: '#595c4a' }}>
-              {createdByName ? 'Created by ' + createdByName : 'Created'}{purchase.created_at ? ' at ' + new Date(purchase.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
-            </span>
-            <button onClick={() => exportPurchasePDF(purchase, createdByName)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, fontSize: 11, fontWeight: 600, background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer' }}>
-              <Download size={12} /> PDF
-            </button>
+          <div style={{ background: '#f5f0e1', borderRadius: 14, padding: '10px 14px', fontSize: 11, color: '#595c4a' }}>
+            {createdByName ? 'Created by ' + createdByName : 'Created'}{purchase.created_at ? ' on ' + new Date(purchase.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
           </div>
         )}
 
         <DeleteRequestButton
           entityType="purchase"
           entityId={id}
-          entityLabel={`${purchase.suppliers?.name || 'Purchase'} \u2014 ${formatDate(purchase.date)}`}
+          entityLabel={`${purchase.suppliers?.name || 'Purchase'} — ${formatDate(purchase.date)}`}
           onRequestSent={() => navigate('/purchase')}
         />
       </div>
