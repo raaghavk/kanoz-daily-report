@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X } from 'lucide-react'
+import { Phone, MessageSquare, MapPin, Truck, Clock, FileText, Image, Timer, Edit3, Save, X, Download } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
+import { exportDispatchPDF } from '../../lib/pdfExport'
 
 export default function DispatchDetail() {
   const { id } = useParams()
@@ -258,7 +259,7 @@ export default function DispatchDetail() {
 
         {/* Driver Card */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Driver Info</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Driver Info</div>
           <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 8 }}>{dispatch.driver_name || 'N/A'}</div>
           {dispatch.driver_phone && (
             <div style={{ display: 'flex', gap: 8 }}>
@@ -289,9 +290,7 @@ export default function DispatchDetail() {
         {/* Pellet Details */}
         {dispatch.dispatch_pellets?.length > 0 && (
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid #e5ddd0' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1 }}>Pellet Details</div>
-            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', padding: '12px 16px', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid #e5ddd0' }}>Pellet Details</div>
             <table style={{ width: '100%', fontSize: 12 }}>
               <thead style={{ background: '#fefae0' }}>
                 <tr>
@@ -318,7 +317,7 @@ export default function DispatchDetail() {
         {/* Katta Parchi Photo */}
         {dispatch.katta_parchi_url && (
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Katta Parchi</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>Katta Parchi</div>
             <img
               src={dispatch.katta_parchi_url}
               alt="Katta Parchi"
@@ -331,7 +330,7 @@ export default function DispatchDetail() {
         {/* Remarks */}
         {dispatch.remarks && (
           <div style={{ background: '#fefae0', border: '1.5px solid #e9c46a', borderRadius: 14, padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Remarks</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Remarks</div>
             <p style={{ fontSize: 13, color: '#78350F', lineHeight: 1.5, margin: 0 }}>{dispatch.remarks}</p>
           </div>
         )}
@@ -343,12 +342,26 @@ export default function DispatchDetail() {
           </div>
         )}
 
-        <DeleteRequestButton
-          entityType="dispatch"
-          entityId={id}
-          entityLabel={`Truck ${dispatch.truck_number} — ${formattedDate}`}
-          onRequestSent={() => navigate('/dispatch')}
-        />
+        {/* PDF + Request Delete row */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => exportDispatchPDF(dispatch, createdByName)}
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '14px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
+              background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4', cursor: 'pointer'
+            }}
+          >
+            <Download size={14} /> PDF
+          </button>
+          <DeleteRequestButton
+            entityType="dispatch"
+            entityId={id}
+            entityLabel={`Truck ${dispatch.truck_number} — ${formattedDate}`}
+            onRequestSent={() => navigate('/dispatch')}
+            containerStyle={{ flex: 1 }}
+          />
+        </div>
       </div>
     </div>
   )
