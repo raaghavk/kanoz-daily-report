@@ -36,6 +36,13 @@ export default function PurchaseDetail() {
     }
   }, [purchase?.created_by])
 
+  useEffect(() => {
+    if (purchase?.created_by) {
+      supabase.from('employees').select('name').eq('id', purchase.created_by).single()
+        .then(({ data }) => { if (data) setCreatedByName(data.name) })
+    }
+  }, [purchase?.created_by])
+
   function formatCurrency(amount) {
     return '\u20B9' + (Math.round(amount) || 0).toLocaleString('en-IN')
   }
