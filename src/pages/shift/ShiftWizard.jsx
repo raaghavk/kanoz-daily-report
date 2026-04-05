@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
@@ -35,31 +35,6 @@ const STEPS = [
 
 const WIZARD_STORAGE_KEY = 'kanoz_shift_wizard_state'
 
-// Save to both sessionStorage and localStorage for maximum persistence on mobile
-function saveWizardStateToStorage(state) {
-  const serialized = JSON.stringify({ ...state, savedAt: Date.now() })
-  try { sessionStorage.setItem(WIZARD_STORAGE_KEY, serialized) } catch { /* ignore */ }
-  try { localStorage.setItem(WIZARD_STORAGE_KEY, serialized) } catch { /* ignore */ }
-}
-
-function clearWizardStateFromStorage() {
-  try { sessionStorage.removeItem(WIZARD_STORAGE_KEY) } catch { /* ignore */ }
-  try { localStorage.removeItem(WIZARD_STORAGE_KEY) } catch { /* ignore */ }
-}
-
-function loadWizardStateFromStorage() {
-  // Try sessionStorage first (same session), fall back to localStorage (survives tab kills)
-  try {
-    const s = sessionStorage.getItem(WIZARD_STORAGE_KEY)
-    if (s) return JSON.parse(s)
-  } catch { /* ignore */ }
-  try {
-    const l = localStorage.getItem(WIZARD_STORAGE_KEY)
-    if (l) return JSON.parse(l)
-  } catch { /* ignore */ }
-  return null
-}
-
 export default function ShiftWizard() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -72,7 +47,7 @@ export default function ShiftWizard() {
   const [reportId, setReportId] = useState(editId || null)
   const [restoredFromStorage, setRestoredFromStorage] = useState(false)
 
-  // Report data state â shared across all steps
+  // Report data state — shared across all steps
   const [reportData, setReportData] = useState({
     date: getLocalDate(),
     shift: 'A',
@@ -99,30 +74,60 @@ export default function ShiftWizard() {
     setReportData(prev => ({ ...prev, [key]: value }))
   }, [])
 
-  // Save wizard state to both sessionStorage and localStorage
+  // Save wizard state to sessionStorage (called before navigating away)
   const saveWizardState = useCallback(() => {
-    saveWizardStateToStorage({ reportData, step, reportId })
+    try {
+      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId, savedAt: Date.now() }))
+    } catch (e) {
+      console.error('Failed to save wizard state:', e)
+    }
   }, [reportData, step, reportId])
 
   // Restore from sessionStorage if returning from dispatch
   const [initDone, setInitDone] = useState(false)
+  const [showResumePrompt, setShowResumePrompt] = useState(false)
   const [pendingRestore, setPendingRestore] = useState(null)
+
   useEffect(() => {
     if (editId) { setInitDone(true); return }
     const returnToStep = location.state?.returnToStep
     try {
-      const saved = loadWizardStateFromStorage()
+      const saved = sessionStorage.getItem(WIZARD_STORAGE_KEY)
       if (saved) {
-        const { reportData: savedData, step: savedStep, reportId: savedId, savedAt } = saved
-        // Discard if older than 12 hours
-        const MAX_AGE_MS = 12 * 60 * 60 * 1000
-        if (savedAt && (Date.now() - savedAt) > MAX_AGE_MS) {
-          clearWizardStateFromStorage()
+        const parsed = JSON.parse(saved)
+        const { reportData: savedData, step: savedStep, reportId: savedId, savedAt } = parsed
+        if (savedData && (savedData.date || savedData.machines?.length > 0)) {
+          const now = Date.now()
+          const twelveHours = 12 * 60 * 60 * 1000
+          const isExpired = savedAt && (now - savedAt > twelveHours)
+          const today = getLocalDate()
+          const savedDate = savedData.shift_start_date || savedData.date
+          const isDifferentDay = savedDate && savedDate !== today
+
+          // If returning from dispatch creation (returnToStep), always restore immediately
+          if (returnToStep) {
+            setReportData(savedData)
+            setStep(returnToStep)
+            if (savedId) setReportId(savedId)
+            setRestoredFromStorage(true)
+            setInitDone(true)
+            return
+          }
+
+          // If data is stale (expired or different day), ask user
+          if (isExpired || isDifferentDay) {
+            setPendingRestore({ savedData, savedStep, savedId, savedDate })
+            setShowResumePrompt(true)
+            setInitDone(true)
+            return
+          }
+
+          // Fresh data from today — restore silently
+          setReportData(savedData)
+          setStep(savedStep || 1)
+          if (savedId) setReportId(savedId)
+          setRestoredFromStorage(true)
           setInitDone(true)
-          return
-        }
-        if (savedData && (savedData.machines?.length > 0 || savedData.production?.length > 0)) {
-          setPendingRestore({ savedData, savedStep: returnToStep || savedStep || 1, savedId })
           return
         }
       }
@@ -132,63 +137,73 @@ export default function ShiftWizard() {
     setInitDone(true)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleResume = useCallback(() => {
+    if (pendingRestore) {
+      setReportData(pendingRestore.savedData)
+      setStep(pendingRestore.savedStep || 1)
+      if (pendingRestore.savedId) setReportId(pendingRestore.savedId)
+      setRestoredFromStorage(true)
+    }
+    setShowResumePrompt(false)
+    setPendingRestore(null)
+  }, [pendingRestore])
+
+  const handleStartFresh = useCallback(() => {
+    sessionStorage.removeItem(WIZARD_STORAGE_KEY)
+    setShowResumePrompt(false)
+    setPendingRestore(null)
+  }, [])
+
   // Load machines and raw material types for this plant
   useEffect(() => {
     if (plant?.id && initDone && !restoredFromStorage && !editId) loadPlantData()
   }, [plant, initDone, restoredFromStorage]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-save wizard state on every change (survives navigation and tab kills)
+  // Auto-save wizard state to sessionStorage on changes (so it survives navigation)
   useEffect(() => {
     if (!initDone || editId) return
-    saveWizardStateToStorage({ reportData, step, reportId })
+    try {
+      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId, savedAt: Date.now() }))
+    } catch { /* ignore */ }
   }, [reportData, step, reportId, initDone, editId])
 
-
-  // Handle resume/start-fresh for pending restore
-  const handleResume = useCallback(() => {
-    if (pendingRestore) {
-      setReportData(pendingRestore.savedData)
-      setStep(pendingRestore.savedStep)
-      if (pendingRestore.savedId) setReportId(pendingRestore.savedId)
-      setRestoredFromStorage(true)
-      setPendingRestore(null)
-      setInitDone(true)
-    }
-  }, [pendingRestore])
-
-  const handleStartFresh = useCallback(() => {
-    clearWizardStateFromStorage()
-    setPendingRestore(null)
-    setInitDone(true)
-  }, [])
-
   // Also save when app goes to background (mobile app switch) or page unloads
+  // Use a ref to always have latest state — avoids stale closure bug
+  const stateRef = useRef({ reportData, step, reportId })
+  useEffect(() => {
+    stateRef.current = { reportData, step, reportId }
+  }, [reportData, step, reportId])
+
   useEffect(() => {
     if (!initDone || editId) return
     function saveOnHide() {
-      saveWizardStateToStorage({ reportData, step, reportId })
+      try {
+        const payload = { ...stateRef.current, savedAt: Date.now() }
+        sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(payload))
+      } catch { /* ignore */ }
     }
-    document.addEventListener('visibilitychange', () => { if (document.hidden) saveOnHide() })
+    function handleVisChange() { if (document.hidden) saveOnHide() }
+    document.addEventListener('visibilitychange', handleVisChange)
     window.addEventListener('beforeunload', saveOnHide)
     window.addEventListener('pagehide', saveOnHide)
     return () => {
-      document.removeEventListener('visibilitychange', saveOnHide)
+      document.removeEventListener('visibilitychange', handleVisChange)
       window.removeEventListener('beforeunload', saveOnHide)
       window.removeEventListener('pagehide', saveOnHide)
     }
-  }, [reportData, step, reportId, initDone, editId])
+  }, [initDone, editId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // For edit mode: load everything in one shot to avoid race conditions
+  // For edit mode: load plant data first, then merge existing report on top
   useEffect(() => {
     if (editId && plant?.id) {
-      loadExistingReportFull()
+      loadPlantData().then(() => loadExistingReport())
     }
   }, [editId, plant]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadPlantData() {
     const [machinesRes, materialsRes, pelletTypesRes, equipmentRes] = await Promise.all([
       supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
-      supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true).order('name', { ascending: true }),
+      supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
       supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
       supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
     ])
@@ -245,7 +260,7 @@ export default function ShiftWizard() {
         const opening = prev ? parseFloat(prev.closing_litres) || 0 : 0
         return {
           id: eq.id, equipment_name: eq.name, opening, added: 0, used: 0,
-          closing: opening, hours: 0, avg_per_hr: 0, collapsed: true,
+          closing: opening, hours: 0, avg_per_hr: 0, collapsed: false,
         }
       }))
     }
@@ -260,7 +275,7 @@ export default function ShiftWizard() {
     }
   }
 
-  async function loadExistingReportFull() {
+  async function loadExistingReport() {
     try {
       const { data: report } = await supabase
         .from('shift_reports')
@@ -269,12 +284,23 @@ export default function ShiftWizard() {
         .single()
 
       if (!report) { showToast('Report not found', 'error'); navigate('/'); return }
-      setReportId(editId)
 
-      // Fetch all reference data AND saved data in one shot
+      setReportId(editId)
+      updateData('date', report.date)
+      updateData('shift', report.shift)
+      updateData('start_time', report.start_time)
+      updateData('end_time', report.end_time)
+      updateData('shift_start_date', report.shift_start_date || report.date)
+      updateData('shift_end_date', report.shift_end_date || report.date)
+      updateData('start_power_reading', report.start_power_reading || 0)
+      updateData('end_power_reading', report.end_power_reading || 0)
+      updateData('handover_notes', report.handover_notes || '')
+      updateData('remarks', report.remarks || '')
+
+      // Load machines, materials, equipment first (needed for merging data)
       const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
         supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
-        supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true).order('name', { ascending: true }),
+        supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
         supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
         supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
@@ -286,20 +312,21 @@ export default function ShiftWizard() {
         supabase.from('diesel_purchases').select('*').eq('shift_report_id', editId),
       ])
 
-      // Build machines array
-      let machines = []
+      // Initialize machines array from active machines
       if (machinesRes.data) {
         const initialMachines = machinesRes.data.map(m => ({
-          id: m.id, name: m.name, from_time: '', to_time: '',
-          breakdown_hrs: 0, total_hours: 0, production_hours: 0, remarks: '',
+          id: m.id, name: m.name, from_time: '', to_time: '', breakdown_hrs: 0, total_hours: 0, production_hours: 0, remarks: '',
         }))
+
+        // Merge machine production hours back into machines
         if (machProd.data?.length) {
-          machines = initialMachines.map(m => {
+          const machinesWithProduction = initialMachines.map(m => {
             const prod = machProd.data.find(mp => mp.machine_id === m.id)
             if (prod) {
-              return { ...m,
+              return {
+                ...m,
                 production_hours: parseFloat(prod.hours_run) || 0,
-                total_hours: parseFloat(prod.total_hours) || 0,
+                total_hours: parseFloat(prod.hours_run) || 0,
                 from_time: prod.from_time || '',
                 to_time: prod.to_time || '',
                 breakdown_hrs: parseFloat(prod.breakdown_hours) || 0,
@@ -308,33 +335,34 @@ export default function ShiftWizard() {
             }
             return m
           })
+          updateData('machines', machinesWithProduction)
         } else {
-          machines = initialMachines
+          updateData('machines', initialMachines)
         }
       }
 
-      // Build raw materials array
-      let rawMaterials = []
+      // Initialize raw materials and pellet stock for editing
       if (materialsRes.data) {
-        rawMaterials = materialsRes.data.map(m => {
+        const materialRows = materialsRes.data.map(m => {
           const rmData = rmUsage.data?.find(r => r.raw_material_type_id === m.id)
           return {
-            id: m.id, name: m.name,
+            id: m.id,
+            name: m.name,
             opening: rmData ? parseFloat(rmData.opening_kg) || 0 : 0,
             purchased: rmData ? parseFloat(rmData.purchased_kg) || 0 : 0,
             used: rmData ? parseFloat(rmData.quantity_kg) || 0 : 0,
             closing: rmData ? parseFloat(rmData.closing_kg) || 0 : 0,
           }
         })
+        updateData('rawMaterials', materialRows)
       }
 
-      // Build pellet stock array
-      let pelletStock = []
       if (pelletTypesRes.data) {
-        pelletStock = pelletTypesRes.data.map(p => {
+        const pelletRows = pelletTypesRes.data.map(p => {
           const psData = pStock.data?.find(ps => ps.pellet_type_id === p.id)
           return {
-            id: p.id, name: p.name,
+            id: p.id,
+            name: p.name,
             opening: psData ? parseFloat(psData.opening_mt) || 0 : 0,
             production: psData ? parseFloat(psData.production_mt) || 0 : 0,
             dispatch: psData ? parseFloat(psData.dispatch_mt) || 0 : 0,
@@ -342,91 +370,67 @@ export default function ShiftWizard() {
             closing: psData ? parseFloat(psData.closing_mt) || 0 : 0,
           }
         })
+        updateData('pelletStock', pelletRows)
       }
 
-      // Build diesel equipment array
-      let dieselEquipment = []
       if (equipmentRes.data) {
-        dieselEquipment = equipmentRes.data.map(eq => {
+        const equipmentRows = equipmentRes.data.map(eq => {
           const dieselData = diesel.data?.find(d => d.equipment_name === eq.name)
           return {
-            id: eq.id, equipment_name: eq.name,
+            id: eq.id,
+            equipment_name: eq.name,
             opening: dieselData ? parseFloat(dieselData.opening_litres) || 0 : 0,
             added: dieselData ? parseFloat(dieselData.added_litres) || 0 : 0,
             used: dieselData ? (parseFloat(dieselData.opening_litres) || 0) + (parseFloat(dieselData.added_litres) || 0) - (parseFloat(dieselData.closing_litres) || 0) : 0,
             closing: dieselData ? parseFloat(dieselData.closing_litres) || 0 : 0,
             hours: dieselData ? parseFloat(dieselData.hours_worked) || 0 : 0,
-            avg_per_hr: 0, collapsed: true,
+            avg_per_hr: 0,
+            collapsed: false,
           }
         })
+        updateData('diesel', equipmentRows)
       }
 
-      // Build production entries (Step 3)
-      let production = []
+      // Load production entries (Step 3)
       if (machProd.data?.length) {
-        production = machProd.data
+        const productionEntries = machProd.data
           .filter(mp => parseFloat(mp.production_mt) > 0)
           .map(mp => ({
-            id: mp.id, machine_id: mp.machine_id,
+            id: mp.id,
+            machine_id: mp.machine_id,
             machine_name: mp.machines?.name || 'Unknown',
-            pellet_type: mp.pellet_type_name || '',
+            pellet_type: '', // Not stored in DB, user must re-enter
             quantity: parseFloat(mp.production_mt) || 0,
             ingredients: '',
           }))
+        if (productionEntries.length > 0) {
+          updateData('production', productionEntries)
+        }
       }
 
-      // Build issues
-      let issues = []
+
       if (issuesData.data?.length) {
-        issues = issuesData.data.map(i => ({
-          id: i.id, type: i.issue_type, description: i.description,
-          severity: i.severity, photo_url: i.photo_url, machine_id: i.machine_id || null,
-        }))
+        updateData('issues', issuesData.data.map(i => ({
+          id: i.id,
+          type: i.issue_type,
+          description: i.description,
+          severity: i.severity,
+          photo_url: i.photo_url,
+        })))
       }
 
-      // Build diesel stock
-      let diesel_stock = { opening: 0, purchases: [], closing: 0 }
       if (dStock.data) {
-        let purchases = (dPurchases.data || []).map(dp => ({
+        const purchases = (dPurchases.data || []).map(dp => ({
           litres: parseFloat(dp.litres) || 0,
           cost_per_litre: parseFloat(dp.cost_per_litre) || 0,
           receipt_url: dp.receipt_url || null,
         }))
-        // If no purchase rows but diesel_stock shows purchased amount, create synthetic entry
-        const stockPurchased = parseFloat(dStock.data.purchased_litres) || 0
-        if (purchases.length === 0 && stockPurchased > 0) {
-          const stockCost = parseFloat(dStock.data.purchase_cost) || 0
-          purchases = [{ litres: stockPurchased, cost_per_litre: stockPurchased > 0 ? stockCost / stockPurchased : 0, receipt_url: null }]
-        }
-        diesel_stock = {
+        updateData('diesel_stock', {
           opening: parseFloat(dStock.data.opening_litres) || 0,
           purchases,
           closing: parseFloat(dStock.data.closing_litres) || 0,
-        }
+        })
       }
-
-      // ONE single state update â no race conditions
-      setReportData({
-        date: report.date,
-        shift: report.shift,
-        start_time: report.start_time,
-        end_time: report.end_time,
-        shift_start_date: report.shift_start_date || report.date,
-        shift_end_date: report.shift_end_date || report.date,
-        start_power_reading: report.start_power_reading || 0,
-        end_power_reading: report.end_power_reading || 0,
-        handover_notes: report.handover_notes || '',
-        remarks: report.remarks || '',
-        machines,
-        production,
-        rawMaterials,
-        diesel: dieselEquipment,
-        diesel_stock,
-        dispatches: [],
-        dispatchTotals: {},
-        pelletStock,
-        issues,
-      })
     } catch (err) {
       console.error('Error loading report:', err)
       showToast('Failed to load report', 'error')
@@ -474,41 +478,22 @@ export default function ShiftWizard() {
         setReportId(report.id)
       }
 
-      // Save machine production â one row per (machine, pellet_type) with timing fields
+      // Save machine production
       if (reportData.machines.length) {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
-        const allMachineRows = []
-        const runningMachines = reportData.machines.filter(m =>
-          sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time
-        )
-        for (const m of runningMachines) {
-          const machineProds = reportData.production.filter(p => p.machine_id === m.id)
-          const timingBase = {
+        const machineRows = reportData.machines
+          .filter(m => sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time)
+          .map(m => ({
             shift_report_id: report.id,
             machine_id: m.id,
-            from_time: sanitizeText(m.from_time, 10) || null,
-            to_time: sanitizeText(m.to_time, 10) || null,
-            breakdown_hours: sanitizeNumber(m.breakdown_hrs) || 0,
-            total_hours: sanitizeNumber(m.total_hours) || 0,
-            hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours) || 0,
+            hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours),
             remarks: sanitizeText(m.remarks, 500),
-          }
-          if (machineProds.length > 0) {
-            // One row per pellet type produced by this machine
-            for (const prod of machineProds) {
-              allMachineRows.push({
-                ...timingBase,
-                production_mt: sanitizeNumber(prod.quantity),
-                pellet_type_name: sanitizeText(prod.pellet_type, 100) || null,
-              })
-            }
-          } else {
-            // Machine ran but no production entries â save timing row with 0 production
-            allMachineRows.push({ ...timingBase, production_mt: 0, pellet_type_name: null })
-          }
-        }
-        if (allMachineRows.length) {
-          await supabase.from('machine_production').insert(allMachineRows)
+            production_mt: reportData.production
+              .filter(p => p.machine_id === m.id)
+              .reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
+          }))
+        if (machineRows.length) {
+          await supabase.from('machine_production').insert(machineRows)
         }
       }
 
@@ -547,7 +532,7 @@ export default function ShiftWizard() {
         }
       }
 
-      // Save pellet stock (all entries â closing_mt is GENERATED, don't insert it)
+      // Save pellet stock (all entries — closing_mt is GENERATED, don't insert it)
       if (reportData.pelletStock && reportData.pelletStock.length) {
         await supabase.from('pellet_stock').delete().eq('shift_report_id', report.id)
         const stockRows = reportData.pelletStock
@@ -573,50 +558,8 @@ export default function ShiftWizard() {
           description: sanitizeText(i.description, 1000),
           severity: sanitizeText(i.severity, 20),
           photo_url: i.photo_url,
-          machine_id: i.machine_id || null,
         }))
         await supabase.from('issues').insert(issueRows)
-      }
-
-      // Link dispatches that fall within this shift's time window to this shift report
-      {
-        const shiftStart = `${reportData.shift_start_date}T${reportData.start_time}:00`
-        const shiftEnd = `${reportData.shift_end_date}T${reportData.end_time}:00`
-        const startDate = reportData.shift_start_date
-        const endDate = reportData.shift_end_date
-
-        // First, unlink any dispatches previously linked to this report (in case of edit/re-submit)
-        await supabase.from('vehicle_dispatches')
-          .update({ shift_report_id: null })
-          .eq('shift_report_id', report.id)
-          .eq('plant_id', plant.id)
-
-        // Fetch dispatches in the date range for this plant
-        const { data: dispatchCandidates } = await supabase
-          .from('vehicle_dispatches')
-          .select('id, dispatch_date, dispatch_time, date')
-          .eq('plant_id', plant.id)
-          .eq('is_deleted', false)
-          .gte('date', startDate)
-          .lte('date', endDate)
-
-        if (dispatchCandidates?.length) {
-          // Filter client-side by exact time window (same logic as Step6Dispatch)
-          const matchingIds = dispatchCandidates
-            .filter(d => {
-              const dDate = d.dispatch_date || d.date
-              const dTime = d.dispatch_time || '00:00:00'
-              const dt = new Date(`${dDate}T${dTime}`)
-              return dt >= new Date(shiftStart) && dt <= new Date(shiftEnd)
-            })
-            .map(d => d.id)
-
-          if (matchingIds.length) {
-            await supabase.from('vehicle_dispatches')
-              .update({ shift_report_id: report.id })
-              .in('id', matchingIds)
-          }
-        }
       }
 
       // Save diesel stock (overall tank) + diesel purchases
@@ -655,7 +598,7 @@ export default function ShiftWizard() {
         }
       }
 
-      clearWizardStateFromStorage()
+      sessionStorage.removeItem(WIZARD_STORAGE_KEY)
       showToast(editId ? 'Report updated!' : 'Report submitted!', 'success')
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
@@ -696,38 +639,7 @@ export default function ShiftWizard() {
   const stepsWithErrors = useMemo(() => [...new Set(allErrors.map(e => e.step))], [allErrors])
   const currentWarnings = useMemo(() => allErrors.filter(e => e.step === step), [allErrors, step])
 
-  // Show resume prompt if there's pending restore data
-  if (pendingRestore) {
-    const savedDate = pendingRestore.savedData?.date || ''
-    const savedShift = pendingRestore.savedData?.shift || ''
-    return (
-      <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#fefae0' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, maxWidth: 400, width: '100%', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📋</div>
-          <h2 style={{ fontFamily: 'Inter, sans-serif', color: '#2c2c2c', margin: '0 0 8px', fontSize: 20 }}>Resume Previous Report?</h2>
-          <p style={{ fontFamily: 'Inter, sans-serif', color: '#595c4a', margin: '0 0 24px', fontSize: 14, lineHeight: 1.5 }}>
-            You have an unfinished report for <strong>{savedDate}</strong> (Shift {savedShift}), Step {pendingRestore.savedStep} of 9.
-          </p>
-          <div style={{ display: 'flex', gap: 12, width: '100%' }}>
-            <button
-              onClick={handleStartFresh}
-              style={{ flex: 1, padding: '12px 16px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fff', color: '#2c2c2c', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-            >
-              Start Fresh
-            </button>
-            <button
-              onClick={handleResume}
-              style={{ flex: 1, padding: '12px 16px', borderRadius: 12, border: 'none', background: '#2d6a4f', color: '#fff', fontFamily: 'Inter, sans-serif', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
-            >
-              Resume
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-    return (
+  return (
     <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#f5edd6' }}>
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fefae0', width: '100%', maxWidth: 480, boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
       <PageHeader
@@ -736,7 +648,7 @@ export default function ShiftWizard() {
         onBack={() => {
           if (step === 1) {
             if (window.confirm('Stop editing? Any unsaved changes will be lost.')) {
-              clearWizardStateFromStorage()
+              sessionStorage.removeItem(WIZARD_STORAGE_KEY)
               navigate('/')
             }
           } else {
@@ -797,6 +709,60 @@ export default function ShiftWizard() {
           </button>
         )}
       </div>
+      {/* Resume or Start Fresh prompt for stale wizard data */}
+      {showResumePrompt && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', zIndex: 1000, padding: 20,
+          }}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 14, padding: 24,
+              maxWidth: 360, width: '100%',
+              boxShadow: '0 20px 25px rgba(0,0,0,0.15)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <AlertTriangle size={20} color="#d4a373" />
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#2c2c2c', margin: 0 }}>
+                Unsaved Report Found
+              </h3>
+            </div>
+            <p style={{ fontSize: 13, color: '#595c4a', lineHeight: 1.5, margin: '0 0 8px 0' }}>
+              You have an incomplete shift report
+              {pendingRestore?.savedDate ? ` from ${new Date(pendingRestore.savedDate + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}.
+            </p>
+            <p style={{ fontSize: 13, color: '#595c4a', lineHeight: 1.5, margin: '0 0 20px 0' }}>
+              Would you like to continue where you left off, or start a new report?
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={handleStartFresh}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 12,
+                  border: '1.5px solid #e5ddd0', background: '#fff',
+                  fontSize: 13, fontWeight: 600, color: '#2c2c2c', cursor: 'pointer',
+                }}
+              >
+                Start Fresh
+              </button>
+              <button
+                onClick={handleResume}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 12,
+                  border: 'none', background: '#2d6a4f', color: '#fff',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Resume
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <ConfirmDialog
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
