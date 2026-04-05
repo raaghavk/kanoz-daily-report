@@ -39,7 +39,7 @@ h1, h2, h3 {
 
 /* Mobile app feel */
 html { background: #FFFFFF; }
-html, body, #root { height: 100%; overflow: hidden; }
+html, body, #root { height: 100vh; height: 100dvh; overflow: hidden; }
 input, select, textarea {
   font-size: 16px !important; /* Prevent iOS zoom */
   font-family: inherit;

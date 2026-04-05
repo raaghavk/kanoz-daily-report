@@ -124,9 +124,11 @@ export default function BottomNav() {
 
       {/* Bottom Nav Bar — 5 items: Home | Tasks | + | Ask | More */}
       <nav style={{
-        flexShrink: 0, display: 'flex',
+        flexShrink: 0, display: 'flex', flexDirection: 'column',
         background: '#FFFFFF', borderTop: '1px solid #e5ddd0',
-        padding: '8px 0', paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
+      }}>
+      <div style={{
+        display: 'flex', padding: '8px 0',
         alignItems: 'center',
       }}>
         <button onClick={() => navigate('/')} style={navBtnStyle(isHome)}>
@@ -153,6 +155,9 @@ export default function BottomNav() {
           <Settings size={22} strokeWidth={isMore ? 2.5 : 1.5} />
           <span style={{ fontSize: 10, fontWeight: isMore ? 700 : 500 }}>More</span>
         </button>
+      </div>
+      {/* Safe area spacer — white background extends to physical screen bottom */}
+      <div style={{ height: 'env(safe-area-inset-bottom, 0px)', background: '#FFFFFF', flexShrink: 0 }} />
       </nav>
     </>
   )
