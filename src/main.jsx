@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { ToastProvider } from './components/Toast'
 import App from './App'
 import './index.css'
+import { registerSW } from 'virtual:pwa-register'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,16 +17,22 @@ const queryClient = new QueryClient({
   },
 })
 
-// PWA auto-update: when a new service worker takes control, reload the page
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload()
-  })
-  // Periodically check for SW updates (every 30 min)
-  navigator.serviceWorker.ready.then((registration) => {
-    setInterval(() => { registration.update() }, 30 * 60 * 1000)
-  })
-}
+// PWA auto-update: register SW and auto-reload when new version is available
+const updateSW = registerSW({
+  onNeedRefresh() {
+    // New content available — update immediately without prompting
+    updateSW(true)
+  },
+  onOfflineReady() {
+    console.log('Kanoz: App ready for offline use')
+  },
+  // Check for updates every 10 minutes
+  onRegisteredSW(swUrl, registration) {
+    if (registration) {
+      setInterval(() => { registration.update() }, 10 * 60 * 1000)
+    }
+  },
+})
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
