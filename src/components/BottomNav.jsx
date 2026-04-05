@@ -40,7 +40,7 @@ export default function BottomNav() {
         <div
           onClick={() => setShowSheet(false)}
           style={{
-            position: 'absolute', inset: 0, zIndex: 50,
+            position: 'fixed', inset: 0, zIndex: 50,
             background: 'rgba(0,0,0,0.4)',
             display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
           }}
@@ -122,43 +122,37 @@ export default function BottomNav() {
         </div>
       )}
 
-      {/* Bottom Nav Bar — 5 items: Home | Tasks | + | Ask | More */}
-      <nav style={{
-        flexShrink: 0, display: 'flex', flexDirection: 'column',
-        background: '#FFFFFF', borderTop: '1px solid #e5ddd0',
-      }}>
-      <div style={{
-        display: 'flex', padding: '8px 0',
-        alignItems: 'center',
-      }}>
-        <button onClick={() => navigate('/')} style={navBtnStyle(isHome)}>
-          <Home size={22} strokeWidth={isHome ? 2.5 : 1.5} />
-          <span style={{ fontSize: 10, fontWeight: isHome ? 700 : 500 }}>Home</span>
-        </button>
+      {/* Bottom Nav Bar — fixed to viewport bottom */}
+      <nav className="bottom-nav">
+        <div style={{ display: 'flex', padding: '8px 0', alignItems: 'center' }}>
+          <button onClick={() => navigate('/')} style={navBtnStyle(isHome)}>
+            <Home size={22} strokeWidth={isHome ? 2.5 : 1.5} />
+            <span style={{ fontSize: 10, fontWeight: isHome ? 700 : 500 }}>Home</span>
+          </button>
 
-        <button onClick={() => navigate('/tasks')} style={navBtnStyle(isTasks)}>
-          <CheckSquare size={22} strokeWidth={isTasks ? 2.5 : 1.5} />
-          <span style={{ fontSize: 10, fontWeight: isTasks ? 700 : 500 }}>Tasks</span>
-        </button>
+          <button onClick={() => navigate('/tasks')} style={navBtnStyle(isTasks)}>
+            <CheckSquare size={22} strokeWidth={isTasks ? 2.5 : 1.5} />
+            <span style={{ fontSize: 10, fontWeight: isTasks ? 700 : 500 }}>Tasks</span>
+          </button>
 
-        <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(false)}>
-          <Plus size={24} strokeWidth={2} style={{ color: '#2d6a4f', transition: 'transform 0.2s', transform: showSheet ? 'rotate(45deg)' : 'none' }} />
-          <span style={{ fontSize: 10, fontWeight: 500, color: '#8a8d7a' }}>New</span>
-        </button>
+          <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(false)}>
+            <Plus size={24} strokeWidth={2} style={{ color: '#2d6a4f', transition: 'transform 0.2s', transform: showSheet ? 'rotate(45deg)' : 'none' }} />
+            <span style={{ fontSize: 10, fontWeight: 500, color: '#8a8d7a' }}>New</span>
+          </button>
 
-        <button onClick={() => navigate('/insights')} style={navBtnStyle(isChat)}>
-          <MessageCircle size={22} strokeWidth={isChat ? 2.5 : 1.5} />
-          <span style={{ fontSize: 10, fontWeight: isChat ? 700 : 500 }}>Ask</span>
-        </button>
+          <button onClick={() => navigate('/insights')} style={navBtnStyle(isChat)}>
+            <MessageCircle size={22} strokeWidth={isChat ? 2.5 : 1.5} />
+            <span style={{ fontSize: 10, fontWeight: isChat ? 700 : 500 }}>Ask</span>
+          </button>
 
-        <button onClick={() => navigate('/settings')} style={navBtnStyle(isMore)}>
-          <Settings size={22} strokeWidth={isMore ? 2.5 : 1.5} />
-          <span style={{ fontSize: 10, fontWeight: isMore ? 700 : 500 }}>More</span>
-        </button>
-      </div>
-      {/* Safe area spacer — white background extends to physical screen bottom */}
-      <div style={{ height: 'env(safe-area-inset-bottom, 0px)', background: '#FFFFFF', flexShrink: 0 }} />
+          <button onClick={() => navigate('/settings')} style={navBtnStyle(isMore)}>
+            <Settings size={22} strokeWidth={isMore ? 2.5 : 1.5} />
+            <span style={{ fontSize: 10, fontWeight: isMore ? 700 : 500 }}>More</span>
+          </button>
+        </div>
       </nav>
+      {/* Spacer to push content above fixed nav */}
+      <div className="nav-spacer" />
     </>
   )
 }

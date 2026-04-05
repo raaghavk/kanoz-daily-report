@@ -61,6 +61,25 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
 
+/* Bottom nav — fixed to viewport bottom, with safe area */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 40;
+  background: #FFFFFF;
+  border-top: 1px solid #e5ddd0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Spacer to push content above the fixed nav */
+.nav-spacer {
+  height: calc(60px + env(safe-area-inset-bottom, 0px));
+  flex-shrink: 0;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 0; }
 
