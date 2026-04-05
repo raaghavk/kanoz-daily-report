@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Settings, Plus, ClipboardList, Truck, Package, X, MessageCircle, ArrowDownCircle, CheckSquare } from 'lucide-react'
+import { Home, Settings, Plus, ClipboardList, Truck, Package, X, MessageCircle, CheckSquare } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
 
@@ -12,8 +12,8 @@ export default function BottomNav() {
   const role = employee?.role
 
   const isHome = location.pathname === '/'
-  const isChat = location.pathname === '/insights'
   const isTasks = location.pathname === '/tasks'
+  const isChat = location.pathname === '/insights'
   const isMore = location.pathname === '/settings' ||
     location.pathname.startsWith('/suppliers') ||
     location.pathname.startsWith('/customers') ||
@@ -103,26 +103,12 @@ export default function BottomNav() {
                 </div>
               </button>
               )}
-              {can(role, 'create_spare_parts') && (
-              <button onClick={() => handleAction('/spare-parts/stock-in')} style={{
-                display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
-                background: '#fefae0', borderRadius: 14, border: '1px solid #e5ddd0', cursor: 'pointer', width: '100%', textAlign: 'left',
-              }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <ArrowDownCircle size={20} color="white" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Purchase (Spare Parts)</div>
-                  <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>Record parts purchased</div>
-                </div>
-              </button>
-              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Bottom Nav Bar — 5 items: Home | Tasks | + | Ask | More */}
+      {/* Bottom Nav Bar — 4 items: Home | + | Chat | More */}
       <nav style={{
         flexShrink: 0, display: 'flex',
         background: '#FFFFFF', borderTop: '1px solid #e5ddd0',

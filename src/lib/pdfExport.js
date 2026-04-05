@@ -113,39 +113,140 @@ export async function exportDispatchPDF(dispatch, createdByName) {
   doc.save('Dispatch_' + (dispatch.truck_number || '').replace(/\s/g, '_') + '_' + (dispatch.date || '') + '.pdf')
 }
 
-// PURCHASE PDF
+// PURCHASE PDF — Card-based layout
 export async function exportPurchasePDF(purchase, createdByName) {
   const lib = await loadJsPDF()
   const doc = new lib.jsPDF()
+  const margin = 15
+  const pw = 210
+  const contentW = pw - 2 * margin
   const dateStr = purchase.date ? new Date(purchase.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'
-  let y = drawHeader(doc, 'Purchase Report', (purchase.suppliers?.name || 'Purchase') + ' | ' + dateStr)
-
-  doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(45, 106, 79)
-  doc.text('Purchase Details', 15, y); y += 8
-  doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(44, 44, 44)
   const qty = purchase.quantity_kg || 0
   const avgRate = qty > 0 ? (purchase.total_amount / qty).toFixed(2) : '0.00'
-  const info = [
-    ['Supplier', purchase.suppliers?.name || 'N/A'], ['Raw Material', purchase.raw_material_types?.name || 'N/A'],
-    ['Date', dateStr], ['Time', purchase.purchase_time?.slice(0,5) || 'N/A'],
-    ['Vehicle', purchase.vehicle_number || 'N/A'], ['Net Weight', (purchase.net_weight || 0) + ' kg'],
-    ['Moisture', (purchase.moisture_percent || 'N/A') + '%'], ['Deduction', (purchase.deduction_kg || 0) + ' kg'],
-    ['Final Quantity', Math.round(qty).toLocaleString('en-IN') + ' kg'],
-    ['Rate/kg', '\u20B9' + (purchase.rate_per_kg || 0).toFixed(2)],
-    ['RM Amount', '\u20B9' + Math.round(purchase.total_rm_amount || 0).toLocaleString('en-IN')],
-    ['Loading', '\u20B9' + Math.round(purchase.loading_expense || purchase.loading_charges || 0).toLocaleString('en-IN')],
-    ['Unloading', '\u20B9' + Math.round(purchase.unloading_expense || purchase.unloading_charges || 0).toLocaleString('en-IN')],
-    ['Transport', '\u20B9' + Math.round(purchase.transport_expense || purchase.transport_charges || 0).toLocaleString('en-IN')],
-    ['Total Amount', '\u20B9' + Math.round(purchase.total_amount || 0).toLocaleString('en-IN')],
-    ['Avg Cost/kg', '\u20B9' + avgRate + '/kg'],
-    ['Payment Status', purchase.payment_status || 'Pending']
+  const totalAmt = Math.round(purchase.total_amount || 0)
+
+  // ===== GREEN HEADER CARD =====
+  let y = margin
+  const cardH = 52
+  doc.setFillColor(45, 106, 79)
+  doc.roundedRect(margin, y, contentW, cardH, 6, 6, 'F')
+  doc.setTextColor(255, 255, 255)
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(18)
+  doc.text('Purchase Report', margin + 12, y + 16)
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(220, 235, 220)
+  doc.text((purchase.suppliers?.name || 'Supplier') + '  |  ' + dateStr, margin + 12, y + 25)
+
+  // Inner summary panel
+  const panelY = y + 32
+  doc.setFillColor(38, 90, 67)
+  doc.roundedRect(margin + 8, panelY, contentW - 16, 14, 3, 3, 'F')
+  doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(180, 210, 190)
+  const col1 = margin + 16; const col2 = margin + 70; const col3 = margin + 124
+  doc.text('NET WEIGHT', col1, panelY + 5)
+  doc.text('FINAL QTY', col2, panelY + 5)
+  doc.text('TOTAL AMOUNT', col3, panelY + 5)
+  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255)
+  doc.text((purchase.net_weight || 0) + ' kg', col1, panelY + 11)
+  doc.text(Math.round(qty).toLocaleString('en-IN') + ' kg', col2, panelY + 11)
+  doc.text('Rs. ' + totalAmt.toLocaleString('en-IN'), col3, panelY + 11)
+
+  y += cardH + 10
+
+  // ===== PURCHASE INFO SECTION =====
+  // Helper to draw a labeled row pair in 2-column grid
+  function drawField(x, yPos, label, value) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(137, 141, 122)
+    doc.text(label.toUpperCase(), x, yPos)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(44, 44, 44)
+    doc.text(String(value || 'N/A'), x, yPos + 5.5)
+  }
+
+  // Section: Basic Info
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(45, 106, 79)
+  doc.text('Basic Info', margin, y)
+  doc.setDrawColor(45, 106, 79); doc.setLineWidth(0.4)
+  doc.line(margin, y + 2, margin + contentW, y + 2)
+  y += 10
+
+  const leftCol = margin
+  const rightCol = margin + contentW / 2 + 5
+  drawField(leftCol, y, 'Supplier', purchase.suppliers?.name)
+  drawField(rightCol, y, 'Raw Material', purchase.raw_material_types?.name)
+  y += 14
+  drawField(leftCol, y, 'Date', dateStr)
+  drawField(rightCol, y, 'Time', purchase.purchase_time?.slice(0,5) || 'N/A')
+  y += 14
+  drawField(leftCol, y, 'Vehicle Number', purchase.vehicle_number)
+  drawField(rightCol, y, 'Payment Status', purchase.payment_status || 'Pending')
+  y += 18
+
+  // Section: Weight & Quality
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(45, 106, 79)
+  doc.text('Weight & Quality', margin, y)
+  doc.setDrawColor(45, 106, 79); doc.setLineWidth(0.4)
+  doc.line(margin, y + 2, margin + contentW, y + 2)
+  y += 10
+
+  drawField(leftCol, y, 'Net Weight', (purchase.net_weight || 0) + ' kg')
+  drawField(rightCol, y, 'Moisture', (purchase.moisture_percent != null && purchase.moisture_percent !== '' ? purchase.moisture_percent + '%' : 'N/A'))
+  y += 14
+  drawField(leftCol, y, 'Deduction', (purchase.deduction_kg || 0) + ' kg')
+  drawField(rightCol, y, 'Final Quantity', Math.round(qty).toLocaleString('en-IN') + ' kg')
+  y += 18
+
+  // Section: Cost Breakdown — as a table
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(45, 106, 79)
+  doc.text('Cost Breakdown', margin, y)
+  doc.setDrawColor(45, 106, 79); doc.setLineWidth(0.4)
+  doc.line(margin, y + 2, margin + contentW, y + 2)
+  y += 8
+
+  const costItems = [
+    ['Rate per kg', 'Rs. ' + (purchase.rate_per_kg || 0).toFixed(2)],
+    ['RM Amount', 'Rs. ' + Math.round(purchase.total_rm_amount || 0).toLocaleString('en-IN')],
+    ['Loading', 'Rs. ' + Math.round(purchase.loading_expense || purchase.loading_charges || 0).toLocaleString('en-IN')],
+    ['Unloading', 'Rs. ' + Math.round(purchase.unloading_expense || purchase.unloading_charges || 0).toLocaleString('en-IN')],
+    ['Transport', 'Rs. ' + Math.round(purchase.transport_expense || purchase.transport_charges || 0).toLocaleString('en-IN')],
   ]
-  info.forEach(([label, val]) => {
-    doc.setFont('helvetica', 'bold'); doc.text(label + ':', 15, y)
-    doc.setFont('helvetica', 'normal'); doc.text(String(val), 60, y); y += 6
+
+  // Cost rows with alternating background
+  costItems.forEach(([label, val], i) => {
+    if (i % 2 === 0) { doc.setFillColor(254, 250, 224); doc.rect(margin, y - 1, contentW, 7, 'F') }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(89, 92, 74)
+    doc.text(label, margin + 4, y + 4)
+    doc.setFont('helvetica', 'normal'); doc.setTextColor(44, 44, 44)
+    doc.text(val, margin + contentW - 4 - doc.getTextWidth(val), y + 4)
+    y += 7
   })
 
-  if (purchase.remarks) { y += 4; doc.setFont('helvetica','bold'); doc.text('Remarks:', 15, y); y += 5; doc.setFont('helvetica','normal'); doc.text(purchase.remarks.substring(0, 150), 15, y) }
+  // Total row — bold with green background
+  doc.setFillColor(45, 106, 79)
+  doc.rect(margin, y - 1, contentW, 8, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(255, 255, 255)
+  doc.text('Total Amount', margin + 4, y + 5)
+  const totalStr = 'Rs. ' + totalAmt.toLocaleString('en-IN')
+  doc.text(totalStr, margin + contentW - 4 - doc.getTextWidth(totalStr), y + 5)
+  y += 10
+
+  // Avg cost per kg
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(137, 141, 122)
+  doc.text('Average cost per kg: Rs. ' + avgRate, margin + 4, y + 3)
+  y += 10
+
+  // Remarks
+  if (purchase.remarks) {
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(45, 106, 79)
+    doc.text('Remarks', margin, y)
+    doc.setDrawColor(45, 106, 79); doc.setLineWidth(0.4)
+    doc.line(margin, y + 2, margin + contentW, y + 2)
+    y += 8
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(44, 44, 44)
+    const lines = doc.splitTextToSize(purchase.remarks, contentW - 5)
+    lines.forEach(line => { doc.text(line, margin, y); y += 4.5 })
+  }
 
   drawFooter(doc, createdByName, purchase.created_at, purchase.updated_at)
   doc.save('Purchase_' + (purchase.suppliers?.name || '').replace(/\s/g, '_') + '_' + (purchase.date || '') + '.pdf')
