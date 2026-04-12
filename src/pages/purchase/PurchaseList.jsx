@@ -55,8 +55,8 @@ export default function PurchaseList() {
       let query = supabase
         .from('raw_material_purchases')
         .select(`
-          id, date, total_amount, quantity_kg, payment_status, supplier_id, raw_material_type_id,
-          suppliers (id, name),
+          *,
+          suppliers (id, name, mobile),
           raw_material_types (id, name)
         `)
         .eq('plant_id', plant?.id)
@@ -184,7 +184,7 @@ export default function PurchaseList() {
           display: 'flex', gap: 8, overflowX: 'auto',
           background: '#fefae0', borderBottom: '1px solid #e5ddd0', padding: '10px 20px',
         }}>
-        {['week', 'month', 'all'].map(tab => (
+        {['today', 'week', 'month', 'all'].map(tab => (
           <button
             key={tab}
             onClick={() => setFilterTab(tab)}
@@ -196,7 +196,7 @@ export default function PurchaseList() {
                 : { background: 'white', color: '#2c2c2c', border: '1.5px solid #e5ddd0' })
             }}
           >
-            {tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
+            {tab === 'today' ? 'Today' : tab === 'week' ? 'This Week' : tab === 'month' ? 'This Month' : 'All'}
           </button>
         ))}
         {filterTab === 'all' && (

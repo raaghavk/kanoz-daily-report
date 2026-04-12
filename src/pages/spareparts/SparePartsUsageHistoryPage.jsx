@@ -21,7 +21,8 @@ export default function SparePartsUsageHistoryPage() {
     try {
       const [year, month] = filterMonth.split('-')
       const from = `${year}-${month}-01`
-      const to = new Date(parseInt(year), parseInt(month), 0).toISOString().split('T')[0]
+      const lastDay = new Date(parseInt(year), parseInt(month), 0)
+      const to = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`
 
       const { data, error } = await supabase
         .from('spare_parts_usage')

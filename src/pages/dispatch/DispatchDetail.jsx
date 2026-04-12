@@ -35,6 +35,7 @@ export default function DispatchDetail() {
         .from('vehicle_dispatches')
         .select('*, dispatch_pellets(*, pellet_types(name)), customers(name, address)')
         .eq('id', id)
+        .eq('is_deleted', false)
         .single()
 
       if (error) {
