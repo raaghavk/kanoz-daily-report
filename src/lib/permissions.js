@@ -12,6 +12,7 @@ const PERMISSIONS = {
     manage_users: true,
     plant_settings: true,
     switch_plant: true,
+    assign_tasks: true,
   },
   supervisor: {
     create_report: true,
@@ -26,6 +27,7 @@ const PERMISSIONS = {
     manage_users: false,
     plant_settings: false,
     switch_plant: false,
+    assign_tasks: true,
   },
   purchase_manager: {
     create_report: false,
