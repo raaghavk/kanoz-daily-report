@@ -29,7 +29,8 @@ export default function UserManagement() {
   const [toast, setToast] = useState(null)
   const [showPwd, setShowPwd] = useState(false)
 
-  const [form, setForm] = useState({ name: '', mobile: '', role: 'supervisor', plant_id: '', is_active: true })
+  const [form, setForm] = useState({ name: '', mobile: '', email: '', role: 'supervisor', plant_id: '', is_active: true })
+  const [editingAuthId, setEditingAuthId] = useState(null)
   const [accessEmail, setAccessEmail] = useState('')
   const [pwdForm, setPwdForm] = useState({ email: '', password: '' })
 
@@ -63,14 +64,16 @@ export default function UserManagement() {
   }
 
   function openAddForm() {
-    setForm({ name: '', mobile: '', role: 'supervisor', plant_id: plants[0]?.id || '', is_active: true })
+    setForm({ name: '', mobile: '', email: '', role: 'supervisor', plant_id: plants[0]?.id || '', is_active: true })
     setEditingId(null)
+    setEditingAuthId(null)
     setShowForm(true)
   }
 
   function openEditForm(emp) {
-    setForm({ name: emp.name, mobile: emp.mobile || '', role: emp.role, plant_id: emp.plant_id || '', is_active: emp.is_active })
+    setForm({ name: emp.name, mobile: emp.mobile || '', email: emp.email || '', role: emp.role, plant_id: emp.plant_id || '', is_active: emp.is_active })
     setEditingId(emp.id)
+    setEditingAuthId(emp.auth_user_id || null)
     setShowForm(true)
   }
 
@@ -80,16 +83,33 @@ export default function UserManagement() {
     setSaving(true)
     try {
       if (editingId) {
+        const { data: existing } = await supabase.from('employees').select('email').eq('id', editingId).single()
+        const emailChanged = form.email.trim() && form.email.trim() !== (existing?.email || '')
         const { error } = await supabase.from('employees').update({
           name: form.name.trim(), mobile: form.mobile.trim() || null,
+          email: form.email.trim() || null,
           role: form.role, plant_id: form.plant_id,
           is_active: form.is_active, updated_at: new Date().toISOString()
         }).eq('id', editingId)
         if (error) throw error
-        showToast('Employee updated')
+
+        // If email changed and they have an auth account, update it in auth too
+        if (emailChanged && editingAuthId) {
+          const { data: fnData, error: fnError } = await supabase.functions.invoke('set-user-password', {
+            body: { employee_id: editingId, new_email: form.email.trim() }
+          })
+          if (fnError || fnData?.error) {
+            showToast('Profile saved but email update in auth failed — try again', 'error')
+          } else {
+            showToast('Employee updated')
+          }
+        } else {
+          showToast('Employee updated')
+        }
       } else {
         const { error } = await supabase.from('employees').insert({
           name: form.name.trim(), mobile: form.mobile.trim() || null,
+          email: form.email.trim() || null,
           role: form.role, plant_id: form.plant_id,
           org_id: employee.org_id, is_active: form.is_active
         })
@@ -253,6 +273,13 @@ export default function UserManagement() {
               <div>
                 <label style={labelStyle}>Mobile</label>
                 <input style={inputStyle} type="tel" value={form.mobile} onChange={e => setForm({ ...form, mobile: e.target.value })} placeholder="Phone number" />
+              </div>
+              <div>
+                <label style={labelStyle}>Email (login){editingId && editingAuthId ? ' — updates login account' : ''}</label>
+                <input style={inputStyle} type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="their@email.com" autoComplete="off" />
+                {editingId && !editingAuthId && form.email && (
+                  <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 4 }}>Saved for when you create their login account</div>
+                )}
               </div>
               <div>
                 <label style={labelStyle}>Role *</label>
