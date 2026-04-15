@@ -14,6 +14,21 @@ const PERMISSIONS = {
     switch_plant: true,
     assign_tasks: true,
   },
+  plant_manager: {
+    create_report: true,
+    create_dispatch: true,
+    create_purchase: true,
+    view_reports: true,
+    view_dispatches: true,
+    view_purchases: true,
+    view_spare_parts: true,
+    create_spare_parts: true,
+    export: true,
+    manage_users: true,
+    plant_settings: true,
+    switch_plant: false,
+    assign_tasks: true,
+  },
   supervisor: {
     create_report: true,
     create_dispatch: true,
@@ -64,8 +79,9 @@ export function can(role, action) {
 }
 
 export const ROLE_OPTIONS = [
+  { value: 'admin', label: 'Admin', description: 'Everything + cross-plant access & user management' },
+  { value: 'plant_manager', label: 'Plant Manager', description: 'Full access for their plant — all operations, export, manage team' },
   { value: 'supervisor', label: 'Supervisor', description: 'Full plant operations — reports, dispatches, purchases' },
-  { value: 'admin', label: 'Admin', description: 'Everything + user management & plant settings' },
   { value: 'purchase_manager', label: 'Purchase Manager', description: 'Raw material purchases only' },
   { value: 'accountant', label: 'Accountant', description: 'Read-only access + export to CSV/Sheets' },
 ]
