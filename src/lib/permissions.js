@@ -38,7 +38,7 @@ const PERMISSIONS = {
     view_purchases: true,
     view_spare_parts: true,
     create_spare_parts: true,
-    export: false,
+    export: true,
     manage_users: false,
     plant_settings: false,
     switch_plant: false,
