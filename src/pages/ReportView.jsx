@@ -289,7 +289,7 @@ export default function ReportView() {
 
       {/* Report Header Card */}
       <div style={{ padding: '16px 20px' }}>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
 
           {/* Start / End row */}
           <div style={{ display: 'flex' }}>
@@ -332,7 +332,7 @@ export default function ReportView() {
       {/* Machine Timings Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Machine Timings</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
@@ -363,7 +363,7 @@ export default function ReportView() {
       {/* Production Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Production</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
@@ -394,7 +394,7 @@ export default function ReportView() {
       {/* Raw Materials Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Raw Materials</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
@@ -429,7 +429,7 @@ export default function ReportView() {
       {/* Equipment & Diesel Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Equipment & Diesel</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
@@ -464,7 +464,7 @@ export default function ReportView() {
       {/* Dispatches Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Vehicle Dispatches</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
@@ -503,7 +503,7 @@ export default function ReportView() {
       {/* Pellet Stock Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Pellet Stock</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
           <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>

@@ -170,7 +170,7 @@ export default function Home() {
     enabled: !!plant?.id,
   })
   const allTasks = tasksData || []
-  // Non-assigners only see their own tasks
+  // Only admin and plant_manager see all plant tasks; everyone else only sees their own
   const myTasks = can(employee?.role, 'assign_tasks')
     ? allTasks
     : allTasks.filter(t => t.assigned_to_employee_id === employee?.id)
@@ -351,7 +351,7 @@ export default function Home() {
               </button>
             </div>
             <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-              {myTasks.slice(0, 4).map((task, idx) => {
+              {myTasks.slice(0, 2).map((task, idx) => {
                 const overdue = task.status === 'open' && task.due_date && new Date(task.due_date + 'T00:00') < new Date(new Date().toDateString())
                 return (
                   <button key={task.id} onClick={() => startTransition(() => navigate('/tasks'))}
@@ -376,9 +376,9 @@ export default function Home() {
                   </button>
                 )
               })}
-              {myTasks.length > 4 && (
+              {myTasks.length > 2 && (
                 <button onClick={() => startTransition(() => navigate('/tasks'))} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', borderTop: '1px solid #f0ebe0', fontSize: 12, color: '#2563EB', fontWeight: 600, cursor: 'pointer' }}>
-                  +{myTasks.length - 4} more tasks →
+                  +{myTasks.length - 2} more tasks →
                 </button>
               )}
             </div>
@@ -497,3 +497,4 @@ export default function Home() {
     </div>
   )
 }
+

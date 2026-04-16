@@ -42,7 +42,7 @@ const PERMISSIONS = {
     manage_users: false,
     plant_settings: false,
     switch_plant: false,
-    assign_tasks: true,
+    assign_tasks: false,
   },
   purchase_manager: {
     create_report: false,

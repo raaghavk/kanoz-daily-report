@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
-import { Search, Plus, Phone, MessageSquare, MapPin, ChevronRight, Loader2, AlertCircle, Navigation, LocateFixed } from 'lucide-react'
+import { Search, Plus, Phone, MessageSquare, MapPin, ChevronRight, Loader2, AlertCircle, Navigation } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function SupplierList() {
@@ -92,38 +92,6 @@ export default function SupplierList() {
   }
 
   const [submitting, setSubmitting] = useState(false)
-  const [locating, setLocating] = useState(false)
-
-  async function captureLocation() {
-    if (!navigator.geolocation) {
-      showToast('Location not supported on this device', 'error')
-      return
-    }
-    setLocating(true)
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`)
-          const data = await res.json()
-          const addr = data.display_name || `${latitude}, ${longitude}`
-          setFormData(prev => ({ ...prev, address: addr }))
-          showToast('Location captured', 'success')
-        } catch {
-          setFormData(prev => ({ ...prev, address: `${latitude}, ${longitude}` }))
-          showToast('Location captured (coordinates only)', 'info')
-        } finally {
-          setLocating(false)
-        }
-      },
-      (err) => {
-        setLocating(false)
-        if (err.code === 1) showToast('Location permission denied', 'error')
-        else showToast('Could not get location', 'error')
-      },
-      { timeout: 10000 }
-    )
-  }
 
   async function handleAddSupplier() {
     if (submitting) return
@@ -195,7 +163,7 @@ export default function SupplierList() {
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       {/* Header + Search (sticky) */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title="Supplier Database" subtitle="Manage your suppliers" onBack={() => navigate(-1)} />
+        <PageHeader title="Supplier Database" subtitle="Manage your suppliers" />
 
         {/* Search Bar */}
         <div style={{ padding: '0 20px', marginTop: 12 }}>
@@ -213,7 +181,7 @@ export default function SupplierList() {
       </div>
 
       {/* Scrollable Content Area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', marginTop: 16, paddingBottom: 100 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px', marginTop: 16 }}>
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
             <Loader2 size={32} style={{ color: '#2d6a4f', marginBottom: 8, animation: 'spin 1s linear infinite' }} />
@@ -284,30 +252,15 @@ export default function SupplierList() {
         )}
       </div>
 
-      {/* FAB — fixed bottom right */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        style={{
-          position: 'fixed',
-          bottom: 88,
-          right: 20,
-          width: 56,
-          height: 56,
-          borderRadius: '50%',
-          background: '#2d6a4f',
-          color: 'white',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 16px rgba(45,106,79,0.35)',
-          zIndex: 50,
-        }}
-        title="Add Supplier"
-      >
-        <Plus size={24} strokeWidth={2.5} />
-      </button>
+      {/* Add Supplier Button — inline, not floating */}
+      <div style={{ padding: '16px 20px', paddingBottom: 100 }}>
+        <button
+          onClick={() => setShowAddModal(true)}
+          style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+        >
+          <Plus size={18} /> Add Supplier
+        </button>
+      </div>
 
       {/* Add Supplier Modal */}
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Supplier">
@@ -338,23 +291,12 @@ export default function SupplierList() {
           </div>
 
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>Address</label>
-              <button
-                type="button"
-                onClick={captureLocation}
-                disabled={locating}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', background: '#e8f0ec', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 600, color: '#2d6a4f', cursor: locating ? 'not-allowed' : 'pointer', opacity: locating ? 0.6 : 1 }}
-              >
-                <LocateFixed size={12} />
-                {locating ? 'Getting location...' : 'Capture Location'}
-              </button>
-            </div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>
             <input
               type="text"
               value={formData.address}
               onChange={e => setFormData({ ...formData, address: e.target.value })}
-              placeholder="Supplier address or tap Capture Location"
+              placeholder="Supplier address"
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
           </div>
