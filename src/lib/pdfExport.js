@@ -279,16 +279,16 @@ export async function exportShiftReportPDF(report, data, createdByName) {
     return false
   }
 
-  // Section header with green text and underline
+  // Section header — Option A: small uppercase label with light grey underline
   function sectionHeader(title) {
     y += 6 // breathing room before section
     needsNewPage(25)
     doc.setFont('helvetica', 'bold')
-    doc.setFontSize(11)
-    doc.setTextColor(45, 106, 79)
-    doc.text(title, margin, y)
-    doc.setDrawColor(45, 106, 79)
-    doc.setLineWidth(0.5)
+    doc.setFontSize(7.5)
+    doc.setTextColor(80, 80, 80)
+    doc.text(title.toUpperCase(), margin, y)
+    doc.setDrawColor(180, 180, 180)
+    doc.setLineWidth(0.4)
     doc.line(margin, y + 2, margin + contentW, y + 2)
     y += 10
   }
@@ -362,79 +362,82 @@ export async function exportShiftReportPDF(report, data, createdByName) {
   const startLabel = fmtDate(startDate) + ', ' + (report.start_time?.slice(0, 5) || '')
   const endLabel = fmtDate(endDate) + ', ' + (report.end_time?.slice(0, 5) || '')
 
-  // ===== GREEN HEADER CARD =====
-  const cardH = 80
-  doc.setFillColor(45, 106, 79)
-  doc.roundedRect(margin, y, contentW, cardH, 6, 6, 'F')
-
-  // Title
-  doc.setTextColor(255, 255, 255)
+  // ===== CLEAN CORPORATE HEADER (Option A) =====
+  // Company name
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(20)
-  doc.text('Shift ' + report.shift + ' Report', margin + 12, y + 18)
+  doc.setFontSize(18)
+  doc.setTextColor(20, 20, 20)
+  doc.text('KANOZ BIOMASS', margin, y + 10)
 
-  // Subtitle
-  doc.setFont('helvetica', 'normal')
+  // Shift badge — black border box, top-right
+  const badgeText = 'SHIFT ' + report.shift
   doc.setFontSize(10)
-  doc.setTextColor(220, 235, 220)
-  doc.text((report.plants?.name || 'Plant') + '  \u00B7  ' + report.date, margin + 12, y + 27)
+  const badgeW = doc.getTextWidth(badgeText) + 10
+  doc.setDrawColor(20, 20, 20)
+  doc.setLineWidth(0.8)
+  doc.rect(margin + contentW - badgeW, y + 1, badgeW, 11, 'S')
+  doc.setTextColor(20, 20, 20)
+  doc.text(badgeText, margin + contentW - badgeW + 5, y + 9)
 
-  // Inner panel
-  const panelY = y + 34
-  const panelH = 40
-  doc.setFillColor(255, 255, 255, 0.15)
-  doc.setFillColor(38, 90, 67) // slightly lighter green
-  doc.roundedRect(margin + 8, panelY, contentW - 16, panelH, 4, 4, 'F')
-
-  const col1 = margin + 16
-  const col2 = margin + contentW / 2 + 4
-  let py = panelY + 10
-
-  doc.setFontSize(7)
+  // Report label
   doc.setFont('helvetica', 'normal')
-  doc.setTextColor(180, 210, 190)
-  doc.text('START', col1, py)
-  doc.text('END', col2, py)
-  py += 5
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(255, 255, 255)
-  doc.text(startLabel, col1, py)
-  doc.text(endLabel, col2, py)
+  doc.setFontSize(9)
+  doc.setTextColor(110, 110, 110)
+  doc.text('Shift Production Report', margin, y + 18)
+  y += 23
 
-  py += 8
-  doc.setFontSize(7)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(180, 210, 190)
-  doc.text('PRODUCTION', col1, py)
-  doc.text('DISPATCHES', col2, py)
-  py += 5
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(255, 255, 255)
-  doc.text(totalProd.toFixed(1) + ' MT', col1, py)
-  doc.text(totalDispMT.toFixed(1) + ' MT', col2, py)
+  // Thick horizontal rule
+  doc.setDrawColor(20, 20, 20)
+  doc.setLineWidth(1.5)
+  doc.line(margin, y, margin + contentW, y)
+  y += 9
 
-  // Separator line
-  py += 5
-  doc.setDrawColor(70, 140, 100)
-  doc.setLineWidth(0.3)
-  doc.line(col1 - 4, py, margin + contentW - 12, py)
+  // Meta info row: 4 columns
+  const metaColW = contentW / 4
+  const metaItems = [
+    { label: 'PLANT', value: report.plants?.name || 'N/A' },
+    { label: 'DATE', value: report.date || 'N/A' },
+    { label: 'SUPERVISOR', value: report.employees?.name || 'N/A' },
+    { label: 'SHIFT TIME', value: startLabel }
+  ]
+  metaItems.forEach((item, i) => {
+    const mx = margin + i * metaColW
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(6)
+    doc.setTextColor(120, 120, 120)
+    doc.text(item.label, mx, y)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8.5)
+    doc.setTextColor(20, 20, 20)
+    doc.text(item.value, mx, y + 5)
+  })
+  y += 14
 
-  py += 6
-  doc.setFontSize(7)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(180, 210, 190)
-  doc.text('SUPERVISOR', col1, py)
-  doc.text('PLANT', col2, py)
-  py += 5
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(255, 255, 255)
-  doc.text(report.employees?.name || 'N/A', col1, py)
-  doc.text(report.plants?.name || 'N/A', col2, py)
-
-  y += cardH + 12
+  // KPI summary box — light grey fill, 4 metrics
+  const totalDiesel = (data.equipmentDiesel || []).reduce((s, e) => s + (parseFloat(e.used_litres) || 0), 0)
+  const totalRMkg = (data.rawMaterials || []).reduce((s, m) => s + (parseFloat(m.quantity_kg) || 0), 0)
+  const kpis = [
+    { label: 'PRODUCED', value: totalProd.toFixed(1) + ' MT' },
+    { label: 'DISPATCHED', value: totalDispMT.toFixed(1) + ' MT' },
+    { label: 'DIESEL USED', value: Math.round(totalDiesel) + ' L' },
+    { label: 'RM USED', value: (totalRMkg / 1000).toFixed(2) + ' MT' }
+  ]
+  const kpiBoxH = 20
+  doc.setFillColor(240, 240, 240)
+  doc.rect(margin, y, contentW, kpiBoxH, 'F')
+  const kpiColW = contentW / 4
+  kpis.forEach((kpi, i) => {
+    const kx = margin + i * kpiColW + 5
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(6)
+    doc.setTextColor(100, 100, 100)
+    doc.text(kpi.label, kx, y + 6)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.setTextColor(20, 20, 20)
+    doc.text(kpi.value, kx, y + 16)
+  })
+  y += kpiBoxH + 8
 
   // ===== MACHINE TIMINGS =====
   sectionHeader('MACHINE TIMINGS')
@@ -479,7 +482,7 @@ export async function exportShiftReportPDF(report, data, createdByName) {
         specialRows[i] = true
       } else {
         const avg = hrs > 0 ? (prod / hrs).toFixed(2) : '\u2014'
-        prodRows.push([name, 'Sample', String(prod), avg])
+        prodRows.push([name, m.pellet_type_name || '—', String(prod), avg])
       }
     })
     shiftTable(
