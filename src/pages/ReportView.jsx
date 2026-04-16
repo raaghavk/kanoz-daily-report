@@ -4,8 +4,8 @@ import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
-import { exportDetailedReportToCSV } from '../lib/exportUtils'
-import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, Download, FileSpreadsheet, RefreshCw } from 'lucide-react'
+import { exportShiftReportPDF } from '../lib/pdfExport'
+import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, FileText, RefreshCw } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
 export default function ReportView() {
@@ -377,7 +377,7 @@ export default function ReportView() {
                 machineProduction.map(m => (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.machines?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>-</td>
+                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.pellet_type_name || '-'}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.production_mt || 0}</td>
                   </tr>
                 ))
@@ -594,30 +594,18 @@ export default function ReportView() {
         </div>
       </div>
 
-      {/* Action Buttons — Row 1: CSV + Sheets */}
+      {/* Action Button — PDF Export */}
       {can(employee?.role, 'export') && (
-      <div style={{ padding: '0 20px', marginTop: 12, display: 'flex', gap: 10 }}>
+      <div style={{ padding: '0 20px', marginTop: 12 }}>
         <button
-          onClick={() => exportDetailedReportToCSV({ report, machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues })}
+          onClick={() => exportShiftReportPDF(report, { machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues }, report.employees?.name)}
           style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
             background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4', cursor: 'pointer'
           }}
         >
-          <Download size={14} /> CSV
-        </button>
-        <button
-          onClick={syncToSheets}
-          disabled={syncing}
-          style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
-            background: '#EDE9FE', color: '#6D28D9', border: '1.5px solid #DDD6FE',
-            cursor: syncing ? 'not-allowed' : 'pointer', opacity: syncing ? 0.6 : 1,
-          }}
-        >
-          <FileSpreadsheet size={14} /> {syncing ? 'Syncing...' : 'Sheets'}
+          <FileText size={14} /> Download PDF
         </button>
       </div>
       )}
