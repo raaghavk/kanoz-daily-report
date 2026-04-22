@@ -4,8 +4,8 @@ import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
-import { exportDetailedReportToCSV } from '../lib/exportUtils'
-import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, Download, FileSpreadsheet } from 'lucide-react'
+import { exportShiftReportPDF } from '../lib/pdfExport'
+import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, FileText, RefreshCw } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
 export default function ReportView() {
@@ -70,6 +70,108 @@ export default function ReportView() {
       showToast(err.message || 'Failed to sync to Sheets', 'error')
     } finally {
       setSyncing(false)
+    }
+  }
+
+  const [syncingReport, setSyncingReport] = useState(false)
+
+  async function syncReport() {
+    if (!report) return
+    setSyncingReport(true)
+    try {
+      // Build shift time window
+      // Normalize time: DB returns HH:MM:SS, we need HH:MM to avoid invalid dates like HH:MM:SS:00
+      const normalizeTime = (t) => t ? t.substring(0, 5) : t
+      const shiftStartDate = report.shift_start_date || report.date
+      const shiftEndDate = report.shift_end_date || report.date
+      const startTime = normalizeTime(report.start_time) || '06:00'
+      const endTime = normalizeTime(report.end_time) || '18:00'
+      const shiftStart = `${shiftStartDate}T${startTime}:00`
+      const shiftEnd = `${shiftEndDate}T${endTime}:00`
+
+      // 1. Re-link dispatches: find dispatches in shift time window for this plant
+      const { data: matchingDispatches, error: dispErr } = await supabase
+        .from('vehicle_dispatches')
+        .select('id')
+        .eq('plant_id', report.plant_id)
+        .eq('is_deleted', false)
+        .gte('dispatch_datetime', shiftStart)
+        .lte('dispatch_datetime', shiftEnd)
+
+      if (dispErr) throw dispErr
+
+      // Unlink old dispatches from this report
+      await supabase
+        .from('vehicle_dispatches')
+        .update({ shift_report_id: null })
+        .eq('shift_report_id', id)
+
+      // Link matching dispatches to this report
+      if (matchingDispatches && matchingDispatches.length > 0) {
+        const dispatchIds = matchingDispatches.map(d => d.id)
+        await supabase
+          .from('vehicle_dispatches')
+          .update({ shift_report_id: id })
+          .in('id', dispatchIds)
+      }
+
+      // 2. Update raw material purchased amounts from live purchases
+      const { data: rmUsageRows, error: rmErr } = await supabase
+        .from('raw_material_usage')
+        .select('id, raw_material_type_id')
+        .eq('shift_report_id', id)
+
+      if (rmErr) throw rmErr
+
+      if (rmUsageRows && rmUsageRows.length > 0) {
+        // Get purchases in the shift window
+        const { data: purchases } = await supabase
+          .from('raw_material_purchases')
+          .select('raw_material_type_id, net_weight')
+          .eq('plant_id', report.plant_id)
+          .eq('is_deleted', false)
+          .gte('purchase_datetime', shiftStart)
+          .lte('purchase_datetime', shiftEnd)
+
+        // Sum purchases by material type
+        const purchasedByType = {}
+        if (purchases) {
+          for (const p of purchases) {
+            const typeId = p.raw_material_type_id
+            purchasedByType[typeId] = (purchasedByType[typeId] || 0) + (parseFloat(p.net_weight) || 0)
+          }
+        }
+
+        // Update each raw_material_usage row with fresh purchased_kg and recalculate closing
+        for (const row of rmUsageRows) {
+          const newPurchased = purchasedByType[row.raw_material_type_id] || 0
+          // Fetch current row to recalculate closing
+          const { data: currentRow } = await supabase
+            .from('raw_material_usage')
+            .select('opening_kg, quantity_kg')
+            .eq('id', row.id)
+            .single()
+
+          if (currentRow) {
+            const opening = parseFloat(currentRow.opening_kg) || 0
+            const used = parseFloat(currentRow.quantity_kg) || 0
+            const newClosing = opening + newPurchased - used
+            await supabase
+              .from('raw_material_usage')
+              .update({ purchased_kg: newPurchased, closing_kg: newClosing })
+              .eq('id', row.id)
+          }
+        }
+      }
+
+      showToast('Report synced successfully!', 'success')
+      // Refresh the view
+      await fetchReport()
+    } catch (err) {
+      console.error('Sync error:', err)
+      showToast('Failed to sync report', 'error')
+    } finally {
+      setSyncingReport(false)
     }
   }
 
@@ -166,27 +268,69 @@ export default function ReportView() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
-      <PageHeader title="Shift Report" subtitle={`Shift ${report.shift} · ${report.date}`} onBack={() => navigate(-1)} />
+      {/* Sticky Header */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+        <PageHeader
+          title="Shift Report"
+          subtitle={`Shift ${report.shift} · ${startDateLabel}${showBothDates ? ` – ${endDateLabel}` : ''}`}
+          onBack={() => navigate(-1)}
+          rightAction={
+            can(employee?.role, 'create_report') ? (
+              <button
+                onClick={() => navigate(`/shift/edit/${id}`)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                <Edit3 size={14} /> Edit
+              </button>
+            ) : null
+          }
+        />
+      </div>
 
-      {/* Report Header Info - Compact */}
-      <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
-          {/* Row 1: Date | Shift Time */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>
-            <span>{startDateLabel}{showBothDates ? ` – ${endDateLabel}` : ''}</span>
-            <span style={{ color: '#595c4a' }}>Shift {report.shift} ({report.start_time?.slice(0, 5)} – {report.end_time?.slice(0, 5)})</span>
+      {/* Report Header Card — green-header style consistent with all tables */}
+      <div style={{ padding: '16px 20px' }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+
+          {/* Green top bar */}
+          <div style={{ background: '#2d6a4f', padding: '10px 14px' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+              Shift {report.shift} · {startDateLabel}{showBothDates ? ` – ${endDateLabel}` : ''}
+            </div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>
+              {report.plants?.name || 'Plant'}
+            </div>
           </div>
 
-          {/* Row 2: Production | Dispatches */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, fontSize: 13, fontWeight: 600, color: '#2c2c2c', borderTop: '1px solid #e5ddd0', paddingTop: 12 }}>
-            <span>Production: <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{(report.pellet_production_mt || 0).toFixed(1)} MT</span></span>
-            <span>Dispatches: <span style={{ color: '#2d6a4f', fontWeight: 700 }}>{(dispatches.reduce((sum, d) => sum + (d.dispatch_pellets?.reduce((s, p) => s + (parseFloat(p.quantity_mt) || 0), 0) || 0), 0)).toFixed(1)} MT</span></span>
+          {/* Start | End row */}
+          <div style={{ display: 'flex', borderTop: 'none' }}>
+            <div style={{ flex: 1, padding: '11px 14px', borderBottom: '1px solid #f0ebe0' }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 3 }}>Start</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>{startDateLabel}, {report.start_time?.slice(0, 5)}</div>
+            </div>
+            <div style={{ flex: 1, padding: '11px 14px', borderLeft: '1px solid #f0ebe0', borderBottom: '1px solid #f0ebe0' }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 3 }}>End</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>{endDateLabel}, {report.end_time?.slice(0, 5)}</div>
+            </div>
           </div>
 
-          {/* Row 3: Supervisor | Plant */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, color: '#595c4a', borderTop: '1px solid #e5ddd0', paddingTop: 12 }}>
-            <span>Supervisor: <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{report.employees?.name || 'N/A'}</span></span>
-            <span>Plant: <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{report.plants?.name || 'N/A'}</span></span>
+          {/* Production | Dispatches row */}
+          <div style={{ display: 'flex' }}>
+            <div style={{ flex: 1, padding: '11px 14px', borderBottom: '1px solid #f0ebe0' }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 3 }}>Production</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>{(report.pellet_production_mt || 0).toFixed(1)} MT</div>
+            </div>
+            <div style={{ flex: 1, padding: '11px 14px', borderLeft: '1px solid #f0ebe0', borderBottom: '1px solid #f0ebe0' }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 3 }}>Dispatches</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#2d6a4f' }}>
+                {(dispatches.reduce((sum, d) => sum + (d.dispatch_pellets?.reduce((s, p) => s + (parseFloat(p.quantity_mt) || 0), 0) || 0), 0)).toFixed(1)} MT
+              </div>
+            </div>
+          </div>
+
+          {/* Supervisor bottom row */}
+          <div style={{ padding: '9px 14px', background: '#faf8f2', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 9, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.7 }}>Supervisor:</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2c' }}>{report.employees?.name || 'N/A'}</span>
           </div>
         </div>
       </div>
@@ -194,8 +338,8 @@ export default function ReportView() {
       {/* Machine Timings Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Machine Timings</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Machine</th>
@@ -225,8 +369,8 @@ export default function ReportView() {
       {/* Production Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Production</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Machine</th>
@@ -239,7 +383,7 @@ export default function ReportView() {
                 machineProduction.map(m => (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.machines?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>-</td>
+                    <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.pellet_type_name || '-'}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.production_mt || 0}</td>
                   </tr>
                 ))
@@ -256,8 +400,8 @@ export default function ReportView() {
       {/* Raw Materials Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Raw Materials</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Material</th>
@@ -291,8 +435,8 @@ export default function ReportView() {
       {/* Equipment & Diesel Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Equipment & Diesel</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Equipment</th>
@@ -326,8 +470,8 @@ export default function ReportView() {
       {/* Dispatches Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Vehicle Dispatches</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Truck</th>
@@ -365,8 +509,8 @@ export default function ReportView() {
       {/* Pellet Stock Section */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
         <h2 style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>Pellet Stock</h2>
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-          <table style={{ width: '100%', fontSize: 12 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflowX: 'auto' }}>
+          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
             <thead style={{ background: '#2d6a4f' }}>
               <tr>
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Type</th>
@@ -449,61 +593,58 @@ export default function ReportView() {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div style={{ padding: '0 20px', marginTop: 24, paddingBottom: 16, display: 'flex', gap: 12 }}>
-        {can(employee?.role, 'create_report') && (
+      {/* Created By + Supervisor info */}
+      <div style={{ padding: '0 20px', marginTop: 24 }}>
+        <div style={{ background: '#f5f0e1', borderRadius: 14, padding: '10px 14px', fontSize: 11, color: '#595c4a' }}>
+          Created by {report.employees?.name || 'N/A'}{report.created_at ? ' on ' + new Date(report.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+        </div>
+      </div>
+
+      {/* Action Button — PDF Export */}
+      {can(employee?.role, 'export') && (
+      <div style={{ padding: '0 20px', marginTop: 12 }}>
         <button
-          onClick={() => navigate(`/shift/edit/${id}`)}
+          onClick={() => exportShiftReportPDF(report, { machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues }, report.employees?.name)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
+            background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4', cursor: 'pointer'
+          }}
+        >
+          <FileText size={14} /> Download PDF
+        </button>
+      </div>
+      )}
+
+      {/* Action Buttons — Row 2: Sync + Delete (equal width) */}
+      {can(employee?.role, 'create_report') && (
+      <div style={{ padding: '0 20px', marginTop: 10, paddingBottom: 16, display: 'flex', gap: 10 }}>
+        <button
+          onClick={syncReport}
+          disabled={syncingReport}
           style={{
             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '14px 0', borderRadius: 14, fontSize: 14, fontWeight: 700,
-            background: '#2d6a4f', color: 'white', border: 'none', cursor: 'pointer'
+            padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
+            background: '#FEF3C7', color: '#92400E', border: '1.5px solid #FDE68A',
+            cursor: syncingReport ? 'not-allowed' : 'pointer', opacity: syncingReport ? 0.6 : 1,
           }}
         >
-          <Edit3 size={16} /> Edit Report
+          <RefreshCw size={14} style={syncingReport ? { animation: 'spin 1s linear infinite' } : {}} /> {syncingReport ? 'Syncing...' : 'Sync'}
         </button>
-        )}
-        {can(employee?.role, 'export') && (
-        <button
-          onClick={() => exportDetailedReportToCSV({ report, machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues })}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700,
-            background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4',
-            cursor: 'pointer'
-          }}
-        >
-          <Download size={14} /> CSV
-        </button>
-        )}
-        {can(employee?.role, 'export') && (
-        <button
-          onClick={syncToSheets}
-          disabled={syncing}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '14px 16px', borderRadius: 14, fontSize: 13, fontWeight: 700,
-            background: '#EDE9FE', color: '#6D28D9', border: '1.5px solid #DDD6FE',
-            cursor: syncing ? 'not-allowed' : 'pointer', opacity: syncing ? 0.6 : 1,
-          }}
-        >
-          <FileSpreadsheet size={14} /> {syncing ? 'Syncing...' : 'Sheets'}
-        </button>
-        )}
-        {can(employee?.role, 'create_report') && (
         <button
           onClick={deleteReport}
           disabled={deleting}
           style={{
-            padding: '14px 20px', borderRadius: 14, fontSize: 14, fontWeight: 700,
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
             background: '#FEE2E2', color: '#B91C1C', border: '1.5px solid #FECACA',
             cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.5 : 1
           }}
         >
-          <Trash2 size={16} />
+          <Trash2 size={14} /> Delete
         </button>
-        )}
       </div>
+      )}
     </div>
   )
 }

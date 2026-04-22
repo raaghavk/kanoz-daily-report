@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
@@ -13,8 +13,9 @@ import { getLocalDate } from '../../lib/dateUtils'
 import { getValidationErrors } from './validation'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
-import Step3Production from './Step3Production'
-import Step4RawMaterial from './Step4RawMaterial'
+import Step3RawMaterialMix from './Step3RawMaterialMix'
+import Step4Production from './Step4Production'
+import Step5RawMaterialReview from './Step5RawMaterialReview'
 import Step5Diesel from './Step5Diesel'
 import Step6Dispatch from './Step6Dispatch'
 import Step7PelletStock from './Step7PelletStock'
@@ -24,13 +25,14 @@ import Step9Submit from './Step9Submit'
 const STEPS = [
   { num: 1, title: 'Report Header', component: Step1Header },
   { num: 2, title: 'Machine Timings', component: Step2Machines },
-  { num: 3, title: 'Production', component: Step3Production },
-  { num: 4, title: 'Raw Material', component: Step4RawMaterial },
-  { num: 5, title: 'Equipment & Diesel', component: Step5Diesel },
-  { num: 6, title: 'Dispatch Summary', component: Step6Dispatch },
-  { num: 7, title: 'Pellet Stock', component: Step7PelletStock },
-  { num: 8, title: 'Issues', component: Step8Issues },
-  { num: 9, title: 'Submit', component: Step9Submit },
+  { num: 3, title: 'Raw Material & Mix', component: Step3RawMaterialMix },
+  { num: 4, title: 'Production', component: Step4Production },
+  { num: 5, title: 'RM & Mix Review', component: Step5RawMaterialReview },
+  { num: 6, title: 'Equipment & Diesel', component: Step5Diesel },
+  { num: 7, title: 'Dispatch Summary', component: Step6Dispatch },
+  { num: 8, title: 'Pellet Stock', component: Step7PelletStock },
+  { num: 9, title: 'Issues', component: Step8Issues },
+  { num: 10, title: 'Submit', component: Step9Submit },
 ]
 
 const WIZARD_STORAGE_KEY = 'kanoz_shift_wizard_state'
@@ -58,6 +60,7 @@ export default function ShiftWizard() {
     start_power_reading: 0,
     end_power_reading: 0,
     machines: [],
+    mixes: [],
     production: [],
     rawMaterials: [],
     diesel: [],
@@ -77,7 +80,7 @@ export default function ShiftWizard() {
   // Save wizard state to sessionStorage (called before navigating away)
   const saveWizardState = useCallback(() => {
     try {
-      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId }))
+      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId, savedAt: Date.now() }))
     } catch (e) {
       console.error('Failed to save wizard state:', e)
     }
@@ -85,16 +88,46 @@ export default function ShiftWizard() {
 
   // Restore from sessionStorage if returning from dispatch
   const [initDone, setInitDone] = useState(false)
+  const [showResumePrompt, setShowResumePrompt] = useState(false)
+  const [pendingRestore, setPendingRestore] = useState(null)
+
   useEffect(() => {
     if (editId) { setInitDone(true); return }
     const returnToStep = location.state?.returnToStep
     try {
       const saved = sessionStorage.getItem(WIZARD_STORAGE_KEY)
       if (saved) {
-        const { reportData: savedData, step: savedStep, reportId: savedId } = JSON.parse(saved)
+        const parsed = JSON.parse(saved)
+        const { reportData: savedData, step: savedStep, reportId: savedId, savedAt } = parsed
         if (savedData && (savedData.date || savedData.machines?.length > 0)) {
+          const now = Date.now()
+          const twelveHours = 12 * 60 * 60 * 1000
+          const isExpired = savedAt && (now - savedAt > twelveHours)
+          const today = getLocalDate()
+          const savedDate = savedData.shift_start_date || savedData.date
+          const isDifferentDay = savedDate && savedDate !== today
+
+          // If returning from dispatch creation (returnToStep), always restore immediately
+          if (returnToStep) {
+            setReportData(savedData)
+            setStep(returnToStep)
+            if (savedId) setReportId(savedId)
+            setRestoredFromStorage(true)
+            setInitDone(true)
+            return
+          }
+
+          // If data is stale (expired or different day), ask user
+          if (isExpired || isDifferentDay) {
+            setPendingRestore({ savedData, savedStep, savedId, savedDate })
+            setShowResumePrompt(true)
+            setInitDone(true)
+            return
+          }
+
+          // Fresh data from today — restore silently
           setReportData(savedData)
-          setStep(returnToStep || savedStep || 1)
+          setStep(savedStep || 1)
           if (savedId) setReportId(savedId)
           setRestoredFromStorage(true)
           setInitDone(true)
@@ -107,6 +140,23 @@ export default function ShiftWizard() {
     setInitDone(true)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleResume = useCallback(() => {
+    if (pendingRestore) {
+      setReportData(pendingRestore.savedData)
+      setStep(pendingRestore.savedStep || 1)
+      if (pendingRestore.savedId) setReportId(pendingRestore.savedId)
+      setRestoredFromStorage(true)
+    }
+    setShowResumePrompt(false)
+    setPendingRestore(null)
+  }, [pendingRestore])
+
+  const handleStartFresh = useCallback(() => {
+    sessionStorage.removeItem(WIZARD_STORAGE_KEY)
+    setShowResumePrompt(false)
+    setPendingRestore(null)
+  }, [])
+
   // Load machines and raw material types for this plant
   useEffect(() => {
     if (plant?.id && initDone && !restoredFromStorage && !editId) loadPlantData()
@@ -116,27 +166,35 @@ export default function ShiftWizard() {
   useEffect(() => {
     if (!initDone || editId) return
     try {
-      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId }))
+      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId, savedAt: Date.now() }))
     } catch { /* ignore */ }
   }, [reportData, step, reportId, initDone, editId])
 
   // Also save when app goes to background (mobile app switch) or page unloads
+  // Use a ref to always have latest state — avoids stale closure bug
+  const stateRef = useRef({ reportData, step, reportId })
+  useEffect(() => {
+    stateRef.current = { reportData, step, reportId }
+  }, [reportData, step, reportId])
+
   useEffect(() => {
     if (!initDone || editId) return
     function saveOnHide() {
       try {
-        sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId }))
+        const payload = { ...stateRef.current, savedAt: Date.now() }
+        sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(payload))
       } catch { /* ignore */ }
     }
-    document.addEventListener('visibilitychange', () => { if (document.hidden) saveOnHide() })
+    function handleVisChange() { if (document.hidden) saveOnHide() }
+    document.addEventListener('visibilitychange', handleVisChange)
     window.addEventListener('beforeunload', saveOnHide)
     window.addEventListener('pagehide', saveOnHide)
     return () => {
-      document.removeEventListener('visibilitychange', saveOnHide)
+      document.removeEventListener('visibilitychange', handleVisChange)
       window.removeEventListener('beforeunload', saveOnHide)
       window.removeEventListener('pagehide', saveOnHide)
     }
-  }, [reportData, step, reportId, initDone, editId])
+  }, [initDone, editId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // For edit mode: load plant data first, then merge existing report on top
   useEffect(() => {
@@ -167,17 +225,38 @@ export default function ShiftWizard() {
       .limit(1)
       .maybeSingle()
 
+    let prevMixes = []
     if (prevReport) {
-      const [psRes, dlRes, rmRes, dsRes] = await Promise.all([
+      const [psRes, dlRes, rmRes, dsRes, mixRes] = await Promise.all([
         supabase.from('pellet_stock').select('*').eq('shift_report_id', prevReport.id),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', prevReport.id),
         supabase.from('raw_material_usage').select('*').eq('shift_report_id', prevReport.id),
         supabase.from('diesel_stock').select('*').eq('shift_report_id', prevReport.id).maybeSingle(),
+        supabase.from('shift_mixes').select('*, shift_mix_compositions(*)').eq('shift_report_id', prevReport.id),
       ])
       prevPelletStock = psRes.data || []
       prevDieselLog = dlRes.data || []
       prevRawMaterials = rmRes.data || []
       prevDieselStock = dsRes.data
+      prevMixes = mixRes.data || []
+    }
+
+    // Carry forward mix opening stock from previous shift closing
+    if (prevMixes.length > 0) {
+      const carryForwardMixes = prevMixes.map(m => ({
+        local_id: 'mix_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+        db_id: null,
+        name: m.name,
+        type: m.type,
+        opening_kg: parseFloat(m.closing_kg) || 0,
+        prepared_kg: 0,
+        ingredients: (m.shift_mix_compositions || []).map(c => ({
+          raw_material_type_id: c.raw_material_type_id,
+          name: c.raw_material_name,
+          quantity_kg: 0,
+        })),
+      }))
+      updateData('mixes', carryForwardMixes)
     }
 
     if (machinesRes.data) {
@@ -243,7 +322,7 @@ export default function ShiftWizard() {
       updateData('remarks', report.remarks || '')
 
       // Load machines, materials, equipment first (needed for merging data)
-      const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases] = await Promise.all([
+      const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases, mixesRes] = await Promise.all([
         supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
         supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
         supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
@@ -255,6 +334,7 @@ export default function ShiftWizard() {
         supabase.from('issues').select('*').eq('shift_report_id', editId),
         supabase.from('diesel_stock').select('*').eq('shift_report_id', editId).maybeSingle(),
         supabase.from('diesel_purchases').select('*').eq('shift_report_id', editId),
+        supabase.from('shift_mixes').select('*, shift_mix_compositions(*), shift_mix_machine_usage(*)').eq('shift_report_id', editId),
       ])
 
       // Initialize machines array from active machines
@@ -336,21 +416,56 @@ export default function ShiftWizard() {
         updateData('diesel', equipmentRows)
       }
 
-      // Load production entries (Step 3)
-      if (machProd.data?.length) {
+      // Load mixes (Step 3)
+      if (mixesRes.data?.length) {
+        const loadedMixes = mixesRes.data.map(m => ({
+          local_id: 'mix_' + m.id, // stable client-side ID derived from DB ID
+          db_id: m.id,
+          name: m.name,
+          type: m.type,
+          opening_kg: parseFloat(m.opening_kg) || 0,
+          prepared_kg: parseFloat(m.prepared_kg) || 0,
+          ingredients: (m.shift_mix_compositions || []).map(c => ({
+            raw_material_type_id: c.raw_material_type_id,
+            name: c.raw_material_name,
+            quantity_kg: parseFloat(c.quantity_kg) || 0,
+          })),
+        }))
+        updateData('mixes', loadedMixes)
+
+        // Load production entries with mix_usages restored (Step 4)
+        if (machProd.data?.length) {
+          const productionEntries = machProd.data
+            .filter(mp => parseFloat(mp.production_mt) > 0)
+            .map(mp => {
+              // Restore mix_usages from shift_mix_machine_usage
+              const mixUsages = loadedMixes.flatMap(mix =>
+                (mix.db_id ? mixesRes.data.find(m => m.id === mix.db_id)?.shift_mix_machine_usage || [] : [])
+                  .filter(u => u.machine_id === mp.machine_id)
+                  .map(u => ({ mix_local_id: mix.local_id, quantity_kg: parseFloat(u.quantity_kg) || 0 }))
+              )
+              return {
+                id: mp.id,
+                machine_id: mp.machine_id,
+                machine_name: mp.machines?.name || 'Unknown',
+                quantity: parseFloat(mp.production_mt) || 0,
+                mix_usages: mixUsages,
+              }
+            })
+          if (productionEntries.length > 0) updateData('production', productionEntries)
+        }
+      } else if (machProd.data?.length) {
+        // No mixes — load production entries without mix_usages
         const productionEntries = machProd.data
           .filter(mp => parseFloat(mp.production_mt) > 0)
           .map(mp => ({
             id: mp.id,
             machine_id: mp.machine_id,
             machine_name: mp.machines?.name || 'Unknown',
-            pellet_type: '', // Not stored in DB, user must re-enter
             quantity: parseFloat(mp.production_mt) || 0,
-            ingredients: '',
+            mix_usages: [],
           }))
-        if (productionEntries.length > 0) {
-          updateData('production', productionEntries)
-        }
+        if (productionEntries.length > 0) updateData('production', productionEntries)
       }
 
 
@@ -423,6 +538,17 @@ export default function ShiftWizard() {
         setReportId(report.id)
       }
 
+      // Helper: derive pellet_type_name for a machine from its mix usages
+      function derivePelletType(machineId) {
+        const machineEntries = reportData.production.filter(p => p.machine_id === machineId)
+        const usedMixTypes = machineEntries.flatMap(p =>
+          (p.mix_usages || []).map(u => (reportData.mixes || []).find(m => m.local_id === u.mix_local_id)?.type).filter(Boolean)
+        )
+        if (usedMixTypes.length === 0) return null
+        const unique = [...new Set(usedMixTypes)]
+        return unique.length === 1 ? unique[0] : 'Sample'
+      }
+
       // Save machine production
       if (reportData.machines.length) {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
@@ -436,9 +562,64 @@ export default function ShiftWizard() {
             production_mt: reportData.production
               .filter(p => p.machine_id === m.id)
               .reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
+            pellet_type_name: derivePelletType(m.id),
           }))
         if (machineRows.length) {
           await supabase.from('machine_production').insert(machineRows)
+        }
+      }
+
+      // Save mixes (shift_mixes + compositions + machine_usage)
+      // shift_mix_compositions and shift_mix_machine_usage cascade-delete via FK when shift_mixes is deleted
+      await supabase.from('shift_mix_machine_usage').delete().eq('shift_report_id', report.id)
+      await supabase.from('shift_mixes').delete().eq('shift_report_id', report.id)
+
+      if ((reportData.mixes || []).length > 0) {
+        for (const mix of reportData.mixes) {
+          // Compute used_kg from production mix_usages
+          const usedKg = (reportData.production || []).reduce((sum, p) =>
+            sum + (p.mix_usages || []).filter(u => u.mix_local_id === mix.local_id).reduce((s, u) => s + sanitizeNumber(u.quantity_kg), 0), 0)
+          const closingKg = (sanitizeNumber(mix.opening_kg) + sanitizeNumber(mix.prepared_kg)) - usedKg
+
+          const { data: savedMix, error: mixErr } = await supabase.from('shift_mixes').insert({
+            shift_report_id: report.id,
+            plant_id: plant.id,
+            org_id: plant.org_id,
+            name: sanitizeText(mix.name, 100),
+            type: sanitizeText(mix.type, 50),
+            opening_kg: sanitizeNumber(mix.opening_kg),
+            prepared_kg: sanitizeNumber(mix.prepared_kg),
+            used_kg: usedKg,
+            closing_kg: closingKg,
+          }).select().single()
+          if (mixErr) { console.error('Mix save error:', mixErr); continue }
+
+          // Save compositions
+          if (mix.ingredients?.length > 0) {
+            const compRows = mix.ingredients
+              .filter(ing => ing.raw_material_type_id && sanitizeNumber(ing.quantity_kg) > 0)
+              .map(ing => ({
+                mix_id: savedMix.id,
+                raw_material_type_id: ing.raw_material_type_id,
+                raw_material_name: sanitizeText(ing.name, 100),
+                quantity_kg: sanitizeNumber(ing.quantity_kg),
+              }))
+            if (compRows.length > 0) await supabase.from('shift_mix_compositions').insert(compRows)
+          }
+
+          // Save machine usages for this mix
+          const machineUsageRows = []
+          ;(reportData.production || []).forEach(p => {
+            ;(p.mix_usages || []).filter(u => u.mix_local_id === mix.local_id && sanitizeNumber(u.quantity_kg) > 0).forEach(u => {
+              machineUsageRows.push({
+                mix_id: savedMix.id,
+                shift_report_id: report.id,
+                machine_id: p.machine_id,
+                quantity_kg: sanitizeNumber(u.quantity_kg),
+              })
+            })
+          })
+          if (machineUsageRows.length > 0) await supabase.from('shift_mix_machine_usage').insert(machineUsageRows)
         }
       }
 
@@ -589,7 +770,7 @@ export default function ShiftWizard() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fefae0', width: '100%', maxWidth: 480, boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
       <PageHeader
         title={STEPS[step - 1].title}
-        subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of 9 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
+        subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of 10 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
         onBack={() => {
           if (step === 1) {
             if (window.confirm('Stop editing? Any unsaved changes will be lost.')) {
@@ -636,7 +817,7 @@ export default function ShiftWizard() {
             <ArrowLeft size={16} /> Previous
           </button>
         )}
-        {step < 9 ? (
+        {step < 10 ? (
           <button
             onClick={() => setStep(step + 1)}
             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
@@ -654,6 +835,60 @@ export default function ShiftWizard() {
           </button>
         )}
       </div>
+      {/* Resume or Start Fresh prompt for stale wizard data */}
+      {showResumePrompt && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', zIndex: 1000, padding: 20,
+          }}
+        >
+          <div
+            style={{
+              background: '#fff', borderRadius: 14, padding: 24,
+              maxWidth: 360, width: '100%',
+              boxShadow: '0 20px 25px rgba(0,0,0,0.15)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <AlertTriangle size={20} color="#d4a373" />
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#2c2c2c', margin: 0 }}>
+                Unsaved Report Found
+              </h3>
+            </div>
+            <p style={{ fontSize: 13, color: '#595c4a', lineHeight: 1.5, margin: '0 0 8px 0' }}>
+              You have an incomplete shift report
+              {pendingRestore?.savedDate ? ` from ${new Date(pendingRestore.savedDate + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : ''}.
+            </p>
+            <p style={{ fontSize: 13, color: '#595c4a', lineHeight: 1.5, margin: '0 0 20px 0' }}>
+              Would you like to continue where you left off, or start a new report?
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={handleStartFresh}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 12,
+                  border: '1.5px solid #e5ddd0', background: '#fff',
+                  fontSize: 13, fontWeight: 600, color: '#2c2c2c', cursor: 'pointer',
+                }}
+              >
+                Start Fresh
+              </button>
+              <button
+                onClick={handleResume}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 12,
+                  border: 'none', background: '#2d6a4f', color: '#fff',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >
+                Resume
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <ConfirmDialog
         isOpen={showConfirm}
         onClose={() => setShowConfirm(false)}
