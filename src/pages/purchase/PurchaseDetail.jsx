@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Loader2, Edit3, X, CheckCircle } from 'lucide-react'
+import { Loader2, Edit3, X, CheckCircle, Download, Trash2 } from 'lucide-react'
+import { exportPurchasePDF } from '../../lib/pdfExport'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
@@ -13,6 +14,7 @@ export default function PurchaseDetail() {
   const queryClient = useQueryClient()
   const [showPhoto, setShowPhoto] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
+  const [createdByName, setCreatedByName] = useState(null)
 
   const { data: purchase, isLoading, isError } = useQuery({
     queryKey: ['purchase', id],
@@ -27,6 +29,20 @@ export default function PurchaseDetail() {
     },
     enabled: !!id,
   })
+
+  useEffect(() => {
+    if (purchase?.created_by) {
+      supabase.from('employees').select('name').eq('id', purchase.created_by).single()
+        .then(({ data }) => { if (data) setCreatedByName(data.name) })
+    }
+  }, [purchase?.created_by])
+
+  useEffect(() => {
+    if (purchase?.created_by) {
+      supabase.from('employees').select('name').eq('id', purchase.created_by).single()
+        .then(({ data }) => { if (data) setCreatedByName(data.name) })
+    }
+  }, [purchase?.created_by])
 
   function formatCurrency(amount) {
     return '\u20B9' + (Math.round(amount) || 0).toLocaleString('en-IN')
@@ -72,8 +88,8 @@ export default function PurchaseDetail() {
     )
   }
 
-  const avgRatePerKg = (purchase.quantity_kg || purchase.final_quantity) > 0
-    ? (purchase.total_amount / (purchase.quantity_kg || purchase.final_quantity))
+  const avgRatePerKg = purchase.quantity_kg > 0
+    ? (purchase.total_amount / purchase.quantity_kg)
     : 0
 
   const totalCharges = (parseFloat((purchase.loading_expense || purchase.loading_charges || 0)) || 0) +
@@ -158,7 +174,7 @@ export default function PurchaseDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>Final Qty</div>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round((purchase.quantity_kg || purchase.final_quantity) || 0).toLocaleString('en-IN')} kg</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg</div>
             </div>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>RM Rate</div>
@@ -216,7 +232,7 @@ export default function PurchaseDetail() {
             </div>
             <div>
               <div style={labelStyle}>Final Quantity</div>
-              <div style={valueStyle}>{(purchase.quantity_kg || purchase.final_quantity) ? `${Math.round((purchase.quantity_kg || purchase.final_quantity)).toLocaleString('en-IN')} kg` : 'N/A'}</div>
+              <div style={valueStyle}>{purchase.quantity_kg ? `${Math.round(purchase.quantity_kg).toLocaleString('en-IN')} kg` : 'N/A'}</div>
             </div>
           </div>
         </div>
@@ -227,7 +243,7 @@ export default function PurchaseDetail() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
               <span style={{ color: '#595c4a' }}>RM Amount</span>
-              <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{formatCurrency(purchase.rm_amount)}</span>
+              <span style={{ fontWeight: 600, color: '#2c2c2c' }}>{formatCurrency(purchase.total_rm_amount)}</span>
             </div>
             {((purchase.loading_expense || purchase.loading_charges || 0) > 0 || (purchase.unloading_expense || purchase.unloading_charges || 0) > 0 || (purchase.transport_expense || purchase.transport_charges || 0) > 0) && (
               <>
@@ -324,12 +340,33 @@ export default function PurchaseDetail() {
           </div>
         )}
 
-        <DeleteRequestButton
-          entityType="purchase"
-          entityId={id}
-          entityLabel={`${purchase.suppliers?.name || 'Purchase'} — ${formatDate(purchase.date)}`}
-          onRequestSent={() => navigate('/purchase')}
-        />
+        {/* Created By */}
+        {(createdByName || purchase.created_at) && (
+          <div style={{ background: '#f5f0e1', borderRadius: 14, padding: '10px 14px', fontSize: 11, color: '#595c4a' }}>
+            {createdByName ? 'Created by ' + createdByName : 'Created'}{purchase.created_at ? ' on ' + new Date(purchase.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+          </div>
+        )}
+
+        {/* PDF + Request Delete row */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => exportPurchasePDF(purchase, createdByName)}
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '14px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
+              background: '#e8f0ec', color: '#2d6a4f', border: '1.5px solid #b8d4c4', cursor: 'pointer'
+            }}
+          >
+            <Download size={14} /> PDF
+          </button>
+          <DeleteRequestButton
+            entityType="purchase"
+            entityId={id}
+            entityLabel={`${purchase.suppliers?.name || 'Purchase'} — ${formatDate(purchase.date)}`}
+            onRequestSent={() => navigate('/purchase')}
+            containerStyle={{ flex: 1 }}
+          />
+        </div>
       </div>
     </div>
   )

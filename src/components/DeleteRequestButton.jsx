@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { showToast } from './Toast'
 
-export default function DeleteRequestButton({ entityType, entityId, entityLabel, onRequestSent }) {
+export default function DeleteRequestButton({ entityType, entityId, entityLabel, onRequestSent, containerStyle }) {
   const { employee, plant } = useAuth()
   const [showModal, setShowModal] = useState(false)
   const [reason, setReason] = useState('')
@@ -75,47 +75,52 @@ export default function DeleteRequestButton({ entityType, entityId, entityLabel,
   // Show pending badge if request exists
   if (pendingRequest) {
     return (
-      <div
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '6px 12px',
-          borderRadius: 8,
-          background: '#ffd966',
-          color: '#854d0e',
-          fontSize: 13,
-          fontWeight: 500,
-        }}
-      >
-        <AlertCircle size={16} />
-        <span>Deletion Requested</span>
+      <div style={containerStyle}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            padding: '14px 12px',
+            borderRadius: 12,
+            background: '#ffd966',
+            color: '#854d0e',
+            fontSize: 13,
+            fontWeight: 600,
+            width: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          <AlertCircle size={16} />
+          <span>Deletion Requested</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <>
+    <div style={containerStyle}>
       <button
         onClick={() => setShowModal(true)}
         style={{
-          display: 'inline-flex',
+          display: 'flex',
           alignItems: 'center',
-          gap: 6,
-          padding: '8px 12px',
-          borderRadius: 8,
-          background: '#d32f2f',
-          color: 'white',
-          border: 'none',
+          justifyContent: 'center',
+          gap: 8,
+          padding: '14px 0',
+          borderRadius: 12,
+          background: '#FEE2E2',
+          color: '#B91C1C',
+          border: '1.5px solid #FECACA',
           fontSize: 13,
-          fontWeight: 500,
+          fontWeight: 600,
           cursor: 'pointer',
-          transition: 'background 0.2s',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
-        onMouseOver={(e) => (e.target.style.background = '#b71c1c')}
-        onMouseOut={(e) => (e.target.style.background = '#d32f2f')}
       >
-        <Trash2 size={16} />
+        <Trash2 size={14} />
         Request Delete
       </button>
 
@@ -270,6 +275,6 @@ export default function DeleteRequestButton({ entityType, entityId, entityLabel,
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

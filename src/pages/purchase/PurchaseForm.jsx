@@ -32,9 +32,9 @@ export default function PurchaseForm() {
     net_weight: '',
     moisture_percentage: '',
     deduction_kg: '',
-    final_quantity: '',
+    quantity_kg: '',
     rate_per_kg: '',
-    rm_amount: '',
+    total_rm_amount: '',
     loading_charges: 0,
     unloading_charges: 0,
     transport_charges: 0,
@@ -111,9 +111,9 @@ export default function PurchaseForm() {
       net_weight: purchaseData.net_weight ?? '',
       moisture_percentage: purchaseData.moisture_percent ?? '',
       deduction_kg: purchaseData.deduction_kg ?? '',
-      final_quantity: purchaseData.quantity_kg ?? purchaseData.final_quantity ?? '',
+      quantity_kg: purchaseData.quantity_kg ?? '',
       rate_per_kg: purchaseData.rate_per_kg ?? '',
-      rm_amount: purchaseData.rm_amount ?? '',
+      total_rm_amount: purchaseData.total_rm_amount ?? '',
       loading_charges: purchaseData.loading_expense ?? purchaseData.loading_charges ?? 0,
       unloading_charges: purchaseData.unloading_expense ?? purchaseData.unloading_charges ?? 0,
       transport_charges: purchaseData.transport_expense ?? purchaseData.transport_charges ?? 0,
@@ -185,8 +185,8 @@ export default function PurchaseForm() {
     const avgCost = finalQty > 0 ? totalAmount / finalQty : 0
 
     data.deduction_kg = deduction > 0 ? deduction.toFixed(2) : ''
-    data.final_quantity = finalQty > 0 ? finalQty.toFixed(2) : ''
-    data.rm_amount = rmAmount > 0 ? rmAmount.toFixed(2) : ''
+    data.quantity_kg = finalQty > 0 ? finalQty.toFixed(2) : ''
+    data.total_rm_amount = rmAmount > 0 ? rmAmount.toFixed(2) : ''
     data.total_amount = totalAmount > 0 ? totalAmount.toFixed(2) : ''
     data.average_cost_per_kg = avgCost > 0 ? avgCost.toFixed(2) : ''
   }
@@ -332,7 +332,7 @@ export default function PurchaseForm() {
         net_weight: sanitizeNumber(formData.net_weight),
         moisture_percent: sanitizeNumber(formData.moisture_percentage) || 0,
         deduction_kg: sanitizeNumber(formData.deduction_kg) || 0,
-        quantity_kg: sanitizeNumber(formData.final_quantity) || 0,
+        quantity_kg: sanitizeNumber(formData.quantity_kg) || 0,
         rate_per_kg: sanitizeNumber(formData.rate_per_kg) || 0,
         loading_expense: sanitizeNumber(formData.loading_charges) || 0,
         unloading_expense: sanitizeNumber(formData.unloading_charges) || 0,
@@ -631,7 +631,7 @@ export default function PurchaseForm() {
             <input
               type="number"
               disabled
-              value={formData.final_quantity}
+              value={formData.quantity_kg}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed', boxSizing: 'border-box' }}
             />
             <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 4 }}>Auto-calculated</div>
@@ -658,7 +658,7 @@ export default function PurchaseForm() {
               <input
                 type="number"
                 disabled
-                value={formData.rm_amount}
+                value={formData.total_rm_amount}
                 style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed', boxSizing: 'border-box' }}
               />
               <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 4 }}>Auto-calculated</div>
@@ -719,7 +719,7 @@ export default function PurchaseForm() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #e5ddd0' }}>
               <span style={{ fontSize: 13, color: '#595c4a' }}>RM Amount</span>
-              <span style={{ fontWeight: 700, color: '#2c2c2c' }}>₹{(parseFloat(formData.rm_amount) || 0).toFixed(2)}</span>
+              <span style={{ fontWeight: 700, color: '#2c2c2c' }}>₹{(parseFloat(formData.total_rm_amount) || 0).toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #e5ddd0' }}>
               <span style={{ fontSize: 13, color: '#595c4a' }}>Total Charges</span>

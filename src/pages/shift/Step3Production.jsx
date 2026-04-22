@@ -16,10 +16,13 @@ const COLORS = {
 }
 
 export default memo(function Step3Production({ data, updateData }) {
+  // Only machines that are running AND have both from_time and to_time filled
+  const eligibleMachines = data.machines.filter(m => !m.did_not_run && m.from_time && m.to_time)
+
   function addEntry() {
     updateData('production', [...data.production, {
-      id: Date.now(),
-      machine_id: data.machines[0]?.id || '',
+      id: performance.now() + Math.floor(Math.random() * 1000), // eslint-disable-line
+      machine_id: eligibleMachines[0]?.id || '',
       pellet_type: '',
       quantity: '',
       ingredients: [],
@@ -115,6 +118,19 @@ export default memo(function Step3Production({ data, updateData }) {
     return acc
   }, {})
 
+  // Empty state — no machines have timings yet
+  if (eligibleMachines.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '32px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0' }}>
+        <div style={{ fontSize: 32, marginBottom: 8 }}>⏱️</div>
+        <p style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 6 }}>No machine timings entered</p>
+        <p style={{ fontSize: 12, color: '#595c4a' }}>
+          Go back to Step 2 and enter the From / To times for at least one machine to enable production entries.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -154,7 +170,7 @@ export default memo(function Step3Production({ data, updateData }) {
                 style={{ width: '100%', height: 44, padding: '0 12px', borderRadius: 8, border: `1.5px solid ${COLORS.border}`, fontSize: 14, outline: 'none', color: COLORS.primary, boxSizing: 'border-box' }}
               >
                 <option value="">Select...</option>
-                {data.machines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                {eligibleMachines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
             <div>

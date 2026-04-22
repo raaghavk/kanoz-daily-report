@@ -13,21 +13,24 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
   const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`
 
   useEffect(() => {
-    if (plant?.id) {
+    if (plant?.id && data?.shift_start_date) {
       loadDispatches()
     }
-  }, [plant]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [plant, data?.shift_start_date, data?.shift_end_date, data?.start_time, data?.end_time]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadDispatches() {
     try {
       setLoading(true)
 
       // Build shift time window
+      // In edit mode, times come from DB as HH:MM:SS; in create mode as HH:MM
+      // Normalize to HH:MM before appending :00 to avoid invalid dates like 08:00:00:00
+      const normalizeTime = (t) => t ? t.substring(0, 5) : t
       const shiftStart = data?.shift_start_date && data?.start_time
-        ? `${data.shift_start_date}T${data.start_time}:00`
+        ? `${data.shift_start_date}T${normalizeTime(data.start_time)}:00`
         : null
       const shiftEnd = data?.shift_end_date && data?.end_time
-        ? `${data.shift_end_date}T${data.end_time}:00`
+        ? `${data.shift_end_date}T${normalizeTime(data.end_time)}:00`
         : null
 
       // Get date range from shift

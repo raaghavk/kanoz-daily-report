@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Settings, Plus, ClipboardList, Truck, Package, X, MessageCircle } from 'lucide-react'
+import { Home, Settings, Plus, ClipboardList, Truck, Package, X, MessageCircle, ArrowDownCircle, CheckSquare } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
 
@@ -13,6 +13,7 @@ export default function BottomNav() {
 
   const isHome = location.pathname === '/'
   const isChat = location.pathname === '/insights'
+  const isTasks = location.pathname === '/tasks'
   const isMore = location.pathname === '/settings' ||
     location.pathname.startsWith('/suppliers') ||
     location.pathname.startsWith('/customers') ||
@@ -39,7 +40,7 @@ export default function BottomNav() {
         <div
           onClick={() => setShowSheet(false)}
           style={{
-            position: 'absolute', inset: 0, zIndex: 50,
+            position: 'fixed', inset: 0, zIndex: 50,
             background: 'rgba(0,0,0,0.4)',
             display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
           }}
@@ -102,38 +103,56 @@ export default function BottomNav() {
                 </div>
               </button>
               )}
+              {can(role, 'create_spare_parts') && (
+              <button onClick={() => handleAction('/spare-parts/stock-in')} style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
+                background: '#fefae0', borderRadius: 14, border: '1px solid #e5ddd0', cursor: 'pointer', width: '100%', textAlign: 'left',
+              }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <ArrowDownCircle size={20} color="white" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Purchase (Spare Parts)</div>
+                  <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>Record parts purchased</div>
+                </div>
+              </button>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Bottom Nav Bar — 4 items: Home | + | Chat | More */}
-      <nav style={{
-        flexShrink: 0, display: 'flex',
-        background: '#FFFFFF', borderTop: '1px solid #e5ddd0',
-        padding: '8px 0', paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
-        alignItems: 'center',
-      }}>
-        <button onClick={() => navigate('/')} style={navBtnStyle(isHome)}>
-          <Home size={22} strokeWidth={isHome ? 2.5 : 1.5} />
-          <span style={{ fontSize: 10, fontWeight: isHome ? 700 : 500 }}>Home</span>
-        </button>
+      {/* Bottom Nav Bar — fixed to viewport bottom */}
+      <nav className="bottom-nav">
+        <div style={{ display: 'flex', padding: '8px 0', alignItems: 'center' }}>
+          <button onClick={() => navigate('/')} style={navBtnStyle(isHome)}>
+            <Home size={22} strokeWidth={isHome ? 2.5 : 1.5} />
+            <span style={{ fontSize: 10, fontWeight: isHome ? 700 : 500 }}>Home</span>
+          </button>
 
-        <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(false)}>
-          <Plus size={24} strokeWidth={2} style={{ color: '#2d6a4f', transition: 'transform 0.2s', transform: showSheet ? 'rotate(45deg)' : 'none' }} />
-          <span style={{ fontSize: 10, fontWeight: 500, color: '#8a8d7a' }}>New</span>
-        </button>
+          <button onClick={() => navigate('/tasks')} style={navBtnStyle(isTasks)}>
+            <CheckSquare size={22} strokeWidth={isTasks ? 2.5 : 1.5} />
+            <span style={{ fontSize: 10, fontWeight: isTasks ? 700 : 500 }}>Tasks</span>
+          </button>
 
-        <button onClick={() => navigate('/insights')} style={navBtnStyle(isChat)}>
-          <MessageCircle size={22} strokeWidth={isChat ? 2.5 : 1.5} />
-          <span style={{ fontSize: 10, fontWeight: isChat ? 700 : 500 }}>Ask</span>
-        </button>
+          <button onClick={() => setShowSheet(!showSheet)} style={navBtnStyle(false)}>
+            <Plus size={24} strokeWidth={2} style={{ color: '#2d6a4f', transition: 'transform 0.2s', transform: showSheet ? 'rotate(45deg)' : 'none' }} />
+            <span style={{ fontSize: 10, fontWeight: 500, color: '#8a8d7a' }}>New</span>
+          </button>
 
-        <button onClick={() => navigate('/settings')} style={navBtnStyle(isMore)}>
-          <Settings size={22} strokeWidth={isMore ? 2.5 : 1.5} />
-          <span style={{ fontSize: 10, fontWeight: isMore ? 700 : 500 }}>More</span>
-        </button>
+          <button onClick={() => navigate('/insights')} style={navBtnStyle(isChat)}>
+            <MessageCircle size={22} strokeWidth={isChat ? 2.5 : 1.5} />
+            <span style={{ fontSize: 10, fontWeight: isChat ? 700 : 500 }}>Ask</span>
+          </button>
+
+          <button onClick={() => navigate('/settings')} style={navBtnStyle(isMore)}>
+            <Settings size={22} strokeWidth={isMore ? 2.5 : 1.5} />
+            <span style={{ fontSize: 10, fontWeight: isMore ? 700 : 500 }}>More</span>
+          </button>
+        </div>
       </nav>
+      {/* Spacer to push content above fixed nav */}
+      <div className="nav-spacer" />
     </>
   )
 }

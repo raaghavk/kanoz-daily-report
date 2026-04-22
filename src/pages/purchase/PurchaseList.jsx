@@ -325,7 +325,7 @@ export default function PurchaseList() {
                               {purchase.suppliers?.name || 'Unknown'}
                             </div>
                             <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
-                              {purchase.raw_material_types?.name || 'N/A'} · {Math.round(purchase.final_quantity || 0).toLocaleString('en-IN')} kg
+                              {purchase.raw_material_types?.name || 'N/A'} · {Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg
                             </div>
                           </div>
                           {/* Amount + Status */}

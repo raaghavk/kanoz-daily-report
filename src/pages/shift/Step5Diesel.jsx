@@ -186,7 +186,7 @@ export default memo(function Step5Diesel({ data, updateData }) {
             <div style={{ fontSize: 18, fontWeight: 700, color: '#2d6a4f' }}>{totalPurchased}</div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <div style={{ fontSize: 10, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>-Issued L</div>
+            <div style={{ fontSize: 10, color: '#595c4a', fontWeight: 600, marginBottom: 4 }}>-Used L</div>
             <div style={{ fontSize: 18, fontWeight: 700, color: '#d32f2f' }}>{totalAddedToEquipment}</div>
           </div>
           <div style={{ textAlign: 'center', padding: '8px 0' }}>

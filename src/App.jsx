@@ -26,6 +26,16 @@ const CustomerList = lazy(() => import('./pages/customers/CustomerList'))
 const CustomerDetail = lazy(() => import('./pages/customers/CustomerDetail'))
 const TransporterList = lazy(() => import('./pages/transporters/TransporterList'))
 const TransporterDetail = lazy(() => import('./pages/transporters/TransporterDetail'))
+const SparePartsHome = lazy(() => import('./pages/spareparts/SparePartsHome'))
+const SparePartsListPage = lazy(() => import('./pages/spareparts/SparePartsListPage'))
+const SparePartsSuppliersPage = lazy(() => import('./pages/spareparts/SparePartsSuppliersPage'))
+const StockInPage = lazy(() => import('./pages/spareparts/StockInPage'))
+const IssuePartPage = lazy(() => import('./pages/spareparts/IssuePartPage'))
+const PartDetailPage = lazy(() => import('./pages/spareparts/PartDetailPage'))
+const SparePartsPurchaseHistoryPage = lazy(() => import('./pages/spareparts/SparePartsPurchaseHistoryPage'))
+const SparePartsUsageHistoryPage = lazy(() => import('./pages/spareparts/SparePartsUsageHistoryPage'))
+const ReorderRequestsPage = lazy(() => import('./pages/spareparts/ReorderRequestsPage'))
+const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
 
 function LoadingFallback() {
   return (
@@ -108,6 +118,16 @@ export default function App() {
         <Route path="customers/:id" element={<CustomerDetail />} />
         <Route path="transporters" element={<TransporterList />} />
         <Route path="transporters/:id" element={<TransporterDetail />} />
+        <Route path="spare-parts" element={<PermissionGuard action="view_spare_parts"><SparePartsHome /></PermissionGuard>} />
+        <Route path="spare-parts/parts" element={<PermissionGuard action="view_spare_parts"><SparePartsListPage /></PermissionGuard>} />
+        <Route path="spare-parts/parts/:id" element={<PermissionGuard action="view_spare_parts"><PartDetailPage /></PermissionGuard>} />
+        <Route path="spare-parts/suppliers" element={<PermissionGuard action="view_spare_parts"><SparePartsSuppliersPage /></PermissionGuard>} />
+        <Route path="spare-parts/stock-in" element={<PermissionGuard action="create_spare_parts"><StockInPage /></PermissionGuard>} />
+        <Route path="spare-parts/issue" element={<PermissionGuard action="create_spare_parts"><IssuePartPage /></PermissionGuard>} />
+        <Route path="spare-parts/purchase-history" element={<PermissionGuard action="view_spare_parts"><SparePartsPurchaseHistoryPage /></PermissionGuard>} />
+        <Route path="spare-parts/usage-history" element={<PermissionGuard action="view_spare_parts"><SparePartsUsageHistoryPage /></PermissionGuard>} />
+        <Route path="spare-parts/reorder" element={<PermissionGuard action="view_spare_parts"><ReorderRequestsPage /></PermissionGuard>} />
+        <Route path="tasks" element={<TasksPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
@@ -203,8 +223,16 @@ function SettingsPage() {
   }
 
   return (
-    <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <h2 style={{ fontSize: 18, fontWeight: 700 }}>Settings</h2>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 10, flexShrink: 0, background: '#1b4332', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div style={{ padding: '14px 20px' }}>
+          <h2 style={{ fontSize: 17, fontWeight: 700, color: 'white', margin: 0 }}>Settings</h2>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+            {plant?.name || 'Plant'} {'\u00B7'} {employee?.role || 'User'}
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Name:</span> {employee?.name}</div>
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Plant:</span> {plant?.name}</div>
@@ -225,63 +253,50 @@ function SettingsPage() {
           {switching && <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 4 }}>Switching...</div>}
         </div>
       )}
-      {/* Directory Links */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5 }}>Directory</div>
-        <button
-          onClick={() => nav('/suppliers')}
-          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
-        >
-          <span style={{ fontSize: 18 }}>👤</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Suppliers</div>
-            <div style={{ fontSize: 11, color: '#8a8d7a' }}>Raw material suppliers</div>
+      {/* Directory Links — filtered by role */}
+      {(() => {
+        const role = employee?.role
+        const dirItems = [
+          { path: '/suppliers', emoji: '👤', label: 'Suppliers', show: true },
+          { path: '/customers', emoji: '🏭', label: 'Customers', show: role !== 'purchase_manager' },
+          { path: '/transporters', emoji: '🚛', label: 'Transporters', show: role !== 'purchase_manager' },
+          { path: '/spare-parts', emoji: '🔧', label: 'Spare Parts', show: can(role, 'view_spare_parts') },
+        ].filter(i => i.show)
+        if (!dirItems.length) return null
+        return (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Directory</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {dirItems.map(item => (
+                <button key={item.path} onClick={() => nav(item.path)}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '16px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}>
+                  <span style={{ fontSize: 24 }}>{item.emoji}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#2c2c2c' }}>{item.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </button>
-        <button
-          onClick={() => nav('/customers')}
-          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
-        >
-          <span style={{ fontSize: 18 }}>🏭</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Customers</div>
-            <div style={{ fontSize: 11, color: '#8a8d7a' }}>Dispatch destinations</div>
-          </div>
-        </button>
-        <button
-          onClick={() => nav('/transporters')}
-          style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '14px 16px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}
-        >
-          <span style={{ fontSize: 18 }}>🚛</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Transporters</div>
-            <div style={{ fontSize: 11, color: '#8a8d7a' }}>Vehicle transport partners</div>
-          </div>
-        </button>
-      </div>
-      {can(employee?.role, 'manage_users') && (
-        <button
-          onClick={() => nav('/users')}
-          style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-        >
-          Manage Team Members
-        </button>
-      )}
-      {can(employee?.role, 'plant_settings') && (
-        <button
-          onClick={() => nav('/admin')}
-          style={{ width: '100%', padding: '14px 0', background: '#d4a373', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-        >
-          Plant Settings (Admin)
-        </button>
-      )}
-      {can(employee?.role, 'manage_users') && (
-        <button
-          onClick={() => nav('/delete-requests')}
-          style={{ width: '100%', padding: '14px 0', background: '#DC2626', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
-        >
-          Delete Requests
-        </button>
+        )
+      })()}
+      {/* Admin action buttons — single row if multiple, stacked if one */}
+      {(can(employee?.role, 'manage_users') || can(employee?.role, 'plant_settings')) && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          {can(employee?.role, 'manage_users') && (
+            <button onClick={() => nav('/users')} style={{ flex: 1, padding: '12px 6px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              Team
+            </button>
+          )}
+          {can(employee?.role, 'plant_settings') && (
+            <button onClick={() => nav('/admin')} style={{ flex: 1, padding: '12px 6px', background: '#d4a373', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              Plant Settings
+            </button>
+          )}
+          {can(employee?.role, 'manage_users') && (
+            <button onClick={() => nav('/delete-requests')} style={{ flex: 1, padding: '12px 6px', background: '#DC2626', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+              Deletions
+            </button>
+          )}
+        </div>
       )}
       {/* Notifications */}
       <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -314,6 +329,8 @@ function SettingsPage() {
       >
         Sign Out
       </button>
+      </div>
     </div>
   )
 }
+

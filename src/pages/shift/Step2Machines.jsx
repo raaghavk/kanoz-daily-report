@@ -86,7 +86,7 @@ export default memo(function Step2Machines({ data, updateData }) {
                   border: 'none', cursor: 'pointer', marginLeft: 'auto'
                 }}
               >
-                {m.did_not_run ? 'Not Running' : 'Active'}
+                {m.did_not_run ? '✕ No Production' : '✓ Running'}
               </button>
             </div>
             {!m.did_not_run && (
@@ -99,6 +99,7 @@ export default memo(function Step2Machines({ data, updateData }) {
                 <input
                   type="time"
                   value={m.from_time}
+                  onInput={e => updateMachine(idx, 'from_time', e.target.value)}
                   onChange={e => updateMachine(idx, 'from_time', e.target.value)}
                   onBlur={e => updateMachine(idx, 'from_time', e.target.value)}
                   style={{ ...inputStyle, border: 'none', borderRight: '1px solid #e5ddd0', borderRadius: 0 }}
@@ -106,6 +107,7 @@ export default memo(function Step2Machines({ data, updateData }) {
                 <input
                   type="time"
                   value={m.to_time}
+                  onInput={e => updateMachine(idx, 'to_time', e.target.value)}
                   onChange={e => updateMachine(idx, 'to_time', e.target.value)}
                   onBlur={e => updateMachine(idx, 'to_time', e.target.value)}
                   style={{ ...inputStyle, border: 'none', borderRadius: 0 }}

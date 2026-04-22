@@ -302,7 +302,7 @@ export default function ReportView() {
           </div>
 
           {/* Start | End row */}
-          <div style={{ display: 'flex', borderTop: 'none' }}>
+          <div style={{ display: 'flex' }}>
             <div style={{ flex: 1, padding: '11px 14px', borderBottom: '1px solid #f0ebe0' }}>
               <div style={{ fontSize: 9, fontWeight: 600, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 3 }}>Start</div>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>{startDateLabel}, {report.start_time?.slice(0, 5)}</div>

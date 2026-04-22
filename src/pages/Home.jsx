@@ -1,15 +1,19 @@
-import { useState } from 'react'
+import { useState, useCallback, startTransition } from 'react'
+import { getLocalDate } from '../lib/dateUtils'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import usePullToRefresh from '../hooks/usePullToRefresh'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, AlertTriangle, Wrench, CheckSquare, Circle } from 'lucide-react'
 
 export default function Home() {
   const { employee, plant } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const { containerRef, PullIndicator } = usePullToRefresh(useCallback(() => queryClient.invalidateQueries(), [queryClient]))
   const [showProductionModal, setShowProductionModal] = useState(false)
   const [showTrucksModal, setShowTrucksModal] = useState(false)
   const [showIssuesModal, setShowIssuesModal] = useState(false)
@@ -46,6 +50,7 @@ export default function Home() {
 
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboard', plant?.id, today],
+    placeholderData: { reports: [], totalProd: 0, dispatchCount: 0, totalIssues: 0, handover: null, yesterday: { prod: 0, trucks: 0, dispatchMT: 0, purchaseAmt: 0, purchaseKg: 0 } },
     queryFn: async () => {
       // Yesterday's date for summary
       const yd = new Date(now)
@@ -117,13 +122,68 @@ export default function Home() {
   const handoverNotes = dashboardData?.handoverNotes || null
   const yesterday = dashboardData?.yesterday || null
 
+  const { data: sparePartsData } = useQuery({
+    queryKey: ['home-spare-parts', plant?.id],
+    queryFn: async () => {
+      const today = getLocalDate()
+      const { data: partsData } = await supabase.from('spare_parts').select('id').eq('org_id', plant.org_id).eq('is_active', true)
+      const partIds = (partsData || []).map(p => p.id)
+      if (!partIds.length) return { totalParts: 0, lowStock: 0, purchasedToday: 0, issuedToday: 0 }
+
+      const [purchasesRes, usageRes, todayInRes, todayOutRes, configRes] = await Promise.all([
+        supabase.from('spare_parts_purchases').select('part_id, quantity').eq('plant_id', plant.id).in('part_id', partIds),
+        supabase.from('spare_parts_usage').select('part_id, quantity').eq('plant_id', plant.id).in('part_id', partIds),
+        supabase.from('spare_parts_purchases').select('quantity').eq('plant_id', plant.id).eq('purchase_date', today),
+        supabase.from('spare_parts_usage').select('quantity').eq('plant_id', plant.id).eq('usage_date', today),
+        supabase.from('spare_parts_plant_config').select('part_id, min_stock_level').eq('plant_id', plant.id).in('part_id', partIds),
+      ])
+
+      const purchaseMap = {}
+      for (const r of (purchasesRes.data || [])) purchaseMap[r.part_id] = (purchaseMap[r.part_id] || 0) + Number(r.quantity)
+      const usageMap = {}
+      for (const r of (usageRes.data || [])) usageMap[r.part_id] = (usageMap[r.part_id] || 0) + Number(r.quantity)
+      const configMap = {}
+      for (const r of (configRes.data || [])) configMap[r.part_id] = Number(r.min_stock_level)
+
+      const lowStock = partIds.filter(id => configMap[id] != null && ((purchaseMap[id] || 0) - (usageMap[id] || 0)) <= configMap[id]).length
+      const purchasedToday = (todayInRes.data || []).reduce((s, r) => s + Number(r.quantity), 0)
+      const issuedToday = (todayOutRes.data || []).reduce((s, r) => s + Number(r.quantity), 0)
+
+      return { totalParts: partIds.length, lowStock, purchasedToday, issuedToday }
+    },
+    enabled: !!plant?.id,
+  })
+  const sp = sparePartsData || { totalParts: 0, lowStock: 0, purchasedToday: 0, issuedToday: 0 }
+
+  const { data: tasksData } = useQuery({
+    queryKey: ['home-tasks', plant?.id, employee?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('tasks')
+        .select('id, title, due_date, status, assigned_to_employee_id, assignee:employees!tasks_assigned_to_employee_id_fkey(name)')
+        .eq('plant_id', plant.id)
+        .in('status', ['open', 'done'])
+        .order('due_date', { ascending: true, nullsFirst: false })
+        .limit(10)
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
+  const allTasks = tasksData || []
+  // Only admin and plant_manager see all plant tasks; everyone else only sees their own
+  const myTasks = can(employee?.role, 'assign_tasks')
+    ? allTasks
+    : allTasks.filter(t => t.assigned_to_employee_id === employee?.id)
+  const openTasks = myTasks.filter(t => t.status === 'open')
+
   const fmtDate = (d) => new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   const dateStr = currentShift === 'A' || shiftStartDate === shiftEndDate
     ? fmtDate(shiftStartDate)
     : `${fmtDate(shiftStartDate)} – ${fmtDate(shiftEndDate)}`
 
   return (
-    <div style={{ minHeight: '100%', background: '#fefae0' }}>
+    <div ref={containerRef} style={{ minHeight: '100%', background: '#fefae0' }}>
+      {PullIndicator}
       {/* Dark App Bar */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10, background: '#1b4332', paddingTop: 'env(safe-area-inset-top)' }}>
         <div style={{ padding: '14px 20px' }}>
@@ -234,71 +294,108 @@ export default function Home() {
         </div>
 
         {/* History Cards */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 0 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 2 }}>
             History
           </div>
 
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
           {can(employee?.role, 'view_reports') && (
-          <button
-            onClick={() => navigate('/reports')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
-              padding: '14px 16px', borderRadius: 14, background: '#fff',
-              border: '1.5px solid #e5ddd0', cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#e8f0ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-              📊
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Shift Reports</div>
-              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>View all submitted reports</div>
-            </div>
-            <ChevronRight size={18} color="#b5b8a8" />
+          <button onClick={() => startTransition(() => navigate('/reports'))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#e8f0ec', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📊</div>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Shift Reports</div>
+            <ChevronRight size={15} color="#b5b8a8" />
           </button>
           )}
-
           {can(employee?.role, 'view_dispatches') && (
-          <button
-            onClick={() => navigate('/dispatch')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
-              padding: '14px 16px', borderRadius: 14, background: '#fff',
-              border: '1.5px solid #e5ddd0', cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-              🚛
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Dispatches</div>
-              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>View vehicle dispatch history</div>
-            </div>
-            <ChevronRight size={18} color="#b5b8a8" />
+          <button onClick={() => startTransition(() => navigate('/dispatch'))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🚛</div>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Dispatches</div>
+            <ChevronRight size={15} color="#b5b8a8" />
+          </button>
+          )}
+          {can(employee?.role, 'view_purchases') && (
+          <button onClick={() => startTransition(() => navigate('/purchase'))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>📦</div>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Purchases</div>
+            <ChevronRight size={15} color="#b5b8a8" />
           </button>
           )}
 
-          {can(employee?.role, 'view_purchases') && (
-          <button
-            onClick={() => navigate('/purchase')}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 14, width: '100%', textAlign: 'left',
-              padding: '14px 16px', borderRadius: 14, background: '#fff',
-              border: '1.5px solid #e5ddd0', cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: '#F3E8FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-              📦
+          {can(employee?.role, 'view_spare_parts') && (
+          <button onClick={() => startTransition(() => navigate('/spare-parts'))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: sp.lowStock > 0 ? '#fff7f7' : 'none', border: 'none', cursor: 'pointer' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: sp.lowStock > 0 ? '#fee2e2' : '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {sp.lowStock > 0 ? <AlertTriangle size={15} color="#b91c1c" /> : <Wrench size={15} color="#2563EB" />}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Purchases</div>
-              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>View raw material purchases</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: sp.lowStock > 0 ? '#b91c1c' : '#2c2c2c' }}>
+                Spare Parts {sp.lowStock > 0 && <span style={{ fontSize: 10, fontWeight: 700, background: '#fee2e2', color: '#b91c1c', borderRadius: 5, padding: '1px 5px', marginLeft: 4 }}>{sp.lowStock} low</span>}
+              </div>
+              <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>{sp.totalParts} parts · +{sp.purchasedToday} purchased · {sp.issuedToday} used today</div>
             </div>
-            <ChevronRight size={18} color="#b5b8a8" />
+            <ChevronRight size={15} color="#b5b8a8" />
           </button>
           )}
+          </div>
         </div>
+
+        {/* Tasks Section */}
+        {myTasks.length > 0 && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase' }}>
+                Tasks {openTasks.length > 0 && <span style={{ fontSize: 10, fontWeight: 700, background: '#EEF2FF', color: '#2563EB', borderRadius: 5, padding: '1px 6px', marginLeft: 4 }}>{openTasks.length} open</span>}
+              </div>
+              <button onClick={() => startTransition(() => navigate('/tasks'))} style={{ fontSize: 11, fontWeight: 600, color: '#2d6a4f', background: 'none', border: 'none', cursor: 'pointer' }}>
+                See all →
+              </button>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+              {myTasks.slice(0, 2).map((task, idx) => {
+                const overdue = task.status === 'open' && task.due_date && new Date(task.due_date + 'T00:00') < new Date(new Date().toDateString())
+                return (
+                  <button key={task.id} onClick={() => startTransition(() => navigate('/tasks'))}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none', cursor: 'pointer' }}>
+                    <div style={{ flexShrink: 0 }}>
+                      {task.status === 'done'
+                        ? <CheckSquare size={16} color="#2d6a4f" />
+                        : <Circle size={16} color={overdue ? '#dc2626' : '#d1d5db'} />
+                      }
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+                      {task.assignee?.name && (
+                        <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>→ {task.assignee.name}</div>
+                      )}
+                    </div>
+                    {task.due_date && (
+                      <div style={{ fontSize: 10, fontWeight: 600, color: overdue ? '#dc2626' : '#8a8d7a', flexShrink: 0 }}>
+                        {new Date(task.due_date + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+              {myTasks.length > 2 && (
+                <button onClick={() => startTransition(() => navigate('/tasks'))} style={{ width: '100%', padding: '8px 14px', background: 'none', border: 'none', borderTop: '1px solid #f0ebe0', fontSize: 12, color: '#2563EB', fontWeight: 600, cursor: 'pointer' }}>
+                  +{myTasks.length - 2} more tasks →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Tasks empty hint for assigners */}
+        {myTasks.length === 0 && can(employee?.role, 'assign_tasks') && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 8 }}>Tasks</div>
+            <button onClick={() => startTransition(() => navigate('/tasks'))}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', padding: '12px 14px', background: '#fff', border: '1.5px solid #e5ddd0', borderRadius: 14, cursor: 'pointer' }}>
+              <CheckSquare size={18} color="#8a8d7a" />
+              <span style={{ fontSize: 13, color: '#8a8d7a' }}>No open tasks · Tap to assign one</span>
+              <ChevronRight size={15} color="#b5b8a8" style={{ marginLeft: 'auto' }} />
+            </button>
+          </div>
+        )}
 
         {/* Yesterday's Summary */}
         {yesterday && (
@@ -346,7 +443,7 @@ export default function Home() {
             {todayReports.map((report, idx) => (
               <button
                 key={report.id}
-                onClick={() => navigate(`/reports/${report.id}`)}
+                onClick={() => startTransition(() => navigate(`/reports/${report.id}`))}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
                   padding: '14px 16px',
@@ -386,7 +483,7 @@ export default function Home() {
           <div style={{ fontSize: 30, fontWeight: 800, color: '#d4a373' }}>{stats.trucks}</div>
           <div style={{ fontSize: 12, marginTop: 4, color: '#8a8d7a' }}>Trucks dispatched today</div>
         </div>
-        <button onClick={() => { setShowTrucksModal(false); navigate('/dispatch') }} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 700, color: 'white', background: '#2d6a4f', border: 'none', cursor: 'pointer' }}>View All Dispatches</button>
+        <button onClick={() => { setShowTrucksModal(false); startTransition(() => navigate('/dispatch')) }} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 700, color: 'white', background: '#2d6a4f', border: 'none', cursor: 'pointer' }}>View All Dispatches</button>
       </Modal>
 
       {/* Issues Modal */}
@@ -400,3 +497,4 @@ export default function Home() {
     </div>
   )
 }
+
