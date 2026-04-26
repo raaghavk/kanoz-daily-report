@@ -353,16 +353,18 @@ function SettingsPage() {
           )}
         </div>
       )}
-      {/* ── Notifications ── */}
-      <NotificationsSection
-        pushEnabled={pushEnabled}
-        pushLoading={pushLoading}
-        onTogglePush={togglePush}
-        prefs={prefs}
-        prefLoading={prefLoading}
-        onTogglePref={togglePref}
-        isAdmin={isAdmin}
-      />
+      {/* ── Notifications — only for admin, plant_manager, supervisor ── */}
+      {['admin', 'plant_manager', 'supervisor'].includes(employee?.role) && (
+        <NotificationsSection
+          pushEnabled={pushEnabled}
+          pushLoading={pushLoading}
+          onTogglePush={togglePush}
+          prefs={prefs}
+          prefLoading={prefLoading}
+          onTogglePref={togglePref}
+          isAdmin={isAdmin}
+        />
+      )}
       <button
         onClick={signOut}
         style={{ width: '100%', padding: '14px 0', background: '#d32f2f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
@@ -376,6 +378,7 @@ function SettingsPage() {
 
 function NotificationsSection({ pushEnabled, pushLoading, onTogglePush, prefs, prefLoading, onTogglePref, isAdmin }) {
   const [eventTypes, setEventTypes] = useState([])
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     import('./lib/notifications').then(({ EVENT_TYPES }) => setEventTypes(EVENT_TYPES))
@@ -385,45 +388,69 @@ function NotificationsSection({ pushEnabled, pushLoading, onTogglePush, prefs, p
 
   return (
     <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
-      {/* Header row — push on/off */}
-      <div style={{ background: '#2d6a4f', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>🔔 Notifications</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>
-            {pushEnabled ? 'Push enabled — choose what to receive' : 'Enable push to choose what to receive'}
+      {/* Collapsed header row — tap to expand */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textAlign: 'left' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 16 }}>🔔</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Notifications</div>
+            <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>
+              {pushEnabled ? 'Push enabled' : 'Tap to configure'}
+            </div>
           </div>
         </div>
-        <MiniToggle on={pushEnabled} onToggle={onTogglePush} disabled={pushLoading} />
-      </div>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', color: '#8a8d7a' }}>
+          <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
 
-      {/* Per-event toggles */}
-      {!pushEnabled ? (
-        <div style={{ padding: '14px 16px', fontSize: 12, color: '#8a8d7a', textAlign: 'center' }}>
-          Enable push notifications above to configure alerts
-        </div>
-      ) : (
-        <div>
-          {visible.map((et, idx) => (
-            <div
-              key={et.key}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 16px',
-                borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none',
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>{et.label}</div>
-                <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>{et.description}</div>
+      {/* Expanded body */}
+      {open && (
+        <>
+          {/* Push on/off row */}
+          <div style={{ borderTop: '1px solid #f0ebe0', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f9f7f0' }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Push Notifications</div>
+              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>
+                {pushEnabled ? 'Enabled — choose what to receive below' : 'Enable to get alerts on this device'}
               </div>
-              <MiniToggle
-                on={!!prefs[et.key]}
-                onToggle={() => onTogglePref(et.key)}
-                disabled={!!prefLoading[et.key]}
-              />
             </div>
-          ))}
-        </div>
+            <MiniToggle on={pushEnabled} onToggle={onTogglePush} disabled={pushLoading} />
+          </div>
+
+          {/* Per-event toggles */}
+          {!pushEnabled ? (
+            <div style={{ padding: '12px 16px', fontSize: 12, color: '#8a8d7a', textAlign: 'center', borderTop: '1px solid #f0ebe0' }}>
+              Enable push notifications above to configure alerts
+            </div>
+          ) : (
+            <div>
+              {visible.map((et, idx) => (
+                <div
+                  key={et.key}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '11px 16px',
+                    borderTop: '1px solid #f0ebe0',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>{et.label}</div>
+                    <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>{et.description}</div>
+                  </div>
+                  <MiniToggle
+                    on={!!prefs[et.key]}
+                    onToggle={() => onTogglePref(et.key)}
+                    disabled={!!prefLoading[et.key]}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

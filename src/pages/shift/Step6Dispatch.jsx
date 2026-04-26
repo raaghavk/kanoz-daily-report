@@ -1,12 +1,13 @@
 import { useState, useEffect, memo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { Loader2, TrendingUp, ExternalLink } from 'lucide-react'
+import { Loader2, TrendingUp, ExternalLink, ChevronDown } from 'lucide-react'
 
 export default memo(function Step6Dispatch({ updateData, plant, saveWizardState, data }) {
   const navigate = useNavigate()
   const [dispatches, setDispatches] = useState([])
   const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState({})
 
   // Get today's date in local timezone (not UTC)
   const _now = new Date()
@@ -170,51 +171,48 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
       {/* Dispatch Cards */}
       {!loading && dispatches.length > 0 && (
         <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {dispatches.map((dispatch) => (
-              <div
-                key={dispatch.id}
-                style={{
-                  background: '#fff',
-                  borderRadius: 12,
-                  border: '1.5px solid #e5ddd0',
-                  padding: 14,
-                  display: 'grid',
-                  gridTemplateColumns: '40px 1fr auto',
-                  alignItems: 'center',
-                  gap: 12,
-                }}
-              >
-                {/* Truck Icon */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 40, height: 40, background: '#e8f0ec', borderRadius: 10, fontSize: 20,
-                }}>
-                  🚛
-                </div>
+          <div style={{ background: '#fff', borderRadius: 12, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+            {dispatches.map((dispatch, idx) => {
+              const isOpen = !!expanded[dispatch.id]
+              return (
+                <div key={dispatch.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
+                  {/* Collapsed header — always visible */}
+                  <button
+                    onClick={() => setExpanded(prev => ({ ...prev, [dispatch.id]: !prev[dispatch.id] }))}
+                    style={{
+                      width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>🚛</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>
+                        {dispatch.truck_number || 'Unknown Truck'}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>
+                        {dispatch.customers?.name || 'No customer'}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#2d6a4f', flexShrink: 0, marginRight: 4 }}>
+                      {(dispatch.total_mt || 0).toFixed(1)} MT
+                    </div>
+                    <ChevronDown size={16} style={{ color: '#8a8d7a', flexShrink: 0, transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                  </button>
 
-                {/* Details */}
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c', marginBottom: 4 }}>
-                    {dispatch.truck_number || 'Unknown Truck'}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#595c4a', marginBottom: 2 }}>
-                    {dispatch.customers?.name || 'N/A'}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#8a8d7a' }}>
-                    {(dispatch.dispatch_pellets || []).map(dp => `${dp.pellet_type_name}: ${parseFloat(dp.quantity_mt).toFixed(1)} MT`).join(', ')}
-                  </div>
+                  {/* Expanded detail */}
+                  {isOpen && (
+                    <div style={{ padding: '0 14px 12px 14px', background: '#faf9f4', borderTop: '1px solid #f0ebe0' }}>
+                      {(dispatch.dispatch_pellets || []).map((dp, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: i < dispatch.dispatch_pellets.length - 1 ? '1px solid #f0ebe0' : 'none' }}>
+                          <span style={{ fontSize: 12, color: '#595c4a' }}>{dp.pellet_type_name}</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#2d6a4f' }}>{parseFloat(dp.quantity_mt).toFixed(1)} MT</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-
-                {/* Quantity Badge */}
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>
-                    {(dispatch.total_mt || 0).toFixed(1)}
-                  </div>
-                  <div style={{ fontSize: 10, color: '#595c4a' }}>MT</div>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Summary */}

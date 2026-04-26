@@ -18,12 +18,13 @@ function Step5RawMaterialReview({ data, updateData }) {
     const updated = [...rawMaterials];
     const numValue = parseFloat(value) || 0;
     const rm = updated[idx];
-    const opening = parseFloat(rm.opening_kg) || 0;
-    const purchased = parseFloat(rm.purchased_kg) || 0;
+    const opening = parseFloat(rm.opening) || 0;
+    const purchased = parseFloat(rm.purchased) || 0;
     updated[idx] = {
       ...rm,
       used_override_kg: numValue,
-      closing_kg: opening + purchased - numValue,
+      used: numValue,
+      closing: opening + purchased - numValue,
     };
     updateData('rawMaterials', updated);
   };
@@ -67,9 +68,9 @@ function Step5RawMaterialReview({ data, updateData }) {
             </div>
           ) : (
             rawMaterials.map((rm, idx) => {
-              const opening = parseFloat(rm.opening_kg) || 0;
-              const purchased = parseFloat(rm.purchased_kg) || 0;
-              const used = parseFloat(rm.used_override_kg ?? rm.used_kg) || 0;
+              const opening = parseFloat(rm.opening) || 0;
+              const purchased = parseFloat(rm.purchased) || 0;
+              const used = parseFloat(rm.used_override_kg ?? rm.used) || 0;
               const closing = opening + purchased - used;
 
               return (
