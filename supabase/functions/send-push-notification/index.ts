@@ -63,7 +63,6 @@ function concatBuffers(...buffers: Uint8Array[]): Uint8Array {
 async function createVapidAuth(audience: string): Promise<{ authorization: string; cryptoKey: string }> {
   const privateKeyBytes = base64UrlDecode(VAPID_PRIVATE_KEY)
 
-  // Import ECDSA private key
   const jwk = {
     kty: 'EC',
     crv: 'P-256',
@@ -74,7 +73,6 @@ async function createVapidAuth(audience: string): Promise<{ authorization: strin
 
   const key = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign'])
 
-  // JWT header & payload
   const header = base64UrlEncode(new TextEncoder().encode(JSON.stringify({ typ: 'JWT', alg: 'ES256' })))
   const now = Math.floor(Date.now() / 1000)
   const payload = base64UrlEncode(new TextEncoder().encode(JSON.stringify({
@@ -90,7 +88,6 @@ async function createVapidAuth(audience: string): Promise<{ authorization: strin
     new TextEncoder().encode(unsignedToken)
   )
 
-  // Convert DER signature to raw r||s format (each 32 bytes)
   const sigBytes = new Uint8Array(signature)
   let r: Uint8Array, s: Uint8Array
 
@@ -98,7 +95,6 @@ async function createVapidAuth(audience: string): Promise<{ authorization: strin
     r = sigBytes.slice(0, 32)
     s = sigBytes.slice(32)
   } else {
-    // DER format: 0x30 len 0x02 rlen r 0x02 slen s
     const rLen = sigBytes[3]
     const rStart = 4
     const rBytes = sigBytes.slice(rStart, rStart + rLen)
@@ -129,61 +125,47 @@ async function encryptPayload(
   const clientPublicKey = base64UrlDecode(p256dhKey)
   const clientAuth = base64UrlDecode(authSecret)
 
-  // Generate local ECDH key pair
   const localKeyPair = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])
   const localPublicKeyRaw = new Uint8Array(await crypto.subtle.exportKey('raw', localKeyPair.publicKey))
 
-  // Import client's public key
   const clientKey = await crypto.subtle.importKey('raw', clientPublicKey, { name: 'ECDH', namedCurve: 'P-256' }, false, [])
 
-  // ECDH shared secret
   const sharedSecret = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: clientKey }, localKeyPair.privateKey, 256))
 
-  // HKDF-based key derivation (RFC 8291)
   const encoder = new TextEncoder()
 
-  // PRK = HKDF-Extract(salt=auth, IKM=sharedSecret)
   const prkKey = await crypto.subtle.importKey('raw', clientAuth, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const prk = new Uint8Array(await crypto.subtle.sign('HMAC', prkKey, sharedSecret))
 
-  // Info for IKM derivation
   const keyInfo = concatBuffers(
     encoder.encode('WebPush: info\0'),
     clientPublicKey,
     localPublicKeyRaw
   )
 
-  // IKM = HKDF-Expand(PRK=prk, info=keyInfo, L=32)
   const ikmHmac = await crypto.subtle.importKey('raw', prk, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const ikm = new Uint8Array(await crypto.subtle.sign('HMAC', ikmHmac, concatBuffers(keyInfo, new Uint8Array([1]))))
 
-  // Generate salt
   const salt = crypto.getRandomValues(new Uint8Array(16))
 
-  // PRK for content encryption
   const saltKey = await crypto.subtle.importKey('raw', salt, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const contentPrk = new Uint8Array(await crypto.subtle.sign('HMAC', saltKey, ikm))
 
-  // Content encryption key (CEK)
   const cekInfo = encoder.encode('Content-Encoding: aes128gcm\0')
   const cekHmac = await crypto.subtle.importKey('raw', contentPrk, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const cekFull = new Uint8Array(await crypto.subtle.sign('HMAC', cekHmac, concatBuffers(cekInfo, new Uint8Array([1]))))
   const cek = cekFull.slice(0, 16)
 
-  // Nonce
   const nonceInfo = encoder.encode('Content-Encoding: nonce\0')
   const nonceHmac = await crypto.subtle.importKey('raw', contentPrk, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const nonceFull = new Uint8Array(await crypto.subtle.sign('HMAC', nonceHmac, concatBuffers(nonceInfo, new Uint8Array([1]))))
   const nonce = nonceFull.slice(0, 12)
 
-  // Pad payload (add \x02 delimiter for last record)
   const paddedPayload = concatBuffers(encoder.encode(payload), new Uint8Array([2]))
 
-  // AES-128-GCM encrypt
   const aesKey = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt'])
   const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, paddedPayload))
 
-  // Build aes128gcm header: salt(16) + rs(4) + idlen(1) + keyid(65) + ciphertext
   const rs = new Uint8Array(4)
   new DataView(rs.buffer).setUint32(0, 4096)
 
@@ -230,6 +212,9 @@ async function sendWebPush(
   return { success: response.ok || response.status === 201, status: response.status }
 }
 
+// ── Task-targeted events: only notify the specific assignee ──
+const TASK_EVENTS = new Set(['task_assigned', 'task_updated'])
+
 // ── Main handler ──
 
 serve(async (req) => {
@@ -240,7 +225,7 @@ serve(async (req) => {
   try {
     const { event_type, payload } = await req.json()
 
-    // Build notification content
+    // Build notification content per event type
     let title = 'Kanoz Daily Report'
     let body = ''
     let url = '/'
@@ -251,10 +236,52 @@ serve(async (req) => {
         body = `${payload.supervisor} — ${payload.production_mt} MT produced at ${payload.plant}`
         url = '/reports'
         break
+      case 'report_edited':
+        title = `Shift ${payload.shift} Report Updated`
+        body = `${payload.supervisor} edited the report at ${payload.plant}`
+        url = payload.report_id ? `/reports/${payload.report_id}` : '/reports'
+        break
+      case 'purchase_added':
+        title = `RM Purchase: ${payload.material}`
+        body = `${payload.quantity_kg} kg from ${payload.supplier} at ${payload.plant}`
+        url = '/purchase'
+        break
       case 'dispatch_created':
         title = `Dispatch: ${payload.truck_number}`
         body = `${payload.quantity_mt} MT to ${payload.customer} from ${payload.plant}`
         url = '/dispatch'
+        break
+      case 'issue_reported': {
+        const sevLabel = payload.severity === 'critical' ? '🚨 Critical' : payload.severity === 'high' ? '⚠ High' : '📋'
+        title = `${sevLabel} Issue: ${payload.type}`
+        body = `${payload.description}${payload.count > 1 ? ` (+${payload.count - 1} more)` : ''} at ${payload.plant}`
+        url = payload.report_id ? `/reports/${payload.report_id}` : '/reports'
+        break
+      }
+      case 'spare_part_reorder':
+        title = `Reorder Request: ${payload.part_name}`
+        body = `Raised by ${payload.requested_by} at ${payload.plant}`
+        url = '/spare-parts/reorder'
+        break
+      case 'spare_part_low_stock':
+        title = `⚠ Low Stock: ${payload.part_name}`
+        body = `${payload.current_stock} ${payload.unit} left (min: ${payload.min_stock_level}) at ${payload.plant}`
+        url = '/spare-parts/parts'
+        break
+      case 'task_assigned':
+        title = `New Task Assigned`
+        body = `${payload.task_title}${payload.due_date ? ` · Due ${payload.due_date}` : ''} — from ${payload.assigned_by}`
+        url = '/tasks'
+        break
+      case 'task_updated':
+        title = `Task ${payload.new_status === 'done' ? 'Marked Done' : payload.new_status === 'closed' ? 'Closed' : 'Updated'}`
+        body = payload.task_title
+        url = '/tasks'
+        break
+      case 'delete_request_raised':
+        title = `Deletion Request`
+        body = `${payload.requested_by} wants to delete: ${payload.entity_label} at ${payload.plant}`
+        url = '/delete-requests'
         break
       default:
         return new Response(JSON.stringify({ error: 'Unknown event type' }), {
@@ -263,21 +290,69 @@ serve(async (req) => {
         })
     }
 
-    // Get all push subscriptions (send to all users, not just admins)
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // Load VAPID keys from app_config table (cached after first call)
     await loadVapidConfig(supabase)
 
-    const { data: subscriptions, error } = await supabase
-      .from('push_subscriptions')
-      .select('endpoint, p256dh, auth')
+    let subsToNotify: Array<{ endpoint: string; p256dh: string; auth: string }> = []
 
-    if (error) throw error
-    if (!subscriptions || subscriptions.length === 0) {
-      return new Response(JSON.stringify({ sent: 0, message: 'No subscriptions found' }), {
+    if (TASK_EVENTS.has(event_type)) {
+      // Task events: only notify the specific assignee
+      const assigneeId = payload.assignee_employee_id
+      if (!assigneeId) {
+        return new Response(JSON.stringify({ sent: 0, message: 'No assignee specified' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Check if assignee has this event type enabled
+      const { data: prefs } = await supabase
+        .from('notification_preferences')
+        .select('enabled')
+        .eq('employee_id', assigneeId)
+        .eq('event_type', event_type)
+        .maybeSingle()
+
+      if (!prefs || !prefs.enabled) {
+        return new Response(JSON.stringify({ sent: 0, message: 'Assignee has not enabled this notification' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const { data: subs } = await supabase
+        .from('push_subscriptions')
+        .select('endpoint, p256dh, auth')
+        .eq('employee_id', assigneeId)
+
+      subsToNotify = subs || []
+    } else {
+      // Broadcast events: send to all employees who have enabled this event type
+      const { data: prefs } = await supabase
+        .from('notification_preferences')
+        .select('employee_id')
+        .eq('event_type', event_type)
+        .eq('enabled', true)
+
+      if (!prefs || prefs.length === 0) {
+        return new Response(JSON.stringify({ sent: 0, message: 'No subscribers for this event type' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const enabledIds = prefs.map((p: any) => p.employee_id)
+
+      const { data: subs } = await supabase
+        .from('push_subscriptions')
+        .select('endpoint, p256dh, auth')
+        .in('employee_id', enabledIds)
+
+      subsToNotify = subs || []
+    }
+
+    if (subsToNotify.length === 0) {
+      return new Response(JSON.stringify({ sent: 0, message: 'No push subscriptions found' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -286,7 +361,7 @@ serve(async (req) => {
 
     let sent = 0
     const errors: string[] = []
-    for (const sub of subscriptions) {
+    for (const sub of subsToNotify) {
       try {
         const result = await sendWebPush(sub.endpoint, sub.p256dh, sub.auth, notificationPayload)
         if (result.success) {
@@ -302,7 +377,7 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ sent, total: subscriptions.length, errors: errors.length > 0 ? errors : undefined }), {
+    return new Response(JSON.stringify({ sent, total: subsToNotify.length, errors: errors.length > 0 ? errors : undefined }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {

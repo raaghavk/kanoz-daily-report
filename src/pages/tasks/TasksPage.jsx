@@ -128,6 +128,15 @@ export default function TasksPage() {
       }])
       if (error) throw error
       showToast('Task assigned!', 'success')
+      // Notify assignee
+      import('../../lib/notifications').then(({ sendNotification }) => {
+        sendNotification('task_assigned', {
+          task_title: assignForm.title.trim(),
+          assigned_by: employee?.name || 'Someone',
+          due_date: assignForm.due_date || null,
+          assignee_employee_id: assignForm.assigned_to_employee_id,
+        })
+      }).catch(() => {})
       setAssignForm({ title: '', due_date: '', assigned_to_employee_id: '', plant_id: '' })
       setShowAssign(false)
       load()
@@ -159,6 +168,16 @@ export default function TasksPage() {
       }).eq('id', task.id)
       if (error) throw error
       showToast('Task closed', 'success')
+      // Notify the assignee that their task was closed
+      if (task.assigned_to_employee_id) {
+        import('../../lib/notifications').then(({ sendNotification }) => {
+          sendNotification('task_updated', {
+            task_title: task.title,
+            new_status: 'closed',
+            assignee_employee_id: task.assigned_to_employee_id,
+          })
+        }).catch(() => {})
+      }
       setShowClose(null)
       load()
     } catch { showToast('Failed to close task', 'error') } finally { setSubmitting(false) }

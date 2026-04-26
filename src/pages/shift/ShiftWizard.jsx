@@ -729,10 +729,11 @@ export default function ShiftWizard() {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
 
-      // Send push notification to admins (non-blocking)
-      if (!editId) {
-        const totalMT = reportData.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
-        import('../../lib/notifications').then(({ sendNotification }) => {
+      // Send push notifications (non-blocking)
+      import('../../lib/notifications').then(({ sendNotification }) => {
+        if (!editId) {
+          // New report submitted
+          const totalMT = reportData.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
           sendNotification('report_submitted', {
             shift: reportData.shift,
             supervisor: employee?.name,
@@ -740,7 +741,33 @@ export default function ShiftWizard() {
             plant: plant?.name,
             date: reportData.date,
           })
-        }).catch(() => {})
+        } else {
+          // Existing report edited
+          sendNotification('report_edited', {
+            shift: reportData.shift,
+            supervisor: employee?.name,
+            plant: plant?.name,
+            report_id: reportId,
+          })
+        }
+        // Issue reported — fire once for the most severe issue
+        const issues = (reportData.issues || []).filter(i => i.description?.trim())
+        if (issues.length > 0) {
+          const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
+          const sorted = [...issues].sort((a, b) => (severityOrder[a.severity] || 3) - (severityOrder[b.severity] || 3))
+          const top = sorted[0]
+          sendNotification('issue_reported', {
+            type: top.type,
+            description: (top.description || '').slice(0, 60),
+            severity: top.severity,
+            count: issues.length,
+            plant: plant?.name || '',
+            report_id: reportId,
+          })
+        }
+      }).catch(() => {})
+
+      if (!editId) {
 
         // Auto-sync to Google Sheets (non-blocking)
         supabase.functions.invoke('sync-to-sheets', {

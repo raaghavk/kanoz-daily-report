@@ -155,13 +155,40 @@ export default function App() {
   )
 }
 
+function MiniToggle({ on, onToggle, disabled }) {
+  return (
+    <button
+      onClick={onToggle}
+      disabled={disabled}
+      style={{
+        width: 44, height: 26, borderRadius: 13, border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        background: on ? '#2d6a4f' : '#D1D5DB',
+        position: 'relative', transition: 'background 0.2s',
+        opacity: disabled ? 0.4 : 1, flexShrink: 0,
+      }}
+    >
+      <div style={{
+        width: 20, height: 20, borderRadius: '50%', background: 'white',
+        position: 'absolute', top: 3,
+        left: on ? 21 : 3, transition: 'left 0.2s',
+      }} />
+    </button>
+  )
+}
+
 function SettingsPage() {
   const { employee, plant, signOut, switchPlant } = useAuth()
   const nav = useNavigate()
   const [orgPlants, setOrgPlants] = useState([])
   const [switching, setSwitching] = useState(false)
-  const [notifEnabled, setNotifEnabled] = useState(false)
-  const [notifLoading, setNotifLoading] = useState(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushLoading, setPushLoading] = useState(false)
+  // Map of event_type → boolean
+  const [prefs, setPrefs] = useState({})
+  const [prefLoading, setPrefLoading] = useState({})
+
+  const isAdmin = employee?.role === 'admin'
 
   useEffect(() => {
     if (can(employee?.role, 'switch_plant') && plant?.org_id) {
@@ -171,42 +198,69 @@ function SettingsPage() {
     }
   }, [employee?.role, plant?.org_id])
 
-  // Check current notification status
+  // Check push subscription status and load preferences
   useEffect(() => {
-    import('./lib/notifications').then(({ isSubscribed }) => {
-      isSubscribed().then(setNotifEnabled)
-    })
-  }, [])
+    if (!employee?.id) return
+    import('./lib/notifications').then(async ({ isSubscribed, getNotificationPreferences, EVENT_TYPES }) => {
+      const subscribed = await isSubscribed()
+      setPushEnabled(subscribed)
+      if (subscribed) {
+        const rows = await getNotificationPreferences(employee.id)
+        const map = {}
+        for (const et of EVENT_TYPES) map[et.key] = false // default OFF
+        for (const row of rows) if (row.enabled) map[row.event_type] = true
+        setPrefs(map)
+      }
+    }).catch(() => {})
+  }, [employee?.id])
 
-  async function toggleNotifications() {
-    setNotifLoading(true)
+  async function togglePush() {
+    setPushLoading(true)
     try {
       const { getNotificationStatus, subscribeToPush, unsubscribeFromPush } = await import('./lib/notifications')
       const status = getNotificationStatus()
-      if (status === 'unsupported') {
-        alert('Push notifications are not supported on this device/browser.')
-        return
-      }
-      if (status === 'not_configured') {
-        alert('Push notifications are not configured yet. VAPID key is missing.')
-        return
-      }
+      if (status === 'unsupported') { alert('Push notifications are not supported on this device/browser.'); return }
+      if (status === 'not_configured') { alert('Push notifications are not configured yet.'); return }
 
-      if (notifEnabled) {
+      if (pushEnabled) {
         await unsubscribeFromPush(employee.id)
-        setNotifEnabled(false)
+        setPushEnabled(false)
+        setPrefs({})
       } else {
         const result = await subscribeToPush(employee.id)
         if (result.success) {
-          setNotifEnabled(true)
+          setPushEnabled(true)
+          // Load prefs after enabling
+          const { getNotificationPreferences, EVENT_TYPES } = await import('./lib/notifications')
+          const rows = await getNotificationPreferences(employee.id)
+          const map = {}
+          for (const et of EVENT_TYPES) map[et.key] = false
+          for (const row of rows) if (row.enabled) map[row.event_type] = true
+          setPrefs(map)
         } else if (result.reason === 'denied') {
           alert('Notification permission was denied. Please enable it in your browser settings.')
         }
       }
     } catch (err) {
-      console.error('Notification toggle error:', err)
+      console.error('Push toggle error:', err)
     } finally {
-      setNotifLoading(false)
+      setPushLoading(false)
+    }
+  }
+
+  async function togglePref(eventType) {
+    if (!pushEnabled) return
+    const newVal = !prefs[eventType]
+    setPrefLoading(prev => ({ ...prev, [eventType]: true }))
+    setPrefs(prev => ({ ...prev, [eventType]: newVal }))
+    try {
+      const { setNotificationPreference } = await import('./lib/notifications')
+      await setNotificationPreference(employee.id, eventType, newVal)
+    } catch {
+      // Revert on error
+      setPrefs(prev => ({ ...prev, [eventType]: !newVal }))
+    } finally {
+      setPrefLoading(prev => ({ ...prev, [eventType]: false }))
     }
   }
 
@@ -233,6 +287,7 @@ function SettingsPage() {
         </div>
       </div>
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Profile card */}
       <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Name:</span> {employee?.name}</div>
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Plant:</span> {plant?.name}</div>
@@ -253,7 +308,7 @@ function SettingsPage() {
           {switching && <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 4 }}>Switching...</div>}
         </div>
       )}
-      {/* Directory Links — filtered by role */}
+      {/* Directory Links */}
       {(() => {
         const role = employee?.role
         const dirItems = [
@@ -278,7 +333,7 @@ function SettingsPage() {
           </div>
         )
       })()}
-      {/* Admin action buttons — single row if multiple, stacked if one */}
+      {/* Admin action buttons */}
       {(can(employee?.role, 'manage_users') || can(employee?.role, 'plant_settings')) && (
         <div style={{ display: 'flex', gap: 8 }}>
           {can(employee?.role, 'manage_users') && (
@@ -298,31 +353,16 @@ function SettingsPage() {
           )}
         </div>
       )}
-      {/* Notifications */}
-      <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>Push Notifications</div>
-          <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>
-            {notifEnabled ? 'Receiving alerts for reports & dispatches' : 'Enable to get shift alerts'}
-          </div>
-        </div>
-        <button
-          onClick={toggleNotifications}
-          disabled={notifLoading}
-          style={{
-            width: 48, height: 28, borderRadius: 14, border: 'none', cursor: notifLoading ? 'not-allowed' : 'pointer',
-            background: notifEnabled ? '#2d6a4f' : '#D1D5DB',
-            position: 'relative', transition: 'background 0.2s',
-            opacity: notifLoading ? 0.6 : 1,
-          }}
-        >
-          <div style={{
-            width: 22, height: 22, borderRadius: '50%', background: 'white',
-            position: 'absolute', top: 3,
-            left: notifEnabled ? 23 : 3, transition: 'left 0.2s'
-          }} />
-        </button>
-      </div>
+      {/* ── Notifications ── */}
+      <NotificationsSection
+        pushEnabled={pushEnabled}
+        pushLoading={pushLoading}
+        onTogglePush={togglePush}
+        prefs={prefs}
+        prefLoading={prefLoading}
+        onTogglePref={togglePref}
+        isAdmin={isAdmin}
+      />
       <button
         onClick={signOut}
         style={{ width: '100%', padding: '14px 0', background: '#d32f2f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
@@ -330,6 +370,61 @@ function SettingsPage() {
         Sign Out
       </button>
       </div>
+    </div>
+  )
+}
+
+function NotificationsSection({ pushEnabled, pushLoading, onTogglePush, prefs, prefLoading, onTogglePref, isAdmin }) {
+  const [eventTypes, setEventTypes] = useState([])
+
+  useEffect(() => {
+    import('./lib/notifications').then(({ EVENT_TYPES }) => setEventTypes(EVENT_TYPES))
+  }, [])
+
+  const visible = eventTypes.filter(et => !et.admin_only || isAdmin)
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+      {/* Header row — push on/off */}
+      <div style={{ background: '#2d6a4f', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>🔔 Notifications</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>
+            {pushEnabled ? 'Push enabled — choose what to receive' : 'Enable push to choose what to receive'}
+          </div>
+        </div>
+        <MiniToggle on={pushEnabled} onToggle={onTogglePush} disabled={pushLoading} />
+      </div>
+
+      {/* Per-event toggles */}
+      {!pushEnabled ? (
+        <div style={{ padding: '14px 16px', fontSize: 12, color: '#8a8d7a', textAlign: 'center' }}>
+          Enable push notifications above to configure alerts
+        </div>
+      ) : (
+        <div>
+          {visible.map((et, idx) => (
+            <div
+              key={et.key}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 16px',
+                borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none',
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>{et.label}</div>
+                <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>{et.description}</div>
+              </div>
+              <MiniToggle
+                on={!!prefs[et.key]}
+                onToggle={() => onTogglePref(et.key)}
+                disabled={!!prefLoading[et.key]}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

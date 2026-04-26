@@ -58,6 +58,14 @@ export default function ReorderRequestsPage() {
       }])
       if (error) throw error
       showToast('Reorder request raised', 'success')
+      const partName = parts.find(p => p.id === formData.part_id)?.name || 'Unknown Part'
+      import('../../lib/notifications').then(({ sendNotification }) => {
+        sendNotification('spare_part_reorder', {
+          part_name: partName,
+          requested_by: employee?.name || 'Someone',
+          plant: plant?.name || '',
+        })
+      }).catch(() => {})
       setFormData({ part_id: '', notes: '' })
       setShowAddModal(false)
       load()

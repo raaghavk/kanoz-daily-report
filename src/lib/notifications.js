@@ -3,6 +3,64 @@ import { supabase } from './supabase'
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BLdPehJlH7XhX3UUJyR54_0PLgnHAW2udJXZaJig5jmH4WNUZobXcQV5FyjQH5HHTNohflrlPSm8j8JR2FvGTCA'
 
 /**
+ * All supported notification event types with UI labels.
+ * admin_only = true means only shown to admin role in Settings UI.
+ */
+export const EVENT_TYPES = [
+  {
+    key: 'report_submitted',
+    label: 'Shift Report Submitted',
+    description: 'When a new shift report is submitted',
+  },
+  {
+    key: 'report_edited',
+    label: 'Shift Report Edited',
+    description: 'When a shift report is updated',
+  },
+  {
+    key: 'purchase_added',
+    label: 'RM Purchase Added',
+    description: 'When a raw material purchase is recorded',
+  },
+  {
+    key: 'dispatch_created',
+    label: 'Dispatch Created',
+    description: 'When a new vehicle dispatch is created',
+  },
+  {
+    key: 'issue_reported',
+    label: 'Issue / Breakdown Reported',
+    description: 'When an issue is logged in a shift report',
+  },
+  {
+    key: 'spare_part_reorder',
+    label: 'Spare Part Reorder Request',
+    description: 'When a reorder request is raised for a spare part',
+  },
+  {
+    key: 'spare_part_low_stock',
+    label: 'Spare Part Below Minimum',
+    description: 'When a spare part falls below minimum stock level',
+  },
+  {
+    key: 'task_assigned',
+    label: 'Task Assigned to You',
+    description: 'When someone assigns a task to you',
+  },
+  {
+    key: 'task_updated',
+    label: 'Task Status Updated',
+    description: 'When a task assigned to you is updated',
+  },
+  {
+    key: 'delete_request_raised',
+    label: 'Deletion Request Raised',
+    description: 'When someone submits a deletion request',
+    admin_only: true,
+  },
+]
+
+/**
  * Convert a base64 URL string to a Uint8Array (for applicationServerKey).
  */
 function urlBase64ToUint8Array(base64String) {
@@ -50,7 +108,6 @@ export async function subscribeToPush(employeeId) {
 
     const subJSON = subscription.toJSON()
 
-    // Upsert subscription in Supabase
     const { error } = await supabase.from('push_subscriptions').upsert({
       employee_id: employeeId,
       endpoint: subJSON.endpoint,
@@ -99,8 +156,34 @@ export async function isSubscribed() {
 }
 
 /**
- * Send a push notification to admins via Supabase Edge Function.
- * Called after report submission or dispatch creation.
+ * Fetch notification preferences for an employee.
+ * Returns array of { event_type, enabled } objects.
+ */
+export async function getNotificationPreferences(employeeId) {
+  const { data, error } = await supabase
+    .from('notification_preferences')
+    .select('event_type, enabled')
+    .eq('employee_id', employeeId)
+  if (error) throw error
+  return data || []
+}
+
+/**
+ * Enable or disable a specific notification type for an employee.
+ */
+export async function setNotificationPreference(employeeId, eventType, enabled) {
+  const { error } = await supabase
+    .from('notification_preferences')
+    .upsert(
+      { employee_id: employeeId, event_type: eventType, enabled },
+      { onConflict: 'employee_id,event_type' }
+    )
+  if (error) throw error
+}
+
+/**
+ * Send a push notification via Supabase Edge Function.
+ * The edge function handles filtering by notification_preferences.
  */
 export async function sendNotification(eventType, payload) {
   try {

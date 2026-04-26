@@ -94,6 +94,21 @@ export default function IssuePartPage() {
       }])
       if (error) throw error
       showToast('Usage recorded', 'success')
+      // Check if stock fell below min level
+      if (selectedPart && selectedPart.min_stock_level != null) {
+        const newStock = selectedPart.current_stock - parseFloat(formData.quantity)
+        if (newStock < selectedPart.min_stock_level) {
+          import('../../lib/notifications').then(({ sendNotification }) => {
+            sendNotification('spare_part_low_stock', {
+              part_name: selectedPart.name,
+              current_stock: Math.round(newStock * 100) / 100,
+              min_stock_level: selectedPart.min_stock_level,
+              unit: selectedPart.unit,
+              plant: plant?.name || '',
+            })
+          }).catch(() => {})
+        }
+      }
       navigate(-1)
     } catch { showToast('Failed to save', 'error') } finally { setSubmitting(false) }
   }

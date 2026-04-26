@@ -53,6 +53,15 @@ export default function DeleteRequestButton({ entityType, entityId, entityLabel,
       if (error) throw error
 
       showToast('Deletion request submitted', 'success')
+      // Notify admins
+      import('../lib/notifications').then(({ sendNotification }) => {
+        sendNotification('delete_request_raised', {
+          entity_type: entityType,
+          entity_label: entityLabel,
+          requested_by: employee?.name || 'Someone',
+          plant: plant?.name || '',
+        })
+      }).catch(() => {})
       setReason('')
       setShowModal(false)
       setPendingRequest({

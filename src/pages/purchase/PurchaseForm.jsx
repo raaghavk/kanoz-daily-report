@@ -358,6 +358,17 @@ export default function PurchaseForm() {
 
         if (error) throw error
         showToast('Purchase saved successfully', 'success')
+        // Notify on new purchase
+        const rmName = rawMaterials.find(m => m.id === formData.raw_material_type_id)?.name || 'RM'
+        const supName = suppliers.find(s => s.id === formData.supplier_id)?.name || 'Supplier'
+        import('../../lib/notifications').then(({ sendNotification }) => {
+          sendNotification('purchase_added', {
+            material: rmName,
+            quantity_kg: formData.quantity_kg || formData.net_weight || '?',
+            supplier: supName,
+            plant: plant?.name || '',
+          })
+        }).catch(() => {})
       }
 
       if (id) queryClient.invalidateQueries({ queryKey: ['purchase', id] })
