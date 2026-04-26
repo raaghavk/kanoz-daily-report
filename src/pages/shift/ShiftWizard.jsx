@@ -284,7 +284,7 @@ export default function ShiftWizard() {
         const opening = prev ? parseFloat(prev.closing_litres) || 0 : 0
         return {
           id: eq.id, equipment_name: eq.name, opening, added: 0, used: 0,
-          closing: opening, hours: 0, avg_per_hr: 0, collapsed: false,
+          closing: opening, hours: 0, avg_per_hr: 0, collapsed: true,
         }
       }))
     }
@@ -410,7 +410,7 @@ export default function ShiftWizard() {
             closing: dieselData ? parseFloat(dieselData.closing_litres) || 0 : 0,
             hours: dieselData ? parseFloat(dieselData.hours_worked) || 0 : 0,
             avg_per_hr: 0,
-            collapsed: false,
+            collapsed: true,
           }
         })
         updateData('diesel', equipmentRows)
