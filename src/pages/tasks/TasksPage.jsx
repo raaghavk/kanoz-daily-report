@@ -6,7 +6,7 @@ import { can } from '../../lib/permissions'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import Modal from '../../components/Modal'
-import { Loader2, Plus, CheckCircle, Circle, Archive, CalendarDays, User } from 'lucide-react'
+import { Loader2, Plus, CheckCircle, Circle, Archive, CalendarDays, User, Trash2 } from 'lucide-react'
 import { getLocalDate } from '../../lib/dateUtils'
 
 const STATUS_META = {
@@ -50,6 +50,9 @@ export default function TasksPage() {
 
   // Close task modal
   const [showClose, setShowClose] = useState(null)
+
+  // Delete task (admin / task creator only)
+  const [deletingId, setDeletingId] = useState(null)
 
   // Keep filterPlant in sync when plant changes (e.g. first load)
   useEffect(() => { if (plant?.id && !filterPlant) setFilterPlant(plant.id) }, [plant]) // eslint-disable-line
@@ -183,6 +186,17 @@ export default function TasksPage() {
     } catch { showToast('Failed to close task', 'error') } finally { setSubmitting(false) }
   }
 
+  async function handleDelete(taskId) {
+    if (!window.confirm('Delete this task? This cannot be undone.')) return
+    setDeletingId(taskId)
+    try {
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+      if (error) throw error
+      showToast('Task deleted', 'success')
+      load()
+    } catch { showToast('Failed to delete task', 'error') } finally { setDeletingId(null) }
+  }
+
   const fmtDate = d => d ? new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : null
   const isOverdue = d => d && new Date(d + 'T00:00') < new Date(new Date().toDateString())
 
@@ -257,6 +271,10 @@ export default function TasksPage() {
               const sm = STATUS_META[task.status] || STATUS_META.open
               const overdue = task.status === 'open' && isOverdue(task.due_date)
               const isAssignedToMe = task.assigned_to_employee_id === employee?.id
+              const iAmCreator = task.assigned_by_employee_id === employee?.id
+              const canDelete = isAdmin || iAmCreator
+              // Admin / creator can close any non-closed task directly
+              const canForceClose = canAssign && task.status !== 'closed' && (iAmCreator || isAdmin)
 
               return (
                 <div key={task.id} style={{
@@ -269,15 +287,17 @@ export default function TasksPage() {
                     onClick={() => {
                       if (task.status === 'open' && isAssignedToMe) { setShowDone(task); setDoneNote('') }
                       else if (task.status === 'done' && canAssign) { setShowClose(task) }
+                      else if (task.status === 'open' && canForceClose) { setShowClose(task) }
                     }}
                     style={{
                       background: 'none', border: 'none', cursor:
-                        (task.status === 'open' && isAssignedToMe) || (task.status === 'done' && canAssign)
+                        (task.status === 'open' && (isAssignedToMe || canForceClose)) || (task.status === 'done' && canAssign)
                           ? 'pointer' : 'default',
                       padding: 0, marginTop: 2, flexShrink: 0,
                     }}
                     title={
                       task.status === 'open' && isAssignedToMe ? 'Mark as done' :
+                      task.status === 'open' && canForceClose ? 'Close task' :
                       task.status === 'done' && canAssign ? 'Close / archive task' : ''
                     }
                   >
@@ -324,18 +344,37 @@ export default function TasksPage() {
                     {task.status === 'open' && isAssignedToMe && (
                       <div style={{ fontSize: 11, color: '#2563EB', marginTop: 3 }}>Tap circle to mark done</div>
                     )}
+                    {task.status === 'open' && canForceClose && !isAssignedToMe && (
+                      <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 3 }}>Tap circle to close</div>
+                    )}
                     {task.status === 'done' && canAssign && (
                       <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 3 }}>Tap ✓ to close & archive</div>
                     )}
                   </div>
 
-                  {/* Status badge */}
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, flexShrink: 0,
-                    background: sm.bg, color: sm.text,
-                    border: `1px solid ${sm.border}`,
-                    borderRadius: 8, padding: '3px 8px',
-                  }}>{sm.label}</span>
+                  {/* Right side: status badge + delete */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700,
+                      background: sm.bg, color: sm.text,
+                      border: `1px solid ${sm.border}`,
+                      borderRadius: 8, padding: '3px 8px',
+                    }}>{sm.label}</span>
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        disabled={deletingId === task.id}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          padding: 0, opacity: deletingId === task.id ? 0.4 : 0.5,
+                          display: 'flex', alignItems: 'center',
+                        }}
+                        title="Delete task"
+                      >
+                        <Trash2 size={14} color="#dc2626" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               )
             })}
