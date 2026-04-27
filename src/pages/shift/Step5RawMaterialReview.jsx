@@ -29,6 +29,13 @@ function Step5RawMaterialReview({ data, updateData }) {
     updateData('rawMaterials', updated);
   };
 
+  const updateMixUsed = (idx, value) => {
+    const updated = [...mixes];
+    const numValue = parseFloat(value) || 0;
+    updated[idx] = { ...updated[idx], used_kg: numValue };
+    updateData('mixes', updated);
+  };
+
   const getMixStats = (mix) => {
     const production = data.production || [];
     let totalUsed = 0;
@@ -150,17 +157,39 @@ function Step5RawMaterialReview({ data, updateData }) {
 
                   {/* Compact 4-cell stats row */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
-                    {[
-                      { label: 'Opening', value: opening, color: C.muted },
-                      { label: 'Prepared', value: prepared, color: C.text },
-                      { label: 'Used', value: stats.used, color: C.text },
-                      { label: 'Closing', value: stats.closing, color: C.green },
-                    ].map((cell, i) => (
-                      <div key={cell.label} style={{ padding: '9px 8px', borderLeft: i > 0 ? `1px solid ${C.border}` : 'none', textAlign: 'center' }}>
-                        <div style={{ fontSize: 9, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>{cell.label}</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: cell.color }}>{cell.value.toFixed(0)} kg</div>
-                      </div>
-                    ))}
+                    {(() => {
+                      const displayUsed = (mix.used_kg !== undefined && mix.used_kg !== null) ? mix.used_kg : stats.used;
+                      const displayClosing = opening + prepared - displayUsed;
+                      return [
+                        { label: 'Opening', value: opening, color: C.muted, editable: false },
+                        { label: 'Prepared', value: prepared, color: C.text, editable: false },
+                        { label: 'Used', value: displayUsed, color: C.text, editable: true },
+                        { label: 'Closing', value: displayClosing, color: C.green, editable: false },
+                      ].map((cell, i) => (
+                        <div key={cell.label} style={{ padding: '9px 8px', borderLeft: i > 0 ? `1px solid ${C.border}` : 'none', textAlign: 'center' }}>
+                          <div style={{ fontSize: 9, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>{cell.label}</div>
+                          {cell.editable ? (
+                            <input
+                              type="number"
+                              value={cell.value}
+                              onChange={(e) => updateMixUsed(idx, e.target.value)}
+                              step="1"
+                              inputMode="numeric"
+                              style={{
+                                width: '100%', maxWidth: 70, padding: '3px 4px',
+                                borderRadius: 6, border: `1.5px solid ${C.border}`,
+                                fontSize: 13, fontWeight: 700, color: C.text,
+                                textAlign: 'center', background: '#fefae0',
+                                outline: 'none', fontFamily: 'Inter, sans-serif',
+                                boxSizing: 'border-box',
+                              }}
+                            />
+                          ) : (
+                            <div style={{ fontSize: 13, fontWeight: 700, color: cell.color }}>{cell.value.toFixed(0)} kg</div>
+                          )}
+                        </div>
+                      ))
+                    })()}
                   </div>
 
                   {/* Ingredients summary */}

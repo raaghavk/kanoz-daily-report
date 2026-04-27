@@ -8,9 +8,22 @@ export default memo(function Step7PelletStock({ data, updateData }) {
     const dispatchTotals = data.dispatchTotals || {}
 
     const stock = data.pelletStock.map(ps => {
-      // Sum production from Step 3 matching this pellet type name
+      // Sum production entries whose pellet type matches this pellet stock row
       const prodTotal = (data.production || [])
-        .filter(p => p.pellet_type === ps.name)
+        .filter(p => {
+          // Derive pellet type from mix_usages (same logic as Step4 getPelletType)
+          const usedMixes = (p.mix_usages || [])
+            .map(mu => (data.mixes || []).find(m => m.local_id === mu.mix_local_id))
+            .filter(Boolean)
+          const types = usedMixes.map(m => m.type).filter(Boolean)
+          if (types.length === 0) {
+            // Fall back: if shift has one mix type, attribute all production to it
+            const fallbackType = (data.mixes || []).find(m => m.type)?.type
+            return fallbackType === ps.name
+          }
+          const pelletType = types.every(t => t === types[0]) ? types[0] : 'Sample'
+          return pelletType === ps.name
+        })
         .reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
 
       // Dispatch total from Step 6 (loaded from today's vehicle_dispatches)
@@ -94,7 +107,7 @@ export default memo(function Step7PelletStock({ data, updateData }) {
 
       {/* Info Box */}
       <div style={{ background: '#e8f0ec', borderRadius: 8, padding: '8px 10px', fontSize: 11, color: '#2d6a4f', lineHeight: 1.6 }}>
-        <b>Prod auto-fills from Step 3. Dispatch auto-fills from Step 6.</b> Close = Open + Prod - Disp - Waste
+        <b>Prod auto-fills from Step 4. Dispatch auto-fills from Step 6.</b> Close = Open + Prod - Disp - Waste
       </div>
 
       {/* Summary Card */}

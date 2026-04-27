@@ -425,6 +425,7 @@ export default function ShiftWizard() {
           type: m.type,
           opening_kg: parseFloat(m.opening_kg) || 0,
           prepared_kg: parseFloat(m.prepared_kg) || 0,
+          used_kg: parseFloat(m.used_kg) || 0,
           ingredients: (m.shift_mix_compositions || []).map(c => ({
             raw_material_type_id: c.raw_material_type_id,
             name: c.raw_material_name,
@@ -436,7 +437,6 @@ export default function ShiftWizard() {
         // Load production entries with mix_usages restored (Step 4)
         if (machProd.data?.length) {
           const productionEntries = machProd.data
-            .filter(mp => parseFloat(mp.production_mt) > 0)
             .map(mp => {
               // Restore mix_usages from shift_mix_machine_usage
               const mixUsages = loadedMixes.flatMap(mix =>
@@ -457,7 +457,6 @@ export default function ShiftWizard() {
       } else if (machProd.data?.length) {
         // No mixes — load production entries without mix_usages
         const productionEntries = machProd.data
-          .filter(mp => parseFloat(mp.production_mt) > 0)
           .map(mp => ({
             id: mp.id,
             machine_id: mp.machine_id,
@@ -544,7 +543,10 @@ export default function ShiftWizard() {
         const usedMixTypes = machineEntries.flatMap(p =>
           (p.mix_usages || []).map(u => (reportData.mixes || []).find(m => m.local_id === u.mix_local_id)?.type).filter(Boolean)
         )
-        if (usedMixTypes.length === 0) return null
+        if (usedMixTypes.length === 0) {
+          // Fall back: use first mix type in this shift (avoids null when mix_usages not set)
+          return (reportData.mixes || []).find(m => m.type)?.type || null
+        }
         const unique = [...new Set(usedMixTypes)]
         return unique.length === 1 ? unique[0] : 'Sample'
       }
@@ -581,8 +583,10 @@ export default function ShiftWizard() {
       if ((reportData.mixes || []).length > 0) {
         for (const mix of reportData.mixes) {
           // Compute used_kg from production mix_usages
-          const usedKg = (reportData.production || []).reduce((sum, p) =>
+          const computedUsedKg = (reportData.production || []).reduce((sum, p) =>
             sum + (p.mix_usages || []).filter(u => u.mix_local_id === mix.local_id).reduce((s, u) => s + sanitizeNumber(u.quantity_kg), 0), 0)
+          // Prefer manually overridden used_kg (set in Step 5) over computed
+          const usedKg = (mix.used_kg !== undefined && mix.used_kg !== null) ? sanitizeNumber(mix.used_kg) : computedUsedKg
           const closingKg = (sanitizeNumber(mix.opening_kg) + sanitizeNumber(mix.prepared_kg)) - usedKg
 
           const { data: savedMix, error: mixErr } = await supabase.from('shift_mixes').insert({
@@ -726,6 +730,48 @@ export default function ShiftWizard() {
         if (purchaseRows.length > 0) {
           await supabase.from('diesel_purchases').insert(purchaseRows)
         }
+      }
+
+      // Link dispatches within this shift's time window to this shift report
+      try {
+        const normalizeTime = (t) => t ? t.substring(0, 5) : t
+        const shiftStart = `${reportData.shift_start_date}T${normalizeTime(reportData.start_time)}:00`
+        const shiftEnd = `${reportData.shift_end_date}T${normalizeTime(reportData.end_time)}:00`
+
+        // Unlink any dispatches previously linked to this report
+        await supabase.from('vehicle_dispatches')
+          .update({ shift_report_id: null })
+          .eq('shift_report_id', report.id)
+          .eq('plant_id', plant.id)
+
+        // Load dispatches in date range
+        const { data: candidateDispatches } = await supabase
+          .from('vehicle_dispatches')
+          .select('id, date, dispatch_date, dispatch_time')
+          .eq('plant_id', plant.id)
+          .eq('is_deleted', false)
+          .gte('date', reportData.shift_start_date)
+          .lte('date', reportData.shift_end_date)
+
+        if (candidateDispatches?.length) {
+          const shiftStartDt = new Date(shiftStart)
+          const shiftEndDt = new Date(shiftEnd)
+          const toLink = candidateDispatches.filter(d => {
+            const dDate = d.dispatch_date || d.date
+            const dTime = d.dispatch_time || '00:00:00'
+            const dt = new Date(`${dDate}T${dTime}`)
+            return dt >= shiftStartDt && dt <= shiftEndDt
+          }).map(d => d.id)
+
+          if (toLink.length > 0) {
+            await supabase.from('vehicle_dispatches')
+              .update({ shift_report_id: report.id })
+              .in('id', toLink)
+          }
+        }
+      } catch (dispatchErr) {
+        console.error('Dispatch linking error:', dispatchErr)
+        // Non-critical — don't fail the whole save
       }
 
       sessionStorage.removeItem(WIZARD_STORAGE_KEY)
