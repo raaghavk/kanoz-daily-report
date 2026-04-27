@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import PageHeader from '../components/PageHeader'
-import { Plus, Edit3, Check, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Edit3, Check, X, ChevronDown, ChevronUp, Archive, RotateCcw } from 'lucide-react'
 
 const SECTIONS = [
   { key: 'machines', table: 'machines', label: 'Machines', singular: 'Machine', hasSort: true },
@@ -33,6 +33,9 @@ export default function AdminPanel() {
   // Expanded sections
   const [expandedSections, setExpandedSections] = useState({ machines: true, equipment: true, raw_material_types: true, pellet_types: true })
 
+  // Show archived plants toggle
+  const [showArchived, setShowArchived] = useState(false)
+
   async function loadAllData() {
     setLoading(true)
     const results = {}
@@ -54,14 +57,15 @@ export default function AdminPanel() {
     const ctrl = new AbortController()
     supabase
       .from('plants')
-      .select('id, name')
+      .select('id, name, is_active')
       .eq('org_id', plant?.org_id)
       .order('name')
       .then(({ data: orgPlants }) => {
         if (ctrl.signal.aborted) return
         setPlants(orgPlants || [])
-        if (!selectedPlantId && orgPlants?.length) {
-          setSelectedPlantId(orgPlants[0].id)
+        const activePlants = (orgPlants || []).filter(p => p.is_active !== false)
+        if (!selectedPlantId && activePlants.length) {
+          setSelectedPlantId(activePlants[0].id)
         }
       })
     return () => ctrl.abort()
@@ -175,7 +179,30 @@ export default function AdminPanel() {
     setSelectedPlantId(newPlant.id)
   }
 
+  async function archivePlant(plantId) {
+    const plantName = plants.find(p => p.id === plantId)?.name || 'this plant'
+    if (!window.confirm(`Archive "${plantName}"?\n\nIt will be hidden from all dropdowns and reports. You can restore it later from "Show archived".`)) return
+    const { error } = await supabase.from('plants').update({ is_active: false }).eq('id', plantId)
+    if (error) { showToast('Failed to archive plant', 'error'); return }
+    showToast(`"${plantName}" archived`, 'success')
+    setPlants(prev => prev.map(p => p.id === plantId ? { ...p, is_active: false } : p))
+    // Switch to first active plant
+    const remaining = plants.filter(p => p.id !== plantId && p.is_active !== false)
+    setSelectedPlantId(remaining[0]?.id || '')
+  }
+
+  async function restorePlant(plantId) {
+    const plantName = plants.find(p => p.id === plantId)?.name || 'this plant'
+    const { error } = await supabase.from('plants').update({ is_active: true }).eq('id', plantId)
+    if (error) { showToast('Failed to restore plant', 'error'); return }
+    showToast(`"${plantName}" restored`, 'success')
+    setPlants(prev => prev.map(p => p.id === plantId ? { ...p, is_active: true } : p))
+    setSelectedPlantId(plantId)
+  }
+
   const selectedPlantName = plants.find(p => p.id === selectedPlantId)?.name || 'Plant'
+  const visiblePlants = plants.filter(p => showArchived ? true : p.is_active !== false)
+  const archivedCount = plants.filter(p => p.is_active === false).length
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
@@ -183,14 +210,52 @@ export default function AdminPanel() {
 
       {/* Plant Selector */}
       <div style={{ padding: '12px 20px', background: '#fff', borderBottom: '1px solid #e5ddd0' }}>
-        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Select Plant</label>
-        <select
-          value={selectedPlantId}
-          onChange={e => setSelectedPlantId(e.target.value)}
-          style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', background: '#fefae0' }}
-        >
-          {plants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>Select Plant</label>
+          {archivedCount > 0 && (
+            <button
+              onClick={() => setShowArchived(prev => !prev)}
+              style={{ fontSize: 11, color: showArchived ? '#d32f2f' : '#8a8d7a', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+            >
+              {showArchived ? `Hide archived` : `Show archived (${archivedCount})`}
+            </button>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <select
+            value={selectedPlantId}
+            onChange={e => setSelectedPlantId(e.target.value)}
+            style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', background: '#fefae0' }}
+          >
+            {visiblePlants.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.name}{p.is_active === false ? ' (archived)' : ''}
+              </option>
+            ))}
+          </select>
+          {/* Archive / Restore button for selected plant */}
+          {selectedPlantId && (() => {
+            const sel = plants.find(p => p.id === selectedPlantId)
+            if (!sel) return null
+            return sel.is_active === false ? (
+              <button
+                onClick={() => restorePlant(selectedPlantId)}
+                title="Restore plant"
+                style={{ padding: '10px 12px', background: '#e8f5e9', color: '#2d6a4f', borderRadius: 12, border: '1.5px solid #b8d4c4', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600 }}
+              >
+                <RotateCcw size={14} /> Restore
+              </button>
+            ) : (
+              <button
+                onClick={() => archivePlant(selectedPlantId)}
+                title="Archive plant"
+                style={{ padding: '10px 12px', background: '#fff8e1', color: '#b45309', borderRadius: 12, border: '1.5px solid #f0d9a0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600 }}
+              >
+                <Archive size={14} /> Archive
+              </button>
+            )
+          })()}
+        </div>
         {addingPlant ? (
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <input
