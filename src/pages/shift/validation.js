@@ -10,10 +10,8 @@ export function getValidationErrors(reportData) {
   if (!reportData.start_time) errors.push({ step: 1, message: 'Start time is required' })
   if (!reportData.end_time) errors.push({ step: 1, message: 'End time is required' })
 
-  // Step 2: Machines — at least one machine should have timing or recorded hours
-  const hasAnyMachineTiming = reportData.machines.some(
-    m => (m.from_time && m.to_time) || parseFloat(m.total_hours) > 0
-  )
+  // Step 2: Machines — at least one machine should have from/to timing
+  const hasAnyMachineTiming = reportData.machines.some(m => m.from_time && m.to_time)
   if (!hasAnyMachineTiming && reportData.machines.length > 0) {
     errors.push({ step: 2, message: 'Enter timing for at least one machine' })
   }

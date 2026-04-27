@@ -351,7 +351,7 @@ export default function ShiftWizard() {
               return {
                 ...m,
                 production_hours: parseFloat(prod.hours_run) || 0,
-                total_hours: parseFloat(prod.hours_run) || 0,
+                total_hours: parseFloat(prod.total_hours) || parseFloat(prod.hours_run) || 0,
                 from_time: prod.from_time || '',
                 to_time: prod.to_time || '',
                 breakdown_hrs: parseFloat(prod.breakdown_hours) || 0,
@@ -558,6 +558,10 @@ export default function ShiftWizard() {
             shift_report_id: report.id,
             machine_id: m.id,
             hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours),
+            from_time: m.from_time || null,
+            to_time: m.to_time || null,
+            total_hours: sanitizeNumber(m.total_hours) || null,
+            breakdown_hours: sanitizeNumber(m.breakdown_hrs) || 0,
             remarks: sanitizeText(m.remarks, 500),
             production_mt: reportData.production
               .filter(p => p.machine_id === m.id)
