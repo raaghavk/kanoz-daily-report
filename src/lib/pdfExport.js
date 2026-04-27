@@ -336,7 +336,9 @@ export async function exportShiftReportPDF(report, data, createdByName) {
   const totalRMkg = (data.rawMaterials || []).reduce((s, m) => s + (parseFloat(m.quantity_kg) || 0), 0)
 
   const startDate = report.shift_start_date || report.date
+  const endDate = report.shift_end_date || startDate
   const startLabel = fmtDate(startDate) + ', ' + (report.start_time?.slice(0, 5) || '')
+  const shiftTimeLabel = startLabel + (fmtDate(endDate) !== fmtDate(startDate) ? ' – ' + fmtDate(endDate) + ', ' + (report.end_time?.slice(0, 5) || '') : ' – ' + (report.end_time?.slice(0, 5) || ''))
 
   // ===== GREEN HEADER CARD =====
   const cardH = 44
@@ -376,7 +378,7 @@ export async function exportShiftReportPDF(report, data, createdByName) {
     { label: 'PLANT', value: report.plants?.name || 'N/A' },
     { label: 'DATE', value: report.date || 'N/A' },
     { label: 'SUPERVISOR', value: report.employees?.name || 'N/A' },
-    { label: 'SHIFT TIME', value: startLabel },
+    { label: 'SHIFT TIME', value: shiftTimeLabel },
   ]
   metaItems.forEach((item, i) => {
     const mx = margin + 8 + i * metaColW
