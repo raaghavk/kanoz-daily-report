@@ -285,6 +285,8 @@ function MixPanel({ mix, rawMaterials, onSave, onClose }) {
   }
 
   const totalKg = form.ingredients.reduce((s, i) => s + (parseFloat(i.quantity_kg) || 0), 0)
+  const validIngredients = form.ingredients.filter(i => i.raw_material_type_id && parseFloat(i.quantity_kg) > 0)
+  const canSave = validIngredients.length > 0
 
   return (
     <>
@@ -385,9 +387,14 @@ function MixPanel({ mix, rawMaterials, onSave, onClose }) {
 
         {/* Save button */}
         <div style={{ padding: '12px 20px', borderTop: `1px solid ${C.border}`, flexShrink: 0, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          {!canSave && (
+            <div style={{ fontSize: 11, color: '#92400E', background: '#fefae0', border: '1px solid #e9c46a', borderRadius: 8, padding: '6px 10px', marginBottom: 10, textAlign: 'center' }}>
+              Add at least one ingredient with a material and quantity &gt; 0
+            </div>
+          )}
           <button
-            onClick={() => onSave(form)}
-            style={{ width: '100%', padding: '14px 0', background: C.green, color: '#fff', borderRadius: 12, fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+            onClick={() => { if (canSave) onSave(form) }}
+            style={{ width: '100%', padding: '14px 0', background: canSave ? C.green : '#b5b8a8', color: '#fff', borderRadius: 12, fontSize: 15, fontWeight: 700, border: 'none', cursor: canSave ? 'pointer' : 'not-allowed', opacity: canSave ? 1 : 0.8 }}
           >
             Save Mix
           </button>

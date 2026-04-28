@@ -157,9 +157,15 @@ export default function ShiftWizard() {
     setPendingRestore(null)
   }, [])
 
-  // Load machines and raw material types for this plant
+  // Guard: only ever load plant data once per wizard session.
+  // Without this, a plant reference change (AuthContext re-render) or a slow
+  // async return from loadPlantData could fire again and wipe user-entered timings.
+  const plantDataLoadedRef = useRef(false)
   useEffect(() => {
-    if (plant?.id && initDone && !restoredFromStorage && !editId) loadPlantData()
+    if (plant?.id && initDone && !restoredFromStorage && !editId && !plantDataLoadedRef.current) {
+      plantDataLoadedRef.current = true
+      loadPlantData()
+    }
   }, [plant, initDone, restoredFromStorage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save wizard state to sessionStorage on changes (so it survives navigation)
