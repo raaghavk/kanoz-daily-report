@@ -911,7 +911,13 @@ export default function ShiftWizard() {
           </button>
         ) : (
           <button
-            onClick={() => allErrors.length === 0 ? setShowConfirm(true) : saveReport()}
+            onClick={() => {
+              if (allErrors.length > 0) {
+                showToast(`Fix ${allErrors.length} issue${allErrors.length > 1 ? 's' : ''} before submitting (Steps: ${[...new Set(allErrors.map(e => e.step))].join(', ')})`, 'error')
+                return
+              }
+              setShowConfirm(true)
+            }}
             disabled={saving}
             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: allErrors.length > 0 ? '#d4a373' : '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', opacity: saving ? 0.5 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}
           >

@@ -91,15 +91,26 @@ export default function ReportView() {
       const shiftEnd = `${shiftEndDate}T${endTime}:00`
 
       // 1. Re-link dispatches: find dispatches in shift time window for this plant
-      const { data: matchingDispatches, error: dispErr } = await supabase
+      // dispatch_datetime doesn't exist — filter by date range then check time in JS
+      const { data: candidateDispatches, error: dispErr } = await supabase
         .from('vehicle_dispatches')
-        .select('id')
+        .select('id, date, dispatch_date, dispatch_time')
         .eq('plant_id', report.plant_id)
         .eq('is_deleted', false)
-        .gte('dispatch_datetime', shiftStart)
-        .lte('dispatch_datetime', shiftEnd)
+        .gte('date', shiftStartDate)
+        .lte('date', shiftEndDate)
 
       if (dispErr) throw dispErr
+
+      // Filter to those within the exact shift time window
+      const shiftStartDt = new Date(shiftStart)
+      const shiftEndDt   = new Date(shiftEnd)
+      const matchingIds  = (candidateDispatches || []).filter(d => {
+        const dDate = d.dispatch_date || d.date
+        const dTime = d.dispatch_time || '00:00:00'
+        const dt = new Date(`${dDate}T${dTime}`)
+        return dt >= shiftStartDt && dt <= shiftEndDt
+      }).map(d => d.id)
 
       // Unlink old dispatches from this report
       await supabase
@@ -108,12 +119,11 @@ export default function ReportView() {
         .eq('shift_report_id', id)
 
       // Link matching dispatches to this report
-      if (matchingDispatches && matchingDispatches.length > 0) {
-        const dispatchIds = matchingDispatches.map(d => d.id)
+      if (matchingIds.length > 0) {
         await supabase
           .from('vehicle_dispatches')
           .update({ shift_report_id: id })
-          .in('id', dispatchIds)
+          .in('id', matchingIds)
       }
 
       // 2. Update raw material purchased amounts from live purchases

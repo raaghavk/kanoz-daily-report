@@ -298,11 +298,25 @@ serve(async (req) => {
 
     let subsToNotify: Array<{ endpoint: string; p256dh: string; auth: string }> = []
 
+    const NOTIF_ROLES = ['admin', 'plant_manager', 'supervisor']
+
     if (TASK_EVENTS.has(event_type)) {
-      // Task events: only notify the specific assignee
+      // Task events: only notify the specific assignee if they have an eligible role
       const assigneeId = payload.assignee_employee_id
       if (!assigneeId) {
         return new Response(JSON.stringify({ sent: 0, message: 'No assignee specified' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      // Check assignee role
+      const { data: emp } = await supabase
+        .from('employees')
+        .select('role')
+        .eq('id', assigneeId)
+        .maybeSingle()
+      if (!emp || !NOTIF_ROLES.includes(emp.role)) {
+        return new Response(JSON.stringify({ sent: 0, message: 'Assignee role not eligible for notifications' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
@@ -328,7 +342,7 @@ serve(async (req) => {
 
       subsToNotify = subs || []
     } else {
-      // Broadcast events: send to all employees who have enabled this event type
+      // Broadcast events: send to all employees who have enabled this event type + have eligible roles
       const { data: prefs } = await supabase
         .from('notification_preferences')
         .select('employee_id')
@@ -343,10 +357,24 @@ serve(async (req) => {
 
       const enabledIds = prefs.map((p: any) => p.employee_id)
 
+      // Filter to only employees with eligible roles
+      const { data: eligibleEmps } = await supabase
+        .from('employees')
+        .select('id')
+        .in('id', enabledIds)
+        .in('role', NOTIF_ROLES)
+
+      const eligibleIds = (eligibleEmps || []).map((e: any) => e.id)
+      if (eligibleIds.length === 0) {
+        return new Response(JSON.stringify({ sent: 0, message: 'No eligible subscribers' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
       const { data: subs } = await supabase
         .from('push_subscriptions')
         .select('endpoint, p256dh, auth')
-        .in('employee_id', enabledIds)
+        .in('employee_id', eligibleIds)
 
       subsToNotify = subs || []
     }
