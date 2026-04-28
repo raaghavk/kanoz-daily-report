@@ -16,12 +16,6 @@ export function getValidationErrors(reportData) {
     errors.push({ step: 2, message: 'Enter timing for at least one machine' })
   }
 
-  // Step 3: Raw Material & Mix — used field for at least one
-  const hasRMUsage = reportData.rawMaterials.some(rm => parseFloat(rm.used) > 0)
-  if (!hasRMUsage && reportData.rawMaterials.length > 0) {
-    errors.push({ step: 3, message: 'Enter raw material usage (add at least one mix with ingredients)' })
-  }
-
   // Step 4: Production — at least one entry
   const hasProduction = reportData.production && reportData.production.length > 0 &&
     reportData.production.some(p => parseFloat(p.quantity) > 0)
