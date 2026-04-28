@@ -431,8 +431,22 @@ export default function ReportView() {
                   <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
+              {/* Mixes with closing stock > 0 appear here as carry-forward inventory */}
+              {mixes.filter(mx => parseFloat(mx.closing_kg) > 0).map(mx => (
+                <tr key={'mix-' + mx.id} style={{ borderTop: '1px solid #e5ddd0', background: '#f5f9f7' }}>
+                  <td style={{ padding: '10px 12px', fontSize: 11 }}>
+                    <span style={{ fontWeight: 500, color: '#2c2c2c' }}>{mx.name || 'Mix'}</span>
+                    <span style={{ fontSize: 9, fontWeight: 600, color: '#2d6a4f', background: '#e8f5ee', borderRadius: 3, padding: '1px 5px', marginLeft: 6 }}>MIX</span>
+                  </td>
+                  <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{Math.round(parseFloat(mx.opening_kg) || 0)}</td>
+                  <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{Math.round(parseFloat(mx.prepared_kg) || 0)}</td>
+                  <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{Math.round(parseFloat(mx.used_kg) || 0)}</td>
+                  <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2d6a4f', fontSize: 11 }}>{Math.round(parseFloat(mx.closing_kg) || 0)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
+          <div style={{ padding: '6px 12px', fontSize: 9, color: '#b5b8a8', borderTop: '1px solid #f0ebe0' }}>All quantities in kg</div>
         </div>
       </div>
 
