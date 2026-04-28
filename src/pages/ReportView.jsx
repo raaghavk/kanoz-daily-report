@@ -470,24 +470,31 @@ export default function ReportView() {
                 <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#fff', fontSize: 11 }}>Equipment</th>
                 <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Opening (L)</th>
                 <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Added (L)</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Used (L)</th>
                 <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Closing (L)</th>
                 <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Hours</th>
               </tr>
             </thead>
             <tbody>
               {equipmentDiesel.length > 0 ? (
-                equipmentDiesel.map(e => (
+                equipmentDiesel.map(e => {
+                  const used = e.used_litres != null
+                    ? parseFloat(e.used_litres)
+                    : (parseFloat(e.opening_litres) || 0) + (parseFloat(e.added_litres) || 0) - (parseFloat(e.closing_litres) || 0)
+                  return (
                   <tr key={e.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{e.equipment_name || 'N/A'}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.opening_litres || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.added_litres || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2d6a4f', fontSize: 11 }}>{used.toFixed(1)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{e.closing_litres || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.hours_worked || 0}h</td>
                   </tr>
-                ))
+                  )
+                })
               ) : (
                 <tr>
-                  <td colSpan="5" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
+                  <td colSpan="6" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
