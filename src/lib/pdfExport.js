@@ -518,6 +518,25 @@ export async function exportShiftReportPDF(report, data, createdByName) {
 
   y = Math.max(rmEndY, psEndY) + 6
 
+  // ── MIX STOCK ────────────────────────────────────────────────────────────
+  if ((data.mixes || []).length > 0) {
+    y = secHead(doc, y, 'MIX STOCK')
+    const mixRows = (data.mixes || []).map(mx => [
+      mx.name || '—',
+      mx.type  || '—',
+      String(Math.round(parseFloat(mx.opening_kg)  || 0)),
+      String(Math.round(parseFloat(mx.prepared_kg) || 0)),
+      String(Math.round(parseFloat(mx.used_kg)     || 0)),
+      String(Math.round(parseFloat(mx.closing_kg)  || 0)),
+    ])
+    y = stdTable(doc, y,
+      ['MIX NAME', 'TYPE', 'OPEN (kg)', 'PREP (kg)', 'USED (kg)', 'CLOSE (kg)'],
+      [46, 28, 22, 22, 22, 24],
+      mixRows,
+      { aligns: ['left','left','right','right','right','right'] }
+    )
+  }
+
   // ── DIESEL STOCK (from equipment totals) ─────────────────────────────────
   if ((data.equipmentDiesel || []).length > 0) {
     const eqOpen  = (data.equipmentDiesel || []).reduce((s, e) => s + (parseFloat(e.opening_litres)  || 0), 0)
@@ -545,14 +564,21 @@ export async function exportShiftReportPDF(report, data, createdByName) {
 
   // ── EQUIPMENT & DIESEL ───────────────────────────────────────────────────
   y = secHead(doc, y, 'EQUIPMENT & DIESEL')
-  const eqRows = (data.equipmentDiesel || []).map(e => [
-    e.equipment_name || '—',
-    String(Math.round(e.opening_litres  || 0)),
-    String(Math.round(e.added_litres    || 0)),
-    String(Math.round(e.used_litres     || 0)),
-    String(Math.round(e.closing_litres  || 0)),
-    (e.hours_worked || 0) + ' h',
-  ])
+  const eqRows = (data.equipmentDiesel || []).map(e => {
+    const open  = parseFloat(e.opening_litres)  || 0
+    const added = parseFloat(e.added_litres)    || 0
+    const close = parseFloat(e.closing_litres)  || 0
+    // used_litres now saved; fall back to open+added-close for old records
+    const used  = e.used_litres != null ? parseFloat(e.used_litres) : (open + added - close)
+    return [
+      e.equipment_name || '—',
+      String(Math.round(open)),
+      String(Math.round(added)),
+      String(Math.round(used)),
+      String(Math.round(close)),
+      (e.hours_worked || 0) + ' h',
+    ]
+  })
   y = stdTable(doc, y,
     ['EQUIPMENT', 'OPEN', 'ADDED', 'USED', 'CLOSE', 'HRS'],
     [50, 24, 24, 24, 24, 34],

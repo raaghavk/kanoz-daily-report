@@ -653,14 +653,22 @@ export default function ShiftWizard() {
         await supabase.from('equipment_diesel_log').delete().eq('shift_report_id', report.id)
         const dieselRows = reportData.diesel
           .filter(d => !d.did_not_run)
-          .map(d => ({
-            shift_report_id: report.id,
-            equipment_name: sanitizeText(d.equipment_name, 100),
-            opening_litres: sanitizeNumber(d.opening),
-            added_litres: sanitizeNumber(d.added),
-            closing_litres: sanitizeNumber(d.closing),
-            hours_worked: sanitizeNumber(d.hours),
-          }))
+          .map(d => {
+            const openL  = sanitizeNumber(d.opening)
+            const addedL = sanitizeNumber(d.added)
+            const usedL  = sanitizeNumber(d.used)
+            // Always recompute closing at save time — never trust potentially stale form state
+            const closeL = openL + addedL - usedL
+            return {
+              shift_report_id: report.id,
+              equipment_name: sanitizeText(d.equipment_name, 100),
+              opening_litres: openL,
+              added_litres:   addedL,
+              used_litres:    usedL,
+              closing_litres: closeL,
+              hours_worked:   sanitizeNumber(d.hours),
+            }
+          })
         if (dieselRows.length) {
           await supabase.from('equipment_diesel_log').insert(dieselRows)
         }

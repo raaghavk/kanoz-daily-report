@@ -21,6 +21,7 @@ export default function ReportView() {
   const [equipmentDiesel, setEquipmentDiesel] = useState([])
   const [pelletStock, setPelletStock] = useState([])
   const [issues, setIssues] = useState([])
+  const [mixes, setMixes] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -204,13 +205,14 @@ export default function ReportView() {
       setReport(reportData)
 
       // Fetch all child data in parallel
-      const [machRes, matRes, dispatchRes, dieselRes, stockRes, issuesRes] = await Promise.all([
+      const [machRes, matRes, dispatchRes, dieselRes, stockRes, issuesRes, mixesRes] = await Promise.all([
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', id),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', id),
         supabase.from('vehicle_dispatches').select('*, dispatch_pellets(*, pellet_types(name)), customers(name)').eq('shift_report_id', id),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', id),
         supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', id),
         supabase.from('issues').select('*').eq('shift_report_id', id),
+        supabase.from('shift_mixes').select('*').eq('shift_report_id', id),
       ])
 
       if (machRes.error) console.error('Failed to load machine data:', machRes.error)
@@ -219,6 +221,7 @@ export default function ReportView() {
       if (dieselRes.error) console.error('Failed to load diesel data:', dieselRes.error)
       if (stockRes.error) console.error('Failed to load pellet stock:', stockRes.error)
       if (issuesRes.error) console.error('Failed to load issues:', issuesRes.error)
+      if (mixesRes.error) console.error('Failed to load mixes:', mixesRes.error)
 
       setMachineProduction(machRes.data || [])
       setRawMaterials(matRes.data || [])
@@ -226,6 +229,7 @@ export default function ReportView() {
       setEquipmentDiesel(dieselRes.data || [])
       setPelletStock(stockRes.data || [])
       setIssues(issuesRes.data || [])
+      setMixes(mixesRes.data || [])
     } catch (err) {
       console.error('Error fetching report:', err)
       showToast('Failed to load report', 'error')
@@ -604,7 +608,7 @@ export default function ReportView() {
       {can(employee?.role, 'export') && (
       <div style={{ padding: '0 20px', marginTop: 12 }}>
         <button
-          onClick={() => exportShiftReportPDF(report, { machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues }, report.employees?.name)}
+          onClick={() => exportShiftReportPDF(report, { machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues, mixes }, report.employees?.name)}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
