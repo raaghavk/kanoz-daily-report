@@ -1,4 +1,5 @@
-// Load jsPDF from CDN dynamically
+// pdfExport.js — Kanoz Biomass · Template-matched PDF reports
+
 let jsPDFLoaded = null
 async function loadJsPDF() {
   if (jsPDFLoaded) return jsPDFLoaded
@@ -12,609 +13,624 @@ async function loadJsPDF() {
   })
 }
 
-function formatTimestamp(ts) {
-  if (!ts) return 'N/A'
-  const d = new Date(ts)
-  return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
+// ── Palette ──────────────────────────────────────────────────────────────────
+const GREEN       = [45, 106, 79]
+const GREEN_LABEL = [162, 208, 185]
+const TEXT        = [44, 44, 44]
+const MUTED       = [89, 92, 74]
+const LIGHT       = [148, 151, 138]
+const BORDER      = [220, 215, 205]
+const BG_ROW      = [249, 247, 241]
+const BG_HEAD     = [243, 241, 235]
+const WHITE       = [255, 255, 255]
+
+// ── Tiny helpers ─────────────────────────────────────────────────────────────
+const setC  = (doc, rgb) => doc.setTextColor(...rgb)
+const fillC = (doc, rgb) => doc.setFillColor(...rgb)
+const lineC = (doc, rgb) => doc.setDrawColor(...rgb)
+
+function fmtDate(d) {
+  if (!d) return '—'
+  const [y, m, dy] = d.split('-')
+  return `${dy}-${m}-${y}`
+}
+function fmtTime(t) { return t ? t.substring(0, 5) : '—' }
+function fmtNow() {
+  return new Date().toLocaleString('en-IN', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+  })
 }
 
-// Shared PDF header
-function drawHeader(doc, title, subtitle) {
-  doc.setFillColor(45, 106, 79)
-  doc.rect(0, 0, 210, 30, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(16)
-  doc.setFont('helvetica', 'bold')
-  doc.text(title, 15, 15)
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
-  doc.text(subtitle, 15, 23)
-  return 40
-}
+// ── Page header: company name left · identifier right · subtitle · rule ──────
+function pageHeader(doc, reportType, location, identRight, dateRight) {
+  const pw = 210, m = 15
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(16); setC(doc, TEXT)
+  doc.text('KANOZ BIOMASS', m, 18)
+  const irW = doc.getTextWidth(identRight)
+  doc.text(identRight, pw - m - irW, 18)
 
-// Shared footer with created_by
-function drawFooter(doc, createdBy, createdAt, updatedAt) {
-  const y = 275
-  doc.setDrawColor(45, 106, 79)
-  doc.setLineWidth(0.3)
-  doc.line(15, y, 195, y)
-  doc.setFontSize(8)
-  doc.setTextColor(89, 92, 74)
-  doc.text('Created by: ' + (createdBy || 'Unknown') + ' at ' + formatTimestamp(createdAt), 15, y + 6)
-  if (updatedAt && updatedAt !== createdAt) {
-    doc.text('Last updated: ' + formatTimestamp(updatedAt), 15, y + 11)
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); setC(doc, MUTED)
+  doc.text(reportType + (location ? ' · ' + location : ''), m, 24)
+  if (dateRight) {
+    const drW = doc.getTextWidth(dateRight)
+    doc.text(dateRight, pw - m - drW, 24)
   }
-  doc.text('Kanoz Daily Report | app.kanoz.in | Generated: ' + new Date().toLocaleString('en-IN'), 15, y + 17)
+
+  lineC(doc, BORDER); doc.setLineWidth(0.3)
+  doc.line(m, 27, pw - m, 27)
+  return 30
 }
 
-// Table helper
-function drawTable(doc, y, headers, rows, colWidths) {
-  const startX = 15
-  const rowH = 7
+// ── 4-cell dark-green info row ────────────────────────────────────────────────
+function infoRow(doc, y, cells) {
+  const pw = 210, m = 15
+  const cw = (pw - 2 * m) / cells.length
+  const h  = 20
+  cells.forEach((c, i) => {
+    const x = m + i * cw
+    fillC(doc, GREEN); doc.rect(x, y, cw, h, 'F')
+    if (i < cells.length - 1) {
+      lineC(doc, [255, 255, 255]); doc.setLineWidth(0.2)
+      doc.line(x + cw, y + 3, x + cw, y + h - 3)
+    }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); setC(doc, GREEN_LABEL)
+    doc.text((c.label || '').toUpperCase(), x + 4, y + 7)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(c.vs || 9.5); setC(doc, WHITE)
+    const val = String(c.value || '—')
+    // Truncate if too wide
+    const maxW = cw - 8
+    let display = val
+    while (doc.getTextWidth(display) > maxW && display.length > 4) display = display.slice(0, -1)
+    if (display !== val) display = display.slice(0, -1) + '…'
+    doc.text(display, x + 4, y + 15.5)
+  })
+  return y + h
+}
+
+// ── 4-cell KPI row (large numbers, light bg) ──────────────────────────────────
+function kpiRow(doc, y, kpis) {
+  const pw = 210, m = 15
+  const cw = (pw - 2 * m) / kpis.length
+  const h  = 22
+  kpis.forEach((k, i) => {
+    const x = m + i * cw
+    fillC(doc, [250, 248, 242]); doc.rect(x, y, cw, h, 'F')
+    if (i < kpis.length - 1) {
+      lineC(doc, BORDER); doc.setLineWidth(0.2)
+      doc.line(x + cw, y + 3, x + cw, y + h - 3)
+    }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(6); setC(doc, LIGHT)
+    doc.text((k.label || '').toUpperCase(), x + 4, y + 7)
+
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(15); setC(doc, TEXT)
+    const mainStr = String(k.main ?? '0')
+    doc.text(mainStr, x + 4, y + 18)
+    if (k.unit) {
+      const nw = doc.getTextWidth(mainStr)
+      doc.setFontSize(7.5); doc.setFont('helvetica', 'normal'); setC(doc, MUTED)
+      doc.text(k.unit, x + 5 + nw, y + 18)
+    }
+  })
+  lineC(doc, BORDER); doc.setLineWidth(0.3)
+  doc.line(m, y + h, pw - m, y + h)
+  return y + h + 6
+}
+
+// ── Section heading: bold green text + green rule ─────────────────────────────
+function secHead(doc, y, title, x1, x2) {
+  x1 = x1 ?? 15; x2 = x2 ?? 195
+  y += 3
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); setC(doc, GREEN)
+  doc.text(title.toUpperCase(), x1, y + 5)
+  lineC(doc, GREEN); doc.setLineWidth(0.5)
+  doc.line(x1, y + 7, x2, y + 7)
+  return y + 12
+}
+
+// ── Standard data table ───────────────────────────────────────────────────────
+function stdTable(doc, y, headers, colWidths, rows, opts = {}) {
+  const sx    = opts.sx ?? 15
+  const rowH  = 7
+  const totalW = colWidths.reduce((a, b) => a + b, 0)
+  const aligns = opts.aligns || []
+  const MAX_Y  = 272
+
+  if (y + rowH * 2 > MAX_Y) { doc.addPage(); y = 20 }
+
   // Header
-  doc.setFillColor(45, 106, 79)
-  doc.rect(startX, y, colWidths.reduce((a,b) => a+b, 0), rowH, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(8)
-  doc.setFont('helvetica', 'bold')
-  let x = startX + 3
-  headers.forEach((h, i) => { doc.text(h, x, y + 5); x += colWidths[i] })
+  fillC(doc, BG_HEAD); doc.rect(sx, y, totalW, rowH, 'F')
+  lineC(doc, BORDER); doc.setLineWidth(0.15)
+  doc.line(sx, y + rowH, sx + totalW, y + rowH)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7); setC(doc, MUTED)
+  let x = sx
+  headers.forEach((h, i) => {
+    const a = aligns[i] || 'left'
+    if (a === 'right') { const tw = doc.getTextWidth(h); doc.text(h, x + colWidths[i] - tw - 2, y + 4.8) }
+    else doc.text(h, x + 3, y + 4.8)
+    x += colWidths[i]
+  })
   y += rowH
-  // Rows
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(44, 44, 44)
+
+  if (!rows || rows.length === 0) {
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(8); setC(doc, LIGHT)
+    doc.text(opts.noData || 'No data', sx + 3, y + 5)
+    return y + 10
+  }
+
   rows.forEach((row, ri) => {
-    if (ri % 2 === 0) { doc.setFillColor(254, 250, 224); doc.rect(startX, y, colWidths.reduce((a,b) => a+b, 0), rowH, 'F') }
-    x = startX + 3
-    doc.setTextColor(44, 44, 44)
-    row.forEach((cell, ci) => { doc.text(String(cell || ''), x, y + 5); x += colWidths[ci] })
+    if (y + rowH > MAX_Y) { doc.addPage(); y = 20 }
+    if (ri % 2 === 1) { fillC(doc, BG_ROW); doc.rect(sx, y, totalW, rowH, 'F') }
+    lineC(doc, [232, 228, 218]); doc.setLineWidth(0.12)
+    doc.line(sx, y + rowH, sx + totalW, y + rowH)
+    x = sx
+    row.forEach((cell, ci) => {
+      const a  = aligns[ci] || 'left'
+      const bold = (opts.boldCols || []).includes(ci)
+      doc.setFont('helvetica', bold ? 'bold' : 'normal')
+      doc.setFontSize(7.5); setC(doc, bold ? TEXT : [65, 68, 55])
+      const s = String(cell ?? '—')
+      if (a === 'right') { const tw = doc.getTextWidth(s); doc.text(s, x + colWidths[ci] - tw - 2, y + 4.8) }
+      else doc.text(s, x + 3, y + 4.8)
+      x += colWidths[ci]
+    })
     y += rowH
   })
-  return y + 4
+  return y + 3
 }
 
+// ── Key-value detail rows (right-aligned bold value) ─────────────────────────
+function detailRows(doc, y, rows, x1, x2) {
+  x1 = x1 ?? 15; x2 = x2 ?? 195
+  const rowH = 8
+  rows.forEach(([label, value], i) => {
+    if (i > 0) { lineC(doc, [232, 228, 218]); doc.setLineWidth(0.12); doc.line(x1, y, x2, y) }
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); setC(doc, MUTED)
+    doc.text(label, x1 + 2, y + 5.5)
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); setC(doc, TEXT)
+    const vw = doc.getTextWidth(String(value ?? ''))
+    doc.text(String(value ?? ''), x2 - vw - 2, y + 5.5)
+    y += rowH
+  })
+  return y + 3
+}
+
+// ── Bordered remarks box ──────────────────────────────────────────────────────
+function remarksBox(doc, y, text, x1, x2) {
+  x1 = x1 ?? 15; x2 = x2 ?? 195
+  const w = x2 - x1, minH = 32
+  lineC(doc, BORDER); doc.setLineWidth(0.3)
+  doc.rect(x1, y, w, minH, 'S')
+  if (text) {
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); setC(doc, TEXT)
+    const lines = doc.splitTextToSize(text, w - 8)
+    lines.slice(0, 5).forEach((line, i) => doc.text(line, x1 + 4, y + 7 + i * 5))
+  } else {
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(8); setC(doc, LIGHT)
+    doc.text('No remarks', x1 + 4, y + 9)
+  }
+  return y + minH + 4
+}
+
+// ── 3-column signature line ───────────────────────────────────────────────────
+function signatureLine(doc, y, labels) {
+  const m = 15, pw = 210
+  const segW = (pw - 2 * m) / labels.length
+  labels.forEach((lbl, i) => {
+    const x = m + i * segW
+    lineC(doc, [180, 177, 168]); doc.setLineWidth(0.4)
+    doc.line(x + 6, y, x + segW - 6, y)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); setC(doc, MUTED)
+    const tw = doc.getTextWidth(lbl)
+    doc.text(lbl, x + segW / 2 - tw / 2, y + 5)
+  })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DISPATCH PDF
+// ─────────────────────────────────────────────────────────────────────────────
 export async function exportDispatchPDF(dispatch, createdByName) {
   const lib = await loadJsPDF()
   const doc = new lib.jsPDF()
-  const totalMT = dispatch.dispatch_pellets?.reduce((s, p) => s + (parseFloat(p.quantity_mt) || 0), 0) || 0
-  const dateStr = dispatch.date ? new Date(dispatch.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'
-  let y = drawHeader(doc, 'Dispatch Report', dispatch.truck_number + ' | ' + dateStr)
+  const pw = 210, m = 15, cw = pw - 2 * m
 
-  const dContentW = 180  // 210 - 2*15
-  // Section helper for dispatch
-  function dSec(text) {
-    doc.setFillColor(45, 106, 79)
-    doc.rect(15, y, dContentW, 7, 'F')
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 255, 255)
-    doc.text(text.toUpperCase(), 19, y + 5)
-    y += 9
+  const totalMT = (dispatch.dispatch_pellets || []).reduce((s, p) => s + (parseFloat(p.quantity_mt) || 0), 0)
+  const dateStr  = fmtDate(dispatch.date)
+
+  let durationStr = '—'
+  if (dispatch.loading_time && dispatch.dispatch_time) {
+    const [lh, lmin] = dispatch.loading_time.split(':').map(Number)
+    const [dh, dmin] = dispatch.dispatch_time.split(':').map(Number)
+    const diff = (dh * 60 + dmin) - (lh * 60 + lmin)
+    if (diff > 0) durationStr = Math.floor(diff / 60) + 'h ' + (diff % 60) + 'm'
   }
 
-  dSec('Summary')
-  // 2-column grid layout for summary
-  const leftD = 15, rightD = 15 + dContentW / 2 + 5
-  const summaryPairs = [
-    ['Customer', dispatch.customers?.name || 'N/A'], ['Destination', dispatch.destination || 'N/A'],
-    ['Transporter', dispatch.transporter || 'N/A'], ['Invoice No', dispatch.invoice_no || 'N/A'],
-    ['Loading Time', dispatch.loading_time?.slice(0,5) || 'N/A'], ['Dispatch Time', dispatch.dispatch_time?.slice(0,5) || 'N/A'],
-    ['Driver', dispatch.driver_name || 'N/A'], ['Driver Phone', dispatch.driver_phone || 'N/A'],
-  ]
-  for (let i = 0; i < summaryPairs.length; i += 2) {
-    const [la, va] = summaryPairs[i]; const [lb, vb] = summaryPairs[i + 1] || ['', '']
-    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(137, 141, 122)
-    doc.text(la.toUpperCase(), leftD, y); doc.text(lb.toUpperCase(), rightD, y)
-    doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(44, 44, 44)
-    doc.text(va, leftD, y + 5); doc.text(vb, rightD, y + 5)
-    y += 12
+  let y = pageHeader(doc, 'DISPATCH REPORT', null, dispatch.truck_number || '—', dateStr)
+
+  y = infoRow(doc, y, [
+    { label: 'CUSTOMER',     value: dispatch.customers?.name || '—' },
+    { label: 'DESTINATION',  value: dispatch.destination    || '—' },
+    { label: 'TRANSPORTER',  value: dispatch.transporter    || '—' },
+    { label: 'INVOICE NO.',  value: dispatch.invoice_no     || '—' },
+  ])
+
+  y = kpiRow(doc, y, [
+    { label: 'TOTAL QUANTITY', main: totalMT.toFixed(1),                     unit: 'MT' },
+    { label: 'LOADING TIME',   main: fmtTime(dispatch.loading_time),          unit: ''   },
+    { label: 'DISPATCH TIME',  main: fmtTime(dispatch.dispatch_time),         unit: ''   },
+    { label: 'DURATION',       main: durationStr,                             unit: ''   },
+  ])
+
+  y = secHead(doc, y, 'DRIVER & VEHICLE')
+  y = detailRows(doc, y, [
+    ['Vehicle No.',   dispatch.truck_number  || '—'],
+    ['Driver',        dispatch.driver_name   || '—'],
+    ['Driver Phone',  dispatch.driver_phone  || '—'],
+  ])
+
+  y = secHead(doc, y, 'PELLET DETAILS')
+  const pelletRows = (dispatch.dispatch_pellets || []).map(p => [
+    p.pellet_types?.name || p.pellet_type_name || '—',
+    parseFloat(p.quantity_mt || 0).toFixed(1) + ' MT',
+  ])
+  y = stdTable(doc, y, ['PELLET TYPE', 'QUANTITY'], [130, 50], pelletRows,
+    { aligns: ['left', 'right'] })
+
+  // Total row
+  fillC(doc, BG_HEAD); doc.rect(m, y, cw, 7, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); setC(doc, TEXT)
+  doc.text('Total', m + 3, y + 4.8)
+  const totStr = totalMT.toFixed(1) + ' MT'
+  const totW = doc.getTextWidth(totStr)
+  doc.text(totStr, m + cw - totW - 2, y + 4.8)
+  y += 10
+
+  y = secHead(doc, y, 'NOTES / REMARKS')
+  y = remarksBox(doc, y, dispatch.remarks)
+
+  // Signature — push to at least y=245
+  const sigY = Math.max(y + 8, 245)
+  signatureLine(doc, sigY, ['Driver Signature', 'Loaded By', 'Authorised By'])
+
+  // Per-page footer
+  const createdAt = dispatch.created_at
+    ? new Date(dispatch.created_at).toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
+    : dateStr
+  const createdStr = 'Created by ' + (createdByName || 'Unknown') + ' · ' + dateStr + ' at ' + (createdAt.split(', ')[1] || createdAt)
+  const genStr     = 'app.kanoz.in · Generated ' + fmtNow()
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    lineC(doc, BORDER); doc.setLineWidth(0.2); doc.line(m, 284, pw - m, 284)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); setC(doc, MUTED)
+    doc.text(createdStr, m, 289)
+    const gW = doc.getTextWidth(genStr)
+    doc.text(genStr, pw - m - gW, 289)
   }
-  // Total qty row
-  doc.setFillColor(236, 248, 242); doc.rect(15, y, dContentW, 8, 'F')
-  doc.setFontSize(9); doc.setFont('helvetica', 'bold'); doc.setTextColor(45, 106, 79)
-  doc.text('Total Quantity', leftD + 3, y + 5.5)
-  doc.text(totalMT.toFixed(1) + ' MT', rightD, y + 5.5)
-  y += 12
 
-  // Pellet details table
-  if (dispatch.dispatch_pellets?.length > 0) {
-    dSec('Pellet Details')
-    y += 2
-    const rows = dispatch.dispatch_pellets.map(p => [p.pellet_types?.name || p.pellet_type_name || 'N/A', parseFloat(p.quantity_mt || 0).toFixed(1) + ' MT'])
-    rows.push(['TOTAL', totalMT.toFixed(1) + ' MT'])
-    y = drawTable(doc, y, ['Pellet Type', 'Quantity'], rows, [130, 50])
-  }
-
-  if (dispatch.remarks) { y += 4; doc.setFontSize(9); doc.setTextColor(44,44,44); doc.setFont('helvetica','bold'); doc.text('Remarks:', 15, y); y += 5; doc.setFont('helvetica','normal'); doc.text(dispatch.remarks.substring(0, 150), 15, y) }
-
-  drawFooter(doc, createdByName, dispatch.created_at, dispatch.updated_at)
   doc.save('Dispatch_' + (dispatch.truck_number || '').replace(/\s/g, '_') + '_' + (dispatch.date || '') + '.pdf')
 }
 
-// PURCHASE PDF — Card-based layout
+// ─────────────────────────────────────────────────────────────────────────────
+// PURCHASE PDF
+// ─────────────────────────────────────────────────────────────────────────────
 export async function exportPurchasePDF(purchase, createdByName) {
   const lib = await loadJsPDF()
   const doc = new lib.jsPDF()
-  const margin = 15
-  const pw = 210
-  const contentW = pw - 2 * margin
-  const dateStr = purchase.date ? new Date(purchase.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'
-  const qty = purchase.quantity_kg || 0
-  const avgRate = qty > 0 ? (purchase.total_amount / qty).toFixed(2) : '0.00'
+  const pw = 210, m = 15, cw = pw - 2 * m
+
+  const qty      = Math.round(purchase.quantity_kg || 0)
+  const netWt    = Math.round(purchase.net_weight  || purchase.quantity_kg || 0)
   const totalAmt = Math.round(purchase.total_amount || 0)
+  const avgRate  = qty > 0 ? (totalAmt / qty).toFixed(2) : '0.00'
+  const dateStr  = fmtDate(purchase.date)
+  const timeStr  = fmtTime(purchase.purchase_time)
+  const supplier = purchase.suppliers?.name || '—'
+  const payment  = (purchase.payment_status || 'PENDING').toUpperCase()
 
-  // ===== GREEN HEADER CARD =====
-  let y = margin
-  const cardH = 52
-  doc.setFillColor(45, 106, 79)
-  doc.roundedRect(margin, y, contentW, cardH, 6, 6, 'F')
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
-  doc.text('Purchase Report', margin + 12, y + 16)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(220, 235, 220)
-  doc.text((purchase.suppliers?.name || 'Supplier') + '  |  ' + dateStr, margin + 12, y + 25)
+  let y = pageHeader(doc, 'PURCHASE REPORT', null, supplier, dateStr + ' · ' + timeStr)
 
-  // Inner summary panel
-  const panelY = y + 32
-  doc.setFillColor(38, 90, 67)
-  doc.roundedRect(margin + 8, panelY, contentW - 16, 14, 3, 3, 'F')
-  doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(180, 210, 190)
-  const col1 = margin + 16; const col2 = margin + 70; const col3 = margin + 124
-  doc.text('NET WEIGHT', col1, panelY + 5)
-  doc.text('FINAL QTY', col2, panelY + 5)
-  doc.text('TOTAL AMOUNT', col3, panelY + 5)
-  doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255)
-  doc.text((purchase.net_weight || 0) + ' kg', col1, panelY + 11)
-  doc.text(Math.round(qty).toLocaleString('en-IN') + ' kg', col2, panelY + 11)
-  doc.text('Rs. ' + totalAmt.toLocaleString('en-IN'), col3, panelY + 11)
+  y = infoRow(doc, y, [
+    { label: 'SUPPLIER',      value: supplier },
+    { label: 'RAW MATERIAL',  value: purchase.raw_material_types?.name || '—' },
+    { label: 'VEHICLE NO.',   value: purchase.vehicle_number || '—' },
+    { label: 'PAYMENT',       value: payment, vs: 8 },
+  ])
 
-  y += cardH + 10
+  y = kpiRow(doc, y, [
+    { label: 'NET WEIGHT',    main: netWt.toLocaleString('en-IN'), unit: 'kg' },
+    { label: 'FINAL QUANTITY',main: qty.toLocaleString('en-IN'),   unit: 'kg' },
+    { label: 'TOTAL AMOUNT',  main: '₹' + totalAmt.toLocaleString('en-IN'), unit: '' },
+    { label: 'AVG COST / KG', main: '₹' + avgRate,                unit: '' },
+  ])
 
-  // ===== PURCHASE INFO SECTION =====
-  // Helper to draw a labeled row pair in 2-column grid
-  function drawField(x, yPos, label, value) {
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(137, 141, 122)
-    doc.text(label.toUpperCase(), x, yPos)
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(44, 44, 44)
-    doc.text(String(value || 'N/A'), x, yPos + 5.5)
-  }
+  y = secHead(doc, y, 'WEIGHT & QUALITY')
+  y = detailRows(doc, y, [
+    ['Net Weight',     netWt.toLocaleString('en-IN') + ' kg'],
+    ['Moisture',       (purchase.moisture_percent != null ? purchase.moisture_percent : 0) + '%'],
+    ['Deduction',      (purchase.deduction_kg || 0) + ' kg'],
+    ['Final Quantity', qty.toLocaleString('en-IN') + ' kg'],
+  ])
 
-  // Section header helper — green strip with white text (print-safe, branded)
-  function pSec(text) {
-    doc.setFillColor(45, 106, 79)
-    doc.rect(margin, y, contentW, 7, 'F')
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(255, 255, 255)
-    doc.text(text.toUpperCase(), margin + 4, y + 5)
-    y += 10
-  }
-
-  // ===== PURCHASE INFO SECTION =====
-  const leftCol = margin
-  const rightCol = margin + contentW / 2 + 5
-
-  pSec('Basic Info')
-  drawField(leftCol, y, 'Supplier', purchase.suppliers?.name)
-  drawField(rightCol, y, 'Raw Material', purchase.raw_material_types?.name)
-  y += 14
-  drawField(leftCol, y, 'Date', dateStr)
-  drawField(rightCol, y, 'Time', purchase.purchase_time?.slice(0,5) || 'N/A')
-  y += 14
-  drawField(leftCol, y, 'Vehicle Number', purchase.vehicle_number)
-  drawField(rightCol, y, 'Payment Status', purchase.payment_status || 'Pending')
-  y += 16
-
-  pSec('Weight & Quality')
-  drawField(leftCol, y, 'Net Weight', (purchase.net_weight || 0) + ' kg')
-  drawField(rightCol, y, 'Moisture', (purchase.moisture_percent != null && purchase.moisture_percent !== '' ? purchase.moisture_percent + '%' : 'N/A'))
-  y += 14
-  drawField(leftCol, y, 'Deduction', (purchase.deduction_kg || 0) + ' kg')
-  drawField(rightCol, y, 'Final Quantity', Math.round(qty).toLocaleString('en-IN') + ' kg')
-  y += 16
-
-  pSec('Cost Breakdown')
-
-  const costItems = [
-    ['Rate per kg', 'Rs. ' + (purchase.rate_per_kg || 0).toFixed(2)],
-    ['RM Amount', 'Rs. ' + Math.round(purchase.total_rm_amount || 0).toLocaleString('en-IN')],
-    ['Loading', 'Rs. ' + Math.round(purchase.loading_expense || purchase.loading_charges || 0).toLocaleString('en-IN')],
-    ['Unloading', 'Rs. ' + Math.round(purchase.unloading_expense || purchase.unloading_charges || 0).toLocaleString('en-IN')],
-    ['Transport', 'Rs. ' + Math.round(purchase.transport_expense || purchase.transport_charges || 0).toLocaleString('en-IN')],
+  y = secHead(doc, y, 'COST BREAKDOWN')
+  const costRows = [
+    ['Rate per kg', '₹' + parseFloat(purchase.rate_per_kg || 0).toFixed(2)],
+    ['RM Amount',   '₹' + Math.round(purchase.total_rm_amount || 0).toLocaleString('en-IN')],
+    ['Loading',     '₹' + Math.round(purchase.loading_expense   || purchase.loading_charges   || 0).toLocaleString('en-IN')],
+    ['Unloading',   '₹' + Math.round(purchase.unloading_expense || purchase.unloading_charges || 0).toLocaleString('en-IN')],
+    ['Transport',   '₹' + Math.round(purchase.transport_expense || purchase.transport_charges  || 0).toLocaleString('en-IN')],
   ]
+  y = stdTable(doc, y, ['ITEM', 'AMOUNT'], [130, 50], costRows, { aligns: ['left', 'right'] })
 
-  costItems.forEach(([label, val], i) => {
-    if (i % 2 === 0) { doc.setFillColor(236, 248, 242); doc.rect(margin, y - 1, contentW, 7, 'F') }
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(89, 92, 74)
-    doc.text(label, margin + 4, y + 4)
-    doc.setFont('helvetica', 'normal'); doc.setTextColor(44, 44, 44)
-    doc.text(val, margin + contentW - 4 - doc.getTextWidth(val), y + 4)
-    y += 7
-  })
+  // Total row — green
+  fillC(doc, GREEN); doc.rect(m, y, cw, 8, 'F')
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); setC(doc, WHITE)
+  doc.text('Total Amount', m + 3, y + 5.5)
+  const totAmtStr = '₹' + totalAmt.toLocaleString('en-IN')
+  const taw = doc.getTextWidth(totAmtStr)
+  doc.text(totAmtStr, m + cw - taw - 2, y + 5.5)
+  y += 12
 
-  // Total row — bold green background
-  doc.setFillColor(45, 106, 79)
-  doc.rect(margin, y - 1, contentW, 8, 'F')
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(255, 255, 255)
-  doc.text('Total Amount', margin + 4, y + 5)
-  const totalStr = 'Rs. ' + totalAmt.toLocaleString('en-IN')
-  doc.text(totalStr, margin + contentW - 4 - doc.getTextWidth(totalStr), y + 5)
-  y += 10
+  y = secHead(doc, y, 'NOTES / REMARKS')
+  y = remarksBox(doc, y, purchase.remarks)
 
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(137, 141, 122)
-  doc.text('Average cost per kg: Rs. ' + avgRate, margin + 4, y + 3)
-  y += 10
+  const sigY = Math.max(y + 8, 245)
+  signatureLine(doc, sigY, ['Supplier Signature', 'Received By', 'Authorised By'])
 
-  if (purchase.remarks) {
-    pSec('Remarks')
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(44, 44, 44)
-    const lines = doc.splitTextToSize(purchase.remarks, contentW - 5)
-    lines.forEach(line => { doc.text(line, margin, y); y += 4.5 })
+  const createdTime = purchase.created_at
+    ? new Date(purchase.created_at).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+    : timeStr
+  const createdStr = 'Created by ' + (createdByName || 'Unknown') + ' · ' + dateStr + ' at ' + createdTime
+  const genStr     = 'app.kanoz.in · Generated ' + fmtNow()
+  const totalPages = doc.getNumberOfPages()
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i)
+    lineC(doc, BORDER); doc.setLineWidth(0.2); doc.line(m, 284, pw - m, 284)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); setC(doc, MUTED)
+    doc.text(createdStr, m, 289)
+    const gW = doc.getTextWidth(genStr)
+    doc.text(genStr, pw - m - gW, 289)
   }
 
-  drawFooter(doc, createdByName, purchase.created_at, purchase.updated_at)
   doc.save('Purchase_' + (purchase.suppliers?.name || '').replace(/\s/g, '_') + '_' + (purchase.date || '') + '.pdf')
 }
 
-// SHIFT REPORT PDF — Clean green-branded layout, single-page optimised
+// ─────────────────────────────────────────────────────────────────────────────
+// SHIFT REPORT PDF
+// ─────────────────────────────────────────────────────────────────────────────
 export async function exportShiftReportPDF(report, data, createdByName) {
   const lib = await loadJsPDF()
   const doc = new lib.jsPDF()
-  const pw = 210
-  const margin = 15
-  const contentW = pw - 2 * margin  // 180
-  const maxY = 272
-  let y = margin
-
-  function fmtDate(dateStr) {
-    if (!dateStr) return ''
-    const d = new Date(dateStr + 'T00:00:00')
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-  }
-
-  function needsNewPage(needed) {
-    if (y + needed > maxY) { doc.addPage(); y = margin; return true }
-    return false
-  }
-
-  // Section header — green strip with white text (consistent across all PDFs)
-  function sectionHeader(title) {
-    y += 4
-    needsNewPage(20)
-    doc.setFillColor(45, 106, 79)
-    doc.rect(margin, y, contentW, 7, 'F')
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(7.5)
-    doc.setTextColor(255, 255, 255)
-    doc.text(title.toUpperCase(), margin + 3, y + 5)
-    y += 10
-  }
-
-  // Table — rowH reduced to 6, all tables span full contentW
-  function shiftTable(headers, rows, colWidths, opts) {
-    const startX = margin
-    const rowH = 6
-    const totalW = colWidths.reduce((a, b) => a + b, 0)
-
-    needsNewPage(rowH * 2)
-    doc.setFillColor(45, 106, 79)
-    doc.rect(startX, y, totalW, rowH, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(7.5)
-    doc.setFont('helvetica', 'bold')
-    let x = startX + 2
-    headers.forEach((h, i) => { doc.text(h, x, y + 4.2); x += colWidths[i] })
-    y += rowH
-
-    rows.forEach((row, ri) => {
-      needsNewPage(rowH)
-      if (ri % 2 === 0) { doc.setFillColor(251, 248, 235); doc.rect(startX, y, totalW, rowH, 'F') }
-      x = startX + 2
-      row.forEach((cell, ci) => {
-        const isSpecial = opts?.specialRows?.[ri]
-        const isBoldRow = opts?.boldRows?.includes(ri)
-        if (isSpecial) {
-          if (ci === 0) { doc.setFont('helvetica', 'normal'); doc.setTextColor(44, 44, 44); doc.text(String(cell || ''), x, y + 4.2) }
-          else if (ci === 1) { doc.setFont('helvetica', 'italic'); doc.setTextColor(150, 150, 150); doc.text(String(cell || ''), x, y + 4.2) }
-        } else {
-          doc.setFont('helvetica', isBoldRow ? 'bold' : 'normal')
-          doc.setTextColor(44, 44, 44)
-          doc.text(String(cell ?? ''), x, y + 4.2)
-        }
-        x += colWidths[ci]
-      })
-      y += rowH
-    })
-    y += 3
-  }
-
-  // Totals
-  const totalProd = parseFloat(report.pellet_production_mt) || 0
-  const totalDispMT = (data.dispatches || []).reduce((s, d) =>
-    s + (d.dispatch_pellets || []).reduce((ps, p) => ps + (parseFloat(p.quantity_mt) || 0), 0), 0)
-  const totalDiesel = (data.equipmentDiesel || []).reduce((s, e) => s + (parseFloat(e.used_litres) || 0), 0)
-  const totalRMkg = (data.rawMaterials || []).reduce((s, m) => s + (parseFloat(m.quantity_kg) || 0), 0)
+  const pw = 210, m = 15, cw = pw - 2 * m
 
   const startDate = report.shift_start_date || report.date
-  const endDate = report.shift_end_date || startDate
-  const startLabel = fmtDate(startDate) + ', ' + (report.start_time?.slice(0, 5) || '')
-  const shiftTimeLabel = startLabel + (fmtDate(endDate) !== fmtDate(startDate) ? ' – ' + fmtDate(endDate) + ', ' + (report.end_time?.slice(0, 5) || '') : ' – ' + (report.end_time?.slice(0, 5) || ''))
+  const endDate   = report.shift_end_date   || startDate
+  const startStr  = fmtDate(startDate) + ' · ' + fmtTime(report.start_time)
+  const endStr    = fmtDate(endDate)   + ' · ' + fmtTime(report.end_time)
 
-  // ===== GREEN HEADER CARD =====
-  const cardH = 44
-  doc.setFillColor(45, 106, 79)
-  doc.roundedRect(margin, y, contentW, cardH, 4, 4, 'F')
+  const totalProd   = parseFloat(report.pellet_production_mt) || 0
+  const totalDisp   = (data.dispatches || []).reduce((s, d) =>
+    s + (d.dispatch_pellets || []).reduce((ps, p) => ps + (parseFloat(p.quantity_mt) || 0), 0), 0)
+  const totalDiesel = (data.equipmentDiesel || []).reduce((s, e) => s + (parseFloat(e.used_litres) || 0), 0)
+  const totalRM     = (data.rawMaterials   || []).reduce((s, r) => s + (parseFloat(r.quantity_kg)  || 0), 0)
 
-  // Company + shift badge
-  doc.setTextColor(255, 255, 255)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(15)
-  doc.text('KANOZ BIOMASS', margin + 8, y + 13)
+  let y = pageHeader(doc,
+    'SHIFT PRODUCTION REPORT',
+    report.plants?.name || '',
+    'SHIFT ' + (report.shift || 'A') + ' · ' + fmtDate(report.date || startDate),
+    null
+  )
 
-  // Shift badge — white pill in top-right
-  const badgeText = 'SHIFT ' + (report.shift || '')
-  doc.setFontSize(8)
-  const bW = doc.getTextWidth(badgeText) + 8
-  doc.setFillColor(255, 255, 255)
-  doc.roundedRect(margin + contentW - bW - 6, y + 5, bW + 2, 10, 2, 2, 'F')
-  doc.setTextColor(45, 106, 79)
-  doc.setFont('helvetica', 'bold')
-  doc.text(badgeText, margin + contentW - bW - 4, y + 11.5)
+  y = infoRow(doc, y, [
+    { label: 'SHIFT START', value: startStr, vs: 8.5 },
+    { label: 'SHIFT END',   value: endStr,   vs: 8.5 },
+    { label: 'SUPERVISOR',  value: report.employees?.name || '—' },
+    { label: 'SHIFT',       value: report.shift || 'A' },
+  ])
 
-  // Subtitle
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(190, 225, 210)
-  doc.text('Shift Production Report', margin + 8, y + 21)
+  y = kpiRow(doc, y, [
+    { label: 'PRODUCED',    main: totalProd.toFixed(1),              unit: 'MT' },
+    { label: 'DISPATCHED',  main: totalDisp.toFixed(1),              unit: 'MT' },
+    { label: 'RM USED',     main: (totalRM / 1000).toFixed(2),       unit: 'MT' },
+    { label: 'DIESEL USED', main: Math.round(totalDiesel).toString(), unit: 'L'  },
+  ])
 
-  // Thin divider inside card
-  doc.setDrawColor(255, 255, 255)
-  doc.setLineWidth(0.2)
-  doc.line(margin + 8, y + 25, margin + contentW - 8, y + 25)
-
-  // 4-column meta inside card
-  const metaColW = contentW / 4
-  const metaItems = [
-    { label: 'PLANT', value: report.plants?.name || 'N/A' },
-    { label: 'DATE', value: report.date || 'N/A' },
-    { label: 'SUPERVISOR', value: report.employees?.name || 'N/A' },
-    { label: 'SHIFT TIME', value: shiftTimeLabel },
-  ]
-  metaItems.forEach((item, i) => {
-    const mx = margin + 8 + i * metaColW
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(5.5); doc.setTextColor(180, 220, 200)
-    doc.text(item.label, mx, y + 30)
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(255, 255, 255)
-    doc.text(item.value, mx, y + 37)
+  // ── MACHINE TIMINGS ──────────────────────────────────────────────────────
+  y = secHead(doc, y, 'MACHINE TIMINGS')
+  const machRows = (data.machineProduction || []).map(mp => {
+    const hrs  = parseFloat(mp.hours_run)      || 0
+    const tot  = parseFloat(mp.total_hours)    || hrs
+    const prod = parseFloat(mp.production_mt)  || 0
+    const avg  = hrs > 0 ? (prod / hrs).toFixed(2) : '—'
+    return [mp.machines?.name || '—', hrs + ' h', tot + ' h', prod > 0 ? String(prod) : '—', avg, mp.remarks || '—']
   })
-  y += cardH + 3
+  y = stdTable(doc, y,
+    ['MACHINE', 'PRD HRS', 'TOTAL HRS', 'PRD (MT)', 'AVG / HR', 'REMARKS'],
+    [42, 22, 24, 22, 22, 48],
+    machRows.length ? machRows : null,
+    { aligns: ['left','right','right','right','right','left'], noData: 'No machine data' }
+  )
 
-  // KPI bar — light green tint
-  const kpiBoxH = 14
-  doc.setFillColor(236, 248, 242)
-  doc.rect(margin, y, contentW, kpiBoxH, 'F')
-  const kpis = [
-    { label: 'PRODUCED', value: totalProd.toFixed(1) + ' MT' },
-    { label: 'DISPATCHED', value: totalDispMT.toFixed(1) + ' MT' },
-    { label: 'DIESEL USED', value: Math.round(totalDiesel) + ' L' },
-    { label: 'RM USED', value: (totalRMkg / 1000).toFixed(2) + ' MT' },
-  ]
-  const kpiColW = contentW / 4
-  kpis.forEach((kpi, i) => {
-    const kx = margin + i * kpiColW + 4
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(5.5); doc.setTextColor(100, 140, 120)
-    doc.text(kpi.label, kx, y + 4.5)
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(45, 106, 79)
-    doc.text(kpi.value, kx, y + 11.5)
+  // ── PRODUCTION ───────────────────────────────────────────────────────────
+  y = secHead(doc, y, 'PRODUCTION')
+  const prodRows = (data.machineProduction || []).map(mp => {
+    const prod = parseFloat(mp.production_mt) || 0
+    const hrs  = parseFloat(mp.hours_run)     || 0
+    const avg  = hrs > 0 ? (prod / hrs).toFixed(2) : '—'
+    return [mp.machines?.name || '—', mp.pellet_type_name || '—', prod > 0 ? String(prod) : '—', avg]
   })
-  y += kpiBoxH + 5
+  y = stdTable(doc, y,
+    ['MACHINE', 'PELLET TYPE', 'QTY (MT)', 'AVG / HR'],
+    [52, 76, 32, 20],
+    prodRows.length ? prodRows : null,
+    { aligns: ['left','left','right','right'], noData: 'No production data' }
+  )
 
-  // ===== MACHINE TIMINGS =====
-  sectionHeader('MACHINE TIMINGS')
-  if (data.machineProduction?.length > 0) {
-    const machRows = []
-    const specialRows = {}
-    data.machineProduction.forEach((m, i) => {
-      const name = m.machines?.name || 'Unknown'
-      const hrs = m.hours_run || 0
-      const totalHrs = m.total_hours || hrs
-      const prod = m.production_mt || 0
-      if (prod === 0 && hrs === 0) {
-        machRows.push([name, 'Did Not Run', '', '', '', ''])
-        specialRows[i] = true
-      } else {
-        const avg = hrs > 0 ? (prod / hrs).toFixed(2) : '\u2014'
-        machRows.push([name, hrs + 'h', totalHrs + 'h', String(prod), avg, m.remarks || '\u2014'])
-      }
-    })
-    shiftTable(
-      ['Machine', 'Prd Hrs', 'Total Hrs', 'Prd (MT)', 'Avg/Hr', 'Remarks'],
-      machRows,
-      [35, 22, 22, 22, 22, 57],
-      { specialRows }
+  // ── RAW MATERIALS (left 88mm) + PELLET STOCK (right 88mm) ───────────────
+  const lW = 88, rW = 88, gap = 4
+  const lX = m, rX = m + lW + gap
+
+  y += 4
+  const blockY = y
+
+  // Both headings at same y
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); setC(doc, GREEN)
+  doc.text('RAW MATERIALS', lX, blockY + 5)
+  doc.text('PELLET STOCK',  rX, blockY + 5)
+  lineC(doc, GREEN); doc.setLineWidth(0.5)
+  doc.line(lX, blockY + 7, lX + lW, blockY + 7)
+  doc.line(rX, blockY + 7, rX + rW, blockY + 7)
+
+  const tblY = blockY + 12
+
+  const rmRows = (data.rawMaterials || []).map(r => [
+    r.raw_material_types?.name || '—',
+    String(r.opening_kg   || 0),
+    String(r.purchased_kg || 0),
+    String(r.quantity_kg  || 0),
+    String(r.closing_kg   || 0),
+  ])
+  const rmEndY = stdTable(doc, tblY,
+    ['MATERIAL', 'OPEN', 'PURCH', 'USED', 'CLOSE'],
+    [40, 12, 12, 12, 12],
+    rmRows.length ? rmRows : null,
+    { sx: lX, aligns: ['left','right','right','right','right'], noData: 'No data' }
+  )
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); setC(doc, LIGHT)
+  doc.text('All quantities in kg', lX, rmEndY + 1)
+
+  const psRows = (data.pelletStock || []).map(p => [
+    p.pellet_types?.name || '—',
+    String(p.opening_mt    || 0),
+    String(p.production_mt || 0),
+    String(p.dispatch_mt   || 0),
+    String(p.wastage_mt    || 0),
+    String(p.closing_mt    || 0),
+  ])
+  const psEndY = stdTable(doc, tblY,
+    ['TYPE', 'OPEN', 'PRD', 'DISP', 'WASTE', 'CLOSE'],
+    [28, 12, 12, 12, 12, 12],
+    psRows.length ? psRows : null,
+    { sx: rX, aligns: ['left','right','right','right','right','right'], noData: 'No data' }
+  )
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); setC(doc, LIGHT)
+  doc.text('All quantities in MT', rX, psEndY + 1)
+
+  y = Math.max(rmEndY, psEndY) + 6
+
+  // ── DIESEL STOCK (from equipment totals) ─────────────────────────────────
+  if ((data.equipmentDiesel || []).length > 0) {
+    const eqOpen  = (data.equipmentDiesel || []).reduce((s, e) => s + (parseFloat(e.opening_litres)  || 0), 0)
+    const eqAdded = (data.equipmentDiesel || []).reduce((s, e) => s + (parseFloat(e.added_litres)    || 0), 0)
+    const eqUsed  = (data.equipmentDiesel || []).reduce((s, e) => s + (parseFloat(e.used_litres)     || 0), 0)
+    const eqClose = (data.equipmentDiesel || []).reduce((s, e) => s + (parseFloat(e.closing_litres)  || 0), 0)
+
+    y = secHead(doc, y, 'DIESEL STOCK')
+    y = stdTable(doc, y,
+      ['STORAGE', 'OPEN (L)', 'PURCHASED (L)', 'USED (L)', 'CLOSE (L)'],
+      [60, 28, 32, 28, 32],
+      [['Main Tank', String(Math.round(eqOpen)), String(Math.round(eqAdded)), String(Math.round(eqUsed)), String(Math.round(eqClose))]],
+      { aligns: ['left','right','right','right','right'] }
     )
-  } else {
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(137, 141, 122)
-    doc.text('No machine data', margin, y); y += 8
-  }
-
-  // ===== PRODUCTION =====
-  sectionHeader('PRODUCTION')
-  if (data.machineProduction?.length > 0) {
-    const prodRows = []
-    const specialRows = {}
-    data.machineProduction.forEach((m, i) => {
-      const name = m.machines?.name || 'Unknown'
-      const prod = m.production_mt || 0
-      const hrs = m.hours_run || 0
-      if (prod === 0) {
-        prodRows.push([name, 'No production this shift', '', ''])
-        specialRows[i] = true
-      } else {
-        const avg = hrs > 0 ? (prod / hrs).toFixed(2) : '\u2014'
-        prodRows.push([name, m.pellet_type_name || '—', String(prod), avg])
-      }
-    })
-    shiftTable(
-      ['Machine', 'Pellet Type', 'Qty (MT)', 'Avg/Hr'],
-      prodRows,
-      [45, 55, 40, 40],
-      { specialRows }
-    )
-  } else {
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(137, 141, 122)
-    doc.text('No production data', margin, y); y += 8
-  }
-
-  // ===== RAW MATERIALS =====
-  sectionHeader('RAW MATERIALS')
-  if (data.rawMaterials?.length > 0) {
-    const matRows = data.rawMaterials.map(m => [
-      m.raw_material_types?.name || 'Unknown',
-      String(m.opening_kg || 0),
-      String(m.purchased_kg || 0),
-      String(m.quantity_kg || 0),
-      String(m.closing_kg || 0)
-    ])
-    shiftTable(
-      ['Material', 'Open (kg)', 'Purch (kg)', 'Used (kg)', 'Close (kg)'],
-      matRows,
-      [60, 30, 30, 30, 30]
-    )
-  } else {
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(137, 141, 122)
-    doc.text('No raw material data', margin, y); y += 8
-  }
-
-  // ===== EQUIPMENT & DIESEL =====
-  sectionHeader('EQUIPMENT & DIESEL')
-  if (data.equipmentDiesel?.length > 0 || data.dieselStock) {
-    const eqRows = (data.equipmentDiesel || []).map(e => {
-      const hrs = e.hours_worked || 0
-      const used = e.used_litres || 0
-      const avg = hrs > 0 ? (used / hrs).toFixed(1) : '\u2014'
-      return [
-        e.equipment_name || 'Unknown',
-        String(Math.round(e.opening_litres || 0)),
-        String(Math.round(e.added_litres || 0)),
-        String(Math.round(used)),
-        String(Math.round(e.closing_litres || 0)),
-        hrs + 'h',
-        avg
-      ]
-    })
-    const boldRows = []
-    // Add diesel stock tank row
-    if (data.dieselStock) {
-      boldRows.push(eqRows.length)
-      eqRows.push([
-        'DIESEL STOCK TANK',
-        String(Math.round(data.dieselStock.opening_litres || 0)),
-        String(Math.round(data.dieselStock.purchased_litres || 0)),
-        String(Math.round(data.dieselStock.used_litres || 0)),
-        String(Math.round(data.dieselStock.closing_litres || 0)),
-        '\u2014',
-        '\u2014'
-      ])
-    }
-    shiftTable(
-      ['Equipment', 'Open (L)', 'Added (L)', 'Used (L)', 'Close (L)', 'Hrs', 'Avg L/Hr'],
-      eqRows,
-      [44, 23, 23, 23, 23, 20, 24],
-      { boldRows }
-    )
-  } else {
-    doc.setFont('helvetica', 'italic'); doc.setFontSize(9); doc.setTextColor(137, 141, 122)
-    doc.text('No equipment data', margin, y); y += 8
-  }
-
-  // ===== VEHICLE DISPATCHES =====
-  if (data.dispatches?.length > 0) {
-    sectionHeader('VEHICLE DISPATCHES')
-    const dispRows = data.dispatches.map(d => {
-      const pelletTypes = (d.dispatch_pellets || []).map(p => p.pellet_types?.name || '').filter(Boolean).join(', ') || '—'
-      const qty = (d.dispatch_pellets || []).reduce((s, p) => s + (parseFloat(p.quantity_mt) || 0), 0)
-      const time = (d.dispatch_time || d.loading_time || '')?.slice(0, 5) || '—'
-      return [d.truck_number || '', d.customers?.name || '', pelletTypes, qty.toFixed(1), time]
-    })
-    shiftTable(
-      ['Truck', 'Customer', 'Pellet Type', 'Qty (MT)', 'Time'],
-      dispRows,
-      [40, 44, 48, 26, 22]
-    )
-  }
-
-  // ===== PELLET STOCK =====
-  if (data.pelletStock?.length > 0) {
-    sectionHeader('PELLET STOCK')
-    const psRows = data.pelletStock.map(p => [
-      p.pellet_types?.name || 'Unknown',
-      String(p.opening_mt || 0),
-      String(p.production_mt || 0),
-      String(p.dispatch_mt || 0),
-      String(p.wastage_mt || 0),
-      String(p.closing_mt || 0)
-    ])
-    shiftTable(
-      ['Type', 'Open', 'Prd', 'Disp', 'Waste', 'Close'],
-      psRows,
-      [52, 26, 26, 26, 26, 24]
-    )
-  }
-
-  // ===== ISSUES =====
-  if (data.issues?.length > 0) {
-    sectionHeader('ISSUES')
-    data.issues.forEach(issue => {
-      needsNewPage(18)
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(9)
-      doc.setTextColor(44, 44, 44)
-      const sevLabel = issue.severity === 'High' ? ' [HIGH]' : issue.severity === 'Medium' ? ' [MEDIUM]' : ' [LOW]'
-      doc.text((issue.issue_type || 'Issue') + sevLabel, margin, y)
+    // combined note
+    const parts = (data.equipmentDiesel || [])
+      .map(e => e.equipment_name + ' ' + Math.round(e.closing_litres || 0) + ' L')
+    if (parts.length > 0) {
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(7); setC(doc, MUTED)
+      const noteStr = 'Combined closing stock: ' + parts.join(' + ') + ' = ' + Math.round(eqClose) + ' L'
+      doc.text(noteStr, m, y)
       y += 5
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(8)
-      doc.setTextColor(89, 92, 74)
-      const lines = doc.splitTextToSize(issue.description || '', contentW - 5)
-      lines.forEach(line => {
-        needsNewPage(5)
-        doc.text(line, margin + 4, y)
-        y += 4
-      })
-      y += 3
-    })
+    }
   }
 
-  // ===== HANDOVER NOTES =====
+  // ── EQUIPMENT & DIESEL ───────────────────────────────────────────────────
+  y = secHead(doc, y, 'EQUIPMENT & DIESEL')
+  const eqRows = (data.equipmentDiesel || []).map(e => [
+    e.equipment_name || '—',
+    String(Math.round(e.opening_litres  || 0)),
+    String(Math.round(e.added_litres    || 0)),
+    String(Math.round(e.used_litres     || 0)),
+    String(Math.round(e.closing_litres  || 0)),
+    (e.hours_worked || 0) + ' h',
+  ])
+  y = stdTable(doc, y,
+    ['EQUIPMENT', 'OPEN', 'ADDED', 'USED', 'CLOSE', 'HRS'],
+    [50, 24, 24, 24, 24, 34],
+    eqRows.length ? eqRows : null,
+    { aligns: ['left','right','right','right','right','right'], noData: 'No equipment data' }
+  )
+  doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); setC(doc, LIGHT)
+  doc.text('All quantities in litres', m, y)
+  y += 5
+
+  // ── VEHICLE DISPATCHES (left 94mm) + ISSUES (right 82mm) ─────────────────
+  const vdW = 94, issW = 82
+  const vdX = m, issX = m + vdW + 4
+
+  y += 3
+  const dispBlockY = y
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); setC(doc, GREEN)
+  doc.text('VEHICLE DISPATCHES', vdX, dispBlockY + 5)
+  doc.text('ISSUES',             issX, dispBlockY + 5)
+  lineC(doc, GREEN); doc.setLineWidth(0.5)
+  doc.line(vdX,  dispBlockY + 7, vdX  + vdW,  dispBlockY + 7)
+  doc.line(issX, dispBlockY + 7, issX + issW, dispBlockY + 7)
+
+  const dispTblY = dispBlockY + 12
+
+  const dispRows = (data.dispatches || []).map(d => {
+    const qty = (d.dispatch_pellets || []).reduce((s, p) => s + (parseFloat(p.quantity_mt) || 0), 0)
+    return [
+      d.truck_number || '—',
+      d.customers?.name || '—',
+      d.destination || '—',
+      qty.toFixed(1),
+      fmtTime(d.dispatch_time || d.loading_time),
+    ]
+  })
+  const vdEndY = stdTable(doc, dispTblY,
+    ['TRUCK NO.', 'CUSTOMER', 'DESTINATION', 'QTY (MT)', 'TIME'],
+    [22, 26, 24, 14, 8],
+    dispRows.length ? dispRows : null,
+    { sx: vdX, aligns: ['left','left','left','right','right'], noData: 'No data' }
+  )
+
+  const issRows = (data.issues || []).map(iss => [
+    (iss.description || '').substring(0, 30),
+    iss.reported_by || '—',
+    iss.status || '—',
+  ])
+  const issEndY = stdTable(doc, dispTblY,
+    ['DESCRIPTION', 'REPORTED BY', 'STATUS'],
+    [42, 20, 20],
+    issRows.length ? issRows : null,
+    { sx: issX, aligns: ['left','left','left'], noData: 'No issues reported' }
+  )
+
+  y = Math.max(vdEndY, issEndY) + 4
+
+  // ── HANDOVER NOTES ───────────────────────────────────────────────────────
   if (report.handover_notes) {
-    sectionHeader('HANDOVER NOTES')
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(44, 44, 44)
-    const lines = doc.splitTextToSize(report.handover_notes, contentW - 5)
-    lines.forEach(line => {
-      needsNewPage(5)
-      doc.text(line, margin, y)
-      y += 4.5
-    })
+    y = secHead(doc, y, 'HANDOVER NOTES')
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); setC(doc, TEXT)
+    const lines = doc.splitTextToSize(report.handover_notes, cw - 4)
+    lines.forEach(line => { doc.text(line, m, y); y += 5 })
     y += 4
   }
 
-  // ===== PAGE FOOTERS (all pages) =====
+  // ── Per-page footer ───────────────────────────────────────────────────────
+  const reportUrl  = 'app.kanoz.in/reports/' + report.id
+  const genStr     = 'Generated ' + fmtNow()
   const totalPages = doc.getNumberOfPages()
-  const reportUrl = 'https://app.kanoz.in/reports/' + report.id
-  const genTime = new Date().toLocaleString('en-IN', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
-
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i)
-    doc.setFontSize(7)
-    doc.setTextColor(137, 141, 122)
-    doc.text(reportUrl, margin, 288)
-    const pageLabel = genTime + '    Page ' + i + ' of ' + totalPages
-    doc.text(pageLabel, pw - margin - doc.getTextWidth(pageLabel), 288)
+    lineC(doc, BORDER); doc.setLineWidth(0.2); doc.line(m, 284, pw - m, 284)
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); setC(doc, MUTED)
+    doc.text(reportUrl, m, 289)
+    const pgStr = genStr + '  ·  Page ' + i + ' of ' + totalPages
+    const pgW   = doc.getTextWidth(pgStr)
+    doc.text(pgStr, pw - m - pgW, 289)
   }
 
-  doc.save('Shift ' + report.shift + ' Report \u2014 ' + report.date + '.pdf')
+  doc.save('Shift ' + report.shift + ' Report — ' + fmtDate(report.date || startDate) + '.pdf')
 }
-
