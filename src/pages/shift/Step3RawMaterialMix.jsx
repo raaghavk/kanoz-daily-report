@@ -214,16 +214,21 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
                     ))}
                   </div>
 
-                  {/* Ingredient summary */}
-                  {mix.ingredients?.length > 0 && (
-                    <div style={{ padding: '8px 14px', borderTop: `1px solid ${C.border}`, background: '#faf9f4' }}>
-                      <div style={{ fontSize: 11, color: C.dim, lineHeight: 1.6 }}>
+                  {/* Ingredient composition */}
+                  <div style={{ padding: '8px 14px 10px', borderTop: `1px solid ${C.border}`, background: '#faf9f4' }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Composition</div>
+                    {mix.ingredients?.length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px' }}>
                         {mix.ingredients.map((ing, i) => (
-                          <span key={i}>{i > 0 ? ' · ' : ''}<strong>{ing.name}</strong> {ing.quantity_kg}kg</span>
+                          <span key={i} style={{ fontSize: 11, color: C.text, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6, padding: '2px 8px' }}>
+                            <strong style={{ color: C.green }}>{ing.name || 'RM'}</strong> · {parseFloat(ing.quantity_kg) || 0} kg
+                          </span>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div style={{ fontSize: 11, color: '#b5b8a8', fontStyle: 'italic' }}>No ingredients added — tap ✏️ to define this mix's recipe</div>
+                    )}
+                  </div>
                 </div>
               )
             })}
