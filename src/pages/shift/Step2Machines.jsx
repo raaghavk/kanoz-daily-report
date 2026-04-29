@@ -31,6 +31,19 @@ export default memo(function Step2Machines({ data, updateData }) {
     updateData('machines', machines)
   }
 
+  function setDidNotRun(idx, didNotRun) {
+    const machines = [...data.machines]
+    machines[idx] = { ...machines[idx], did_not_run: didNotRun }
+    if (didNotRun) {
+      machines[idx].from_time = ''
+      machines[idx].to_time = ''
+      machines[idx].total_hours = 0
+      machines[idx].production_hours = 0
+      machines[idx].breakdown_hrs = 0
+    }
+    updateData('machines', machines)
+  }
+
   const inputStyle = {
     width: '100%',
     padding: '12px 14px',
@@ -60,33 +73,60 @@ export default memo(function Step2Machines({ data, updateData }) {
 
         return (
           <div key={m.id} style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '16px 16px 18px' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 32, height: 32, background: 'rgba(198, 246, 213, 0.5)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2d6a4f', fontSize: 12, fontWeight: 800 }}>
                 {idx + 1}
               </div>
               {m.name}
+            </div>
+
+            <p style={{ fontSize: 11, color: '#595c4a', margin: '0 0 10px 0' }}>
+              Only Running machines with From/To times will appear in Step 4.
+            </p>
+
+            <div
+              role="group"
+              aria-label={`${m.name} production status`}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 8,
+                marginBottom: 14,
+              }}
+            >
               <button
-                onClick={() => {
-                  const machines = [...data.machines]
-                  const didNotRun = !machines[idx].did_not_run
-                  machines[idx] = { ...machines[idx], did_not_run: didNotRun }
-                  if (didNotRun) {
-                    machines[idx].from_time = ''
-                    machines[idx].to_time = ''
-                    machines[idx].total_hours = 0
-                    machines[idx].production_hours = 0
-                    machines[idx].breakdown_hrs = 0
-                  }
-                  updateData('machines', machines)
-                }}
+                type="button"
+                aria-pressed={!m.did_not_run}
+                onClick={() => setDidNotRun(idx, false)}
                 style={{
-                  padding: '4px 10px', borderRadius: 6, fontSize: 10, fontWeight: 600,
-                  background: m.did_not_run ? '#FEE2E2' : '#e8f0ec',
-                  color: m.did_not_run ? '#DC2626' : '#2d6a4f',
-                  border: 'none', cursor: 'pointer', marginLeft: 'auto'
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: !m.did_not_run ? '2px solid #14532D' : '1.5px solid #cdd5d1',
+                  background: !m.did_not_run ? '#14532D' : '#ffffff',
+                  color: !m.did_not_run ? '#FFFFFF' : '#374151',
+                  cursor: 'pointer',
                 }}
               >
-                {m.did_not_run ? '✕ No Production' : '✓ Running'}
+                Running
+              </button>
+              <button
+                type="button"
+                aria-pressed={m.did_not_run}
+                onClick={() => setDidNotRun(idx, true)}
+                style={{
+                  padding: '8px 10px',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: m.did_not_run ? '2px solid #991B1B' : '1.5px solid #cdd5d1',
+                  background: m.did_not_run ? '#991B1B' : '#ffffff',
+                  color: m.did_not_run ? '#FFFFFF' : '#374151',
+                  cursor: 'pointer',
+                }}
+              >
+                No Production
               </button>
             </div>
             {!m.did_not_run && (
