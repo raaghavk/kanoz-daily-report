@@ -181,6 +181,7 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
             {mixes.map(mix => {
               const used = getMixUsed(mix)
               const closing = (mix.opening_kg || 0) + (mix.prepared_kg || 0) - used
+              const totalKg = (mix.ingredients || []).reduce((sum, ing) => sum + (parseFloat(ing.quantity_kg) || 0), 0)
               return (
                 <div key={mix.local_id} style={{ background: C.card, borderRadius: 14, border: `1.5px solid ${C.border}`, overflow: 'hidden' }}>
                   {/* Green header */}
@@ -219,11 +220,15 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
                     <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Composition</div>
                     {mix.ingredients?.length > 0 ? (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px' }}>
-                        {mix.ingredients.map((ing, i) => (
-                          <span key={i} style={{ fontSize: 11, color: C.text, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6, padding: '2px 8px' }}>
-                            <strong style={{ color: C.green }}>{ing.name || 'RM'}</strong> · {parseFloat(ing.quantity_kg) || 0} kg
-                          </span>
-                        ))}
+                        {mix.ingredients.map((ing, i) => {
+                          const qty = parseFloat(ing.quantity_kg) || 0
+                          const pct = totalKg > 0 ? (qty / totalKg) * 100 : 0
+                          return (
+                            <span key={i} style={{ fontSize: 11, color: C.text, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6, padding: '2px 8px' }}>
+                              <strong style={{ color: C.green }}>{ing.name || 'RM'}</strong> · {qty} kg ({pct.toFixed(1)}%)
+                            </span>
+                          )
+                        })}
                       </div>
                     ) : (
                       <div style={{ fontSize: 11, color: '#b5b8a8', fontStyle: 'italic' }}>No ingredients added — tap ✏️ to define this mix's recipe</div>
