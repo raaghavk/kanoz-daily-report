@@ -14,10 +14,13 @@ const COLORS = {
 }
 
 export default memo(function Step4Production({ data, updateData }) {
+  const eligibleMachines = data.machines.filter(m => !m.did_not_run && m.from_time && m.to_time)
+
   function addEntry() {
+    const nextId = (data.production.reduce((maxId, p) => Math.max(maxId, Number(p.id) || 0), 0) || 0) + 1
     updateData('production', [...data.production, {
-      id: Date.now(),
-      machine_id: data.machines[0]?.id || '',
+      id: nextId,
+      machine_id: eligibleMachines[0]?.id || '',
       quantity: '',
       mix_usages: [],
     }])
@@ -88,6 +91,18 @@ export default memo(function Step4Production({ data, updateData }) {
 
   const totalMT = data.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
 
+  if (eligibleMachines.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '32px 16px', background: '#fff', borderRadius: 14, border: `1.5px solid ${COLORS.border}` }}>
+        <div style={{ fontSize: 32, marginBottom: 8 }}>⏱️</div>
+        <p style={{ fontSize: 14, fontWeight: 700, color: COLORS.primary, marginBottom: 6 }}>No running machines available</p>
+        <p style={{ fontSize: 12, color: COLORS.secondary }}>
+          Go back to Step 2 and mark at least one machine as running with From/To time.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Header */}
@@ -151,7 +166,7 @@ export default memo(function Step4Production({ data, updateData }) {
                   }}
                 >
                   <option value="">Select...</option>
-                  {data.machines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {eligibleMachines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </div>
               <div>
@@ -287,11 +302,12 @@ export default memo(function Step4Production({ data, updateData }) {
                       {(() => {
                         const selectedMix = data.mixes.find(m => m.local_id === mu.mix_local_id)
                         if (!selectedMix || !selectedMix.ingredients?.length) return null
+                        const totalKg = selectedMix.ingredients.reduce((sum, ing) => sum + (parseFloat(ing.quantity_kg) || 0), 0)
                         return (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingLeft: 2 }}>
                             {selectedMix.ingredients.map((ing, i) => (
                               <span key={i} style={{ fontSize: 11, color: COLORS.secondary, background: '#f4efe2', border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: '2px 8px' }}>
-                                {ing.name || 'Material'} · {parseFloat(ing.quantity_kg) || 0} kg
+                                {ing.name || 'Material'} · {parseFloat(ing.quantity_kg) || 0} kg ({totalKg > 0 ? (((parseFloat(ing.quantity_kg) || 0) / totalKg) * 100).toFixed(1) : '0.0'}%)
                               </span>
                             ))}
                           </div>
