@@ -117,19 +117,10 @@ export default function ShiftWizard() {
             return
           }
 
-          // If data is stale (expired or different day), ask user
-          if (isExpired || isDifferentDay) {
-            setPendingRestore({ savedData, savedStep, savedId, savedDate })
-            setShowResumePrompt(true)
-            setInitDone(true)
-            return
-          }
-
-          // Fresh data from today — restore silently
-          setReportData(savedData)
-          setStep(savedStep || 1)
-          if (savedId) setReportId(savedId)
-          setRestoredFromStorage(true)
+          // Ask user before restoring any saved draft to avoid accidental reuse
+          // of prior in-progress data for "fresh" new entries.
+          setPendingRestore({ savedData, savedStep, savedId, savedDate, isExpired, isDifferentDay })
+          setShowResumePrompt(true)
           setInitDone(true)
           return
         }
@@ -200,7 +191,7 @@ export default function ShiftWizard() {
       window.removeEventListener('beforeunload', saveOnHide)
       window.removeEventListener('pagehide', saveOnHide)
     }
-  }, [initDone, editId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initDone, editId])
 
   // For edit mode: load plant data first, then merge existing report on top
   useEffect(() => {
@@ -259,7 +250,7 @@ export default function ShiftWizard() {
         ingredients: (m.shift_mix_compositions || []).map(c => ({
           raw_material_type_id: c.raw_material_type_id,
           name: c.raw_material_name,
-          quantity_kg: 0,
+          quantity_kg: parseFloat(c.quantity_kg) || 0,
         })),
       }))
       updateData('mixes', carryForwardMixes)
@@ -842,6 +833,24 @@ export default function ShiftWizard() {
       navigate('/')
     } catch (err) {
       console.error('Save error:', err)
+      if (!reportId && err?.code === '23505' && String(err?.message || '').includes('shift_reports_plant_id_date_shift_key')) {
+        showToast('A shift report for this plant/date/shift already exists. Opening it in edit mode.', 'error')
+        try {
+          const { data: existing } = await supabase
+            .from('shift_reports')
+            .select('id')
+            .eq('plant_id', plant.id)
+            .eq('date', reportData.date)
+            .eq('shift', reportData.shift)
+            .maybeSingle()
+          if (existing?.id) {
+            navigate(`/shift/edit/${existing.id}`)
+            return
+          }
+        } catch (lookupErr) {
+          console.error('Duplicate report lookup failed:', lookupErr)
+        }
+      }
       showToast(err.message || 'Failed to save report', 'error')
     } finally {
       setSaving(false)

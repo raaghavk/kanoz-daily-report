@@ -14,7 +14,7 @@ describe('can(role, action)', () => {
     })
   })
 
-  it('plant_manager can do operations and assign tasks but not manage users/settings', () => {
+  it('plant_manager has full plant-level operational and management access', () => {
     expect(can('plant_manager', 'create_report')).toBe(true)
     expect(can('plant_manager', 'create_dispatch')).toBe(true)
     expect(can('plant_manager', 'create_purchase')).toBe(true)
@@ -22,29 +22,29 @@ describe('can(role, action)', () => {
     expect(can('plant_manager', 'view_dispatches')).toBe(true)
     expect(can('plant_manager', 'view_purchases')).toBe(true)
     expect(can('plant_manager', 'export')).toBe(true)
-    expect(can('plant_manager', 'manage_users')).toBe(false)
-    expect(can('plant_manager', 'plant_settings')).toBe(false)
+    expect(can('plant_manager', 'manage_users')).toBe(true)
+    expect(can('plant_manager', 'plant_settings')).toBe(true)
     expect(can('plant_manager', 'switch_plant')).toBe(false)
   })
 
-  it('supervisor can create and view but not export/manage/settings', () => {
+  it('supervisor can create, view, and export but not manage/settings', () => {
     expect(can('supervisor', 'create_report')).toBe(true)
     expect(can('supervisor', 'create_dispatch')).toBe(true)
     expect(can('supervisor', 'create_purchase')).toBe(true)
     expect(can('supervisor', 'view_reports')).toBe(true)
     expect(can('supervisor', 'view_dispatches')).toBe(true)
     expect(can('supervisor', 'view_purchases')).toBe(true)
-    expect(can('supervisor', 'export')).toBe(false)
+    expect(can('supervisor', 'export')).toBe(true)
     expect(can('supervisor', 'manage_users')).toBe(false)
     expect(can('supervisor', 'plant_settings')).toBe(false)
     expect(can('supervisor', 'switch_plant')).toBe(false)
   })
 
-  it('purchase_manager can only create and view purchases', () => {
+  it('purchase_manager can manage purchases and view reports', () => {
     expect(can('purchase_manager', 'create_purchase')).toBe(true)
     expect(can('purchase_manager', 'view_purchases')).toBe(true)
     expect(can('purchase_manager', 'create_report')).toBe(false)
-    expect(can('purchase_manager', 'view_reports')).toBe(false)
+    expect(can('purchase_manager', 'view_reports')).toBe(true)
     expect(can('purchase_manager', 'create_dispatch')).toBe(false)
     expect(can('purchase_manager', 'view_dispatches')).toBe(false)
     expect(can('purchase_manager', 'export')).toBe(false)

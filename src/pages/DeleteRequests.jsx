@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { showToast } from '../components/Toast'
@@ -19,7 +19,7 @@ export default function DeleteRequests() {
   const [approving, setApproving] = useState(null)
   const [rejecting, setRejecting] = useState(null)
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
     setLoading(true)
     try {
       const status = showResolved ? ['approved', 'rejected'] : ['pending']
@@ -41,12 +41,11 @@ export default function DeleteRequests() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [showResolved, plant?.org_id])
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (plant?.org_id) fetchRequests()
-  }, [showResolved, plant?.org_id])
+  }, [fetchRequests, plant?.org_id])
 
   const handleApprove = async (request) => {
     if (employee.role !== 'admin') {

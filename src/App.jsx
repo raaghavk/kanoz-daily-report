@@ -428,7 +428,7 @@ function NotificationsSection({ pushEnabled, pushLoading, onTogglePush, prefs, p
             </div>
           ) : (
             <div>
-              {visible.map((et, idx) => (
+              {visible.map((et) => (
                 <div
                   key={et.key}
                   style={{
@@ -455,4 +455,3 @@ function NotificationsSection({ pushEnabled, pushLoading, onTogglePush, prefs, p
     </div>
   )
 }
-

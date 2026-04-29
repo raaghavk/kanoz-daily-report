@@ -14,7 +14,6 @@ export default function ReportView() {
   const { employee } = useAuth()
   const [report, setReport] = useState(null)
   const [deleting, setDeleting] = useState(false)
-  const [syncing, setSyncing] = useState(false)
   const [machineProduction, setMachineProduction] = useState([])
   const [rawMaterials, setRawMaterials] = useState([])
   const [dispatches, setDispatches] = useState([])
@@ -55,22 +54,6 @@ export default function ReportView() {
       showToast('Failed to delete report', 'error')
     } finally {
       setDeleting(false)
-    }
-  }
-
-  async function syncToSheets() {
-    setSyncing(true)
-    try {
-      const { data, error } = await supabase.functions.invoke('sync-to-sheets', {
-        body: { report_id: id },
-      })
-      if (error) throw error
-      if (data?.error) throw new Error(data.error)
-      showToast('Synced to Google Sheets!', 'success')
-    } catch (err) {
-      showToast(err.message || 'Failed to sync to Sheets', 'error')
-    } finally {
-      setSyncing(false)
     }
   }
 
