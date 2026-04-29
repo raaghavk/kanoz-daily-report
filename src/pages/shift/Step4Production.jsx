@@ -42,6 +42,12 @@ export default memo(function Step4Production({ data, updateData }) {
     )
   }, [data.production, eligibleMachineIdSet, updateData])
 
+  const PERCENT_DECIMALS = 1
+
+  function formatNumber(value, decimals = 1) {
+    return Number(value || 0).toFixed(decimals)
+  }
+
   function addEntry() {
     updateData('production', [...data.production, {
       id: Date.now(),
@@ -121,7 +127,7 @@ export default memo(function Step4Production({ data, updateData }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <p style={{ fontSize: 12, color: COLORS.secondary, margin: 0 }}>Enter production per machine.</p>
-        <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.green }}>Total: {totalMT.toFixed(1)} MT</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.green }}>Total: {formatNumber(totalMT, PERCENT_DECIMALS)} MT</div>
       </div>
       {eligibleMachines.length === 0 && (
         <div
