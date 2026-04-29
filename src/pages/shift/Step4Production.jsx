@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react'
+import { memo, useEffect, useMemo } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
 
 const COLORS = {
@@ -14,12 +14,18 @@ const COLORS = {
 }
 
 export default memo(function Step4Production({ data, updateData }) {
-  const eligibleMachines = data.machines.filter(m => !m.did_not_run && m.from_time && m.to_time)
+  const eligibleMachines = useMemo(
+    () => data.machines.filter(m => !m.did_not_run && m.from_time && m.to_time),
+    [data.machines]
+  )
+  const eligibleMachineIdSet = useMemo(
+    () => new Set(eligibleMachines.map(m => String(m.id))),
+    [eligibleMachines]
+  )
 
   useEffect(() => {
-    const eligibleMachineIds = new Set(eligibleMachines.map(m => String(m.id)))
     const hasInvalidMachine = data.production.some(
-      entry => entry.machine_id && !eligibleMachineIds.has(String(entry.machine_id))
+      entry => entry.machine_id && !eligibleMachineIdSet.has(String(entry.machine_id))
     )
 
     if (!hasInvalidMachine) {
@@ -29,12 +35,12 @@ export default memo(function Step4Production({ data, updateData }) {
     updateData(
       'production',
       data.production.map(entry => (
-        entry.machine_id && !eligibleMachineIds.has(String(entry.machine_id))
+        entry.machine_id && !eligibleMachineIdSet.has(String(entry.machine_id))
           ? { ...entry, machine_id: '' }
           : entry
       ))
     )
-  }, [data.production, eligibleMachines, updateData])
+  }, [data.production, eligibleMachineIdSet, updateData])
 
   function addEntry() {
     updateData('production', [...data.production, {
