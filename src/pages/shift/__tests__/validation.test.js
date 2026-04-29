@@ -60,25 +60,25 @@ describe('getValidationErrors', () => {
     expect(errors.find(e => e.step === 2)).toBeUndefined()
   })
 
-  it('returns step 3 error when no production entry has quantity > 0', () => {
+  it('returns step 4 error when no production entry has quantity > 0', () => {
     const report = makeValidReport()
     report.production = [{ quantity: '0' }]
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 3, message: 'Add at least one production entry' })
+    expect(errors).toContainEqual({ step: 4, message: 'Add at least one production entry' })
   })
 
-  it('returns step 3 error when production is empty', () => {
+  it('returns step 4 error when production is empty', () => {
     const report = makeValidReport()
     report.production = []
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 3, message: 'Add at least one production entry' })
+    expect(errors).toContainEqual({ step: 4, message: 'Add at least one production entry' })
   })
 
-  it('returns step 4 error when no raw material has usage > 0', () => {
+  it('does NOT return error when no raw material has usage > 0', () => {
     const report = makeValidReport()
     report.rawMaterials = [{ used: '0' }]
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 4, message: 'Enter raw material usage for at least one material' })
+    expect(errors.find(e => e.message.includes('raw material usage'))).toBeUndefined()
   })
 
   it('does NOT return step 4 error when rawMaterials is empty', () => {
@@ -102,7 +102,6 @@ describe('getValidationErrors', () => {
     const steps = [...new Set(errors.map(e => e.step))]
     expect(steps).toContain(1)
     expect(steps).toContain(2)
-    expect(steps).toContain(3)
     expect(steps).toContain(4)
   })
 })

@@ -398,7 +398,7 @@ export async function exportPurchasePDF(purchase, createdByName) {
 // ─────────────────────────────────────────────────────────────────────────────
 // SHIFT REPORT PDF
 // ─────────────────────────────────────────────────────────────────────────────
-export async function exportShiftReportPDF(report, data, createdByName) {
+export async function exportShiftReportPDF(report, data) {
   const lib = await loadJsPDF()
   const doc = new lib.jsPDF()
   const pw = 210, m = 15, cw = pw - 2 * m

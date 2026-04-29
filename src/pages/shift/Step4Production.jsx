@@ -86,10 +86,6 @@ export default memo(function Step4Production({ data, updateData }) {
     return 'Sample'
   }
 
-  function getMachineName(machineId) {
-    return data.machines.find(m => m.id === machineId)?.name || 'Unknown'
-  }
-
   const totalMT = data.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
 
   return (
@@ -214,77 +210,93 @@ export default memo(function Step4Production({ data, updateData }) {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
                   {entry.mix_usages.map((mu, mixIdx) => (
-                    <div key={mixIdx} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 32px', gap: 8, alignItems: 'flex-end' }}>
-                      <select
-                        value={mu.mix_local_id}
-                        onChange={e => updateMixUsage(idx, mixIdx, 'mix_local_id', e.target.value)}
-                        style={{
-                          width: '100%',
-                          height: 44,
-                          padding: '0 12px',
-                          borderRadius: 8,
-                          border: `1.5px solid ${COLORS.border}`,
-                          fontSize: 13,
-                          outline: 'none',
-                          color: COLORS.primary,
-                          boxSizing: 'border-box',
-                          background: COLORS.card,
-                        }}
-                      >
-                        <option value="">Select mix...</option>
-                        {data.mixes.map(m => (
-                          <option key={m.local_id} value={m.local_id}>
-                            {m.name} ({m.type})
-                          </option>
-                        ))}
-                      </select>
+                    <div key={mixIdx} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 32px', gap: 8, alignItems: 'flex-end' }}>
+                        <select
+                          value={mu.mix_local_id}
+                          onChange={e => updateMixUsage(idx, mixIdx, 'mix_local_id', e.target.value)}
+                          style={{
+                            width: '100%',
+                            height: 44,
+                            padding: '0 12px',
+                            borderRadius: 8,
+                            border: `1.5px solid ${COLORS.border}`,
+                            fontSize: 13,
+                            outline: 'none',
+                            color: COLORS.primary,
+                            boxSizing: 'border-box',
+                            background: COLORS.card,
+                          }}
+                        >
+                          <option value="">Select mix...</option>
+                          {data.mixes.map(m => (
+                            <option key={m.local_id} value={m.local_id}>
+                              {m.name} ({m.type})
+                            </option>
+                          ))}
+                        </select>
 
-                      <input
-                        type="number"
-                        step="0.1"
-                        inputMode="decimal"
-                        value={mu.quantity_kg}
-                        onChange={e => updateMixUsage(idx, mixIdx, 'quantity_kg', e.target.value)}
-                        placeholder="kg"
-                        style={{
-                          width: '100%',
-                          height: 44,
-                          padding: '0 8px',
-                          borderRadius: 8,
-                          border: `1.5px solid ${COLORS.border}`,
-                          fontSize: 13,
-                          outline: 'none',
-                          color: COLORS.primary,
-                          boxSizing: 'border-box',
-                          textAlign: 'center',
-                        }}
-                      />
+                        <input
+                          type="number"
+                          step="0.1"
+                          inputMode="decimal"
+                          value={mu.quantity_kg}
+                          onChange={e => updateMixUsage(idx, mixIdx, 'quantity_kg', e.target.value)}
+                          placeholder="kg"
+                          style={{
+                            width: '100%',
+                            height: 44,
+                            padding: '0 8px',
+                            borderRadius: 8,
+                            border: `1.5px solid ${COLORS.border}`,
+                            fontSize: 13,
+                            outline: 'none',
+                            color: COLORS.primary,
+                            boxSizing: 'border-box',
+                            textAlign: 'center',
+                          }}
+                        />
 
-                      <button
-                        onClick={() => removeMixUsage(idx, mixIdx)}
-                        style={{
-                          width: 32,
-                          height: 44,
-                          borderRadius: 8,
-                          border: 'none',
-                          background: 'transparent',
-                          color: 'rgba(211, 47, 47, 0.5)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = COLORS.lightRed
-                          e.currentTarget.style.color = COLORS.red
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent'
-                          e.currentTarget.style.color = 'rgba(211, 47, 47, 0.5)'
-                        }}
-                      >
-                        <X size={16} />
-                      </button>
+                        <button
+                          onClick={() => removeMixUsage(idx, mixIdx)}
+                          style={{
+                            width: 32,
+                            height: 44,
+                            borderRadius: 8,
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'rgba(211, 47, 47, 0.5)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = COLORS.lightRed
+                            e.currentTarget.style.color = COLORS.red
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent'
+                            e.currentTarget.style.color = 'rgba(211, 47, 47, 0.5)'
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      {(() => {
+                        const selectedMix = data.mixes.find(m => m.local_id === mu.mix_local_id)
+                        if (!selectedMix || !selectedMix.ingredients?.length) return null
+                        return (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingLeft: 2 }}>
+                            {selectedMix.ingredients.map((ing, i) => (
+                              <span key={i} style={{ fontSize: 11, color: COLORS.secondary, background: '#f4efe2', border: `1px solid ${COLORS.border}`, borderRadius: 999, padding: '2px 8px' }}>
+                                {ing.name || 'Material'} · {parseFloat(ing.quantity_kg) || 0} kg
+                              </span>
+                            ))}
+                          </div>
+                        )
+                      })()}
                     </div>
                   ))}
                 </div>
