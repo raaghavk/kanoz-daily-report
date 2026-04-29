@@ -14,6 +14,12 @@ const COLORS = {
 }
 
 export default memo(function Step4Production({ data, updateData }) {
+  const PERCENT_DECIMALS = 1
+
+  function formatNumber(value, decimals = 1) {
+    return Number(value || 0).toFixed(decimals)
+  }
+
   function addEntry() {
     updateData('production', [...data.production, {
       id: Date.now(),
@@ -210,77 +216,110 @@ export default memo(function Step4Production({ data, updateData }) {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
                   {entry.mix_usages.map((mu, mixIdx) => (
-                    <div key={mixIdx} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 32px', gap: 8, alignItems: 'flex-end' }}>
-                      <select
-                        value={mu.mix_local_id}
-                        onChange={e => updateMixUsage(idx, mixIdx, 'mix_local_id', e.target.value)}
-                        style={{
-                          width: '100%',
-                          height: 44,
-                          padding: '0 12px',
-                          borderRadius: 8,
-                          border: `1.5px solid ${COLORS.border}`,
-                          fontSize: 13,
-                          outline: 'none',
-                          color: COLORS.primary,
-                          boxSizing: 'border-box',
-                          background: COLORS.card,
-                        }}
-                      >
-                        <option value="">Select mix...</option>
-                        {data.mixes.map(m => (
-                          <option key={m.local_id} value={m.local_id}>
-                            {m.name} ({m.type})
-                          </option>
-                        ))}
-                      </select>
+                    <div key={mixIdx}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 70px 32px', gap: 8, alignItems: 'flex-end' }}>
+                        <select
+                          value={mu.mix_local_id}
+                          onChange={e => updateMixUsage(idx, mixIdx, 'mix_local_id', e.target.value)}
+                          style={{
+                            width: '100%',
+                            height: 44,
+                            padding: '0 12px',
+                            borderRadius: 8,
+                            border: `1.5px solid ${COLORS.border}`,
+                            fontSize: 13,
+                            outline: 'none',
+                            color: COLORS.primary,
+                            boxSizing: 'border-box',
+                            background: COLORS.card,
+                          }}
+                        >
+                          <option value="">Select mix...</option>
+                          {data.mixes.map(m => (
+                            <option key={m.local_id} value={m.local_id}>
+                              {m.name} ({m.type})
+                            </option>
+                          ))}
+                        </select>
 
-                      <input
-                        type="number"
-                        step="0.1"
-                        inputMode="decimal"
-                        value={mu.quantity_kg}
-                        onChange={e => updateMixUsage(idx, mixIdx, 'quantity_kg', e.target.value)}
-                        placeholder="kg"
-                        style={{
-                          width: '100%',
-                          height: 44,
-                          padding: '0 8px',
-                          borderRadius: 8,
-                          border: `1.5px solid ${COLORS.border}`,
-                          fontSize: 13,
-                          outline: 'none',
-                          color: COLORS.primary,
-                          boxSizing: 'border-box',
-                          textAlign: 'center',
-                        }}
-                      />
+                        <input
+                          type="number"
+                          step="0.1"
+                          inputMode="decimal"
+                          value={mu.quantity_kg}
+                          onChange={e => updateMixUsage(idx, mixIdx, 'quantity_kg', e.target.value)}
+                          placeholder="kg"
+                          style={{
+                            width: '100%',
+                            height: 44,
+                            padding: '0 8px',
+                            borderRadius: 8,
+                            border: `1.5px solid ${COLORS.border}`,
+                            fontSize: 13,
+                            outline: 'none',
+                            color: COLORS.primary,
+                            boxSizing: 'border-box',
+                            textAlign: 'center',
+                          }}
+                        />
 
-                      <button
-                        onClick={() => removeMixUsage(idx, mixIdx)}
-                        style={{
-                          width: 32,
-                          height: 44,
-                          borderRadius: 8,
-                          border: 'none',
-                          background: 'transparent',
-                          color: 'rgba(211, 47, 47, 0.5)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = COLORS.lightRed
-                          e.currentTarget.style.color = COLORS.red
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent'
-                          e.currentTarget.style.color = 'rgba(211, 47, 47, 0.5)'
-                        }}
-                      >
-                        <X size={16} />
-                      </button>
+                        <button
+                          onClick={() => removeMixUsage(idx, mixIdx)}
+                          style={{
+                            width: 32,
+                            height: 44,
+                            borderRadius: 8,
+                            border: 'none',
+                            background: 'transparent',
+                            color: 'rgba(211, 47, 47, 0.5)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = COLORS.lightRed
+                            e.currentTarget.style.color = COLORS.red
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent'
+                            e.currentTarget.style.color = 'rgba(211, 47, 47, 0.5)'
+                          }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      {(() => {
+                        const selectedMix = data.mixes.find(m => m.local_id === mu.mix_local_id)
+                        if (!selectedMix?.ingredients?.length) return null
+
+                        const totalKg = selectedMix.ingredients.reduce((sum, ing) => sum + (parseFloat(ing.quantity_kg) || 0), 0)
+
+                        return (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                            {selectedMix.ingredients.map((ingredient, ingIdx) => {
+                              const qty = parseFloat(ingredient.quantity_kg) || 0
+                              const pct = totalKg > 0 ? ((qty / totalKg) * 100) : 0
+                              return (
+                                <span
+                                  key={`${mu.mix_local_id}_${ingIdx}`}
+                                  style={{
+                                    fontSize: 11,
+                                    color: COLORS.secondary,
+                                    background: COLORS.bg,
+                                    border: `1px solid ${COLORS.border}`,
+                                    borderRadius: 999,
+                                    padding: '4px 8px'
+                                  }}
+                                >
+                                  {`${ingredient.material || 'Material'} · ${formatNumber(qty)} kg (${formatNumber(pct, PERCENT_DECIMALS)}%)`}
+                                </span>
+                              )
+                            })}
+                          </div>
+                        )
+                      })()}
                     </div>
                   ))}
                 </div>
