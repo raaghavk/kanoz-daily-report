@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
 
 const COLORS = {
@@ -14,10 +14,32 @@ const COLORS = {
 }
 
 export default memo(function Step4Production({ data, updateData }) {
+  const eligibleMachines = data.machines.filter(m => !m.did_not_run && m.from_time && m.to_time)
+
+  useEffect(() => {
+    const eligibleMachineIds = new Set(eligibleMachines.map(m => String(m.id)))
+    const hasInvalidMachine = data.production.some(
+      entry => entry.machine_id && !eligibleMachineIds.has(String(entry.machine_id))
+    )
+
+    if (!hasInvalidMachine) {
+      return
+    }
+
+    updateData(
+      'production',
+      data.production.map(entry => (
+        entry.machine_id && !eligibleMachineIds.has(String(entry.machine_id))
+          ? { ...entry, machine_id: '' }
+          : entry
+      ))
+    )
+  }, [data.production, eligibleMachines, updateData])
+
   function addEntry() {
     updateData('production', [...data.production, {
       id: Date.now(),
-      machine_id: data.machines[0]?.id || '',
+      machine_id: eligibleMachines[0]?.id || '',
       quantity: '',
       mix_usages: [],
     }])
@@ -95,6 +117,21 @@ export default memo(function Step4Production({ data, updateData }) {
         <p style={{ fontSize: 12, color: COLORS.secondary, margin: 0 }}>Enter production per machine.</p>
         <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.green }}>Total: {totalMT.toFixed(1)} MT</div>
       </div>
+      {eligibleMachines.length === 0 && (
+        <div
+          style={{
+            border: `1px solid ${COLORS.red}`,
+            background: COLORS.lightRed,
+            color: COLORS.red,
+            borderRadius: 10,
+            padding: '10px 12px',
+            fontSize: 12,
+            fontWeight: 600,
+          }}
+        >
+          No eligible machines found. Return to Step 2 and mark at least one machine as running with both start and end timings.
+        </div>
+      )}
 
       {/* Production entries */}
       {data.production.map((entry, idx) => {
@@ -151,7 +188,7 @@ export default memo(function Step4Production({ data, updateData }) {
                   }}
                 >
                   <option value="">Select...</option>
-                  {data.machines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {eligibleMachines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </div>
               <div>
@@ -319,23 +356,29 @@ export default memo(function Step4Production({ data, updateData }) {
       {/* Add Production Entry button */}
       <button
         onClick={addEntry}
+        disabled={eligibleMachines.length === 0}
         style={{
           width: '100%',
           padding: '12px 0',
           border: `2px dashed ${COLORS.green}`,
           borderRadius: 12,
-          background: 'transparent',
+          background: eligibleMachines.length === 0 ? '#f5f5f5' : 'transparent',
           color: COLORS.green,
           fontSize: 14,
           fontWeight: 600,
-          cursor: 'pointer',
+          cursor: eligibleMachines.length === 0 ? 'not-allowed' : 'pointer',
+          opacity: eligibleMachines.length === 0 ? 0.6 : 1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
         }}
-        onMouseEnter={(e) => e.target.style.background = 'rgba(45, 106, 79, 0.08)'}
-        onMouseLeave={(e) => e.target.style.background = 'transparent'}
+        onMouseEnter={(e) => {
+          if (eligibleMachines.length > 0) e.target.style.background = 'rgba(45, 106, 79, 0.08)'
+        }}
+        onMouseLeave={(e) => {
+          if (eligibleMachines.length > 0) e.target.style.background = 'transparent'
+        }}
       >
         <Plus size={18} /> Add Production Entry
       </button>
