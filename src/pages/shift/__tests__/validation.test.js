@@ -8,7 +8,7 @@ function makeValidReport() {
     start_time: '06:00',
     end_time: '14:00',
     machines: [{ from_time: '06:00', to_time: '14:00' }],
-    production: [{ quantity: '10' }],
+    production: [{ quantity: '10', mix_usages: [{ quantity_kg: '15' }] }],
     rawMaterials: [{ used: '5' }],
   }
 }
@@ -60,32 +60,35 @@ describe('getValidationErrors', () => {
     expect(errors.find(e => e.step === 2)).toBeUndefined()
   })
 
-  it('returns step 3 error when no production entry has quantity > 0', () => {
+  it('returns step 4 error when no production entry has quantity > 0', () => {
     const report = makeValidReport()
     report.production = [{ quantity: '0' }]
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 3, message: 'Add at least one production entry' })
+    expect(errors).toContainEqual({ step: 4, message: 'Add at least one production entry' })
   })
 
-  it('returns step 3 error when production is empty', () => {
+  it('returns step 4 error when production is empty', () => {
     const report = makeValidReport()
     report.production = []
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 3, message: 'Add at least one production entry' })
+    expect(errors).toContainEqual({ step: 4, message: 'Add at least one production entry' })
   })
 
-  it('returns step 4 error when no raw material has usage > 0', () => {
+  it('returns step 4 error when production quantity exists but no mix usage is entered', () => {
     const report = makeValidReport()
-    report.rawMaterials = [{ used: '0' }]
+    report.production = [{ quantity: '8', mix_usages: [] }]
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 4, message: 'Enter raw material usage for at least one material' })
+    expect(errors).toContainEqual({ step: 4, message: 'Add mix usage for at least one production entry' })
   })
 
-  it('does NOT return step 4 error when rawMaterials is empty', () => {
+  it('does NOT return step 4 mix usage error when a produced entry has mix usage', () => {
     const report = makeValidReport()
-    report.rawMaterials = []
+    report.production = [
+      { quantity: '0', mix_usages: [] },
+      { quantity: '5', mix_usages: [{ quantity_kg: '12' }] },
+    ]
     const errors = getValidationErrors(report)
-    expect(errors.find(e => e.step === 4)).toBeUndefined()
+    expect(errors.find(e => e.message === 'Add mix usage for at least one production entry')).toBeUndefined()
   })
 
   it('returns multiple errors when multiple steps are invalid', () => {
@@ -102,7 +105,6 @@ describe('getValidationErrors', () => {
     const steps = [...new Set(errors.map(e => e.step))]
     expect(steps).toContain(1)
     expect(steps).toContain(2)
-    expect(steps).toContain(3)
     expect(steps).toContain(4)
   })
 })

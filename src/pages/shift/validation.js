@@ -16,18 +16,21 @@ export function getValidationErrors(reportData) {
     errors.push({ step: 2, message: 'Enter timing for at least one machine' })
   }
 
-  // Step 3: Production — at least one entry
+  // Step 4: Production validation
   const hasProduction = reportData.production && reportData.production.length > 0 &&
     reportData.production.some(p => parseFloat(p.quantity) > 0)
   if (!hasProduction) {
-    errors.push({ step: 3, message: 'Add at least one production entry' })
-  }
+    errors.push({ step: 4, message: 'Add at least one production entry' })
+  } else {
+    const hasMixUsageForProducedEntry = reportData.production.some(p => {
+      const quantity = parseFloat(p.quantity) || 0
+      if (quantity <= 0) return false
+      return (p.mix_usages || []).some(mu => (parseFloat(mu.quantity_kg) || 0) > 0)
+    })
 
-  // Step 4: Raw materials — at least one material should have used quantity > 0
-  const hasRawMaterialUsage = reportData.rawMaterials && reportData.rawMaterials.length > 0 &&
-    reportData.rawMaterials.some(rm => parseFloat(rm.used) > 0)
-  if (!hasRawMaterialUsage && reportData.rawMaterials?.length > 0) {
-    errors.push({ step: 4, message: 'Enter raw material usage for at least one material' })
+    if (!hasMixUsageForProducedEntry) {
+      errors.push({ step: 4, message: 'Add mix usage for at least one production entry' })
+    }
   }
 
   return errors
