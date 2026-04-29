@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -17,18 +17,7 @@ export default function DispatchDetail() {
   const [editForm, setEditForm] = useState({})
   const [createdByName, setCreatedByName] = useState(null)
 
-  useEffect(() => {
-    if (id) fetchDispatch()
-  }, [id])
-
-  useEffect(() => {
-    if (dispatch?.created_by) {
-      supabase.from('employees').select('name').eq('id', dispatch.created_by).single()
-        .then(({ data }) => { if (data) setCreatedByName(data.name) })
-    }
-  }, [dispatch?.created_by])
-
-  async function fetchDispatch() {
+  const fetchDispatch = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error } = await supabase
@@ -54,7 +43,18 @@ export default function DispatchDetail() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, navigate])
+
+  useEffect(() => {
+    if (id) fetchDispatch()
+  }, [id, fetchDispatch])
+
+  useEffect(() => {
+    if (dispatch?.created_by) {
+      supabase.from('employees').select('name').eq('id', dispatch.created_by).single()
+        .then(({ data }) => { if (data) setCreatedByName(data.name) })
+    }
+  }, [dispatch?.created_by])
 
   function formatShortDate(dateStr) {
     if (!dateStr) return ''

@@ -86,10 +86,6 @@ export default memo(function Step4Production({ data, updateData }) {
     return 'Sample'
   }
 
-  function getMachineName(machineId) {
-    return data.machines.find(m => m.id === machineId)?.name || 'Unknown'
-  }
-
   const totalMT = data.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
 
   return (
