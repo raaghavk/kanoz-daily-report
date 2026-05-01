@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef, Component } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
@@ -36,6 +36,40 @@ const STEPS = [
 ]
 
 const WIZARD_STORAGE_KEY = 'kanoz_shift_wizard_state'
+
+// Error boundary to catch render errors in individual steps and show an error
+// message instead of a blank screen. key={step} resets it on every step change.
+class StepErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+  componentDidCatch(error, info) {
+    console.error('[ShiftWizard] Step render error:', error, info?.componentStack)
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 20, background: '#fee2e2', borderRadius: 12, margin: 8, border: '1.5px solid #d32f2f' }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: '#d32f2f', marginBottom: 8 }}>⚠️ Something went wrong on this step</div>
+          <div style={{ fontSize: 11, fontFamily: 'monospace', background: '#fff', padding: 10, borderRadius: 8, wordBreak: 'break-word', color: '#2c2c2c', marginBottom: 12 }}>
+            {this.state.error?.message || 'Unknown error'}
+          </div>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            style={{ padding: '8px 16px', background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+          >
+            Try Again
+          </button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 export default function ShiftWizard() {
   const navigate = useNavigate()
@@ -864,7 +898,14 @@ export default function ShiftWizard() {
   }
 
   const CurrentStep = STEPS[step - 1].component
-  const allErrors = useMemo(() => getValidationErrors(reportData), [ // eslint-disable-line react-hooks/exhaustive-deps
+  const allErrors = useMemo(() => {
+    try {
+      return getValidationErrors(reportData)
+    } catch (e) {
+      console.error('[ShiftWizard] Validation error:', e)
+      return []
+    }
+  }, [ // eslint-disable-line react-hooks/exhaustive-deps
     reportData.date, reportData.shift, reportData.start_time, reportData.end_time,
     reportData.machines, reportData.production, reportData.rawMaterials
   ])
@@ -903,13 +944,15 @@ export default function ShiftWizard() {
               </div>
             </div>
           )}
-          <CurrentStep
-            data={reportData}
-            updateData={updateData}
-            plant={plant}
-            employee={employee}
-            saveWizardState={saveWizardState}
-          />
+          <StepErrorBoundary key={step}>
+            <CurrentStep
+              data={reportData}
+              updateData={updateData}
+              plant={plant}
+              employee={employee}
+              saveWizardState={saveWizardState}
+            />
+          </StepErrorBoundary>
         </div>
       </div>
 

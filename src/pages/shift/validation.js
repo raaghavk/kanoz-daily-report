@@ -18,12 +18,12 @@ export function getValidationErrors(reportData) {
   }
 
   // Step 4: Production validation
-  const hasProduction = reportData.production && reportData.production.length > 0 &&
-    reportData.production.some(p => parseFloat(p.quantity) > 0)
+  const production = (reportData.production || []).filter(Boolean)
+  const hasProduction = production.length > 0 && production.some(p => parseFloat(p.quantity) > 0)
   if (!hasProduction) {
     errors.push({ step: 4, message: 'Add at least one production entry' })
   } else {
-    const hasMixUsageForProducedEntry = reportData.production.some(p => {
+    const hasMixUsageForProducedEntry = production.some(p => {
       const quantity = parseFloat(p.quantity) || 0
       if (quantity <= 0) return false
       return (p.mix_usages || []).some(mu => (parseFloat(mu.quantity_kg) || 0) > 0)
