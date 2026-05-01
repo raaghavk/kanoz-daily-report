@@ -129,7 +129,7 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
   }
 
   function savePreparedMix(preparedForm) {
-    const prepared = { ...preparedForm, isCarryForward: false }
+    const prepared = { ...preparedForm }
     let newMixes
     if (prepared.local_id && mixes.some(m => m.local_id === prepared.local_id)) {
       newMixes = mixes.map(m => m.local_id === prepared.local_id ? prepared : m)
@@ -273,7 +273,10 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
                           return (
                             <span key={i} style={{ fontSize: 11, color: C.text, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
                               {mix.isCarryForward && <Lock size={10} color={C.text} />}
-                              <strong style={{ color: C.green }}>{ing.name || 'RM'}</strong> · {qty} kg ({pct.toFixed(1)}%)
+                              <strong style={{ color: C.green }}>{ing.name || 'RM'}</strong>
+                              {mix.isCarryForward
+                                ? ` · ${pct.toFixed(1)}%`
+                                : ` · ${qty} kg (${pct.toFixed(1)}%)`}
                             </span>
                           )
                         })}
