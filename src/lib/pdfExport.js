@@ -320,7 +320,6 @@ export async function exportPurchasePDF(purchase, createdByName) {
   const pw = 210, m = 15, cw = pw - 2 * m
 
   const qty      = Math.round(purchase.quantity_kg || 0)
-  const netWt    = Math.round(purchase.net_weight  || purchase.quantity_kg || 0)
   const totalAmt = Math.round(purchase.total_amount || 0)
   const avgRate  = qty > 0 ? (totalAmt / qty).toFixed(2) : '0.00'
   const dateStr  = fmtDate(purchase.date)
@@ -338,18 +337,16 @@ export async function exportPurchasePDF(purchase, createdByName) {
   ])
 
   y = kpiRow(doc, y, [
-    { label: 'NET WEIGHT',    main: netWt.toLocaleString('en-IN'), unit: 'kg' },
-    { label: 'FINAL QUANTITY',main: qty.toLocaleString('en-IN'),   unit: 'kg' },
+    { label: 'QUANTITY',      main: qty.toLocaleString('en-IN'),   unit: 'kg' },
     { label: 'TOTAL AMOUNT',  main: '₹' + totalAmt.toLocaleString('en-IN'), unit: '' },
     { label: 'AVG COST / KG', main: '₹' + avgRate,                unit: '' },
   ])
 
   y = secHead(doc, y, 'WEIGHT & QUALITY')
   y = detailRows(doc, y, [
-    ['Net Weight',     netWt.toLocaleString('en-IN') + ' kg'],
+    ['Quantity',       qty.toLocaleString('en-IN') + ' kg'],
     ['Moisture',       (purchase.moisture_percent != null ? purchase.moisture_percent : 0) + '%'],
     ['Deduction',      (purchase.deduction_kg || 0) + ' kg'],
-    ['Final Quantity', qty.toLocaleString('en-IN') + ' kg'],
   ])
 
   y = secHead(doc, y, 'COST BREAKDOWN')

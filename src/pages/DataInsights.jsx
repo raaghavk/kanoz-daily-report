@@ -56,7 +56,7 @@ const MATCHERS = [
     defaultTime: 'today',
     run: async (plantId, time) => {
       const df = getDateRange(time)
-      let q = supabase.from('raw_material_purchases').select('quantity_kg, total_amount, net_weight, rate_per_kg, suppliers(name), raw_material_types(name)').eq('plant_id', plantId).eq('is_deleted', false)
+      let q = supabase.from('raw_material_purchases').select('quantity_kg, total_amount, rate_per_kg, suppliers(name), raw_material_types(name)').eq('plant_id', plantId).eq('is_deleted', false)
       if (df.from) q = q.gte('date', df.from)
       if (df.to) q = q.lte('date', df.to)
       const { data } = await q
