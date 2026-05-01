@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react'
+import { memo, useEffect, useMemo } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
 
 const COLORS = {
@@ -63,13 +63,15 @@ export default memo(function Step4Production({ data, updateData }) {
     updateData('production', entries)
   }
 
+  const mixes = data.mixes || []
+
   function getPelletType(entry) {
     if (!entry.mix_usages || entry.mix_usages.length === 0) {
       return null
     }
 
     const usedMixes = entry.mix_usages
-      .map(mu => data.mixes.find(m => m.local_id === mu.mix_local_id))
+      .map(mu => mixes.find(m => m.local_id === mu.mix_local_id))
       .filter(m => m)
 
     if (usedMixes.length === 0) {
@@ -93,34 +95,30 @@ export default memo(function Step4Production({ data, updateData }) {
   }
 
   // Filter eligible machines: did_not_run === false AND has both from_time and to_time
-  const eligibleMachines = (data.machines || []).filter(m => {
-    const didNotRun = m.did_not_run === true
-    const hasTimeWindow = m.from_time && m.to_time
-    return !didNotRun && hasTimeWindow
-  })
+  const eligibleMachines = useMemo(
+    () => (data.machines || []).filter(m => !m.did_not_run && m.from_time && m.to_time),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify((data.machines || []).map(m => `${m.id}:${m.did_not_run}:${m.from_time}:${m.to_time}`))]
+  )
 
-  // Clean up ineligible machine_ids when eligibleMachines changes
+  // Clean up ineligible machine_ids when the set of eligible machines changes
+  const eligibleIdKey = eligibleMachines.map(m => m.id).join(',')
   useEffect(() => {
     const eligibleIds = new Set(eligibleMachines.map(m => m.id))
     const hasIneligible = (data.production || []).some(p => p.machine_id && !eligibleIds.has(p.machine_id))
-
     if (hasIneligible) {
-      const cleaned = (data.production || []).map(p => {
-        if (p.machine_id && !eligibleIds.has(p.machine_id)) {
-          return { ...p, machine_id: '' }
-        }
-        return p
-      })
-      updateData('production', cleaned)
+      updateData('production', (data.production || []).map(p =>
+        (p.machine_id && !eligibleIds.has(p.machine_id)) ? { ...p, machine_id: '' } : p
+      ))
     }
-  }, [eligibleMachines])
+  }, [eligibleIdKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function getCompositionChips(entry) {
     const chips = []
     const seen = new Set()
 
     (entry.mix_usages || []).forEach(mu => {
-      const mix = data.mixes.find(m => m.local_id === mu.mix_local_id)
+      const mix = mixes.find(m => m.local_id === mu.mix_local_id)
       if (!mix) return
 
       (mix.ingredients || []).forEach(ing => {
@@ -293,7 +291,7 @@ export default memo(function Step4Production({ data, updateData }) {
               <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: COLORS.secondary, marginBottom: 10, textTransform: 'uppercase' }}>MIX USED</label>
 
               {(!entry.mix_usages || entry.mix_usages.length === 0) ? (
-                data.mixes.length === 0 ? (
+                mixes.length === 0 ? (
                   <p style={{ fontSize: 12, color: COLORS.tertiary, fontStyle: 'italic', margin: 0 }}>No mixes created yet — go back to Step 3</p>
                 ) : (
                   <p style={{ fontSize: 12, color: COLORS.tertiary, margin: 0 }}>No mixes added yet</p>
@@ -320,7 +318,7 @@ export default memo(function Step4Production({ data, updateData }) {
                           }}
                         >
                           <option value="">Select mix...</option>
-                          {data.mixes.map(m => (
+                          {mixes.map(m => (
                             <option key={m.local_id} value={m.local_id}>
                               {m.name} ({m.type})
                             </option>
@@ -376,7 +374,7 @@ export default memo(function Step4Production({ data, updateData }) {
                       </div>
 
                       {(() => {
-                        const selectedMix = data.mixes.find(m => m.local_id === mu.mix_local_id)
+                        const selectedMix = mixes.find(m => m.local_id === mu.mix_local_id)
                         if (!selectedMix?.ingredients?.length) return null
 
                         const totalKg = selectedMix.ingredients.reduce((sum, ing) => sum + (parseFloat(ing.quantity_kg) || 0), 0)
@@ -398,7 +396,7 @@ export default memo(function Step4Production({ data, updateData }) {
                                     padding: '4px 8px'
                                   }}
                                 >
-                                  {`${ingredient.material || 'Material'} · ${formatNumber(qty)} kg (${formatNumber(pct, PERCENT_DECIMALS)}%)`}
+                                  {`${ingredient.name || 'Material'} · ${formatNumber(qty)} kg (${formatNumber(pct, PERCENT_DECIMALS)}%)`}
                                 </span>
                               )
                             })}
@@ -411,7 +409,7 @@ export default memo(function Step4Production({ data, updateData }) {
               )}
 
               {/* Add Mix button */}
-              {data.mixes.length > 0 && (
+              {mixes.length > 0 && (
                 <button
                   onClick={() => addMixUsage(idx)}
                   style={{
