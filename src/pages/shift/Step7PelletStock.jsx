@@ -1,5 +1,21 @@
 import { useEffect, memo } from 'react'
 
+// Semantic match: handles "Non-Sample" vs "N Sample" and similar DB/UI name mismatches
+function normPellet(s) {
+  return (s || '').toLowerCase().replace(/[\s\-_]/g, '')
+}
+function isNonSampleVariant(s) {
+  const n = normPellet(s)
+  return n.includes('non') || (n.startsWith('n') && n.includes('sample'))
+}
+function pelletTypeMatches(mixType, pelletName) {
+  if (!mixType || !pelletName) return false
+  if (mixType === pelletName) return true
+  if (normPellet(mixType) === normPellet(pelletName)) return true
+  if (isNonSampleVariant(mixType) && isNonSampleVariant(pelletName)) return true
+  return false
+}
+
 export default memo(function Step7PelletStock({ data, updateData }) {
   // Auto-populate production from Step 3 and dispatch from Step 6
   useEffect(() => {
@@ -17,17 +33,20 @@ export default memo(function Step7PelletStock({ data, updateData }) {
             .filter(Boolean)
           const types = usedMixes.map(m => m.type).filter(Boolean)
           if (types.length === 0) {
-            // Fall back: if shift has one mix type, attribute all production to it
-            const fallbackType = (data.mixes || []).find(m => m.type)?.type
-            return fallbackType === ps.name
+            // Fall back: attribute to the single mix type in this shift if there is one
+            const allTypes = [...new Set((data.mixes || []).map(m => m.type).filter(Boolean))]
+            if (allTypes.length === 1) return pelletTypeMatches(allTypes[0], ps.name)
+            return false
           }
           const pelletType = types.every(t => t === types[0]) ? types[0] : 'Sample'
-          return pelletType === ps.name
+          return pelletTypeMatches(pelletType, ps.name)
         })
         .reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
 
-      // Dispatch total from Step 6 (loaded from today's vehicle_dispatches)
-      const dispTotal = dispatchTotals[ps.name] || 0
+      // Dispatch total from Step 6 — use semantic match so "Non-Sample" maps to "N Sample" etc.
+      const dispTotal = Object.entries(dispatchTotals).reduce((sum, [key, val]) => {
+        return pelletTypeMatches(key, ps.name) ? sum + (parseFloat(val) || 0) : sum
+      }, 0)
 
       return {
         ...ps,

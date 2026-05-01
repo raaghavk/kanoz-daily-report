@@ -384,7 +384,7 @@ export default function DispatchForm() {
         queryClient.invalidateQueries({ queryKey: ['dashboard'] })
         // If we came from the shift wizard, go straight back instead of showing list
         if (returnToShift) {
-          navigate('/shift/new', { state: { returnToStep: 6 } })
+          navigate('/shift/new', { state: { returnToStep: 7 } })
         } else {
           setShowForm(false)
         }
@@ -406,7 +406,7 @@ export default function DispatchForm() {
           subtitle={returnToShift ? "Add dispatches, then go back to shift report" : "Manage all dispatches"}
           onBack={
             returnToShift
-              ? () => navigate('/shift/new', { state: { returnToStep: 6 } })
+              ? () => navigate('/shift/new', { state: { returnToStep: 7 } })
               : showForm
                 ? () => setShowForm(false)
                 : () => navigate('/')
@@ -418,7 +418,7 @@ export default function DispatchForm() {
           <div style={{ margin: '12px 20px 0', background: '#e8f0ec', border: '1.5px solid #2d6a4f', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: 12, color: '#2d6a4f', fontWeight: 600 }}>You came from the Shift Report wizard.</div>
             <button
-              onClick={() => navigate('/shift/new', { state: { returnToStep: 6 } })}
+              onClick={() => navigate('/shift/new', { state: { returnToStep: 7 } })}
               style={{ padding: '6px 12px', background: '#2d6a4f', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
             >
               Back to Shift

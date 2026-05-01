@@ -265,26 +265,30 @@ export default memo(function Step4Production({ data, updateData }) {
               </div>
             )}
 
-            {/* Composition chips */}
+            {/* Composition chips — show % only */}
             {getCompositionChips(entry).length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: COLORS.secondary, marginBottom: 6, textTransform: 'uppercase' }}>Materials Used</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px' }}>
-                  {getCompositionChips(entry).map((chip, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        fontSize: 11,
-                        color: COLORS.secondary,
-                        background: COLORS.bg,
-                        border: `1px solid ${COLORS.border}`,
-                        borderRadius: 999,
-                        padding: '4px 8px',
-                      }}
-                    >
-                      {chip.name} · {chip.quantity.toFixed(1)} kg
-                    </span>
-                  ))}
+                  {(() => {
+                    const chips = getCompositionChips(entry)
+                    const total = chips.reduce((s, c) => s + c.quantity, 0)
+                    return chips.map((chip, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontSize: 11,
+                          color: COLORS.secondary,
+                          background: COLORS.bg,
+                          border: `1px solid ${COLORS.border}`,
+                          borderRadius: 999,
+                          padding: '4px 8px',
+                        }}
+                      >
+                        {chip.name} · {total > 0 ? ((chip.quantity / total) * 100).toFixed(1) : '0'}%
+                      </span>
+                    ))
+                  })()}
                 </div>
               </div>
             )}
@@ -380,13 +384,11 @@ export default memo(function Step4Production({ data, updateData }) {
                         const selectedMix = mixes.find(m => m.local_id === mu.mix_local_id)
                         if (!selectedMix?.ingredients?.length) return null
 
-                        const totalKg = selectedMix.ingredients.reduce((sum, ing) => sum + (parseFloat(ing.quantity_kg) || 0), 0)
-
                         return (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
                             {selectedMix.ingredients.map((ingredient, ingIdx) => {
-                              const qty = parseFloat(ingredient.quantity_kg) || 0
-                              const pct = totalKg > 0 ? ((qty / totalKg) * 100) : 0
+                              const rm = (data.rawMaterials || []).find(r => r.id === ingredient.raw_material_type_id)
+                              const available = (parseFloat(rm?.opening) || 0) + (parseFloat(rm?.purchased) || 0)
                               return (
                                 <span
                                   key={`${mu.mix_local_id}_${ingIdx}`}
@@ -399,7 +401,7 @@ export default memo(function Step4Production({ data, updateData }) {
                                     padding: '4px 8px'
                                   }}
                                 >
-                                  {`${ingredient.name || 'Material'} · ${formatNumber(qty)} kg (${formatNumber(pct, PERCENT_DECIMALS)}%)`}
+                                  {`${ingredient.name || 'Material'} · ${available.toFixed(0)} kg avail`}
                                 </span>
                               )
                             })}
