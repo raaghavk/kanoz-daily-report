@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const ORG_ID = 'a0000000-0000-0000-0000-000000000001'
+const PLANT_ID = 'b0000000-0000-0000-0000-000000000001'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
@@ -29,7 +29,7 @@ serve(async (req) => {
         loading_expense, unloading_expense, transport_expense, other_expense,
         total_rm_amount, total_amount
       `)
-      .eq('org_id', ORG_ID)
+      .eq('plant_id', PLANT_ID)
       .eq('is_deleted', false)
       .order('date', { ascending: false })
 
@@ -39,15 +39,15 @@ serve(async (req) => {
     const { data: dispatches, error: dErr } = await supabase
       .from('vehicle_dispatches')
       .select(`
-        id, date, loading_date,
+        id, date, loading_date, dispatch_date,
         plants(name),
         customers(name),
         destination,
-        truck_number, driver_name, driver_phone, invoice_number,
+        truck_number, driver_name, driver_phone, invoice_no,
         loading_time, dispatch_time, remarks,
         dispatch_pellets(pellet_type_name, quantity_mt)
       `)
-      .eq('org_id', ORG_ID)
+      .eq('plant_id', PLANT_ID)
       .eq('is_deleted', false)
       .order('date', { ascending: false })
 
@@ -64,13 +64,13 @@ serve(async (req) => {
           machines(name)
         )
       `)
-      .eq('org_id', ORG_ID)
+      .eq('plant_id', PLANT_ID)
       .eq('is_deleted', false)
       .order('date', { ascending: false })
 
     if (sErr) throw new Error(`Shifts: ${sErr.message}`)
 
-    // ── Flatten purchases (add id for incremental sync dedup) ──
+    // ── Flatten purchases ──
     const purchaseRows = (purchases || []).map((p: any) => ({
       id:                String(p.id),
       date:              p.date,
@@ -89,55 +89,40 @@ serve(async (req) => {
       total_amount:      p.total_amount || 0,
     }))
 
-    // ── Flatten dispatches — one row per pellet type, compound id for dedup ──
+    // ── Flatten dispatches — one row per pellet type ──
     const dispatchRows: any[] = []
     for (const d of (dispatches || [])) {
       const pellets = d.dispatch_pellets || []
+      const base = {
+        date:           d.date,
+        loading_date:   d.loading_date || d.date,
+        dispatch_date:  d.dispatch_date || d.date,
+        plant:          d.plants?.name || '',
+        customer:       d.customers?.name || '',
+        destination:    d.destination || '',
+        truck_number:   d.truck_number || '',
+        driver_name:    d.driver_name || '',
+        driver_phone:   d.driver_phone || '',
+        invoice_no:     d.invoice_no || '',
+        loading_time:   d.loading_time || '',
+        dispatch_time:  d.dispatch_time || '',
+        remarks:        d.remarks || '',
+      }
       if (pellets.length === 0) {
-        dispatchRows.push({
-          id:             `${d.id}_0`,
-          date:           d.date,
-          loading_date:   d.loading_date || d.date,
-          dispatch_date:  d.date,
-          plant:          d.plants?.name || '',
-          customer:       d.customers?.name || '',
-          destination:    d.destination || '',
-          pellet_type:    '',
-          quantity_mt:    0,
-          truck_number:   d.truck_number || '',
-          driver_name:    d.driver_name || '',
-          driver_phone:   d.driver_phone || '',
-          invoice_number: d.invoice_number || '',
-          loading_time:   d.loading_time || '',
-          dispatch_time:  d.dispatch_time || '',
-          remarks:        d.remarks || '',
-        })
+        dispatchRows.push({ id: `${d.id}_0`, ...base, pellet_type: '', quantity_mt: 0 })
       } else {
         for (let i = 0; i < pellets.length; i++) {
-          const pellet = pellets[i]
           dispatchRows.push({
-            id:             `${d.id}_${i}`,
-            date:           d.date,
-            loading_date:   d.loading_date || d.date,
-            dispatch_date:  d.date,
-            plant:          d.plants?.name || '',
-            customer:       d.customers?.name || '',
-            destination:    d.destination || '',
-            pellet_type:    pellet.pellet_type_name || '',
-            quantity_mt:    pellet.quantity_mt || 0,
-            truck_number:   d.truck_number || '',
-            driver_name:    d.driver_name || '',
-            driver_phone:   d.driver_phone || '',
-            invoice_number: d.invoice_number || '',
-            loading_time:   d.loading_time || '',
-            dispatch_time:  d.dispatch_time || '',
-            remarks:        d.remarks || '',
+            id:          `${d.id}_${i}`,
+            ...base,
+            pellet_type: pellets[i].pellet_type_name || '',
+            quantity_mt: pellets[i].quantity_mt || 0,
           })
         }
       }
     }
 
-    // ── Production rows — one row per shift, machine data as array ──
+    // ── Production rows ──
     const productionRows = (shiftData || []).map((s: any) => ({
       shift_id: String(s.id),
       date:     s.date,
