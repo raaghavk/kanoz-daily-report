@@ -1,6 +1,6 @@
 import { memo, useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
-import { Plus, Trash2, X, Edit2 } from 'lucide-react'
+import { Plus, Trash2, X, Edit2, Lock } from 'lucide-react'
 
 const C = {
   green: '#2d6a4f',
@@ -16,6 +16,8 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
   const [purchasesLoaded, setPurchasesLoaded] = useState(false)
   const [slideOpen, setSlideOpen] = useState(false)
   const [editingMix, setEditingMix] = useState(null)
+  const [preparingMix, setPreparingMix] = useState(null)
+  const [prepareOpen, setPrepareOpen] = useState(false)
 
   const mixes = data.mixes || []
 
@@ -103,6 +105,11 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
     setSlideOpen(true)
   }
 
+  function openPrepareMix(mix) {
+    setPreparingMix({ ...mix, ingredients: (mix.ingredients || []).map(i => ({ ...i })) })
+    setPrepareOpen(true)
+  }
+
   function saveMix(mixForm) {
     const prepared_kg = (mixForm.ingredients || []).reduce((s, i) => s + (parseFloat(i.quantity_kg) || 0), 0)
     const saved = { ...mixForm, prepared_kg }
@@ -119,6 +126,19 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
 
   function deleteMix(localId) {
     syncAndSave(mixes.filter(m => m.local_id !== localId))
+  }
+
+  function savePreparedMix(preparedForm) {
+    const prepared = { ...preparedForm, isCarryForward: false }
+    let newMixes
+    if (prepared.local_id && mixes.some(m => m.local_id === prepared.local_id)) {
+      newMixes = mixes.map(m => m.local_id === prepared.local_id ? prepared : m)
+    } else {
+      newMixes = [...mixes, { ...prepared, local_id: 'mix_' + Date.now() }]
+    }
+    syncAndSave(newMixes)
+    setPrepareOpen(false)
+    setPreparingMix(null)
   }
 
   // Compute used_kg for a mix from production mix_usages
@@ -186,17 +206,44 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
                 <div key={mix.local_id} style={{ background: C.card, borderRadius: 14, border: `1.5px solid ${C.border}`, overflow: 'hidden' }}>
                   {/* Green header */}
                   <div style={{ background: C.green, padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{mix.name}</div>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{mix.type}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {mix.isCarryForward && <Lock size={16} color="#fff" />}
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{mix.name}</div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{mix.type}</div>
+                      </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => openEditMix(mix)} style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Edit2 size={13} />
-                      </button>
-                      <button onClick={() => deleteMix(mix.local_id)} style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Trash2 size={13} />
-                      </button>
+                      {mix.isCarryForward ? (
+                        <button
+                          onClick={() => openPrepareMix(mix)}
+                          style={{
+                            padding: '6px 12px',
+                            background: 'rgba(255,255,255,0.25)',
+                            border: 'none',
+                            borderRadius: 8,
+                            color: '#fff',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 4,
+                            fontSize: 12,
+                            fontWeight: 600,
+                          }}
+                        >
+                          <Plus size={13} /> Prepare
+                        </button>
+                      ) : (
+                        <>
+                          <button onClick={() => openEditMix(mix)} style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Edit2 size={13} />
+                          </button>
+                          <button onClick={() => deleteMix(mix.local_id)} style={{ width: 30, height: 30, background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Trash2 size={13} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -217,14 +264,15 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
 
                   {/* Ingredient composition */}
                   <div style={{ padding: '8px 14px 10px', borderTop: `1px solid ${C.border}`, background: '#faf9f4' }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Composition</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Composition {mix.isCarryForward && '(Recipe)'}</div>
                     {mix.ingredients?.length > 0 ? (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px' }}>
                         {mix.ingredients.map((ing, i) => {
                           const qty = parseFloat(ing.quantity_kg) || 0
                           const pct = totalKg > 0 ? (qty / totalKg) * 100 : 0
                           return (
-                            <span key={i} style={{ fontSize: 11, color: C.text, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6, padding: '2px 8px' }}>
+                            <span key={i} style={{ fontSize: 11, color: C.text, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                              {mix.isCarryForward && <Lock size={10} color={C.text} />}
                               <strong style={{ color: C.green }}>{ing.name || 'RM'}</strong> · {qty} kg ({pct.toFixed(1)}%)
                             </span>
                           )
@@ -248,6 +296,15 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
           rawMaterials={data.rawMaterials}
           onSave={saveMix}
           onClose={() => { setSlideOpen(false); setEditingMix(null) }}
+        />
+      )}
+
+      {/* Prepare panel for carry-forward mixes */}
+      {prepareOpen && preparingMix && (
+        <PreparePanel
+          mix={preparingMix}
+          onSave={savePreparedMix}
+          onClose={() => { setPrepareOpen(false); setPreparingMix(null) }}
         />
       )}
     </div>
@@ -402,6 +459,166 @@ function MixPanel({ mix, rawMaterials, onSave, onClose }) {
             style={{ width: '100%', padding: '14px 0', background: canSave ? C.green : '#b5b8a8', color: '#fff', borderRadius: 12, fontSize: 15, fontWeight: 700, border: 'none', cursor: canSave ? 'pointer' : 'not-allowed', opacity: canSave ? 1 : 0.8 }}
           >
             Save Mix
+          </button>
+        </div>
+      </div>
+    </>
+  )
+}
+
+// Slide-up panel for preparing a carry-forward mix (batch preparation)
+function PreparePanel({ mix, onSave, onClose }) {
+  const [batchSize, setBatchSize] = useState('')
+
+  const recipeTotal = (mix.recipeIngredients || []).reduce((s, i) => s + (parseFloat(i.quantity_kg) || 0), 0)
+  const scaleFactor = recipeTotal > 0 && batchSize ? parseFloat(batchSize) / recipeTotal : 1
+
+  function handlePrepare() {
+    if (!batchSize || parseFloat(batchSize) <= 0) return
+
+    const scaledIngredients = (mix.recipeIngredients || []).map(ing => ({
+      ...ing,
+      quantity_kg: parseFloat((parseFloat(ing.quantity_kg) * scaleFactor).toFixed(2))
+    }))
+
+    const prepared = {
+      ...mix,
+      ingredients: scaledIngredients,
+      prepared_kg: parseFloat(batchSize) || 0,
+      opening_kg: 0,
+      isCarryForward: false
+    }
+    onSave(prepared)
+  }
+
+  return (
+    <>
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.4)',
+          zIndex: 998,
+        }}
+        onClick={onClose}
+      />
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: '#fff',
+          borderRadius: '20px 20px 0 0',
+          boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
+          zIndex: 999,
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '80vh',
+          paddingTop: 16,
+        }}
+      >
+        {/* Header */}
+        <div style={{ padding: '0 20px 16px', borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 4 }}>Prepare Batch: {mix.name}</div>
+          <div style={{ fontSize: 12, color: C.muted }}>Enter batch size to auto-scale recipe</div>
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+          {/* Recipe info */}
+          <div style={{ background: C.bg, borderRadius: 12, padding: 12, marginBottom: 16 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.dim, textTransform: 'uppercase', marginBottom: 6 }}>Recipe Composition</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px' }}>
+              {mix.recipeIngredients?.map((ing, i) => {
+                const qty = parseFloat(ing.quantity_kg) || 0
+                const pct = recipeTotal > 0 ? (qty / recipeTotal) * 100 : 0
+                return (
+                  <span key={i} style={{ fontSize: 11, color: C.text, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6, padding: '2px 8px' }}>
+                    <Lock size={10} style={{ display: 'inline', marginRight: 4 }} /> {ing.name || 'RM'} · {qty} kg ({pct.toFixed(1)}%)
+                  </span>
+                )
+              })}
+            </div>
+            <div style={{ fontSize: 10, color: C.muted, marginTop: 8 }}>Total recipe: {recipeTotal} kg</div>
+          </div>
+
+          {/* Batch size input */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 8 }}>Batch Size (kg)</label>
+            <input
+              type="number"
+              step="0.1"
+              inputMode="decimal"
+              value={batchSize}
+              onChange={e => setBatchSize(e.target.value)}
+              placeholder="Enter total kg to prepare"
+              style={{
+                width: '100%',
+                height: 48,
+                padding: '0 14px',
+                borderRadius: 12,
+                border: `1.5px solid ${C.border}`,
+                fontSize: 14,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          {/* Scaled recipe preview */}
+          {batchSize && parseFloat(batchSize) > 0 && (
+            <div style={{ background: 'rgba(45,106,79,0.08)', borderRadius: 12, padding: 12, marginBottom: 16 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: C.green, textTransform: 'uppercase', marginBottom: 8 }}>Scaled Recipe</div>
+              <div style={{ fontSize: 11, color: C.text, lineHeight: 1.6 }}>
+                {mix.recipeIngredients?.map((ing, i) => {
+                  const scaledQty = parseFloat((parseFloat(ing.quantity_kg) * scaleFactor).toFixed(2))
+                  return (
+                    <div key={i}>
+                      {ing.name || 'RM'}: {scaledQty} kg
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ padding: '12px 20px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 8, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: '12px 0',
+              background: '#f5f5f5',
+              color: C.text,
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handlePrepare}
+            disabled={!batchSize || parseFloat(batchSize) <= 0}
+            style={{
+              flex: 1,
+              padding: '12px 0',
+              background: batchSize && parseFloat(batchSize) > 0 ? C.green : '#b5b8a8',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: batchSize && parseFloat(batchSize) > 0 ? 'pointer' : 'not-allowed',
+              opacity: batchSize && parseFloat(batchSize) > 0 ? 1 : 0.6,
+            }}
+          >
+            Prepare Batch
           </button>
         </div>
       </div>

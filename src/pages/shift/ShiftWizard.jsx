@@ -247,6 +247,12 @@ export default function ShiftWizard() {
         type: m.type,
         opening_kg: parseFloat(m.closing_kg) || 0,
         prepared_kg: 0,
+        isCarryForward: true,
+        recipeIngredients: (m.shift_mix_compositions || []).map(c => ({
+          raw_material_type_id: c.raw_material_type_id,
+          name: c.raw_material_name,
+          quantity_kg: parseFloat(c.quantity_kg) || 0,
+        })),
         ingredients: (m.shift_mix_compositions || []).map(c => ({
           raw_material_type_id: c.raw_material_type_id,
           name: c.raw_material_name,

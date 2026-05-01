@@ -490,16 +490,6 @@ export async function exportShiftReportPDF(report, data) {
     String(r.quantity_kg  || 0),
     String(r.closing_kg   || 0),
   ])
-  // Append mixes with closing_kg > 0 as carry-forward inventory rows
-  ;(data.mixes || []).filter(mx => parseFloat(mx.closing_kg) > 0).forEach(mx => {
-    rmRows.push([
-      (mx.name || 'Mix') + ' [Mix]',
-      String(Math.round(parseFloat(mx.opening_kg)  || 0)),
-      String(Math.round(parseFloat(mx.prepared_kg) || 0)),
-      String(Math.round(parseFloat(mx.used_kg)     || 0)),
-      String(Math.round(parseFloat(mx.closing_kg)  || 0)),
-    ])
-  })
   const rmEndY = stdTable(doc, tblY,
     ['MATERIAL', 'OPEN', 'PURCH', 'USED', 'CLOSE'],
     [40, 12, 12, 12, 12],

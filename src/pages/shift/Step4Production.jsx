@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect } from 'react'
 import { Plus, Trash2, X } from 'lucide-react'
 
 const COLORS = {
@@ -23,7 +23,7 @@ export default memo(function Step4Production({ data, updateData }) {
   function addEntry() {
     updateData('production', [...data.production, {
       id: Date.now(),
-      machine_id: data.machines[0]?.id || '',
+      machine_id: eligibleMachines[0]?.id || '',
       quantity: '',
       mix_usages: [],
     }])
@@ -92,6 +92,53 @@ export default memo(function Step4Production({ data, updateData }) {
     return 'Sample'
   }
 
+  // Filter eligible machines: did_not_run === false AND has both from_time and to_time
+  const eligibleMachines = (data.machines || []).filter(m => {
+    const didNotRun = m.did_not_run === true
+    const hasTimeWindow = m.from_time && m.to_time
+    return !didNotRun && hasTimeWindow
+  })
+
+  // Clean up ineligible machine_ids when eligibleMachines changes
+  useEffect(() => {
+    const eligibleIds = new Set(eligibleMachines.map(m => m.id))
+    const hasIneligible = (data.production || []).some(p => p.machine_id && !eligibleIds.has(p.machine_id))
+
+    if (hasIneligible) {
+      const cleaned = (data.production || []).map(p => {
+        if (p.machine_id && !eligibleIds.has(p.machine_id)) {
+          return { ...p, machine_id: '' }
+        }
+        return p
+      })
+      updateData('production', cleaned)
+    }
+  }, [eligibleMachines])
+
+  function getCompositionChips(entry) {
+    const chips = []
+    const seen = new Set()
+
+    (entry.mix_usages || []).forEach(mu => {
+      const mix = data.mixes.find(m => m.local_id === mu.mix_local_id)
+      if (!mix) return
+
+      (mix.ingredients || []).forEach(ing => {
+        const key = `${ing.raw_material_type_id}_${ing.name}`
+        if (!seen.has(key)) {
+          seen.add(key)
+          chips.push({
+            name: ing.name || 'Material',
+            quantity: parseFloat(ing.quantity_kg) || 0
+          })
+        }
+      })
+    })
+
+    return chips
+  }
+
+  const noEligibleMachines = eligibleMachines.length === 0
   const totalMT = data.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
 
   return (
@@ -101,6 +148,20 @@ export default memo(function Step4Production({ data, updateData }) {
         <p style={{ fontSize: 12, color: COLORS.secondary, margin: 0 }}>Enter production per machine.</p>
         <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.green }}>Total: {totalMT.toFixed(1)} MT</div>
       </div>
+
+      {/* No eligible machines warning */}
+      {noEligibleMachines && (
+        <div style={{
+          background: 'rgba(211, 47, 47, 0.1)',
+          border: `1.5px solid ${COLORS.red}`,
+          borderRadius: 12,
+          padding: '12px 14px',
+          fontSize: 12,
+          color: COLORS.red,
+        }}>
+          No eligible machines. Go back to Step 2 to mark machines as running with time windows.
+        </div>
+      )}
 
       {/* Production entries */}
       {data.production.map((entry, idx) => {
@@ -157,7 +218,7 @@ export default memo(function Step4Production({ data, updateData }) {
                   }}
                 >
                   <option value="">Select...</option>
-                  {data.machines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  {eligibleMachines.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
               </div>
               <div>
@@ -199,6 +260,30 @@ export default memo(function Step4Production({ data, updateData }) {
                   }}
                 >
                   {pelletType}
+                </div>
+              </div>
+            )}
+
+            {/* Composition chips */}
+            {getCompositionChips(entry).length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 10, fontWeight: 600, color: COLORS.secondary, marginBottom: 6, textTransform: 'uppercase' }}>Materials Used</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px' }}>
+                  {getCompositionChips(entry).map((chip, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        fontSize: 11,
+                        color: COLORS.secondary,
+                        background: COLORS.bg,
+                        border: `1px solid ${COLORS.border}`,
+                        borderRadius: 999,
+                        padding: '4px 8px',
+                      }}
+                    >
+                      {chip.name} · {chip.quantity.toFixed(1)} kg
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
