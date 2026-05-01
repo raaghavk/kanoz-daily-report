@@ -217,6 +217,7 @@ export default function ShiftWizard() {
       .from('shift_reports')
       .select('id')
       .eq('plant_id', plant.id)
+      .eq('is_deleted', false)
       .order('date', { ascending: false })
       .order('shift', { ascending: false })
       .limit(1)

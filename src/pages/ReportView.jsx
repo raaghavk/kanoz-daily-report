@@ -208,7 +208,7 @@ export default function ReportView() {
       const [machRes, matRes, dispatchRes, dieselRes, stockRes, issuesRes, mixesRes] = await Promise.all([
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', id),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', id),
-        supabase.from('vehicle_dispatches').select('*, dispatch_pellets(*, pellet_types(name)), customers(name)').eq('shift_report_id', id),
+        supabase.from('vehicle_dispatches').select('*, dispatch_pellets(*, pellet_types(name)), customers(name)').eq('shift_report_id', id).eq('is_deleted', false),
         supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', id),
         supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', id),
         supabase.from('issues').select('*').eq('shift_report_id', id),
@@ -469,7 +469,7 @@ export default function ReportView() {
               {equipmentDiesel.length > 0 ? (
                 equipmentDiesel.map(e => {
                   const used = e.used_litres != null
-                    ? parseFloat(e.used_litres)
+                    ? (parseFloat(e.used_litres) || 0)
                     : (parseFloat(e.opening_litres) || 0) + (parseFloat(e.added_litres) || 0) - (parseFloat(e.closing_litres) || 0)
                   return (
                   <tr key={e.id} style={{ borderTop: '1px solid #e5ddd0' }}>

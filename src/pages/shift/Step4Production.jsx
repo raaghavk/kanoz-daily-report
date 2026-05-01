@@ -21,7 +21,7 @@ export default memo(function Step4Production({ data, updateData }) {
   }
 
   function addEntry() {
-    updateData('production', [...data.production, {
+    updateData('production', [...(data.production || []), {
       id: Date.now(),
       machine_id: eligibleMachines[0]?.id || '',
       quantity: '',
@@ -30,17 +30,17 @@ export default memo(function Step4Production({ data, updateData }) {
   }
 
   function updateEntry(idx, field, value) {
-    const entries = [...data.production]
+    const entries = [...(data.production || [])]
     entries[idx] = { ...entries[idx], [field]: value }
     updateData('production', entries)
   }
 
   function removeEntry(idx) {
-    updateData('production', data.production.filter((_, i) => i !== idx))
+    updateData('production', (data.production || []).filter((_, i) => i !== idx))
   }
 
   function addMixUsage(entryIdx) {
-    const entries = [...data.production]
+    const entries = [...(data.production || [])]
     if (!entries[entryIdx].mix_usages) {
       entries[entryIdx].mix_usages = []
     }
@@ -49,7 +49,7 @@ export default memo(function Step4Production({ data, updateData }) {
   }
 
   function updateMixUsage(entryIdx, mixIdx, field, value) {
-    const entries = [...data.production]
+    const entries = [...(data.production || [])]
     entries[entryIdx].mix_usages[mixIdx] = {
       ...entries[entryIdx].mix_usages[mixIdx],
       [field]: value
@@ -58,7 +58,7 @@ export default memo(function Step4Production({ data, updateData }) {
   }
 
   function removeMixUsage(entryIdx, mixIdx) {
-    const entries = [...data.production]
+    const entries = [...(data.production || [])]
     entries[entryIdx].mix_usages = entries[entryIdx].mix_usages.filter((_, i) => i !== mixIdx)
     updateData('production', entries)
   }
@@ -137,7 +137,8 @@ export default memo(function Step4Production({ data, updateData }) {
   }
 
   const noEligibleMachines = eligibleMachines.length === 0
-  const totalMT = data.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
+  const production = data.production || []
+  const totalMT = production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -162,7 +163,7 @@ export default memo(function Step4Production({ data, updateData }) {
       )}
 
       {/* Production entries */}
-      {data.production.map((entry, idx) => {
+      {production.map((entry, idx) => {
         const pelletType = getPelletType(entry)
 
         return (
