@@ -118,21 +118,28 @@ export default function ReportView() {
       if (rmErr) throw rmErr
 
       if (rmUsageRows && rmUsageRows.length > 0) {
-        // Get purchases in the shift window
+        // Get purchases in the shift window by date range, then filter by time client-side
         const { data: purchases } = await supabase
           .from('raw_material_purchases')
-          .select('raw_material_type_id, net_weight')
+          .select('raw_material_type_id, quantity_kg, purchase_time')
           .eq('plant_id', report.plant_id)
           .eq('is_deleted', false)
-          .gte('purchase_datetime', shiftStart)
-          .lte('purchase_datetime', shiftEnd)
+          .gte('date', shiftStartDate)
+          .lte('date', shiftEndDate)
 
-        // Sum purchases by material type
+        // Sum purchases by material type, optionally filtered by purchase_time
+        const shiftStartDtRm = new Date(shiftStart)
+        const shiftEndDtRm   = new Date(shiftEnd)
         const purchasedByType = {}
         if (purchases) {
           for (const p of purchases) {
+            // If purchase_time exists, check it falls within the shift window
+            if (p.purchase_time) {
+              const pDt = new Date(`${shiftStartDate}T${p.purchase_time}`)
+              if (pDt < shiftStartDtRm || pDt > shiftEndDtRm) continue
+            }
             const typeId = p.raw_material_type_id
-            purchasedByType[typeId] = (purchasedByType[typeId] || 0) + (parseFloat(p.net_weight) || 0)
+            purchasedByType[typeId] = (purchasedByType[typeId] || 0) + (parseFloat(p.quantity_kg) || 0)
           }
         }
 

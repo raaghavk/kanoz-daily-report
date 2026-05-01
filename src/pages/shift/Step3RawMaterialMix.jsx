@@ -485,8 +485,6 @@ function PreparePanel({ mix, onSave, onClose }) {
       ...mix,
       ingredients: scaledIngredients,
       prepared_kg: parseFloat(batchSize) || 0,
-      opening_kg: 0,
-      isCarryForward: false
     }
     onSave(prepared)
   }
