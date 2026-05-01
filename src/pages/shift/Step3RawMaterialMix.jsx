@@ -476,6 +476,10 @@ function PreparePanel({ mix, onSave, onClose }) {
   const recipeTotal = (mix.recipeIngredients || []).reduce((s, i) => s + (parseFloat(i.quantity_kg) || 0), 0)
   const scaleFactor = recipeTotal > 0 && batchSize ? parseFloat(batchSize) / recipeTotal : 1
 
+  function handleReset() {
+    onSave({ ...mix, ingredients: (mix.recipeIngredients || []).map(i => ({ ...i })), prepared_kg: 0 })
+  }
+
   function handlePrepare() {
     if (!batchSize || parseFloat(batchSize) <= 0) return
 
@@ -586,41 +590,61 @@ function PreparePanel({ mix, onSave, onClose }) {
         </div>
 
         {/* Actions */}
-        <div style={{ padding: '12px 20px', borderTop: `1px solid ${C.border}`, display: 'flex', gap: 8, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
-          <button
-            onClick={onClose}
-            style={{
-              flex: 1,
-              padding: '12px 0',
-              background: '#f5f5f5',
-              color: C.text,
-              border: 'none',
-              borderRadius: 10,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handlePrepare}
-            disabled={!batchSize || parseFloat(batchSize) <= 0}
-            style={{
-              flex: 1,
-              padding: '12px 0',
-              background: batchSize && parseFloat(batchSize) > 0 ? C.green : '#b5b8a8',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 10,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: batchSize && parseFloat(batchSize) > 0 ? 'pointer' : 'not-allowed',
-              opacity: batchSize && parseFloat(batchSize) > 0 ? 1 : 0.6,
-            }}
-          >
-            Prepare Batch
-          </button>
+        <div style={{ padding: '12px 20px', borderTop: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={onClose}
+              style={{
+                flex: 1,
+                padding: '12px 0',
+                background: '#f5f5f5',
+                color: C.text,
+                border: 'none',
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handlePrepare}
+              disabled={!batchSize || parseFloat(batchSize) <= 0}
+              style={{
+                flex: 2,
+                padding: '12px 0',
+                background: batchSize && parseFloat(batchSize) > 0 ? C.green : '#b5b8a8',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: batchSize && parseFloat(batchSize) > 0 ? 'pointer' : 'not-allowed',
+                opacity: batchSize && parseFloat(batchSize) > 0 ? 1 : 0.6,
+              }}
+            >
+              Prepare Batch
+            </button>
+          </div>
+          {mix.prepared_kg > 0 && (
+            <button
+              onClick={handleReset}
+              style={{
+                width: '100%',
+                padding: '10px 0',
+                background: 'transparent',
+                color: '#d32f2f',
+                border: '1px solid #d32f2f',
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Reset Prepared to 0
+            </button>
+          )}
         </div>
       </div>
     </>

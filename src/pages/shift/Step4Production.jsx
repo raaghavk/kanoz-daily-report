@@ -116,12 +116,14 @@ export default memo(function Step4Production({ data, updateData }) {
   function getCompositionChips(entry) {
     const chips = []
     const seen = new Set()
+    const mixUsages = entry.mix_usages || []
 
-    (entry.mix_usages || []).forEach(mu => {
+    mixUsages.forEach(mu => {
       const mix = mixes.find(m => m.local_id === mu.mix_local_id)
       if (!mix) return
 
-      (mix.ingredients || []).forEach(ing => {
+      const ingredients = mix.ingredients || []
+      ingredients.forEach(ing => {
         const key = `${ing.raw_material_type_id}_${ing.name}`
         if (!seen.has(key)) {
           seen.add(key)
