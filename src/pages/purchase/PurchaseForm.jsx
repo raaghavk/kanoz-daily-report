@@ -338,8 +338,7 @@ export default function PurchaseForm() {
         unloading_expense: sanitizeNumber(formData.unloading_charges) || 0,
         transport_expense: sanitizeNumber(formData.transport_charges) || 0,
         other_expense: sanitizeNumber(formData.other_charges) || 0,
-        total_rm_amount: sanitizeNumber(formData.total_rm_amount) || 0,
-        total_amount: sanitizeNumber(formData.total_amount) || 0,
+        // total_rm_amount, total_amount, avg_cost_per_kg are GENERATED columns — DB computes them
         katta_parchi_url: formData.katta_parchi_photo,
         payment_status: formData.payment_status,
         remarks: sanitizeText(remarksText, 500) || null,

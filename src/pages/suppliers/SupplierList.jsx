@@ -35,10 +35,13 @@ export default function SupplierList() {
   })
 
   // Persist form data to sessionStorage so it survives app switches
+  // Only save if user has actually started filling the form (name or mobile)
   useEffect(() => {
-    const hasData = Object.values(formData).some(v => v !== '')
+    const hasData = formData.name.trim() !== '' || formData.mobile.trim() !== ''
     if (hasData) {
       sessionStorage.setItem('supplier_form_draft', JSON.stringify(formData))
+    } else {
+      sessionStorage.removeItem('supplier_form_draft')
     }
   }, [formData])
 
@@ -48,8 +51,11 @@ export default function SupplierList() {
       const saved = sessionStorage.getItem('supplier_form_draft')
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (Object.values(parsed).some(v => v !== '')) {
+        // Only restore if there's actual user-entered data (not just null coords)
+        if (parsed.name && parsed.name.trim() !== '') {
           setShowAddModal(true)
+        } else {
+          sessionStorage.removeItem('supplier_form_draft')
         }
       }
     } catch { /* ignore parse errors */ }
@@ -309,7 +315,11 @@ export default function SupplierList() {
       </button>
 
       {/* Add Supplier Modal */}
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Supplier">
+      <Modal isOpen={showAddModal} onClose={() => {
+        sessionStorage.removeItem('supplier_form_draft')
+        setFormData({ name: '', mobile: '', address: '', raw_material_type: '', rate_offered: '', gcv_value: '', remarks: '', location_lat: null, location_lng: null })
+        setShowAddModal(false)
+      }} title="Add New Supplier">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Supplier Name *</label>
@@ -422,7 +432,11 @@ export default function SupplierList() {
 
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <button
-              onClick={() => setShowAddModal(false)}
+              onClick={() => {
+                sessionStorage.removeItem('supplier_form_draft')
+                setFormData({ name: '', mobile: '', address: '', raw_material_type: '', rate_offered: '', gcv_value: '', remarks: '', location_lat: null, location_lng: null })
+                setShowAddModal(false)
+              }}
               style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
             >
               Cancel
