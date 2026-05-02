@@ -260,6 +260,33 @@ export default function ReportView() {
     production_mt: m.production_mt || 0,
   }))
 
+  // Calculate live dispatch totals from actual dispatch_pellets (overrides stale DB snapshot).
+  // This handles the case where dispatches are added after the report was saved.
+  function normPellet(s) { return (s || '').toLowerCase().replace(/[\s\-_]/g, '') }
+  function isNonSampleVariant(s) { const n = normPellet(s); return n.includes('non') || (n.startsWith('n') && n.includes('sample')) }
+  function pelletTypeMatches(a, b) {
+    if (!a || !b) return false
+    if (a === b) return true
+    if (normPellet(a) === normPellet(b)) return true
+    if (isNonSampleVariant(a) && isNonSampleVariant(b)) return true
+    return false
+  }
+  const liveDispatchByPellet = {}
+  dispatches.forEach(d => {
+    ;(d.dispatch_pellets || []).forEach(dp => {
+      const name = dp.pellet_type_name || dp.pellet_types?.name || ''
+      if (name) liveDispatchByPellet[name] = (liveDispatchByPellet[name] || 0) + (parseFloat(dp.quantity_mt) || 0)
+    })
+  })
+  const pelletStockWithLiveDispatch = pelletStock.map(p => {
+    const typeName = p.pellet_types?.name || ''
+    const liveDispatch = Object.entries(liveDispatchByPellet).reduce((sum, [key, val]) =>
+      pelletTypeMatches(key, typeName) ? sum + val : sum, 0)
+    const dispatchVal = liveDispatch > 0 ? liveDispatch : (parseFloat(p.dispatch_mt) || 0)
+    const closing = (parseFloat(p.opening_mt) || 0) + (parseFloat(p.production_mt) || 0) - dispatchVal - (parseFloat(p.wastage_mt) || 0)
+    return { ...p, live_dispatch_mt: dispatchVal, live_closing_mt: closing }
+  })
+
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       {/* Sticky Header */}
@@ -544,15 +571,15 @@ export default function ReportView() {
               </tr>
             </thead>
             <tbody>
-              {pelletStock.length > 0 ? (
-                pelletStock.map(p => (
+              {pelletStockWithLiveDispatch.length > 0 ? (
+                pelletStockWithLiveDispatch.map(p => (
                   <tr key={p.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{p.pellet_types?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.opening_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.production_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.dispatch_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.wastage_mt || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{p.closing_mt || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.opening_mt || 0).toFixed(1)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.production_mt || 0).toFixed(1)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.live_dispatch_mt.toFixed(1)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.wastage_mt || 0).toFixed(1)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{p.live_closing_mt.toFixed(1)}</td>
                   </tr>
                 ))
               ) : (
@@ -626,7 +653,7 @@ export default function ReportView() {
       {can(employee?.role, 'export') && (
       <div style={{ padding: '0 20px', marginTop: 12 }}>
         <button
-          onClick={() => exportShiftReportPDF(report, { machineProduction, rawMaterials, equipmentDiesel, pelletStock, dispatches, issues, mixes }, report.employees?.name)}
+          onClick={() => exportShiftReportPDF(report, { machineProduction, rawMaterials, equipmentDiesel, pelletStock: pelletStockWithLiveDispatch.map(p => ({ ...p, dispatch_mt: p.live_dispatch_mt, closing_mt: p.live_closing_mt })), dispatches, issues, mixes }, report.employees?.name)}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
