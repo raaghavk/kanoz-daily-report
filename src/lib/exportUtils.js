@@ -103,7 +103,7 @@ export function exportDetailedReportToCSV({
       e.opening_litres || 0,
       e.added_litres || 0,
       e.closing_litres || 0,
-      e.hours_operated || 0,
+      e.hours_worked || 0,
     ]))
   })
   lines.push('')

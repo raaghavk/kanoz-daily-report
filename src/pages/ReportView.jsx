@@ -33,20 +33,10 @@ export default function ReportView() {
     if (!window.confirm('Are you sure you want to delete this report? This cannot be undone.')) return
     try {
       setDeleting(true)
-      // Delete child records first — check for errors
-      const childDeletes = await Promise.all([
-        supabase.from('machine_production').delete().eq('shift_report_id', id),
-        supabase.from('raw_material_usage').delete().eq('shift_report_id', id),
-        supabase.from('equipment_diesel_log').delete().eq('shift_report_id', id),
-        supabase.from('pellet_stock').delete().eq('shift_report_id', id),
-        supabase.from('diesel_stock').delete().eq('shift_report_id', id),
-        supabase.from('issues').delete().eq('shift_report_id', id),
-      ])
-      const childError = childDeletes.find(r => r.error)
-      if (childError) throw childError.error
-
-      const { error: parentError } = await supabase.from('shift_reports').delete().eq('id', id)
-      if (parentError) throw parentError
+      // All child tables (machine_production, raw_material_usage, shift_mixes, etc.)
+      // have ON DELETE CASCADE — just deleting the parent cascades everything.
+      const { error } = await supabase.from('shift_reports').delete().eq('id', id)
+      if (error) throw error
       showToast('Report deleted', 'success')
       navigate('/reports')
     } catch (err) {

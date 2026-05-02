@@ -394,6 +394,7 @@ export default function ShiftWizard() {
             if (prod) {
               return {
                 ...m,
+                did_not_run: prod.did_not_run || false,
                 production_hours: parseFloat(prod.hours_run) || 0,
                 total_hours: parseFloat(prod.total_hours) || parseFloat(prod.hours_run) || 0,
                 from_time: prod.from_time || '',
@@ -599,10 +600,11 @@ export default function ShiftWizard() {
       if (reportData.machines.length) {
         await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
         const machineRows = reportData.machines
-          .filter(m => sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time)
+          .filter(m => m.did_not_run || sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time)
           .map(m => ({
             shift_report_id: report.id,
             machine_id: m.id,
+            did_not_run: m.did_not_run || false,
             hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours),
             from_time: m.from_time || null,
             to_time: m.to_time || null,

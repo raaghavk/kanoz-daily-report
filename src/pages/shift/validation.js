@@ -19,16 +19,17 @@ export function getValidationErrors(reportData) {
 
   // Step 4: Production validation
   const production = (reportData.production || []).filter(Boolean)
+  const mixes = reportData.mixes || []
   const hasProduction = production.length > 0 && production.some(p => parseFloat(p.quantity) > 0)
   if (!hasProduction) {
     errors.push({ step: 4, message: 'Add at least one production entry' })
-  } else {
+  } else if (mixes.length > 0) {
+    // Only require mix usage if mixes were defined for this shift
     const hasMixUsageForProducedEntry = production.some(p => {
       const quantity = parseFloat(p.quantity) || 0
       if (quantity <= 0) return false
       return (p.mix_usages || []).some(mu => (parseFloat(mu.quantity_kg) || 0) > 0)
     })
-
     if (!hasMixUsageForProducedEntry) {
       errors.push({ step: 4, message: 'Add mix usage for at least one production entry' })
     }

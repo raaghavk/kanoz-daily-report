@@ -16,10 +16,6 @@ const COLORS = {
 export default memo(function Step4Production({ data, updateData }) {
   const PERCENT_DECIMALS = 1
 
-  function formatNumber(value, decimals = 1) {
-    return Number(value || 0).toFixed(decimals)
-  }
-
   function addEntry() {
     updateData('production', [...(data.production || []), {
       id: Date.now(),
