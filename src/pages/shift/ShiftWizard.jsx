@@ -636,6 +636,7 @@ export default function ShiftWizard() {
           const { data: savedMix, error: mixErr } = await supabase.from('shift_mixes').insert({
             shift_report_id: report.id,
             plant_id: plant.id,
+            org_id: plant.org_id,
             name: sanitizeText(mix.name, 100),
             type: sanitizeText(mix.type, 50),
             opening_kg: sanitizeNumber(mix.opening_kg),
@@ -643,7 +644,7 @@ export default function ShiftWizard() {
             used_kg: usedKg,
             closing_kg: closingKg,
           }).select().single()
-          if (mixErr) { console.error('Mix save error:', mixErr); continue }
+          if (mixErr) { console.error('Mix save error:', mixErr); throw mixErr }
 
           // Save compositions
           if (mix.ingredients?.length > 0) {
