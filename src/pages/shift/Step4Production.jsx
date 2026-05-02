@@ -382,29 +382,18 @@ export default memo(function Step4Production({ data, updateData }) {
 
                       {(() => {
                         const selectedMix = mixes.find(m => m.local_id === mu.mix_local_id)
-                        if (!selectedMix?.ingredients?.length) return null
-
+                        if (!selectedMix) return null
+                        const available = (parseFloat(selectedMix.opening_kg) || 0) + (parseFloat(selectedMix.prepared_kg) || 0)
                         return (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                            {selectedMix.ingredients.map((ingredient, ingIdx) => {
-                              const rm = (data.rawMaterials || []).find(r => r.id === ingredient.raw_material_type_id)
-                              const available = (parseFloat(rm?.opening) || 0) + (parseFloat(rm?.purchased) || 0)
-                              return (
-                                <span
-                                  key={`${mu.mix_local_id}_${ingIdx}`}
-                                  style={{
-                                    fontSize: 11,
-                                    color: COLORS.secondary,
-                                    background: COLORS.bg,
-                                    border: `1px solid ${COLORS.border}`,
-                                    borderRadius: 999,
-                                    padding: '4px 8px'
-                                  }}
-                                >
-                                  {`${ingredient.name || 'Material'} · ${available.toFixed(0)} kg avail`}
-                                </span>
-                              )
-                            })}
+                          <div style={{ marginTop: 6 }}>
+                            <span style={{
+                              fontSize: 11, color: COLORS.green, fontWeight: 600,
+                              background: 'rgba(45,106,79,0.08)',
+                              border: `1px solid rgba(45,106,79,0.2)`,
+                              borderRadius: 999, padding: '4px 10px'
+                            }}>
+                              {available.toFixed(0)} kg available
+                            </span>
                           </div>
                         )
                       })()}
