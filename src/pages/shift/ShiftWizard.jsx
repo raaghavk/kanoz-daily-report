@@ -273,28 +273,34 @@ export default function ShiftWizard() {
       prevMixes = mixRes.data || []
     }
 
-    // Carry forward mix opening stock from previous shift closing
+    // Carry forward mix opening stock from previous shift closing.
+    // Only carry forward mixes that still have remaining stock (closing_kg > 0).
+    // Fully-used mixes (closing = 0) are shown in their own shift report but not brought into the next shift.
     if (prevMixes.length > 0) {
-      const carryForwardMixes = prevMixes.map(m => ({
-        local_id: 'mix_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-        db_id: null,
-        name: m.name,
-        type: m.type,
-        opening_kg: parseFloat(m.closing_kg) || 0,
-        prepared_kg: 0,
-        isCarryForward: true,
-        recipeIngredients: (m.shift_mix_compositions || []).map(c => ({
-          raw_material_type_id: c.raw_material_type_id,
-          name: c.raw_material_name,
-          quantity_kg: parseFloat(c.quantity_kg) || 0,
-        })),
-        ingredients: (m.shift_mix_compositions || []).map(c => ({
-          raw_material_type_id: c.raw_material_type_id,
-          name: c.raw_material_name,
-          quantity_kg: parseFloat(c.quantity_kg) || 0,
-        })),
-      }))
-      updateData('mixes', carryForwardMixes)
+      const carryForwardMixes = prevMixes
+        .filter(m => (parseFloat(m.closing_kg) || 0) > 0)
+        .map(m => ({
+          local_id: 'mix_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+          db_id: null,
+          name: m.name,
+          type: m.type,
+          opening_kg: parseFloat(m.closing_kg) || 0,
+          prepared_kg: 0,
+          isCarryForward: true,
+          recipeIngredients: (m.shift_mix_compositions || []).map(c => ({
+            raw_material_type_id: c.raw_material_type_id,
+            name: c.raw_material_name,
+            quantity_kg: parseFloat(c.quantity_kg) || 0,
+          })),
+          ingredients: (m.shift_mix_compositions || []).map(c => ({
+            raw_material_type_id: c.raw_material_type_id,
+            name: c.raw_material_name,
+            quantity_kg: parseFloat(c.quantity_kg) || 0,
+          })),
+        }))
+      if (carryForwardMixes.length > 0) {
+        updateData('mixes', carryForwardMixes)
+      }
     }
 
     if (machinesRes.data) {
