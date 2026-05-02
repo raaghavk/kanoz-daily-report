@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
-import { Search, Plus, Phone, MessageSquare, MapPin, ChevronRight, Loader2, AlertCircle, Navigation } from 'lucide-react'
+import { Search, Plus, Phone, MessageSquare, MapPin, Loader2, AlertCircle, Navigation } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function SupplierList() {
@@ -15,6 +15,7 @@ export default function SupplierList() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [fetchingLocation, setFetchingLocation] = useState(false)
   const [formData, setFormData] = useState(() => {
     try {
       const saved = sessionStorage.getItem('supplier_form_draft')
@@ -27,7 +28,9 @@ export default function SupplierList() {
       raw_material_type: '',
       rate_offered: '',
       gcv_value: '',
-      remarks: ''
+      remarks: '',
+      location_lat: null,
+      location_lng: null,
     }
   })
 
@@ -113,6 +116,8 @@ export default function SupplierList() {
           rate_offered: parseFloat(formData.rate_offered) || null,
           gcv_value: parseFloat(formData.gcv_value) || null,
           remarks: formData.remarks,
+          location_lat: formData.location_lat || null,
+          location_lng: formData.location_lng || null,
           plant_id: plant.id,
           org_id: plant.org_id,
           is_active: true
@@ -129,7 +134,9 @@ export default function SupplierList() {
         raw_material_type: '',
         rate_offered: '',
         gcv_value: '',
-        remarks: ''
+        remarks: '',
+        location_lat: null,
+        location_lng: null,
       })
       sessionStorage.removeItem('supplier_form_draft')
       setShowAddModal(false)
@@ -140,6 +147,30 @@ export default function SupplierList() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function captureLocation() {
+    if (!navigator.geolocation) {
+      showToast('Geolocation not supported', 'error')
+      return
+    }
+    setFetchingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setFormData(prev => ({
+          ...prev,
+          location_lat: position.coords.latitude,
+          location_lng: position.coords.longitude,
+        }))
+        setFetchingLocation(false)
+        showToast('Location captured', 'success')
+      },
+      () => {
+        setFetchingLocation(false)
+        showToast('Could not get location', 'error')
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
   }
 
   function handleCall(mobile) {
@@ -163,7 +194,7 @@ export default function SupplierList() {
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       {/* Header + Search (sticky) */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title="Supplier Database" subtitle="Manage your suppliers" />
+        <PageHeader title="Supplier Database" subtitle="Manage your suppliers" backTo="/more" />
 
         {/* Search Bar */}
         <div style={{ padding: '0 20px', marginTop: 12 }}>
@@ -252,15 +283,30 @@ export default function SupplierList() {
         )}
       </div>
 
-      {/* Add Supplier Button — inline, not floating */}
-      <div style={{ padding: '16px 20px', paddingBottom: 100 }}>
-        <button
-          onClick={() => setShowAddModal(true)}
-          style={{ width: '100%', padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
-        >
-          <Plus size={18} /> Add Supplier
-        </button>
-      </div>
+      {/* FAB — fixed bottom right */}
+      <button
+        onClick={() => setShowAddModal(true)}
+        style={{
+          position: 'fixed',
+          bottom: 88,
+          right: 20,
+          width: 56,
+          height: 56,
+          borderRadius: '50%',
+          background: '#2d6a4f',
+          color: 'white',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 16px rgba(45,106,79,0.35)',
+          zIndex: 50,
+        }}
+        title="Add Supplier"
+      >
+        <Plus size={24} strokeWidth={2.5} />
+      </button>
 
       {/* Add Supplier Modal */}
       <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Supplier">
@@ -299,6 +345,33 @@ export default function SupplierList() {
               placeholder="Supplier address"
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Location</label>
+            <button
+              type="button"
+              onClick={captureLocation}
+              disabled={fetchingLocation}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '10px 14px', borderRadius: 12,
+                border: '1.5px solid #e5ddd0',
+                background: formData.location_lat ? '#e8f0ec' : '#fefae0',
+                color: formData.location_lat ? '#2d6a4f' : '#595c4a',
+                fontSize: 13, fontWeight: 600, cursor: fetchingLocation ? 'not-allowed' : 'pointer',
+                opacity: fetchingLocation ? 0.6 : 1,
+              }}
+            >
+              {fetchingLocation
+                ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                : <MapPin size={14} />}
+              {fetchingLocation
+                ? 'Getting location...'
+                : formData.location_lat
+                  ? `📍 ${formData.location_lat.toFixed(5)}, ${formData.location_lng.toFixed(5)}`
+                  : 'Capture Location'}
+            </button>
           </div>
 
           <div>

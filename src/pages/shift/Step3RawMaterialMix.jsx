@@ -1,5 +1,6 @@
 import { memo, useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { showToast } from '../../components/Toast'
 import { Plus, Trash2, X, Edit2, Lock } from 'lucide-react'
 
 const C = {
@@ -69,7 +70,8 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
     loadPurchases()
   }, [plant?.id, data.shift_start_date]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync rawMaterials.used from mix ingredients, then save both
+  // Sync rawMaterials.used from mix ingredients, then save both.
+  // Returns true if saved successfully, false if blocked by negative stock.
   function syncAndSave(newMixes) {
     const rmUsed = {}
     newMixes.forEach(mix => {
@@ -83,8 +85,18 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
       const used = rmUsed[rm.id] || 0
       return { ...rm, used, closing: (rm.opening || 0) + (rm.purchased || 0) - used }
     })
+
+    // Block save if any raw material goes negative
+    const negatives = updatedRM.filter(rm => rm.closing < -0.001)
+    if (negatives.length > 0) {
+      const names = negatives.map(rm => `${rm.name} (${rm.closing.toFixed(0)} kg)`).join(', ')
+      showToast(`Not enough stock: ${names}`, 'error')
+      return false
+    }
+
     updateData('rawMaterials', updatedRM)
     updateData('mixes', newMixes)
+    return true
   }
 
   function openNewMix() {
@@ -119,9 +131,11 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
     } else {
       newMixes = [...mixes, { ...saved, local_id: 'mix_' + Date.now() }]
     }
-    syncAndSave(newMixes)
-    setSlideOpen(false)
-    setEditingMix(null)
+    const ok = syncAndSave(newMixes)
+    if (ok) {
+      setSlideOpen(false)
+      setEditingMix(null)
+    }
   }
 
   function deleteMix(localId) {
@@ -136,9 +150,11 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
     } else {
       newMixes = [...mixes, { ...prepared, local_id: 'mix_' + Date.now() }]
     }
-    syncAndSave(newMixes)
-    setPrepareOpen(false)
-    setPreparingMix(null)
+    const ok = syncAndSave(newMixes)
+    if (ok) {
+      setPrepareOpen(false)
+      setPreparingMix(null)
+    }
   }
 
   // Compute used_kg for a mix from production mix_usages
