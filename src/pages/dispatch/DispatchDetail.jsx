@@ -61,10 +61,10 @@ export default function DispatchDetail() {
   }, [dispatch?.created_by])
 
   useEffect(() => {
-    if (!plant?.id) return
-    supabase.from('customers').select('id, name').eq('plant_id', plant.id).eq('is_deleted', false).order('name')
+    if (!plant?.org_id) return
+    supabase.from('customers').select('id, name').eq('org_id', plant.org_id).eq('is_active', true).order('name')
       .then(({ data }) => { if (data) setCustomers(data) })
-  }, [plant?.id])
+  }, [plant?.org_id])
 
   function formatShortDate(dateStr) {
     if (!dateStr) return ''

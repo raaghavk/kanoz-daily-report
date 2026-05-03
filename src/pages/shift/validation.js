@@ -16,11 +16,6 @@ export function getValidationErrors(reportData) {
   const allMachinesIdle = machines.length > 0 && !hasAnyMachineTiming
   const remarksProvided = (reportData.remarks || '').trim().length > 0
 
-  if (!hasAnyMachineTiming && machines.length > 0 && !allMachinesIdle) {
-    // Some machines exist but none have timing (and not all-idle scenario)
-    errors.push({ step: 2, message: 'Enter timing for at least one machine' })
-  }
-
   // If all machines are idle, require a reason in remarks (Step 9)
   if (allMachinesIdle && !remarksProvided) {
     errors.push({ step: 9, message: 'No machines running — provide a reason in the Remarks field' })

@@ -200,7 +200,7 @@ export default function SupplierList() {
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       {/* Header + Search (sticky) */}
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title="Supplier Database" subtitle="Manage your suppliers" backTo="/more" />
+        <PageHeader title="Supplier Database" subtitle="Manage your suppliers" backTo="/settings" />
 
         {/* Search Bar */}
         <div style={{ padding: '0 20px', marginTop: 12 }}>
