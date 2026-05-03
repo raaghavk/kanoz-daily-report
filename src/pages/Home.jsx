@@ -76,7 +76,7 @@ export default function Home() {
         // Last handover note
         supabase
           .from('shift_reports')
-          .select('handover_notes, shift, date')
+          .select('handover_notes, shift, date, end_time')
           .eq('plant_id', plant.id)
           .eq('is_deleted', false)
           .order('date', { ascending: false })
@@ -224,19 +224,26 @@ export default function Home() {
       {/* Scrollable Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 20px', background: '#fefae0' }}>
         {/* Handover Notes */}
-        {handoverNotes && (
-          <div style={{
-            background: '#fefae0', border: '1.5px solid #e9c46a',
-            borderRadius: 14, padding: '14px 16px', marginBottom: 16
-          }}>
-            <h4 style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: '#d4a373', textTransform: 'uppercase', marginBottom: 4 }}>
-              Shift {handoverNotes.shift === 'A' ? 'B' : 'A'} Handover
-            </h4>
-            <p style={{ fontSize: 13, lineHeight: 1.5, color: '#595c4a' }}>
-              {handoverNotes.handover_notes}
-            </p>
-          </div>
-        )}
+        {handoverNotes && (() => {
+          const d = new Date(handoverNotes.date + 'T00:00')
+          const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+          const handoverShift = handoverNotes.shift === 'A' ? 'B' : 'A'
+          const endTime = handoverNotes.end_time ? handoverNotes.end_time.slice(0, 5) : null
+          const handoverTitle = `${d.getDate()} ${months[d.getMonth()]}${endTime ? ' · ' + endTime : ''} · Shift ${handoverShift}`
+          return (
+            <div style={{
+              background: '#fefae0', border: '1.5px solid #e9c46a',
+              borderRadius: 14, padding: '14px 16px', marginBottom: 16
+            }}>
+              <h4 style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: '#d4a373', marginBottom: 4 }}>
+                {handoverTitle}
+              </h4>
+              <p style={{ fontSize: 13, lineHeight: 1.5, color: '#595c4a' }}>
+                {handoverNotes.handover_notes}
+              </p>
+            </div>
+          )
+        })()}
 
         {/* Stat Cards */}
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: '#8a8d7a', textTransform: 'uppercase', marginBottom: 8 }}>

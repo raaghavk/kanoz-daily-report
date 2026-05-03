@@ -192,6 +192,33 @@ export default function DispatchForm() {
     }
   }
 
+  const { data: latestPelletStock = {} } = useQuery({
+    queryKey: ['latestPelletStock', plant?.id],
+    queryFn: async () => {
+      const { data: latestReport } = await supabase
+        .from('shift_reports')
+        .select('id')
+        .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
+        .order('date', { ascending: false })
+        .order('shift', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!latestReport) return {}
+      const { data: stocks } = await supabase
+        .from('pellet_stock')
+        .select('pellet_type_id, closing_mt')
+        .eq('shift_report_id', latestReport.id)
+      const stockMap = {}
+      for (const s of (stocks || [])) {
+        stockMap[s.pellet_type_id] = parseFloat(s.closing_mt) || 0
+      }
+      return stockMap
+    },
+    enabled: !!plant?.id,
+    staleTime: 2 * 60 * 1000,
+  })
+
   const { data: activeShiftReport } = useQuery({
     queryKey: ['activeShiftReport', plant?.id, today],
     queryFn: async () => {
@@ -272,6 +299,17 @@ export default function DispatchForm() {
     if (!form.driver_phone.trim()) { showToast('Driver phone is required', 'error'); return }
     if (!/^\d{10}$/.test(form.driver_phone.trim())) { showToast('Driver phone must be 10 digits', 'error'); return }
     if (form.pellets.some(p => !p.pellet_type_id || !p.quantity_mt)) { showToast('Fill all pellet entries', 'error'); return }
+
+    // Pellet stock validation — prevent dispatching more than available closing stock
+    for (const p of form.pellets) {
+      if (!p.pellet_type_id || !p.quantity_mt) continue
+      const available = latestPelletStock[p.pellet_type_id]
+      if (available !== undefined && parseFloat(p.quantity_mt) > available) {
+        const typeName = pelletTypes.find(pt => pt.id === p.pellet_type_id)?.name || 'Pellet'
+        showToast(`${typeName}: only ${available.toFixed(2)} MT available in closing stock`, 'error')
+        return
+      }
+    }
     if (!form.invoice_number.trim()) { showToast('Invoice number is required', 'error'); return }
     if (!form.loading_time) { showToast('Loading time is required', 'error'); return }
     if (!form.dispatch_time) { showToast('Dispatch time is required', 'error'); return }
@@ -737,37 +775,51 @@ export default function DispatchForm() {
                 Pellet Details <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {form.pellets.map((pellet, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: 8 }}>
-                    <select
-                      value={pellet.pellet_type_id}
-                      onChange={e => updatePellet(idx, 'pellet_type_id', e.target.value)}
-                      style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
-                    >
-                      <option value="">Pellet type</option>
-                      {pelletTypes.map(pt => (
-                        <option key={pt.id} value={pt.id}>{pt.name}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      placeholder="MT"
-                      min="0"
-                      step="0.1"
-                      value={pellet.quantity_mt}
-                      onChange={e => updatePellet(idx, 'quantity_mt', e.target.value)}
-                      style={{ width: 80, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
-                    />
-                    {form.pellets.length > 1 && (
-                      <button
-                        onClick={() => removePelletRow(idx)}
-                        style={{ padding: '10px 12px', background: '#FFEBEE', color: '#D32F2F', borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                ))}
+                {form.pellets.map((pellet, idx) => {
+                  const available = pellet.pellet_type_id ? latestPelletStock[pellet.pellet_type_id] : undefined
+                  const enteredQty = parseFloat(pellet.quantity_mt) || 0
+                  const exceeds = available !== undefined && enteredQty > available
+                  return (
+                    <div key={idx}>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <select
+                          value={pellet.pellet_type_id}
+                          onChange={e => updatePellet(idx, 'pellet_type_id', e.target.value)}
+                          style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+                        >
+                          <option value="">Pellet type</option>
+                          {pelletTypes.map(pt => (
+                            <option key={pt.id} value={pt.id}>{pt.name}</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          placeholder="MT"
+                          min="0"
+                          step="0.1"
+                          value={pellet.quantity_mt}
+                          onChange={e => updatePellet(idx, 'quantity_mt', e.target.value)}
+                          style={{ width: 80, padding: '10px 12px', borderRadius: 12, border: `1.5px solid ${exceeds ? '#D32F2F' : '#e5ddd0'}`, fontSize: 14, outline: 'none' }}
+                        />
+                        {form.pellets.length > 1 && (
+                          <button
+                            onClick={() => removePelletRow(idx)}
+                            style={{ padding: '10px 12px', background: '#FFEBEE', color: '#D32F2F', borderRadius: 12, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                      {available !== undefined && pellet.quantity_mt && (
+                        <div style={{ fontSize: 11, marginTop: 4, color: exceeds ? '#D32F2F' : '#2d6a4f', fontWeight: 600 }}>
+                          {exceeds
+                            ? `⚠ Only ${available.toFixed(2)} MT available`
+                            : `✓ ${available.toFixed(2)} MT available`}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
               <button
                 onClick={addPelletRow}

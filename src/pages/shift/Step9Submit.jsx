@@ -14,6 +14,7 @@ export default memo(function Step9Submit({ data, updateData }) {
   const totalProd = data.production.reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
   const totalDispatches = Object.values(data.dispatchTotals || {}).reduce((sum, qty) => sum + (parseFloat(qty) || 0), 0)
   const totalIssues = data.issues.length
+  const allMachinesIdle = (data.machines || []).length > 0 && !(data.machines || []).some(m => m.from_time && m.to_time)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -44,15 +45,23 @@ export default memo(function Step9Submit({ data, updateData }) {
         />
       </div>
 
-      {/* Remarks */}
+      {/* Remarks — required if all machines idle */}
+      {allMachinesIdle && (
+        <div style={{ background: '#FFF7ED', border: '1.5px solid #F59E0B', borderRadius: 14, padding: '12px 14px', fontSize: 13, color: '#92400E', fontWeight: 600 }}>
+          ⚠️ No machines are running. Please provide a reason below — this is required to submit.
+        </div>
+      )}
       <div>
-        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#595c4a', marginBottom: 6 }}>Remarks (Optional)</label>
+        <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: allMachinesIdle ? '#D32F2F' : '#595c4a', marginBottom: 6 }}>
+          {allMachinesIdle ? 'Reason for No Production' : 'Remarks (Optional)'}
+          {allMachinesIdle && <span style={{ color: '#D32F2F' }}> *</span>}
+        </label>
         <textarea
           value={data.remarks}
           onChange={e => updateData('remarks', e.target.value)}
-          placeholder="Any additional notes..."
-          rows={2}
-          style={{ width: '100%', padding: '10px 14px', borderRadius: 14, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', resize: 'none' }}
+          placeholder={allMachinesIdle ? 'e.g., Power outage, maintenance day, raw material shortage...' : 'Any additional notes...'}
+          rows={allMachinesIdle ? 3 : 2}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: 14, border: `1.5px solid ${allMachinesIdle ? '#D32F2F' : '#e5ddd0'}`, fontSize: 14, outline: 'none', resize: 'none' }}
         />
       </div>
 

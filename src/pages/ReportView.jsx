@@ -5,7 +5,7 @@ import { showToast } from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
 import { exportShiftReportPDF } from '../lib/pdfExport'
-import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, FileText, RefreshCw } from 'lucide-react'
+import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, FileText, RefreshCw, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
 export default function ReportView() {
@@ -22,6 +22,7 @@ export default function ReportView() {
   const [issues, setIssues] = useState([])
   const [mixes, setMixes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [lightboxUrl, setLightboxUrl] = useState(null)
 
   useEffect(() => {
     if (id) {
@@ -623,8 +624,16 @@ export default function ReportView() {
                     </div>
                     <p style={{ fontSize: 12, color: '#595c4a', marginTop: 4 }}>{issue.description}</p>
                     {issue.photo_url && (
-                      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 4, color: "#1E3A5F", fontSize: 10, fontWeight: 500 }}>
-                        <Eye size={12} /> Photo attached
+                      <div style={{ marginTop: 8 }}>
+                        <img
+                          src={issue.photo_url}
+                          alt="Issue photo"
+                          onClick={() => setLightboxUrl(issue.photo_url)}
+                          style={{ width: '100%', maxHeight: 140, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', border: '1.5px solid #e5ddd0' }}
+                        />
+                        <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 4, color: '#595c4a', fontSize: 10 }}>
+                          <Eye size={10} /> Tap to view full photo
+                        </div>
                       </div>
                     )}
                   </div>
@@ -696,6 +705,38 @@ export default function ReportView() {
           <Trash2 size={14} /> Delete
         </button>
       </div>
+      )}
+
+      {/* Photo Lightbox */}
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 16,
+          }}
+        >
+          <button
+            onClick={() => setLightboxUrl(null)}
+            style={{
+              position: 'absolute', top: 16, right: 16,
+              width: 40, height: 40, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.2)', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', zIndex: 10000,
+            }}
+          >
+            <X size={22} color="white" />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Issue photo"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8 }}
+          />
+        </div>
       )}
     </div>
   )
