@@ -735,7 +735,7 @@ export default function PurchaseForm() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #e5ddd0' }}>
               <span style={{ fontSize: 13, color: '#595c4a' }}>Total Charges</span>
-              <span style={{ fontWeight: 700, color: '#2c2c2c' }}>₹{((parseFloat(formData.loading_charges) || 0) + (parseFloat(formData.unloading_charges) || 0) + (parseFloat(formData.transport_charges) || 0)).toFixed(2)}</span>
+              <span style={{ fontWeight: 700, color: '#2c2c2c' }}>₹{((parseFloat(formData.loading_charges) || 0) + (parseFloat(formData.unloading_charges) || 0) + (parseFloat(formData.transport_charges) || 0) + (parseFloat(formData.other_charges) || 0)).toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#e8f0ec', borderRadius: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Total Amount</span>

@@ -305,7 +305,7 @@ export default function ShiftWizard() {
 
     if (machinesRes.data) {
       updateData('machines', machinesRes.data.map(m => ({
-        id: m.id, name: m.name, from_time: '', to_time: '', breakdown_hrs: 0, production_hours: 0, remarks: '',
+        id: m.id, name: m.name, did_not_run: true, from_time: '', to_time: '', breakdown_hrs: 0, production_hours: 0, remarks: '',
       })))
     }
     if (materialsRes.data) {
@@ -480,8 +480,10 @@ export default function ShiftWizard() {
         updateData('mixes', loadedMixes)
 
         // Load production entries with mix_usages restored (Step 4)
+        // Only load entries for machines that actually ran (exclude did_not_run)
         if (machProd.data?.length) {
           const productionEntries = machProd.data
+            .filter(mp => !mp.did_not_run)
             .map(mp => {
               // Restore mix_usages from shift_mix_machine_usage
               const mixUsages = loadedMixes.flatMap(mix =>
@@ -500,8 +502,9 @@ export default function ShiftWizard() {
           if (productionEntries.length > 0) updateData('production', productionEntries)
         }
       } else if (machProd.data?.length) {
-        // No mixes — load production entries without mix_usages
+        // No mixes — load production entries without mix_usages (exclude did_not_run)
         const productionEntries = machProd.data
+          .filter(mp => !mp.did_not_run)
           .map(mp => ({
             id: mp.id,
             machine_id: mp.machine_id,

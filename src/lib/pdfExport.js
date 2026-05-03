@@ -337,9 +337,9 @@ export async function exportPurchasePDF(purchase, createdByName) {
   ])
 
   y = kpiRow(doc, y, [
-    { label: 'QUANTITY',      main: qty.toLocaleString('en-IN'),   unit: 'kg' },
-    { label: 'TOTAL AMOUNT',  main: '₹' + totalAmt.toLocaleString('en-IN'), unit: '' },
-    { label: 'AVG COST / KG', main: '₹' + avgRate,                unit: '' },
+    { label: 'QUANTITY',      main: qty.toLocaleString('en-IN'),      unit: 'kg' },
+    { label: 'TOTAL AMOUNT',  main: 'Rs.' + totalAmt.toLocaleString('en-IN'), unit: '' },
+    { label: 'AVG COST / KG', main: 'Rs.' + avgRate,                 unit: '' },
   ])
 
   y = secHead(doc, y, 'WEIGHT & QUALITY')
@@ -350,12 +350,14 @@ export async function exportPurchasePDF(purchase, createdByName) {
   ])
 
   y = secHead(doc, y, 'COST BREAKDOWN')
+  const otherExp = Math.round(purchase.other_expense || purchase.other_charges || 0)
   const costRows = [
-    ['Rate per kg', '₹' + parseFloat(purchase.rate_per_kg || 0).toFixed(2)],
-    ['RM Amount',   '₹' + Math.round(purchase.total_rm_amount || 0).toLocaleString('en-IN')],
-    ['Loading',     '₹' + Math.round(purchase.loading_expense   || purchase.loading_charges   || 0).toLocaleString('en-IN')],
-    ['Unloading',   '₹' + Math.round(purchase.unloading_expense || purchase.unloading_charges || 0).toLocaleString('en-IN')],
-    ['Transport',   '₹' + Math.round(purchase.transport_expense || purchase.transport_charges  || 0).toLocaleString('en-IN')],
+    ['Rate per kg', 'Rs.' + parseFloat(purchase.rate_per_kg || 0).toFixed(2)],
+    ['RM Amount',   'Rs.' + Math.round(purchase.total_rm_amount || 0).toLocaleString('en-IN')],
+    ['Loading',     'Rs.' + Math.round(purchase.loading_expense   || purchase.loading_charges   || 0).toLocaleString('en-IN')],
+    ['Unloading',   'Rs.' + Math.round(purchase.unloading_expense || purchase.unloading_charges || 0).toLocaleString('en-IN')],
+    ['Transport',   'Rs.' + Math.round(purchase.transport_expense || purchase.transport_charges  || 0).toLocaleString('en-IN')],
+    ...(otherExp > 0 ? [['Other', 'Rs.' + otherExp.toLocaleString('en-IN')]] : []),
   ]
   y = stdTable(doc, y, ['ITEM', 'AMOUNT'], [130, 50], costRows, { aligns: ['left', 'right'] })
 
@@ -363,9 +365,9 @@ export async function exportPurchasePDF(purchase, createdByName) {
   fillC(doc, GREEN); doc.rect(m, y, cw, 8, 'F')
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9); setC(doc, WHITE)
   doc.text('Total Amount', m + 3, y + 5.5)
-  const totAmtStr = '₹' + totalAmt.toLocaleString('en-IN')
+  const totAmtStr = 'Rs.' + totalAmt.toLocaleString('en-IN')
   const taw = doc.getTextWidth(totAmtStr)
-  doc.text(totAmtStr, m + cw - taw - 2, y + 5.5)
+  doc.text(totAmtStr, m + cw - taw - 3, y + 5.5)
   y += 12
 
   y = secHead(doc, y, 'NOTES / REMARKS')
@@ -434,7 +436,8 @@ export async function exportShiftReportPDF(report, data) {
 
   // ── MACHINE TIMINGS ──────────────────────────────────────────────────────
   y = secHead(doc, y, 'MACHINE TIMINGS')
-  const machRows = (data.machineProduction || []).map(mp => {
+  const activeMachines = (data.machineProduction || []).filter(mp => !mp.did_not_run)
+  const machRows = activeMachines.map(mp => {
     const hrs  = parseFloat(mp.hours_run)      || 0
     const tot  = parseFloat(mp.total_hours)    || hrs
     const prod = parseFloat(mp.production_mt)  || 0
@@ -450,7 +453,7 @@ export async function exportShiftReportPDF(report, data) {
 
   // ── PRODUCTION ───────────────────────────────────────────────────────────
   y = secHead(doc, y, 'PRODUCTION')
-  const prodRows = (data.machineProduction || []).map(mp => {
+  const prodRows = activeMachines.map(mp => {
     const prod = parseFloat(mp.production_mt) || 0
     const hrs  = parseFloat(mp.hours_run)     || 0
     const avg  = hrs > 0 ? (prod / hrs).toFixed(2) : '—'

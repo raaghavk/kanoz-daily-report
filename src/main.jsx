@@ -7,11 +7,17 @@ import { ToastProvider } from './components/Toast'
 import App from './App'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
+import { supabase } from './lib/supabase'
+
+// Warm up Supabase connection immediately on app load to avoid cold-start delay
+// This lightweight ping fires before any UI renders
+supabase.from('plants').select('id').limit(1).then(() => {})
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 2 * 60 * 1000,
+      staleTime: 5 * 60 * 1000,   // 5 min — avoid refetch on every nav
+      gcTime: 10 * 60 * 1000,     // 10 min — keep data in cache
       retry: 1,
     },
   },

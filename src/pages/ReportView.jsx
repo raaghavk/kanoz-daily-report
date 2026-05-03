@@ -254,11 +254,14 @@ export default function ReportView() {
   const endDateLabel = formatShortDate(report.shift_end_date || report.date)
   const showBothDates = (report.shift_start_date || report.date) !== (report.shift_end_date || report.date)
 
-  const machineTimings = machineProduction.map(m => ({
-    name: m.machines?.name || 'Unknown',
-    hours_run: m.hours_run || 0,
-    production_mt: m.production_mt || 0,
-  }))
+  // Only show machines that actually ran (exclude did_not_run machines)
+  const machineTimings = machineProduction
+    .filter(m => !m.did_not_run)
+    .map(m => ({
+      name: m.machines?.name || 'Unknown',
+      hours_run: m.hours_run || 0,
+      production_mt: m.production_mt || 0,
+    }))
 
   // Calculate live dispatch totals from actual dispatch_pellets (overrides stale DB snapshot).
   // This handles the case where dispatches are added after the report was saved.
@@ -400,8 +403,8 @@ export default function ReportView() {
               </tr>
             </thead>
             <tbody>
-              {machineProduction.length > 0 ? (
-                machineProduction.map(m => (
+              {machineProduction.filter(m => !m.did_not_run).length > 0 ? (
+                machineProduction.filter(m => !m.did_not_run).map(m => (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.machines?.name || 'N/A'}</td>
                     <td style={{ padding: '10px 12px', color: '#595c4a', fontSize: 11 }}>{m.pellet_type_name || '-'}</td>
