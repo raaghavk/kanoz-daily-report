@@ -36,6 +36,12 @@ const SparePartsPurchaseHistoryPage = lazy(() => import('./pages/spareparts/Spar
 const SparePartsUsageHistoryPage = lazy(() => import('./pages/spareparts/SparePartsUsageHistoryPage'))
 const ReorderRequestsPage = lazy(() => import('./pages/spareparts/ReorderRequestsPage'))
 const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
+const AssetsHome = lazy(() => import('./pages/assets/AssetsHome'))
+const AssetCatalogue = lazy(() => import('./pages/assets/AssetCatalogue'))
+const AddAsset = lazy(() => import('./pages/assets/AddAsset'))
+const AssetDetail = lazy(() => import('./pages/assets/AssetDetail'))
+const LogEvent = lazy(() => import('./pages/assets/LogEvent'))
+const AssetByCode = lazy(() => import('./pages/assets/AssetByCode'))
 
 function LoadingFallback() {
   return (
@@ -127,6 +133,12 @@ export default function App() {
         <Route path="spare-parts/purchase-history" element={<PermissionGuard action="view_spare_parts"><SparePartsPurchaseHistoryPage /></PermissionGuard>} />
         <Route path="spare-parts/usage-history" element={<PermissionGuard action="view_spare_parts"><SparePartsUsageHistoryPage /></PermissionGuard>} />
         <Route path="spare-parts/reorder" element={<PermissionGuard action="view_spare_parts"><ReorderRequestsPage /></PermissionGuard>} />
+        <Route path="assets" element={<PermissionGuard action="view_spare_parts"><AssetsHome /></PermissionGuard>} />
+        <Route path="assets/catalogue" element={<PermissionGuard action="view_spare_parts"><AssetCatalogue /></PermissionGuard>} />
+        <Route path="assets/new" element={<PermissionGuard action="create_spare_parts"><AddAsset /></PermissionGuard>} />
+        <Route path="assets/:id" element={<PermissionGuard action="view_spare_parts"><AssetDetail /></PermissionGuard>} />
+        <Route path="assets/:id/log" element={<PermissionGuard action="create_spare_parts"><LogEvent /></PermissionGuard>} />
+        <Route path="a/:code" element={<PermissionGuard action="view_spare_parts"><AssetByCode /></PermissionGuard>} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
@@ -316,6 +328,7 @@ function SettingsPage() {
           { path: '/customers', emoji: '🏭', label: 'Customers', show: role !== 'purchase_manager' },
           { path: '/transporters', emoji: '🚛', label: 'Transporters', show: role !== 'purchase_manager' },
           { path: '/spare-parts', emoji: '🔧', label: 'Spare Parts', show: can(role, 'view_spare_parts') },
+          { path: '/assets', emoji: '🏷️', label: 'Assets', show: can(role, 'view_spare_parts') },
         ].filter(i => i.show)
         if (!dirItems.length) return null
         return (
