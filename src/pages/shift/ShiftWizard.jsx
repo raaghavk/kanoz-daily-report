@@ -701,7 +701,6 @@ export default function ShiftWizard() {
       if (reportData.diesel && reportData.diesel.length) {
         await supabase.from('equipment_diesel_log').delete().eq('shift_report_id', report.id)
         const dieselRows = reportData.diesel
-          .filter(d => !d.did_not_run)
           .map(d => {
             const openL  = sanitizeNumber(d.opening)
             const addedL = sanitizeNumber(d.added)

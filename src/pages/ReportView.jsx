@@ -34,9 +34,9 @@ export default function ReportView() {
     if (!window.confirm('Are you sure you want to delete this report? This cannot be undone.')) return
     try {
       setDeleting(true)
-      // All child tables (machine_production, raw_material_usage, shift_mixes, etc.)
-      // have ON DELETE CASCADE — just deleting the parent cascades everything.
-      const { error } = await supabase.from('shift_reports').delete().eq('id', id)
+      // Soft delete — keeps data integrity and audit trail.
+      // Child tables remain intact (accessible via shift_report_id if needed).
+      const { error } = await supabase.from('shift_reports').update({ is_deleted: true }).eq('id', id)
       if (error) throw error
       showToast('Report deleted', 'success')
       navigate('/reports')

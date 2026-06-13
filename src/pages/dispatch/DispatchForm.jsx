@@ -227,6 +227,7 @@ export default function DispatchForm() {
         .select('id')
         .eq('plant_id', plant.id)
         .eq('date', today)
+        .eq('is_deleted', false)
         .order('shift', { ascending: false })
         .limit(1)
         .maybeSingle()
