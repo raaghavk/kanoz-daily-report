@@ -7,6 +7,7 @@ import PageHeader from '../../components/PageHeader'
 import { getLocalDate } from '../../lib/dateUtils'
 import { getBrands, saveCustomBrand } from '../../lib/brands'
 import { ASSET_TYPES, CODE_PREFIX } from '../../lib/assets'
+import FilePicker from './FilePicker'
 import QRCode from 'qrcode'
 import { Loader2 } from 'lucide-react'
 
@@ -49,7 +50,7 @@ export default function AddAsset() {
       const { data: aRows, error: aErr } = await supabase.from('assets').insert([{
         org_id: plant.org_id, plant_id: plant.id, code, asset_type: type, name: f.name.trim(),
         make: make || null, rating: f.rating.trim() || null, serial_no: f.serial.trim() || null,
-        new_price: f.cost ? Number(f.cost) : null, warranty_until: f.warranty || null,
+        new_price: f.cost ? Number(f.cost) : null, warranty_until: f.warranty || null, warranty_doc_url: f.warranty_doc || null,
         status: 'in_store', current_location: 'Main Store', is_active: true, notes: f.notes.trim() || null,
         created_by: employee?.id || null,
       }]).select()
@@ -59,7 +60,7 @@ export default function AddAsset() {
       const { error: eErr } = await supabase.from('asset_events').insert([{
         asset_id: asset.id, org_id: plant.org_id, plant_id: plant.id, event_type: 'purchased',
         event_date: f.date || getLocalDate(), cost: f.cost ? Number(f.cost) : null,
-        supplier_id: supplierId, to_location: 'Main Store', note: 'New asset registered',
+        supplier_id: supplierId, to_location: 'Main Store', note: 'New asset registered', photo_url: f.warranty_doc || null,
         recorded_by: employee?.id || null,
       }])
       if (eErr) throw eErr
@@ -116,6 +117,7 @@ export default function AddAsset() {
         <div><div style={lbl}>Purchase cost (₹)</div><input style={inp} inputMode="numeric" placeholder="e.g. 78000" value={f.cost} onChange={e => setF({ ...f, cost: e.target.value })} /></div>
         <div><div style={lbl}>Bought from (supplier)</div><select style={inp} value={f.supplier} onChange={e => setF({ ...f, supplier: e.target.value })}><option value="">Select supplier</option>{suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}<option value="__new">+ Add new supplier</option></select>{f.supplier === '__new' && <input style={{ ...inp, marginTop: 8 }} placeholder="New supplier name (added to shared list)" value={f.supplier_new} onChange={e => setF({ ...f, supplier_new: e.target.value })} />}</div>
         <div><div style={lbl}>Warranty until</div><input type="date" style={inp} value={f.warranty} onChange={e => setF({ ...f, warranty: e.target.value })} /></div>
+        <div><div style={lbl}>Warranty doc / invoice (photo or PDF)</div><FilePicker value={f.warranty_doc} onChange={v => setF({ ...f, warranty_doc: v })} folder="asset-warranty" label="Add photo or PDF" /></div>
         <div><div style={lbl}>Notes</div><input style={inp} placeholder="optional" value={f.notes} onChange={e => setF({ ...f, notes: e.target.value })} /></div>
 
         <button onClick={save} disabled={saving} style={{ width: '100%', padding: 14, borderRadius: 12, background: '#2d6a4f', color: '#fff', fontSize: 15, fontWeight: 800, border: 'none', cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{saving ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Saving…</> : '💾 Save asset & generate QR tag'}</button>

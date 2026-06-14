@@ -42,6 +42,8 @@ const AddAsset = lazy(() => import('./pages/assets/AddAsset'))
 const AssetDetail = lazy(() => import('./pages/assets/AssetDetail'))
 const LogEvent = lazy(() => import('./pages/assets/LogEvent'))
 const AssetByCode = lazy(() => import('./pages/assets/AssetByCode'))
+const ScanAsset = lazy(() => import('./pages/assets/ScanAsset'))
+const AssetSuppliers = lazy(() => import('./pages/assets/AssetSuppliers'))
 
 function LoadingFallback() {
   return (
@@ -135,6 +137,8 @@ export default function App() {
         <Route path="spare-parts/reorder" element={<PermissionGuard action="view_spare_parts"><ReorderRequestsPage /></PermissionGuard>} />
         <Route path="assets" element={<PermissionGuard action="view_spare_parts"><AssetsHome /></PermissionGuard>} />
         <Route path="assets/catalogue" element={<PermissionGuard action="view_spare_parts"><AssetCatalogue /></PermissionGuard>} />
+        <Route path="assets/scan" element={<PermissionGuard action="view_spare_parts"><ScanAsset /></PermissionGuard>} />
+        <Route path="assets/suppliers" element={<PermissionGuard action="view_spare_parts"><AssetSuppliers /></PermissionGuard>} />
         <Route path="assets/new" element={<PermissionGuard action="create_spare_parts"><AddAsset /></PermissionGuard>} />
         <Route path="assets/:id" element={<PermissionGuard action="view_spare_parts"><AssetDetail /></PermissionGuard>} />
         <Route path="assets/:id/log" element={<PermissionGuard action="create_spare_parts"><LogEvent /></PermissionGuard>} />

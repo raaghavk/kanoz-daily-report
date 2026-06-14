@@ -51,3 +51,16 @@ export function cacheForEvent(type, { location, machineId } = {}) {
 
 export const COST_ROLES = ['admin', 'plant_manager', 'accountant']
 export const fmtINR = n => '₹' + Number(n || 0).toLocaleString('en-IN')
+
+// Recompute cached status/location from the full ordered event list (used after edit/undo).
+export function deriveCacheFromLatest(events) {
+  if (!events || !events.length) return { status: 'in_store', current_location: 'Main Store', current_machine_id: null }
+  const last = events[events.length - 1]
+  const t = last.event_type
+  let status = 'running'
+  if (t === 'scrapped') status = 'scrapped'
+  else if (t === 'sent_vendor' || t === 'removed') status = 'in_repair'
+  else if (t === 'moved_store' || t === 'returned' || t === 'purchased' || t === 'repaired') status = 'in_store'
+  else if (t === 'installed') status = 'running'
+  return { status, current_location: last.to_location || last.from_location || null, current_machine_id: t === 'installed' ? (last.machine_id || null) : null }
+}

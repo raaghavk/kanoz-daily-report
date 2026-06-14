@@ -6,6 +6,7 @@ import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { getLocalDate } from '../../lib/dateUtils'
 import { EVENT_TYPES, WORK_TYPES, cacheForEvent } from '../../lib/assets'
+import FilePicker from './FilePicker'
 import { Loader2, CheckCircle } from 'lucide-react'
 
 const STORES = ['Main Store', 'Electrical Store', 'Mill Spares Rack']
@@ -61,6 +62,7 @@ export default function LogEvent() {
         event_type: type, event_date: getLocalDate(),
         recorded_by: employee?.id || null,
         note: form.note?.trim() || null,
+        photo_url: form.photo || null,
       }
       let cacheLoc = asset?.current_location
       if (type === 'installed') { ev.machine_id = form.machine || null; ev.to_location = machine?.name || null; cacheLoc = machine?.name }
@@ -128,6 +130,7 @@ export default function LogEvent() {
         {needWork && <div><div style={lbl}>Work done</div><select style={inp} value={form.work} onChange={e => setForm({ ...form, work: e.target.value })}>{WORK_TYPES.map(w => <option key={w} value={w}>{w}</option>)}</select>{form.work === 'Other' && <input style={{ ...inp, marginTop: 8 }} placeholder="Describe the work done" value={form.work_other || ''} onChange={e => setForm({ ...form, work_other: e.target.value })} />}</div>}
         {needCost && <div><div style={lbl}>Cost (₹)</div><input style={inp} inputMode="numeric" placeholder="e.g. 8500" value={form.cost || ''} onChange={e => setForm({ ...form, cost: e.target.value })} /></div>}
         {isScrap && <div><div style={lbl}>Recovered scrap value (₹) <span style={{ color: '#15803d', fontWeight: 600 }}>· sold as scrap</span></div><input style={inp} inputMode="numeric" placeholder="e.g. 2200" value={form.recovered || ''} onChange={e => setForm({ ...form, recovered: e.target.value })} /></div>}
+        <div><div style={lbl}>Photo / invoice (photo or PDF, optional)</div><FilePicker value={form.photo} onChange={v => setForm({ ...form, photo: v })} folder="asset-events" label="Add photo or PDF" /></div>
         <div><div style={lbl}>Note (optional)</div><input style={inp} placeholder="Anything worth recording…" value={form.note || ''} onChange={e => setForm({ ...form, note: e.target.value })} /></div>
         <button onClick={save} disabled={saving} style={{ width: '100%', padding: 14, borderRadius: 12, background: '#2d6a4f', color: '#fff', fontSize: 15, fontWeight: 800, border: 'none', cursor: saving ? 'not-allowed' : 'pointer' }}>{saving ? 'Saving…' : '✓ Save event'}</button>
       </div>
