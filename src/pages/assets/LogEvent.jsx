@@ -66,7 +66,7 @@ export default function LogEvent() {
       }
       let cacheLoc = asset?.current_location
       if (type === 'installed') { ev.machine_id = form.machine || null; ev.to_location = machine?.name || null; cacheLoc = machine?.name }
-      if (type === 'removed') { ev.from_location = asset?.current_location || machine?.name || null; cacheLoc = ev.from_location }
+      if (type === 'removed') { ev.from_location = asset?.current_location || machine?.name || null; cacheLoc = machine?.name ? ('Off ' + machine.name) : 'Off machine' }
       if (type === 'sent_vendor') { ev.supplier_id = form.supplier || null; ev.to_location = supplier?.name || null; ev.expected_return = form.expected_return || null; cacheLoc = supplier?.name }
       if (type === 'returned') { ev.supplier_id = form.supplier || null; ev.to_location = form.store; ev.work_type = work; ev.cost = form.cost ? Number(form.cost) : null; cacheLoc = form.store }
       if (type === 'repaired') { ev.work_type = work; ev.cost = form.cost ? Number(form.cost) : null }

@@ -38,7 +38,7 @@ export function summarise(events) {
 export function cacheForEvent(type, { location, machineId } = {}) {
   switch (type) {
     case 'installed':   return { status: 'running',   current_location: location || null, current_machine_id: machineId || null }
-    case 'removed':     return { status: 'in_repair',  current_location: location || null, current_machine_id: null }
+    case 'removed':     return { status: 'in_store',   current_location: location || 'Off machine', current_machine_id: null }
     case 'sent_vendor': return { status: 'in_repair',  current_location: location || null, current_machine_id: null }
     case 'returned':    return { status: 'in_store',   current_location: location || 'Store', current_machine_id: null }
     case 'moved_store': return { status: 'in_store',   current_location: location || 'Store', current_machine_id: null }
@@ -59,7 +59,8 @@ export function deriveCacheFromLatest(events) {
   const t = last.event_type
   let status = 'running'
   if (t === 'scrapped') status = 'scrapped'
-  else if (t === 'sent_vendor' || t === 'removed') status = 'in_repair'
+  else if (t === 'sent_vendor') status = 'in_repair'
+  else if (t === 'removed') status = 'in_store'
   else if (t === 'moved_store' || t === 'returned' || t === 'purchased' || t === 'repaired') status = 'in_store'
   else if (t === 'installed') status = 'running'
   return { status, current_location: last.to_location || last.from_location || null, current_machine_id: t === 'installed' ? (last.machine_id || null) : null }
