@@ -79,10 +79,10 @@ export default function AssetsHome() {
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {tile('📷', 'Scan / Find', 'Open an asset by its code', findByCode, '#EEF2FF')}
+              {tile('📷', 'Scan / Find', 'Scan a QR tag or find by code', () => navigate('/assets/scan'), '#EEF2FF')}
               {tile('📦', 'Asset Catalogue', 'Browse, filter & search', () => navigate('/assets/catalogue'), '#e8f0ec')}
               {tile('🏷️', 'Add New Asset', 'Register & print QR tag', () => navigate('/assets/new'), '#FEF3C7')}
-              {tile('🏭', 'Suppliers', 'Suppliers & repair shops', () => navigate('/spare-parts/suppliers'), '#f3e8ff')}
+              {tile('🏭', 'Suppliers', 'Suppliers & repair shops', () => navigate('/assets/suppliers'), '#f3e8ff')}
             </div>
           </>
         )}
