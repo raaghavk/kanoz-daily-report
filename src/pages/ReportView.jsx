@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
-import { exportShiftReportPDF } from '../lib/pdfExport'
 import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, FileText, RefreshCw, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
@@ -176,6 +175,7 @@ export default function ReportView() {
         .from('shift_reports')
         .select('*, plants(name), employees!supervisor_id(name)')
         .eq('id', id)
+        .eq('is_deleted', false)
         .single()
 
       if (reportError) {
@@ -665,7 +665,7 @@ export default function ReportView() {
       {can(employee?.role, 'export') && (
       <div style={{ padding: '0 20px', marginTop: 12 }}>
         <button
-          onClick={() => exportShiftReportPDF(report, { machineProduction, rawMaterials, equipmentDiesel, pelletStock: pelletStockWithLiveDispatch.map(p => ({ ...p, dispatch_mt: p.live_dispatch_mt, closing_mt: p.live_closing_mt })), dispatches, issues, mixes }, report.employees?.name)}
+          onClick={async () => { const { exportShiftReportPDF } = await import('../lib/pdfExport'); exportShiftReportPDF(report, { machineProduction, rawMaterials, equipmentDiesel, pelletStock: pelletStockWithLiveDispatch.map(p => ({ ...p, dispatch_mt: p.live_dispatch_mt, closing_mt: p.live_closing_mt })), dispatches, issues, mixes }, report.employees?.name); }}
           style={{
             width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,

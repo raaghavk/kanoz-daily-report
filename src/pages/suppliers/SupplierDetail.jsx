@@ -57,6 +57,7 @@ export default function SupplierDetail() {
         .select('*')
         .eq('supplier_id', id)
         .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
         .order('date', { ascending: false })
         .limit(10)
 

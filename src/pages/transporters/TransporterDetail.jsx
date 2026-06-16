@@ -49,6 +49,7 @@ export default function TransporterDetail() {
         .from('vehicle_dispatches')
         .select('*, dispatch_pellets(*)')
         .eq('transporter_id', id)
+        .eq('is_deleted', false)
         .order('date', { ascending: false })
         .limit(10)
 

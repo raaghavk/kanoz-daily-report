@@ -41,6 +41,7 @@ export default function CustomerDetail() {
         .from('vehicle_dispatches')
         .select('*, dispatch_pellets(*)')
         .eq('customer_id', id)
+        .eq('is_deleted', false)
         .order('date', { ascending: false })
         .limit(10)
 

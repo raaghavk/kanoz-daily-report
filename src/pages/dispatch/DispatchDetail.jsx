@@ -6,7 +6,6 @@ import { useAuth } from '../../context/AuthContext'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Phone, MessageSquare, Truck, Clock, Timer, Edit3, Save, X, Download } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
-import { exportDispatchPDF } from '../../lib/pdfExport'
 
 export default function DispatchDetail() {
   const { id } = useParams()
@@ -412,7 +411,7 @@ export default function DispatchDetail() {
         {/* PDF + Request Delete row */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={() => exportDispatchPDF(dispatch, createdByName)}
+            onClick={async () => { const { exportDispatchPDF } = await import('../../lib/pdfExport'); exportDispatchPDF(dispatch, createdByName); }}
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               padding: '14px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,

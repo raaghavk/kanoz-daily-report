@@ -74,8 +74,8 @@ export function exportDetailedReportToCSV({
   machineProduction.forEach(m => {
     lines.push(buildCSVRow([
       m.machines?.name || 'N/A',
-      m.pellet_type || 'N/A',
-      m.quantity_mt || 0,
+      m.pellet_type_name || 'N/A',
+      m.production_mt || 0,
     ]))
   })
   lines.push('')
