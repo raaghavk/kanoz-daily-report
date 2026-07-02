@@ -264,23 +264,34 @@ export default function SettingsPage() {
       })()}
       {/* Admin action buttons */}
       {(can(employee?.role, 'manage_users') || can(employee?.role, 'plant_settings')) && (
-        <div style={{ display: 'flex', gap: 8 }}>
-          {can(employee?.role, 'manage_users') && (
-            <button onClick={() => nav('/users')} style={{ flex: 1, padding: '12px 6px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-              Team
-            </button>
-          )}
+        <>
           {can(employee?.role, 'plant_settings') && (
-            <button onClick={() => nav('/admin')} style={{ flex: 1, padding: '12px 6px', background: '#d4a373', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-              Plant Settings
+            <button onClick={() => nav('/dashboard')} style={{
+              width: '100%', padding: '14px 16px', background: '#1b4332', color: 'white',
+              borderRadius: 14, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              <span style={{ fontSize: 16 }}>📊</span> Admin Dashboard
             </button>
           )}
-          {can(employee?.role, 'manage_users') && (
-            <button onClick={() => nav('/delete-requests')} style={{ flex: 1, padding: '12px 6px', background: '#DC2626', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-              Deletions
-            </button>
-          )}
-        </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {can(employee?.role, 'manage_users') && (
+              <button onClick={() => nav('/users')} style={{ flex: 1, padding: '12px 6px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                Team
+              </button>
+            )}
+            {can(employee?.role, 'plant_settings') && (
+              <button onClick={() => nav('/admin')} style={{ flex: 1, padding: '12px 6px', background: '#d4a373', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                Plant Settings
+              </button>
+            )}
+            {can(employee?.role, 'manage_users') && (
+              <button onClick={() => nav('/delete-requests')} style={{ flex: 1, padding: '12px 6px', background: '#DC2626', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                Deletions
+              </button>
+            )}
+          </div>
+        </>
       )}
       {/* ── Notifications — only for admin, plant_manager, supervisor ── */}
       {['admin', 'plant_manager', 'supervisor'].includes(employee?.role) && (

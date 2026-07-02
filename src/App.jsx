@@ -36,6 +36,7 @@ const SparePartsUsageHistoryPage = lazy(() => import('./pages/spareparts/SparePa
 const ReorderRequestsPage = lazy(() => import('./pages/spareparts/ReorderRequestsPage'))
 const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
 const SettingsPage = lazy(() => import('./pages/Settings'))
+const AdminDesktop = lazy(() => import('./pages/admin/AdminDesktop'))
 
 function LoadingFallback() {
   return (
@@ -133,6 +134,14 @@ export default function App() {
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
         <Route path="delete-requests" element={<PermissionGuard action="manage_users"><DeleteRequests /></PermissionGuard>} />
       </Route>
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <PermissionGuard action="plant_settings"><AdminDesktop /></PermissionGuard>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/shift/new"
         element={
