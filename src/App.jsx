@@ -6,6 +6,15 @@ import { can } from './lib/permissions'
 import Layout from './components/Layout'
 
 const Login = lazy(() => import('./pages/Login'))
+const AssetsHome = lazy(() => import('./pages/assets/AssetsHome'))
+const AssetCatalogue = lazy(() => import('./pages/assets/AssetCatalogue'))
+const AddAsset = lazy(() => import('./pages/assets/AddAsset'))
+const AssetDetail = lazy(() => import('./pages/assets/AssetDetail'))
+const LogEvent = lazy(() => import('./pages/assets/LogEvent'))
+const AssetByCode = lazy(() => import('./pages/assets/AssetByCode'))
+const ScanAsset = lazy(() => import('./pages/assets/ScanAsset'))
+const AssetSuppliers = lazy(() => import('./pages/assets/AssetSuppliers'))
+const AdminDashboard = lazy(() => import('./pages/dashboard/AdminDashboard'))
 const Home = lazy(() => import('./pages/Home'))
 const ShiftWizard = lazy(() => import('./pages/shift/ShiftWizard'))
 const PurchaseList = lazy(() => import('./pages/purchase/PurchaseList'))
@@ -128,12 +137,21 @@ export default function App() {
         <Route path="spare-parts/purchase-history" element={<PermissionGuard action="view_spare_parts"><SparePartsPurchaseHistoryPage /></PermissionGuard>} />
         <Route path="spare-parts/usage-history" element={<PermissionGuard action="view_spare_parts"><SparePartsUsageHistoryPage /></PermissionGuard>} />
         <Route path="spare-parts/reorder" element={<PermissionGuard action="view_spare_parts"><ReorderRequestsPage /></PermissionGuard>} />
+        <Route path="assets" element={<PermissionGuard action="view_spare_parts"><AssetsHome /></PermissionGuard>} />
+        <Route path="assets/catalogue" element={<PermissionGuard action="view_spare_parts"><AssetCatalogue /></PermissionGuard>} />
+        <Route path="assets/scan" element={<PermissionGuard action="view_spare_parts"><ScanAsset /></PermissionGuard>} />
+        <Route path="assets/suppliers" element={<PermissionGuard action="view_spare_parts"><AssetSuppliers /></PermissionGuard>} />
+        <Route path="assets/new" element={<PermissionGuard action="create_spare_parts"><AddAsset /></PermissionGuard>} />
+        <Route path="assets/:id" element={<PermissionGuard action="view_spare_parts"><AssetDetail /></PermissionGuard>} />
+        <Route path="assets/:id/log" element={<PermissionGuard action="create_spare_parts"><LogEvent /></PermissionGuard>} />
+        <Route path="a/:code" element={<PermissionGuard action="view_spare_parts"><AssetByCode /></PermissionGuard>} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
         <Route path="delete-requests" element={<PermissionGuard action="manage_users"><DeleteRequests /></PermissionGuard>} />
       </Route>
+      <Route path="/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       <Route
         path="/dashboard"
         element={
