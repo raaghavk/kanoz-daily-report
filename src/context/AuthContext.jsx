@@ -56,15 +56,22 @@ export function AuthProvider({ children }) {
   }
 
   async function signIn(email, password) {
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Connection timed out. Supabase may be blocked by your ISP in India. Try using a VPN.')), 8000)
-    )
     const signInPromise = supabase.auth.signInWithPassword({ email, password })
       .then(({ data, error }) => {
         if (error) throw error
         return data
       })
-    return Promise.race([signInPromise, timeoutPromise])
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('__timeout__'), 12000))
+    const result = await Promise.race([signInPromise, timeoutPromise])
+    if (result === '__timeout__') {
+      // Slow network: the sign-in may still have succeeded in the background.
+      // Check for a session once before showing an error, so the user isn't
+      // told "timed out" while actually being logged in.
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) return { session, user: session.user }
+      throw new Error('Connection timed out. Supabase may be blocked by your ISP in India. Try using a VPN.')
+    }
+    return result
   }
 
   async function switchPlant(newPlantId) {
