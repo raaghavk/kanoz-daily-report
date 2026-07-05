@@ -16,6 +16,7 @@ export default function CustomerList() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [formData, setFormData] = useState({ name: '', address: '' })
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (plant?.org_id) fetchCustomers()
@@ -49,6 +50,8 @@ export default function CustomerList() {
       showToast('Name is required', 'error')
       return
     }
+    if (submitting) return
+    setSubmitting(true)
     try {
       const { data, error } = await supabase.from('customers').insert([{ org_id: plant.org_id, name: formData.name.trim(), address: formData.address.trim() || null, is_active: true }]).select()
       if (error) throw error
@@ -59,6 +62,8 @@ export default function CustomerList() {
     } catch (err) {
       console.error('Error adding customer:', err)
       showToast('Failed to add customer', 'error')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -169,7 +174,7 @@ export default function CustomerList() {
           </div>
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={handleAddCustomer} style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Add Customer</button>
+            <button onClick={handleAddCustomer} disabled={submitting} style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.6 : 1 }}>{submitting ? 'Adding...' : 'Add Customer'}</button>
           </div>
         </div>
       </Modal>

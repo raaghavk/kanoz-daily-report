@@ -169,7 +169,7 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
           <tbody>
             {data.pelletStock.map((ps, idx) => (
               <tr key={ps.id} style={{ borderBottom: '1px solid #e5ddd0' }}>
-                <td style={{ padding: '12px 16px', fontSize: 13, color: '#2c2c2c', fontWeight: 500 }}>{ps.name}</td>
+                <td style={{ padding: '12px 16px', fontSize: 13, color: '#2c2c2c', fontWeight: 500 }}>{ps.name || 'Unknown type'}</td>
                 <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12, color: '#2d6a4f', background: '#e8f0ec' }}>
                   {(ps.opening || 0).toFixed(1)}
                 </td>

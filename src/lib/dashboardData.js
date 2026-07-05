@@ -1,6 +1,8 @@
 import { supabase } from './supabase'
+import { getLocalDate } from './dateUtils'
 
-const iso = d => d.toISOString().slice(0, 10)
+// Local date string (YYYY-MM-DD). Never toISOString() — UTC date is wrong before 5:30am IST.
+const iso = d => getLocalDate(d)
 const num = v => Number(v) || 0
 // include rows where is_deleted is null OR false
 const live = q => q.or('is_deleted.is.null,is_deleted.eq.false')

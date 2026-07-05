@@ -9,6 +9,12 @@ import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 import { supabase } from './lib/supabase'
 
+// Silence debug logging in production builds (keep console.error — errors matter)
+if (import.meta.env.PROD) {
+  console.log = () => {}
+  console.debug = () => {}
+}
+
 // Warm up Supabase connection immediately on app load to avoid cold-start delay
 // This lightweight ping fires before any UI renders
 supabase.from('plants').select('id').limit(1).then(() => {})

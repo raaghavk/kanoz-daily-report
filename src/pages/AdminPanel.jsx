@@ -39,6 +39,7 @@ export default function AdminPanel() {
   // Per-plant GCV grade threshold (High GCV vs Low GCV cutoff)
   const [thresholdDraft, setThresholdDraft] = useState('')
   const [savingThreshold, setSavingThreshold] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     const sel = plants.find(p => p.id === selectedPlantId)
@@ -140,6 +141,8 @@ export default function AdminPanel() {
       showToast('Name is required', 'error')
       return
     }
+    if (busy) return
+    setBusy(true)
     const section = SECTIONS.find(s => s.key === sectionKey)
     const payload = { plant_id: selectedPlantId, name: newItemName.trim(), is_active: true }
     if (section.hasSort) {
@@ -147,6 +150,7 @@ export default function AdminPanel() {
       payload.sort_order = existing.length + 1
     }
     const { error } = await supabase.from(section.table).insert(payload)
+    setBusy(false)
     if (error) {
       showToast('Failed to add: ' + error.message, 'error')
       return
@@ -194,11 +198,14 @@ export default function AdminPanel() {
       showToast('Plant name is required', 'error')
       return
     }
+    if (busy) return
+    setBusy(true)
     const { data: newPlant, error } = await supabase
       .from('plants')
       .insert({ org_id: plant?.org_id, name: newPlantName.trim(), code: newPlantName.trim().toLowerCase().replace(/\s+/g, '-') })
       .select()
       .single()
+    setBusy(false)
     if (error) {
       showToast('Failed to add plant: ' + error.message, 'error')
       return
@@ -298,7 +305,7 @@ export default function AdminPanel() {
               autoFocus
               style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none' }}
             />
-            <button onClick={addPlant} style={{ padding: '8px 12px', background: '#2d6a4f', color: 'white', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Add</button>
+            <button onClick={addPlant} disabled={busy} style={{ padding: '8px 12px', background: '#2d6a4f', color: 'white', borderRadius: 8, border: 'none', cursor: busy ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, opacity: busy ? 0.6 : 1 }}>Add</button>
             <button onClick={() => { setAddingPlant(false); setNewPlantName('') }} style={{ padding: '8px 12px', background: '#fefae0', color: '#595c4a', borderRadius: 8, border: '1px solid #e5ddd0', cursor: 'pointer', fontSize: 12 }}>Cancel</button>
           </div>
         ) : (
@@ -458,7 +465,8 @@ export default function AdminPanel() {
                         />
                         <button
                           onClick={() => addItem(section.key)}
-                          style={{ padding: '8px 12px', background: '#2d6a4f', color: 'white', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
+                          disabled={busy}
+                          style={{ padding: '8px 12px', background: '#2d6a4f', color: 'white', borderRadius: 8, border: 'none', cursor: busy ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, opacity: busy ? 0.6 : 1 }}
                         >
                           Add
                         </button>

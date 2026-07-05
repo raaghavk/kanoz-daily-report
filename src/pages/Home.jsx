@@ -13,7 +13,7 @@ export default function Home() {
   const { employee, plant } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { containerRef, PullIndicator } = usePullToRefresh(useCallback(() => queryClient.invalidateQueries(), [queryClient]))
+  const { containerRef, PullIndicator } = usePullToRefresh(useCallback(() => queryClient.invalidateQueries({ refetchType: 'active' }), [queryClient]))
   const [showProductionModal, setShowProductionModal] = useState(false)
   const [showTrucksModal, setShowTrucksModal] = useState(false)
   const [showIssuesModal, setShowIssuesModal] = useState(false)

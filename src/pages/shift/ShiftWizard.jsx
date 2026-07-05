@@ -111,16 +111,16 @@ export default function ShiftWizard() {
     setReportData(prev => ({ ...prev, [key]: value }))
   }, [])
 
-  // Save wizard state to sessionStorage (called before navigating away)
+  // Save wizard state to localStorage (survives app close; iOS clears sessionStorage aggressively)
   const saveWizardState = useCallback(() => {
     try {
-      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId, savedAt: Date.now() }))
+      localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId, savedAt: Date.now() }))
     } catch (e) {
       console.error('Failed to save wizard state:', e)
     }
   }, [reportData, step, reportId])
 
-  // Restore from sessionStorage if returning from dispatch
+  // Restore from localStorage if returning from dispatch
   const [initDone, setInitDone] = useState(false)
   const [showResumePrompt, setShowResumePrompt] = useState(false)
   const [pendingRestore, setPendingRestore] = useState(null)
@@ -129,14 +129,14 @@ export default function ShiftWizard() {
     if (editId) { setInitDone(true); return }
     const returnToStep = location.state?.returnToStep
     try {
-      const saved = sessionStorage.getItem(WIZARD_STORAGE_KEY)
+      const saved = localStorage.getItem(WIZARD_STORAGE_KEY)
       if (saved) {
         const parsed = JSON.parse(saved)
         const { reportData: savedData, step: savedStep, reportId: savedId, savedAt } = parsed
         if (savedData && (savedData.date || savedData.machines?.length > 0)) {
           const now = Date.now()
-          const twelveHours = 12 * 60 * 60 * 1000
-          const isExpired = savedAt && (now - savedAt > twelveHours)
+          const maxDraftAge = 24 * 60 * 60 * 1000
+          const isExpired = savedAt && (now - savedAt > maxDraftAge)
           const today = getLocalDate()
           const savedDate = savedData.shift_start_date || savedData.date
           const isDifferentDay = savedDate && savedDate !== today
@@ -147,6 +147,13 @@ export default function ShiftWizard() {
             setStep(returnToStep)
             if (savedId) setReportId(savedId)
             setRestoredFromStorage(true)
+            setInitDone(true)
+            return
+          }
+
+          // Discard stale drafts (older than 24h) instead of prompting
+          if (isExpired) {
+            localStorage.removeItem(WIZARD_STORAGE_KEY)
             setInitDone(true)
             return
           }
@@ -177,7 +184,7 @@ export default function ShiftWizard() {
   }, [pendingRestore])
 
   const handleStartFresh = useCallback(() => {
-    sessionStorage.removeItem(WIZARD_STORAGE_KEY)
+    localStorage.removeItem(WIZARD_STORAGE_KEY)
     setShowResumePrompt(false)
     setPendingRestore(null)
   }, [])
@@ -193,11 +200,11 @@ export default function ShiftWizard() {
     }
   }, [plant, initDone, restoredFromStorage]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-save wizard state to sessionStorage on changes (so it survives navigation)
+  // Auto-save wizard state to localStorage on changes (so it survives navigation/app close)
   useEffect(() => {
     if (!initDone || editId) return
     try {
-      sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId, savedAt: Date.now() }))
+      localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify({ reportData, step, reportId, savedAt: Date.now() }))
     } catch { /* ignore */ }
   }, [reportData, step, reportId, initDone, editId])
 
@@ -213,7 +220,7 @@ export default function ShiftWizard() {
     function saveOnHide() {
       try {
         const payload = { ...stateRef.current, savedAt: Date.now() }
-        sessionStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(payload))
+        localStorage.setItem(WIZARD_STORAGE_KEY, JSON.stringify(payload))
       } catch { /* ignore */ }
     }
     function handleVisChange() { if (document.hidden) saveOnHide() }
@@ -445,6 +452,22 @@ export default function ShiftWizard() {
             closing: psData ? parseFloat(psData.closing_mt) || 0 : 0,
           }
         })
+        // Keep stock rows whose pellet type no longer resolves (deleted/deactivated type)
+        // so they show with their raw name instead of being silently dropped
+        const knownTypeIds = new Set(pelletTypesRes.data.map(p => p.id))
+        for (const ps of (pStock.data || [])) {
+          if (ps.pellet_type_id && !knownTypeIds.has(ps.pellet_type_id)) {
+            pelletRows.push({
+              id: ps.pellet_type_id,
+              name: ps.pellet_types?.name || 'Unknown type',
+              opening: parseFloat(ps.opening_mt) || 0,
+              production: parseFloat(ps.production_mt) || 0,
+              dispatch: parseFloat(ps.dispatch_mt) || 0,
+              wastage: parseFloat(ps.wastage_mt) || 0,
+              closing: parseFloat(ps.closing_mt) || 0,
+            })
+          }
+        }
         updateData('pelletStock', pelletRows)
       }
 
@@ -860,7 +883,7 @@ export default function ShiftWizard() {
         // Non-critical — don't fail the whole save
       }
 
-      sessionStorage.removeItem(WIZARD_STORAGE_KEY)
+      localStorage.removeItem(WIZARD_STORAGE_KEY)
       showToast(editId ? 'Report updated!' : 'Report submitted!', 'success')
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['reports'] })
@@ -962,7 +985,7 @@ export default function ShiftWizard() {
         onBack={() => {
           if (step === 1) {
             if (window.confirm('Stop editing? Any unsaved changes will be lost.')) {
-              sessionStorage.removeItem(WIZARD_STORAGE_KEY)
+              localStorage.removeItem(WIZARD_STORAGE_KEY)
               navigate('/')
             }
           } else {

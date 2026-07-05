@@ -9,6 +9,7 @@ export default function usePullToRefresh(onRefresh) {
   const THRESHOLD = 80
 
   const handleTouchStart = useCallback((e) => {
+    if (refreshing.current) return
     const container = containerRef.current
     if (!container || container.scrollTop > 0) return
     startY.current = e.touches[0].clientY

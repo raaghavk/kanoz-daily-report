@@ -16,6 +16,7 @@ export default function TransporterList() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [formData, setFormData] = useState({ name: '', phone: '', address: '' })
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (plant?.org_id) fetchTransporters()
@@ -49,6 +50,8 @@ export default function TransporterList() {
       showToast('Name and phone are required', 'error')
       return
     }
+    if (submitting) return
+    setSubmitting(true)
     try {
       const phoneWithPrefix = '+91' + formData.phone.replace(/^\+91/, '').trim()
       const { data, error } = await supabase.from('transporters').insert([{ org_id: plant.org_id, name: formData.name.trim(), phone: phoneWithPrefix, address: formData.address.trim() || null, is_active: true }]).select()
@@ -60,6 +63,8 @@ export default function TransporterList() {
     } catch (err) {
       console.error('Error adding transporter:', err)
       showToast('Failed to add transporter', 'error')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -175,7 +180,7 @@ export default function TransporterList() {
           </div>
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={handleAddTransporter} style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Add Transporter</button>
+            <button onClick={handleAddTransporter} disabled={submitting} style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.6 : 1 }}>{submitting ? 'Adding...' : 'Add Transporter'}</button>
           </div>
         </div>
       </Modal>
