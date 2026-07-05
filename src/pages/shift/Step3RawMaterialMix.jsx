@@ -70,12 +70,22 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
     loadPurchases()
   }, [plant?.id, data.shift_start_date]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync rawMaterials.used from mix ingredients, then save both.
+  // This-shift RM consumption for a mix. Carried-over mixes keep their recipe
+  // in `ingredients`, but raw material is only consumed for batches prepared
+  // THIS shift — tracked in `consumed_ingredients`. Falls back gracefully for
+  // drafts saved before consumed_ingredients existed.
+  function getConsumedIngredients(mix) {
+    if (Array.isArray(mix.consumed_ingredients)) return mix.consumed_ingredients
+    if (mix.isCarryForward) return (parseFloat(mix.prepared_kg) || 0) > 0 ? (mix.ingredients || []) : []
+    return mix.ingredients || []
+  }
+
+  // Sync rawMaterials.used from this-shift mix consumption, then save both.
   // Returns true if saved successfully, false if blocked by negative stock.
   function syncAndSave(newMixes) {
     const rmUsed = {}
     newMixes.forEach(mix => {
-      ;(mix.ingredients || []).forEach(ing => {
+      getConsumedIngredients(mix).forEach(ing => {
         if (ing.raw_material_type_id) {
           rmUsed[ing.raw_material_type_id] = (rmUsed[ing.raw_material_type_id] || 0) + (parseFloat(ing.quantity_kg) || 0)
         }
@@ -124,7 +134,9 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
 
   function saveMix(mixForm) {
     const prepared_kg = (mixForm.ingredients || []).reduce((s, i) => s + (parseFloat(i.quantity_kg) || 0), 0)
-    const saved = { ...mixForm, prepared_kg }
+    // Creating/editing a mix with a recipe is its first preparation — the
+    // recipe quantities are consumed from this shift's raw material stock.
+    const saved = { ...mixForm, prepared_kg, consumed_ingredients: (mixForm.ingredients || []).map(i => ({ ...i })) }
     let newMixes
     if (mixForm.local_id && mixes.some(m => m.local_id === mixForm.local_id)) {
       newMixes = mixes.map(m => m.local_id === mixForm.local_id ? saved : m)
@@ -493,7 +505,7 @@ function PreparePanel({ mix, onSave, onClose }) {
   const scaleFactor = recipeTotal > 0 && batchSize ? parseFloat(batchSize) / recipeTotal : 1
 
   function handleReset() {
-    onSave({ ...mix, ingredients: (mix.recipeIngredients || []).map(i => ({ ...i })), prepared_kg: 0 })
+    onSave({ ...mix, ingredients: (mix.recipeIngredients || []).map(i => ({ ...i })), consumed_ingredients: [], prepared_kg: 0 })
   }
 
   function handlePrepare() {
@@ -504,10 +516,22 @@ function PreparePanel({ mix, onSave, onClose }) {
       quantity_kg: parseFloat((parseFloat(ing.quantity_kg) * scaleFactor).toFixed(2))
     }))
 
+    // Accumulate this batch onto any batches already prepared this shift
+    const consumed = (Array.isArray(mix.consumed_ingredients) ? mix.consumed_ingredients : []).map(i => ({ ...i }))
+    scaledIngredients.forEach(ing => {
+      const existing = consumed.find(c => c.raw_material_type_id === ing.raw_material_type_id)
+      if (existing) {
+        existing.quantity_kg = parseFloat(((parseFloat(existing.quantity_kg) || 0) + ing.quantity_kg).toFixed(2))
+      } else {
+        consumed.push({ ...ing })
+      }
+    })
+
     const prepared = {
       ...mix,
-      ingredients: scaledIngredients,
-      prepared_kg: parseFloat(batchSize) || 0,
+      ingredients: consumed.map(i => ({ ...i })),
+      consumed_ingredients: consumed,
+      prepared_kg: (parseFloat(mix.prepared_kg) || 0) + (parseFloat(batchSize) || 0),
     }
     onSave(prepared)
   }

@@ -286,6 +286,7 @@ export default function ShiftWizard() {
           type: m.type,
           opening_kg: parseFloat(m.closing_kg) || 0,
           prepared_kg: 0,
+          consumed_ingredients: [],
           isCarryForward: true,
           recipeIngredients: (m.shift_mix_compositions || []).map(c => ({
             raw_material_type_id: c.raw_material_type_id,
@@ -476,6 +477,16 @@ export default function ShiftWizard() {
             name: c.raw_material_name,
             quantity_kg: parseFloat(c.quantity_kg) || 0,
           })),
+          // Compositions reflect this-shift consumption only when the mix was
+          // prepared this shift (prepared_kg > 0). A carried-over mix that was
+          // never prepared has recipe rows but consumed nothing this shift.
+          consumed_ingredients: (parseFloat(m.prepared_kg) || 0) > 0
+            ? (m.shift_mix_compositions || []).map(c => ({
+                raw_material_type_id: c.raw_material_type_id,
+                name: c.raw_material_name,
+                quantity_kg: parseFloat(c.quantity_kg) || 0,
+              }))
+            : [],
         }))
         updateData('mixes', loadedMixes)
 

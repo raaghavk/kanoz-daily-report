@@ -49,9 +49,9 @@ export default function DispatchForm() {
     pellets: [{ pellet_type_id: '', quantity_mt: '' }],
     invoice_number: '',
     loading_date: today,
-    loading_time: '',
+    loading_time: new Date().toTimeString().slice(0, 5),
     dispatch_date: today,
-    dispatch_time: '',
+    dispatch_time: new Date().toTimeString().slice(0, 5),
     katta_parchi_photo: null,
     remarks: ''
   })
@@ -197,7 +197,7 @@ export default function DispatchForm() {
     queryFn: async () => {
       const { data: latestReport } = await supabase
         .from('shift_reports')
-        .select('id')
+        .select('id, date')
         .eq('plant_id', plant.id)
         .eq('is_deleted', false)
         .order('date', { ascending: false })
@@ -212,6 +212,27 @@ export default function DispatchForm() {
       const stockMap = {}
       for (const s of (stocks || [])) {
         stockMap[s.pellet_type_id] = parseFloat(s.closing_mt) || 0
+      }
+
+      // Closing stock only reflects dispatches recorded in that shift report —
+      // subtract dispatches made since the snapshot so the same stock can't be
+      // dispatched twice. Dispatches linked to the report itself are already
+      // in its closing figures, so skip those.
+      if (latestReport.date) {
+        const { data: sinceDispatches } = await supabase
+          .from('vehicle_dispatches')
+          .select('id, date, shift_report_id, dispatch_pellets(pellet_type_id, quantity_mt)')
+          .eq('plant_id', plant.id)
+          .or('is_deleted.is.null,is_deleted.eq.false')
+          .gte('date', latestReport.date)
+        for (const d of (sinceDispatches || [])) {
+          if (d.shift_report_id === latestReport.id) continue
+          for (const p of (d.dispatch_pellets || [])) {
+            if (stockMap[p.pellet_type_id] !== undefined) {
+              stockMap[p.pellet_type_id] -= parseFloat(p.quantity_mt) || 0
+            }
+          }
+        }
       }
       return stockMap
     },
@@ -314,6 +335,10 @@ export default function DispatchForm() {
     if (!form.invoice_number.trim()) { showToast('Invoice number is required', 'error'); return }
     if (!form.loading_time) { showToast('Loading time is required', 'error'); return }
     if (!form.dispatch_time) { showToast('Dispatch time is required', 'error'); return }
+    // Loading happens before dispatch — enforce datetime ordering
+    const loadingDT = new Date(`${form.loading_date || today}T${form.loading_time}`)
+    const dispatchDT = new Date(`${form.dispatch_date || today}T${form.dispatch_time}`)
+    if (dispatchDT < loadingDT) { showToast('Dispatch time cannot be before loading time', 'error'); return }
     try {
       setSubmitting(true)
 
@@ -412,15 +437,16 @@ export default function DispatchForm() {
           pellets: [{ pellet_type_id: '', quantity_mt: '' }],
           invoice_number: '',
           loading_date: today,
-          loading_time: '',
+          loading_time: new Date().toTimeString().slice(0, 5),
           dispatch_date: today,
-          dispatch_time: '',
+          dispatch_time: new Date().toTimeString().slice(0, 5),
           katta_parchi_photo: null,
           remarks: ''
         })
         queryClient.invalidateQueries({ queryKey: ['dispatches'] })
         queryClient.invalidateQueries({ queryKey: ['todayDispatches'] })
         queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+        queryClient.invalidateQueries({ queryKey: ['latestPelletStock'] })
         // If we came from the shift wizard, go straight back instead of showing list
         if (returnToShift) {
           navigate('/shift/new', { state: { returnToStep: 7 } })
