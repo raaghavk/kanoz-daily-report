@@ -1,6 +1,9 @@
-import { useEffect, memo } from 'react'
+import { useEffect, memo, useRef } from 'react'
+import { supabase } from '../../lib/supabase'
+import { averagePellets, ensurePelletType, gradeForGcv } from '../../lib/pelletGrading'
 
-// Semantic match: handles "Non-Sample" vs "N Sample" and similar DB/UI name mismatches
+// Semantic match: exact / case-insensitive names, plus legacy "Non-Sample" vs
+// "N Sample" variants so pre-existing pellet types keep working unchanged.
 function normPellet(s) {
   return (s || '').toLowerCase().replace(/[\s\-_]/g, '')
 }
@@ -16,34 +19,105 @@ function pelletTypeMatches(mixType, pelletName) {
   return false
 }
 
-export default memo(function Step7PelletStock({ data, updateData }) {
-  // Auto-populate production from Step 3 and dispatch from Step 6
+// Derived pellet name a mix contributes under (older drafts fall back to mix.type)
+function mixPelletName(mix) {
+  return mix?.derived_pellet_name || mix?.type || null
+}
+
+// Pellet name for one production entry: the mix contributing the most kg wins.
+// Falls back to the shift's single mix name when mix_usages aren't set.
+function entryPelletName(entry, mixes) {
+  const kgByName = {}
+  ;(entry.mix_usages || []).forEach(mu => {
+    const name = mixPelletName(mixes.find(m => m.local_id === mu.mix_local_id))
+    if (!name) return
+    kgByName[name] = (kgByName[name] || 0) + (parseFloat(mu.quantity_kg) || 0)
+  })
+  const names = Object.keys(kgByName)
+  if (names.length > 0) {
+    return names.reduce((a, b) => (kgByName[b] > kgByName[a] ? b : a))
+  }
+  const allNames = [...new Set(mixes.map(mixPelletName).filter(Boolean))]
+  return allNames.length === 1 ? allNames[0] : null
+}
+
+export default memo(function Step7PelletStock({ data, updateData, plant }) {
+  // Resolve this shift's derived pellet names to real pellet_types rows.
+  // Production is grouped by derived pellet name; per name the GCV is the
+  // kg-weighted average over contributing mix usages (averagePellets). Names
+  // without a matching stock row get one created via ensurePelletType — legacy
+  // rows (e.g. Sample / N Sample) are kept as-is, never deleted or migrated.
+  const resolvedKeyRef = useRef(null)
+  useEffect(() => {
+    if (!plant?.id) return
+    const mixes = data.mixes || []
+
+    // Group mix-usage contributions by derived pellet name
+    const contributions = {}
+    ;(data.production || []).forEach(p => {
+      const owner = entryPelletName(p, mixes)
+      ;(p.mix_usages || []).forEach(mu => {
+        const mix = mixes.find(m => m.local_id === mu.mix_local_id)
+        const name = mixPelletName(mix)
+        if (!name) return
+        if (!contributions[name]) contributions[name] = []
+        contributions[name].push({ name, gcv: mix?.derived_gcv ?? null, kg: parseFloat(mu.quantity_kg) || 0 })
+      })
+      // No usages recorded: attribute to the entry's fallback name so the row still exists
+      if ((p.mix_usages || []).length === 0 && owner) {
+        const mix = mixes.find(m => mixPelletName(m) === owner)
+        if (!contributions[owner]) contributions[owner] = []
+        contributions[owner].push({ name: owner, gcv: mix?.derived_gcv ?? null, kg: parseFloat(p.quantity) || 0 })
+      }
+    })
+
+    const groups = Object.keys(contributions).map(name => {
+      const avg = averagePellets(contributions[name])
+      return { name, gcv: avg?.gcv ?? null }
+    })
+    if (groups.length === 0) return
+
+    const key = JSON.stringify(groups.map(g => [g.name, g.gcv == null ? null : Math.round(g.gcv)]).sort())
+    if (resolvedKeyRef.current === key) return
+    resolvedKeyRef.current = key
+
+    let cancelled = false
+    ;(async () => {
+      const threshold = plant?.gcv_grade_threshold ?? 3200
+      const newRows = []
+      for (const g of groups) {
+        const pt = await ensurePelletType(supabase, plant.id, {
+          name: g.name,
+          gcv: g.gcv,
+          grade: gradeForGcv(g.gcv, threshold),
+        })
+        if (!pt) continue
+        const exists = (data.pelletStock || []).some(ps => ps.id === pt.id || pelletTypeMatches(g.name, ps.name))
+        if (!exists) {
+          newRows.push({ id: pt.id, name: pt.name, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0 })
+        }
+      }
+      if (!cancelled && newRows.length > 0) {
+        updateData('pelletStock', [...(data.pelletStock || []), ...newRows])
+      }
+    })()
+    return () => { cancelled = true }
+  }, [data.production, data.mixes, plant?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-populate production from Step 3/4 and dispatch from Step 6
   useEffect(() => {
     if (!data.pelletStock || data.pelletStock.length === 0) return
 
     const dispatchTotals = data.dispatchTotals || {}
+    const mixes = data.mixes || []
 
     const stock = data.pelletStock.map(ps => {
-      // Sum production entries whose pellet type matches this pellet stock row
+      // Sum production entries whose derived pellet name matches this stock row
       const prodTotal = (data.production || [])
-        .filter(p => {
-          // Derive pellet type from mix_usages (same logic as Step4 getPelletType)
-          const usedMixes = (p.mix_usages || [])
-            .map(mu => (data.mixes || []).find(m => m.local_id === mu.mix_local_id))
-            .filter(Boolean)
-          const types = usedMixes.map(m => m.type).filter(Boolean)
-          if (types.length === 0) {
-            // Fall back: attribute to the single mix type in this shift if there is one
-            const allTypes = [...new Set((data.mixes || []).map(m => m.type).filter(Boolean))]
-            if (allTypes.length === 1) return pelletTypeMatches(allTypes[0], ps.name)
-            return false
-          }
-          const pelletType = types.every(t => t === types[0]) ? types[0] : 'Sample'
-          return pelletTypeMatches(pelletType, ps.name)
-        })
+        .filter(p => pelletTypeMatches(entryPelletName(p, mixes), ps.name))
         .reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0)
 
-      // Dispatch total from Step 6 — use semantic match so "Non-Sample" maps to "N Sample" etc.
+      // Dispatch total from Step 6 — semantic match so "Non-Sample" maps to "N Sample" etc.
       const dispTotal = Object.entries(dispatchTotals).reduce((sum, [key, val]) => {
         return pelletTypeMatches(key, ps.name) ? sum + (parseFloat(val) || 0) : sum
       }, 0)
@@ -64,7 +138,7 @@ export default memo(function Step7PelletStock({ data, updateData }) {
     if (hasChanged) {
       updateData('pelletStock', stock)
     }
-  }, [data.production, data.dispatchTotals]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [data.production, data.dispatchTotals, data.pelletStock, data.mixes]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateStock(idx, field, value) {
     const stock = [...data.pelletStock]

@@ -816,7 +816,9 @@ export default function DispatchForm() {
                         >
                           <option value="">Pellet type</option>
                           {pelletTypes.map(pt => (
-                            <option key={pt.id} value={pt.id}>{pt.name}</option>
+                            <option key={pt.id} value={pt.id}>
+                              {pt.name}{pt.grade ? ` · ${pt.grade}` : ''}{pt.gcv_kcal_kg != null ? ` · ${Math.round(parseFloat(pt.gcv_kcal_kg))}` : ''}
+                            </option>
                           ))}
                         </select>
                         <input

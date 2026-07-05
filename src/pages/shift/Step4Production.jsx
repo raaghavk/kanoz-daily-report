@@ -61,33 +61,20 @@ export default memo(function Step4Production({ data, updateData }) {
 
   const mixes = data.mixes || []
 
+  // Pellet name for a production entry. Each mix carries a derived pellet name
+  // (from its recipe); older drafts fall back to mix.type. When one machine ran
+  // multiple mixes with different names, the mix contributing the most kg wins.
   function getPelletType(entry) {
-    if (!entry.mix_usages || entry.mix_usages.length === 0) {
-      return null
-    }
-
-    const usedMixes = entry.mix_usages
-      .map(mu => mixes.find(m => m.local_id === mu.mix_local_id))
-      .filter(m => m)
-
-    if (usedMixes.length === 0) {
-      return null
-    }
-
-    // Get all types from used mixes
-    const types = usedMixes.map(m => m.type).filter(Boolean)
-
-    if (types.length === 0) {
-      return null
-    }
-
-    // If all same type, show it
-    if (types.every(t => t === types[0])) {
-      return types[0]
-    }
-
-    // If mixed types, show "Sample"
-    return 'Sample'
+    const kgByName = {}
+    ;(entry.mix_usages || []).forEach(mu => {
+      const mix = mixes.find(m => m.local_id === mu.mix_local_id)
+      const name = mix?.derived_pellet_name || mix?.type
+      if (!name) return
+      kgByName[name] = (kgByName[name] || 0) + (parseFloat(mu.quantity_kg) || 0)
+    })
+    const names = Object.keys(kgByName)
+    if (names.length === 0) return null
+    return names.reduce((a, b) => (kgByName[b] > kgByName[a] ? b : a))
   }
 
   // Filter eligible machines: did_not_run === false AND has both from_time and to_time

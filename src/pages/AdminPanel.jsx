@@ -36,6 +36,32 @@ export default function AdminPanel() {
   // Show archived plants toggle
   const [showArchived, setShowArchived] = useState(false)
 
+  // Per-plant GCV grade threshold (High GCV vs Low GCV cutoff)
+  const [thresholdDraft, setThresholdDraft] = useState('')
+  const [savingThreshold, setSavingThreshold] = useState(false)
+
+  useEffect(() => {
+    const sel = plants.find(p => p.id === selectedPlantId)
+    setThresholdDraft(sel?.gcv_grade_threshold ?? 3200)
+  }, [selectedPlantId, plants])
+
+  async function saveThreshold() {
+    const val = parseFloat(thresholdDraft)
+    if (Number.isNaN(val) || val <= 0) {
+      showToast('Enter a valid threshold (kcal/kg)', 'error')
+      return
+    }
+    setSavingThreshold(true)
+    const { error } = await supabase.from('plants').update({ gcv_grade_threshold: val }).eq('id', selectedPlantId)
+    setSavingThreshold(false)
+    if (error) {
+      showToast('Failed to save threshold: ' + error.message, 'error')
+      return
+    }
+    showToast('GCV grade threshold saved', 'success')
+    setPlants(prev => prev.map(p => p.id === selectedPlantId ? { ...p, gcv_grade_threshold: val } : p))
+  }
+
   async function loadAllData() {
     setLoading(true)
     const results = {}
@@ -57,7 +83,7 @@ export default function AdminPanel() {
     const ctrl = new AbortController()
     supabase
       .from('plants')
-      .select('id, name, is_active')
+      .select('id, name, is_active, gcv_grade_threshold')
       .eq('org_id', plant?.org_id)
       .order('name')
       .then(({ data: orgPlants }) => {
@@ -133,7 +159,12 @@ export default function AdminPanel() {
 
   async function updateItem(sectionKey, id, newName) {
     const section = SECTIONS.find(s => s.key === sectionKey)
-    const { error } = await supabase.from(section.table).update({ name: newName }).eq('id', id)
+    const payload = { name: newName }
+    if (sectionKey === 'raw_material_types') {
+      const g = parseFloat(editingItem?.gcv)
+      payload.gcv_kcal_kg = Number.isNaN(g) ? null : g
+    }
+    const { error } = await supabase.from(section.table).update(payload).eq('id', id)
     if (error) {
       showToast('Failed to update', 'error')
       return
@@ -281,6 +312,30 @@ export default function AdminPanel() {
       </div>
 
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* GCV grade threshold (per plant) */}
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>GCV Grade Threshold</div>
+          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Mixes at or above this GCV are graded High GCV</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={thresholdDraft}
+              onChange={e => setThresholdDraft(e.target.value)}
+              placeholder="3200"
+              style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', minWidth: 0, boxSizing: 'border-box' }}
+            />
+            <span style={{ fontSize: 12, color: '#8a8d7a', whiteSpace: 'nowrap' }}>kcal/kg</span>
+            <button
+              onClick={saveThreshold}
+              disabled={savingThreshold}
+              style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingThreshold ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingThreshold ? 0.6 : 1 }}
+            >
+              {savingThreshold ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+
         {loading ? (
           <div style={{ textAlign: 'center', padding: '32px 0', color: '#595c4a', fontSize: 14 }}>Loading...</div>
         ) : (
@@ -326,8 +381,19 @@ export default function AdminPanel() {
                               value={editingItem.name}
                               onChange={e => setEditingItem({ ...editingItem, name: e.target.value })}
                               autoFocus
-                              style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none' }}
+                              style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', minWidth: 0 }}
                             />
+                            {section.key === 'raw_material_types' && (
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                placeholder="kcal/kg"
+                                value={editingItem.gcv}
+                                onChange={e => setEditingItem({ ...editingItem, gcv: e.target.value })}
+                                title="GCV (kcal/kg)"
+                                style={{ width: 84, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                              />
+                            )}
                             <button
                               onClick={() => updateItem(section.key, item.id, editingItem.name)}
                               style={{ padding: '4px 8px', background: '#2d6a4f', color: 'white', borderRadius: 6, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -344,11 +410,21 @@ export default function AdminPanel() {
                         ) : (
                           <>
                             <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#2c2c2c' }}>{item.name}</span>
+                            {section.key === 'raw_material_types' && (
+                              <span style={{ fontSize: 11, fontWeight: 600, color: item.gcv_kcal_kg != null ? '#2d6a4f' : '#8a8d7a', background: '#fefae0', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+                                {item.gcv_kcal_kg != null ? `${item.gcv_kcal_kg} kcal/kg` : 'GCV not set'}
+                              </span>
+                            )}
+                            {section.key === 'pellet_types' && item.grade && (
+                              <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '2px 8px', whiteSpace: 'nowrap', background: item.grade === 'High GCV' ? '#2d6a4f' : '#fef3c7', color: item.grade === 'High GCV' ? '#fff' : '#b45309' }}>
+                                {item.grade}
+                              </span>
+                            )}
                             {item.is_active === false && (
                               <span style={{ fontSize: 10, color: '#d32f2f', fontWeight: 600 }}>Inactive</span>
                             )}
                             <button
-                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name })}
+                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '' })}
                               style={{ padding: '4px 8px', background: '#fefae0', borderRadius: 6, border: '1px solid #e5ddd0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                             >
                               <Edit3 size={12} color="#595c4a" />

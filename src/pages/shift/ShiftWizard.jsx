@@ -284,6 +284,9 @@ export default function ShiftWizard() {
           db_id: null,
           name: m.name,
           type: m.type,
+          derived_pellet_name: m.derived_pellet_name || m.type || null,
+          derived_gcv: m.derived_gcv != null ? parseFloat(m.derived_gcv) : null,
+          derived_grade: m.derived_grade || null,
           opening_kg: parseFloat(m.closing_kg) || 0,
           prepared_kg: 0,
           consumed_ingredients: [],
@@ -313,7 +316,7 @@ export default function ShiftWizard() {
       updateData('rawMaterials', materialsRes.data.map(m => {
         const prev = prevRawMaterials.find(r => r.raw_material_type_id === m.id)
         const opening = prev ? parseFloat(prev.closing_kg) || 0 : 0
-        return { id: m.id, name: m.name, opening, purchased: 0, used: 0, closing: opening }
+        return { id: m.id, name: m.name, gcv_kcal_kg: m.gcv_kcal_kg ?? null, opening, purchased: 0, used: 0, closing: opening }
       }))
     }
     if (pelletTypesRes.data) {
@@ -419,6 +422,7 @@ export default function ShiftWizard() {
           return {
             id: m.id,
             name: m.name,
+            gcv_kcal_kg: m.gcv_kcal_kg ?? null,
             opening: rmData ? parseFloat(rmData.opening_kg) || 0 : 0,
             purchased: rmData ? parseFloat(rmData.purchased_kg) || 0 : 0,
             used: rmData ? parseFloat(rmData.quantity_kg) || 0 : 0,
@@ -469,6 +473,9 @@ export default function ShiftWizard() {
           db_id: m.id,
           name: m.name,
           type: m.type,
+          derived_pellet_name: m.derived_pellet_name || m.type || null,
+          derived_gcv: m.derived_gcv != null ? parseFloat(m.derived_gcv) : null,
+          derived_grade: m.derived_grade || null,
           opening_kg: parseFloat(m.opening_kg) || 0,
           prepared_kg: parseFloat(m.prepared_kg) || 0,
           used_kg: parseFloat(m.used_kg) || 0,
@@ -596,18 +603,27 @@ export default function ShiftWizard() {
         setReportId(report.id)
       }
 
-      // Helper: derive pellet_type_name for a machine from its mix usages
+      // Helper: derive pellet_type_name for a machine from its mix usages.
+      // Uses each mix's derived pellet name (falls back to mix.type). If a
+      // machine ran mixes with different names, the mix contributing the most
+      // kg wins — no hardcoded fallback names.
       function derivePelletType(machineId) {
+        const mixName = m => m?.derived_pellet_name || m?.type || null
         const machineEntries = reportData.production.filter(p => p.machine_id === machineId)
-        const usedMixTypes = machineEntries.flatMap(p =>
-          (p.mix_usages || []).map(u => (reportData.mixes || []).find(m => m.local_id === u.mix_local_id)?.type).filter(Boolean)
-        )
-        if (usedMixTypes.length === 0) {
-          // Fall back: use first mix type in this shift (avoids null when mix_usages not set)
-          return (reportData.mixes || []).find(m => m.type)?.type || null
+        const kgByName = {}
+        machineEntries.forEach(p => {
+          (p.mix_usages || []).forEach(u => {
+            const name = mixName((reportData.mixes || []).find(m => m.local_id === u.mix_local_id))
+            if (!name) return
+            kgByName[name] = (kgByName[name] || 0) + sanitizeNumber(u.quantity_kg)
+          })
+        })
+        const names = Object.keys(kgByName)
+        if (names.length === 0) {
+          // Fall back: use first mix name in this shift (avoids null when mix_usages not set)
+          return mixName((reportData.mixes || []).find(m => mixName(m)))
         }
-        const unique = [...new Set(usedMixTypes)]
-        return unique.length === 1 ? unique[0] : 'Sample'
+        return names.reduce((a, b) => (kgByName[b] > kgByName[a] ? b : a))
       }
 
       // Save machine production
@@ -659,6 +675,9 @@ export default function ShiftWizard() {
             prepared_kg: sanitizeNumber(mix.prepared_kg),
             used_kg: usedKg,
             closing_kg: closingKg,
+            derived_pellet_name: sanitizeText(mix.derived_pellet_name || mix.type, 100) || null,
+            derived_gcv: mix.derived_gcv != null ? sanitizeNumber(mix.derived_gcv) : null,
+            derived_grade: sanitizeText(mix.derived_grade, 20) || null,
           }).select().single()
           if (mixErr) { console.error('Mix save error:', mixErr); throw mixErr }
 

@@ -2,6 +2,7 @@ import { memo, useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { Plus, Trash2, X, Edit2, Lock } from 'lucide-react'
+import { deriveMixPellet, gradeForGcv } from '../../lib/pelletGrading'
 
 const C = {
   green: '#2d6a4f',
@@ -13,6 +14,25 @@ const C = {
   card: '#fff',
 }
 
+function formatGcv(gcv) {
+  return `${Math.round(gcv).toLocaleString('en-IN')} kcal/kg`
+}
+
+// Grade badge: High GCV (solid green), Low GCV (amber), or grey when no
+// ingredient has a GCV configured yet.
+function GradeBadge({ grade, small }) {
+  const style = grade === 'High GCV'
+    ? { background: '#2d6a4f', color: '#fff' }
+    : grade === 'Low GCV'
+      ? { background: '#fef3c7', color: '#b45309' }
+      : { background: '#f0efe9', color: '#8a8d7a' }
+  return (
+    <span style={{ ...style, fontSize: small ? 9 : 10, fontWeight: 700, borderRadius: 6, padding: small ? '2px 6px' : '3px 8px', whiteSpace: 'nowrap' }}>
+      {grade || 'Set GCV in Settings'}
+    </span>
+  )
+}
+
 export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
   const [purchasesLoaded, setPurchasesLoaded] = useState(false)
   const [slideOpen, setSlideOpen] = useState(false)
@@ -21,6 +41,7 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
   const [prepareOpen, setPrepareOpen] = useState(false)
 
   const mixes = data.mixes || []
+  const gcvThreshold = plant?.gcv_grade_threshold ?? 3200
 
   // Auto-load purchased quantities (same logic as old Step4RawMaterial)
   useEffect(() => {
@@ -114,7 +135,7 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
       local_id: null, // will be set on save
       db_id: null,
       name: `Mix ${mixes.length + 1}`,
-      type: 'Sample',
+      type: '',
       opening_kg: 0,
       ingredients: [],
       prepared_kg: 0,
@@ -134,9 +155,22 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
 
   function saveMix(mixForm) {
     const prepared_kg = (mixForm.ingredients || []).reduce((s, i) => s + (parseFloat(i.quantity_kg) || 0), 0)
+    // Derive the pellet identity from the RECIPE ingredients (user may have
+    // overridden the name in the form). mix.type mirrors the pellet name for
+    // backward compatibility with older reports.
+    const derived = deriveMixPellet(mixForm.ingredients || [], data.rawMaterials, gcvThreshold)
+    const pelletName = (mixForm.pellet_name || '').trim() || derived.name || mixForm.type || null
     // Creating/editing a mix with a recipe is its first preparation — the
     // recipe quantities are consumed from this shift's raw material stock.
-    const saved = { ...mixForm, prepared_kg, consumed_ingredients: (mixForm.ingredients || []).map(i => ({ ...i })) }
+    const saved = {
+      ...mixForm,
+      prepared_kg,
+      consumed_ingredients: (mixForm.ingredients || []).map(i => ({ ...i })),
+      derived_pellet_name: pelletName,
+      derived_gcv: derived.gcv,
+      derived_grade: derived.grade,
+      type: pelletName || mixForm.type,
+    }
     let newMixes
     if (mixForm.local_id && mixes.some(m => m.local_id === mixForm.local_id)) {
       newMixes = mixes.map(m => m.local_id === mixForm.local_id ? saved : m)
@@ -155,7 +189,22 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
   }
 
   function savePreparedMix(preparedForm) {
-    const prepared = { ...preparedForm }
+    // Refresh derived GCV/grade from the RECIPE (carry-forward name is kept).
+    // Derivation never uses consumed_ingredients — those track this shift's
+    // raw-material consumption, not the pellet identity.
+    const recipe = (Array.isArray(preparedForm.recipeIngredients) && preparedForm.recipeIngredients.length > 0)
+      ? preparedForm.recipeIngredients
+      : (preparedForm.ingredients || [])
+    const derived = deriveMixPellet(recipe, data.rawMaterials, gcvThreshold)
+    const pelletName = preparedForm.derived_pellet_name || derived.name || preparedForm.type || null
+    const gcv = derived.gcv != null ? derived.gcv : (preparedForm.derived_gcv ?? null)
+    const prepared = {
+      ...preparedForm,
+      derived_pellet_name: pelletName,
+      derived_gcv: gcv,
+      derived_grade: gcv != null ? gradeForGcv(gcv, gcvThreshold) : (preparedForm.derived_grade || null),
+      type: pelletName || preparedForm.type,
+    }
     let newMixes
     if (prepared.local_id && mixes.some(m => m.local_id === prepared.local_id)) {
       newMixes = mixes.map(m => m.local_id === prepared.local_id ? prepared : m)
@@ -238,7 +287,10 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
                       {mix.isCarryForward && <Lock size={16} color="#fff" />}
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{mix.name}</div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>{mix.type}</div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 1 }}>
+                          {(mix.derived_pellet_name || mix.type || 'Pellet')}
+                          {mix.derived_gcv != null && ` · ${formatGcv(mix.derived_gcv)}`}
+                        </div>
                       </div>
                     </div>
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -292,7 +344,10 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
 
                   {/* Ingredient composition */}
                   <div style={{ padding: '8px 14px 10px', borderTop: `1px solid ${C.border}`, background: '#faf9f4' }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Composition {mix.isCarryForward && '(Recipe)'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.8 }}>Composition {mix.isCarryForward && '(Recipe)'}</span>
+                      {(mix.ingredients?.length > 0 || mix.derived_grade) && <GradeBadge grade={mix.derived_grade} small />}
+                    </div>
                     {mix.ingredients?.length > 0 ? (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 8px' }}>
                         {mix.ingredients.map((ing, i) => {
@@ -325,6 +380,7 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
         <MixPanel
           mix={editingMix}
           rawMaterials={data.rawMaterials}
+          threshold={gcvThreshold}
           onSave={saveMix}
           onClose={() => { setSlideOpen(false); setEditingMix(null) }}
         />
@@ -343,15 +399,22 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
 })
 
 // Slide-up panel for creating/editing a mix
-function MixPanel({ mix, rawMaterials, onSave, onClose }) {
-  const [form, setForm] = useState({
-    local_id: mix.local_id || null,
-    db_id: mix.db_id || null,
-    name: mix.name || '',
-    type: mix.type || 'Sample',
-    opening_kg: mix.opening_kg || 0,
-    ingredients: (mix.ingredients || []).map(i => ({ ...i })),
-    prepared_kg: mix.prepared_kg || 0,
+function MixPanel({ mix, rawMaterials, threshold, onSave, onClose }) {
+  const [form, setForm] = useState(() => {
+    // Pre-fill the pellet name only when it was overridden (differs from what
+    // the recipe derives) — otherwise it stays live-derived as recipe changes.
+    const initialDerived = deriveMixPellet(mix.ingredients || [], rawMaterials, threshold)
+    const stored = mix.derived_pellet_name || ''
+    return {
+      local_id: mix.local_id || null,
+      db_id: mix.db_id || null,
+      name: mix.name || '',
+      type: mix.type || '',
+      pellet_name: stored && stored !== initialDerived.name ? stored : '',
+      opening_kg: mix.opening_kg || 0,
+      ingredients: (mix.ingredients || []).map(i => ({ ...i })),
+      prepared_kg: mix.prepared_kg || 0,
+    }
   })
 
   function set(field, value) {
@@ -381,6 +444,10 @@ function MixPanel({ mix, rawMaterials, onSave, onClose }) {
   const validIngredients = form.ingredients.filter(i => i.raw_material_type_id && parseFloat(i.quantity_kg) > 0)
   const canSave = validIngredients.length > 0
 
+  // Live-derived pellet identity from the current recipe
+  const derived = deriveMixPellet(form.ingredients, rawMaterials, threshold)
+  const displayPelletName = form.pellet_name !== '' ? form.pellet_name : (derived.name || '')
+
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200 }} />
@@ -408,20 +475,22 @@ function MixPanel({ mix, rawMaterials, onSave, onClose }) {
             />
           </div>
 
-          {/* Type chips */}
+          {/* Derived pellet identity */}
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Type</label>
-            <div style={{ display: 'flex', gap: 10 }}>
-              {['Sample', 'Non-Sample'].map(t => (
-                <button
-                  key={t}
-                  onClick={() => set('type', t)}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: form.type === t ? '2px solid #2d6a4f' : `1.5px solid ${C.border}`, background: form.type === t ? '#2d6a4f' : '#fff', color: form.type === t ? '#fff' : C.text, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-                >
-                  {t}
-                </button>
-              ))}
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Pellet</label>
+            <input
+              value={displayPelletName}
+              onChange={e => set('pellet_name', e.target.value)}
+              placeholder="Add ingredients to derive"
+              style={{ width: '100%', height: 44, padding: '0 14px', borderRadius: 10, border: `1.5px solid ${C.border}`, fontSize: 14, fontWeight: 600, outline: 'none', boxSizing: 'border-box' }}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <GradeBadge grade={derived.grade} />
+              {derived.gcv != null && (
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>{formatGcv(derived.gcv)}</span>
+              )}
             </div>
+            <div style={{ fontSize: 11, color: C.dim, marginTop: 6 }}>Named after the dominant ingredient — edit to override. GCV is the weighted average of the recipe.</div>
           </div>
 
           {/* Opening stock */}
