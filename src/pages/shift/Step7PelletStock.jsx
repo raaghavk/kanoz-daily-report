@@ -1,5 +1,6 @@
 import { useEffect, memo, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import { showToast } from '../../components/Toast'
 import { averagePellets, ensurePelletType, gradeForGcv } from '../../lib/pelletGrading'
 
 // Semantic match: exact / case-insensitive names, plus legacy "Non-Sample" vs
@@ -85,13 +86,14 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
     ;(async () => {
       const threshold = plant?.gcv_grade_threshold ?? 3200
       const newRows = []
+      let failed = 0
       for (const g of groups) {
         const pt = await ensurePelletType(supabase, plant.id, {
           name: g.name,
           gcv: g.gcv,
           grade: gradeForGcv(g.gcv, threshold),
         })
-        if (!pt) continue
+        if (!pt) { failed++; continue }
         const exists = (data.pelletStock || []).some(ps => ps.id === pt.id || pelletTypeMatches(g.name, ps.name))
         if (!exists) {
           newRows.push({ id: pt.id, name: pt.name, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0 })
@@ -99,6 +101,9 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
       }
       if (!cancelled && newRows.length > 0) {
         updateData('pelletStock', [...(data.pelletStock || []), ...newRows])
+      }
+      if (!cancelled && failed > 0) {
+        showToast('Could not register pellet type(s) — check your connection and revisit this step', 'error')
       }
     })()
     return () => { cancelled = true }

@@ -802,6 +802,11 @@ export default function DispatchForm() {
                 Pellet Details <span style={{ color: '#D32F2F' }}>*</span>
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {pelletTypes.length === 0 && (
+                  <div style={{ background: '#fef3c7', border: '1.5px solid #fbbf24', borderRadius: 12, padding: '10px 12px', fontSize: 12, color: '#92400e', marginBottom: 8 }}>
+                    No pellet types yet. Submit a shift report first — pellet types are created automatically from your mixes.
+                  </div>
+                )}
                 {form.pellets.map((pellet, idx) => {
                   const available = pellet.pellet_type_id ? latestPelletStock[pellet.pellet_type_id] : undefined
                   const enteredQty = parseFloat(pellet.quantity_mt) || 0
