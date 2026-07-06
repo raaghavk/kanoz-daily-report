@@ -15,7 +15,7 @@ export default function TransporterList() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
-  const [formData, setFormData] = useState({ name: '', phone: '', address: '' })
+  const [formData, setFormData] = useState({ name: '', phone: '', address: '', category: '', vehicle_number: '', driver_name: '', driver_phone: '' })
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -54,10 +54,15 @@ export default function TransporterList() {
     setSubmitting(true)
     try {
       const phoneWithPrefix = '+91' + formData.phone.replace(/^\+91/, '').trim()
-      const { data, error } = await supabase.from('transporters').insert([{ org_id: plant.org_id, name: formData.name.trim(), phone: phoneWithPrefix, address: formData.address.trim() || null, is_active: true }]).select()
+      const insertPayload = { org_id: plant.org_id, name: formData.name.trim(), phone: phoneWithPrefix, address: formData.address.trim() || null, is_active: true }
+      if (formData.category) insertPayload.category = formData.category
+      if (formData.vehicle_number.trim()) insertPayload.vehicle_number = formData.vehicle_number.trim()
+      if (formData.driver_name.trim()) insertPayload.driver_name = formData.driver_name.trim()
+      if (formData.driver_phone.trim()) insertPayload.driver_phone = '+91' + formData.driver_phone.replace(/^\+91/, '').trim()
+      const { data, error } = await supabase.from('transporters').insert([insertPayload]).select()
       if (error) throw error
       setTransporters([...transporters, data[0]])
-      setFormData({ name: '', phone: '', address: '' })
+      setFormData({ name: '', phone: '', address: '', category: '', vehicle_number: '', driver_name: '', driver_phone: '' })
       setShowAddModal(false)
       showToast('Transporter added', 'success')
     } catch (err) {
@@ -116,6 +121,11 @@ export default function TransporterList() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {transporter.name}
                   </div>
+                  {(transporter.category || transporter.vehicle_number) && (
+                    <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
+                      {[transporter.category, transporter.vehicle_number].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
                   {transporter.address && (
                     <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {transporter.address}
@@ -177,6 +187,30 @@ export default function TransporterList() {
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>
             <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Address (optional)" rows={2} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Type</label>
+            <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}>
+              <option value="">Select type...</option>
+              <option value="Tractor">Tractor</option>
+              <option value="Truck">Truck</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Vehicle Number</label>
+            <input type="text" value={formData.vehicle_number} onChange={e => setFormData({ ...formData, vehicle_number: e.target.value })} placeholder="e.g., UP70 AB 1234" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Driver Name</label>
+            <input type="text" value={formData.driver_name} onChange={e => setFormData({ ...formData, driver_name: e.target.value })} placeholder="Default driver name" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Driver Phone</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+              <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
+              <input type="tel" value={formData.driver_phone} onChange={e => setFormData({ ...formData, driver_phone: e.target.value })} placeholder="10-digit number" style={{ flex: 1, padding: '10px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Cancel</button>

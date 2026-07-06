@@ -18,7 +18,11 @@ export default function TransporterDetail() {
   const [editData, setEditData] = useState({
     name: '',
     phone: '',
-    address: ''
+    address: '',
+    category: '',
+    vehicle_number: '',
+    driver_name: '',
+    driver_phone: '',
   })
 
   useEffect(() => {
@@ -42,7 +46,11 @@ export default function TransporterDetail() {
       setEditData({
         name: transporterData.name,
         phone: transporterData.phone,
-        address: transporterData.address || ''
+        address: transporterData.address || '',
+        category: transporterData.category || '',
+        vehicle_number: transporterData.vehicle_number || '',
+        driver_name: transporterData.driver_name || '',
+        driver_phone: transporterData.driver_phone ? transporterData.driver_phone.replace(/^\+91/, '') : '',
       })
 
       const { data: dispatchesData, error: dispatchesError } = await supabase
@@ -75,7 +83,11 @@ export default function TransporterDetail() {
         .update({
           name: editData.name,
           phone: editData.phone,
-          address: editData.address
+          address: editData.address || null,
+          category: editData.category || null,
+          vehicle_number: editData.vehicle_number.trim() || null,
+          driver_name: editData.driver_name.trim() || null,
+          driver_phone: editData.driver_phone.trim() ? '+91' + editData.driver_phone.replace(/^\+91/, '').trim() : null,
         })
         .eq('id', id)
 
@@ -85,7 +97,11 @@ export default function TransporterDetail() {
         ...transporter,
         name: editData.name,
         phone: editData.phone,
-        address: editData.address
+        address: editData.address || null,
+        category: editData.category || null,
+        vehicle_number: editData.vehicle_number.trim() || null,
+        driver_name: editData.driver_name.trim() || null,
+        driver_phone: editData.driver_phone.trim() ? '+91' + editData.driver_phone.replace(/^\+91/, '').trim() : null,
       })
 
       setShowEditModal(false)
@@ -177,6 +193,20 @@ export default function TransporterDetail() {
                   <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Address</p>
                   <p style={{ fontSize: 13, color: '#2c2c2c', marginTop: 2 }}>{transporter.address}</p>
                 </div>
+              </div>
+            )}
+
+            {(transporter.category || transporter.vehicle_number) && (
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>Vehicle</p>
+                <p style={{ fontSize: 13, color: '#2c2c2c' }}>{[transporter.category, transporter.vehicle_number].filter(Boolean).join(' · ')}</p>
+              </div>
+            )}
+
+            {(transporter.driver_name || transporter.driver_phone) && (
+              <div>
+                <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>Default Driver</p>
+                <p style={{ fontSize: 13, color: '#2c2c2c' }}>{[transporter.driver_name, transporter.driver_phone].filter(Boolean).join(' · ')}</p>
               </div>
             )}
 
@@ -284,6 +314,34 @@ export default function TransporterDetail() {
               onChange={e => setEditData({ ...editData, address: e.target.value })}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
             />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Type</label>
+            <select value={editData.category} onChange={e => setEditData({ ...editData, category: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}>
+              <option value="">Select type...</option>
+              <option value="Tractor">Tractor</option>
+              <option value="Truck">Truck</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Vehicle Number</label>
+            <input type="text" value={editData.vehicle_number} onChange={e => setEditData({ ...editData, vehicle_number: e.target.value })} placeholder="e.g., UP70 AB 1234" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }} />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Driver Name</label>
+            <input type="text" value={editData.driver_name} onChange={e => setEditData({ ...editData, driver_name: e.target.value })} placeholder="Default driver name" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }} />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Driver Phone</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+              <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
+              <input type="tel" value={editData.driver_phone} onChange={e => setEditData({ ...editData, driver_phone: e.target.value })} placeholder="10-digit number" style={{ flex: 1, padding: '10px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }} />
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>

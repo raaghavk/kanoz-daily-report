@@ -20,6 +20,9 @@ export default function PurchaseForm() {
   const [saving, setSaving] = useState(false)
   const [showAddSupplier, setShowAddSupplier] = useState(false)
   const [scanning, setScanning] = useState(false)
+  const [showManageVehicles, setShowManageVehicles] = useState(false)
+  const [newVehicleNumber, setNewVehicleNumber] = useState('')
+  const [addingVehicle, setAddingVehicle] = useState(false)
 
   const [formData, setFormData] = useState({
     date: getLocalDate(),
@@ -29,6 +32,7 @@ export default function PurchaseForm() {
     raw_material_type_id: '',
     vehicle_number: '',
     vehicle_type: 'company',
+    transporter_id: '',
     net_weight: '',
     moisture_percentage: '',
     deduction_kg: '',
@@ -78,6 +82,16 @@ export default function PurchaseForm() {
     enabled: !!plant?.id,
   })
 
+  const { data: transporters = [] } = useQuery({
+    queryKey: ['transporters', plant?.org_id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('transporters').select('*').eq('org_id', plant.org_id).eq('is_active', true).order('name')
+      if (error) throw error
+      return data || []
+    },
+    enabled: !!plant?.org_id,
+  })
+
   const { data: rawMaterials = [] } = useQuery({
     queryKey: ['rawMaterials', plant?.id],
     queryFn: async () => {
@@ -108,6 +122,7 @@ export default function PurchaseForm() {
       raw_material_type_id: purchaseData.raw_material_type_id || '',
       vehicle_number: purchaseData.vehicle_number || '',
       vehicle_type: 'company',
+      transporter_id: purchaseData.transporter_id || '',
       net_weight: purchaseData.net_weight ?? '',
       moisture_percentage: purchaseData.moisture_percent ?? '',
       deduction_kg: purchaseData.deduction_kg ?? '',
@@ -278,9 +293,38 @@ export default function PurchaseForm() {
     }
   }
 
+  async function addCompanyVehicle() {
+    if (!newVehicleNumber.trim()) return
+    setAddingVehicle(true)
+    try {
+      await supabase.from('vehicles').insert([{
+        plant_id: plant.id,
+        number: newVehicleNumber.trim().toUpperCase(),
+        type: 'company',
+        is_active: true,
+      }])
+      queryClient.invalidateQueries({ queryKey: ['companyVehicles', plant?.id] })
+      setNewVehicleNumber('')
+      showToast('Vehicle added', 'success')
+    } catch { showToast('Failed to add vehicle', 'error') }
+    finally { setAddingVehicle(false) }
+  }
+
+  async function deactivateVehicle(vehicleId) {
+    try {
+      await supabase.from('vehicles').update({ is_active: false }).eq('id', vehicleId)
+      queryClient.invalidateQueries({ queryKey: ['companyVehicles', plant?.id] })
+      showToast('Vehicle removed', 'success')
+    } catch { showToast('Failed to remove vehicle', 'error') }
+  }
+
   async function savePurchase() {
     if (saving) return
     try {
+      if (!formData.serial_no?.trim()) {
+        showToast('Serial No / Parchi No is required', 'error')
+        return
+      }
       if (!formData.supplier_id || !formData.raw_material_type_id || !formData.net_weight) {
         showToast('Please fill in all required fields', 'error')
         return
@@ -329,6 +373,7 @@ export default function PurchaseForm() {
         raw_material_type: rmTypeName,
         vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
         tractor_owner: formData.vehicle_type === 'company' ? 'Company Owned' : 'Other owner',
+        transporter_id: formData.vehicle_type === 'other' ? (formData.transporter_id || null) : null,
         net_weight: sanitizeNumber(formData.net_weight),
         moisture_percent: sanitizeNumber(formData.moisture_percentage) || 0,
         deduction_kg: sanitizeNumber(formData.deduction_kg) || 0,
@@ -435,7 +480,7 @@ export default function PurchaseForm() {
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
-            Serial No / Parchi No
+            Serial No / Parchi No <span style={{ color: '#d32f2f' }}>*</span>
           </label>
           <input
             type="text"
@@ -535,26 +580,60 @@ export default function PurchaseForm() {
               Other Vehicle
             </button>
           </div>
-          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Number</label>
-          {formData.vehicle_type === 'company' && companyVehicles.length > 0 ? (
-            <select
-              value={formData.vehicle_number}
-              onChange={e => handleFieldChange('vehicle_number', e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
-            >
-              <option value="">Select vehicle...</option>
-              {companyVehicles.map(v => (
-                <option key={v.id} value={v.number}>{v.number}</option>
-              ))}
-            </select>
+          {formData.vehicle_type === 'company' ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>Vehicle Number</label>
+                <button type="button" onClick={() => setShowManageVehicles(true)} style={{ fontSize: 11, color: '#2d6a4f', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>⚙ Manage</button>
+              </div>
+              {companyVehicles.length > 0 ? (
+                <select
+                  value={formData.vehicle_number}
+                  onChange={e => handleFieldChange('vehicle_number', e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+                >
+                  <option value="">Select vehicle...</option>
+                  {companyVehicles.map(v => (
+                    <option key={v.id} value={v.number}>{v.number}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="e.g., HR-01-AB-1234"
+                  value={formData.vehicle_number}
+                  onChange={e => handleFieldChange('vehicle_number', e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+                />
+              )}
+            </>
+          ) : transporters.length > 0 ? (
+            <>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Transporter</label>
+              <select
+                value={formData.transporter_id}
+                onChange={e => {
+                  const t = transporters.find(tr => tr.id === e.target.value)
+                  const updated = { ...formData, transporter_id: e.target.value }
+                  if (t?.vehicle_number) updated.vehicle_number = t.vehicle_number
+                  updateCalculatedFields(updated)
+                  setFormData(updated)
+                }}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', marginBottom: 12, boxSizing: 'border-box' }}
+              >
+                <option value="">Select transporter...</option>
+                {transporters.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}{t.category ? ` (${t.category})` : ''}</option>
+                ))}
+              </select>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Number</label>
+              <input type="text" placeholder="e.g., HR-01-AB-1234" value={formData.vehicle_number} onChange={e => handleFieldChange('vehicle_number', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+            </>
           ) : (
-            <input
-              type="text"
-              placeholder="e.g., HR-01-AB-1234"
-              value={formData.vehicle_number}
-              onChange={e => handleFieldChange('vehicle_number', e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
-            />
+            <>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Number</label>
+              <input type="text" placeholder="e.g., HR-01-AB-1234" value={formData.vehicle_number} onChange={e => handleFieldChange('vehicle_number', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+            </>
           )}
         </div>
 
@@ -891,6 +970,27 @@ export default function PurchaseForm() {
           >
             Add Supplier
           </button>
+        </div>
+      </Modal>
+
+      <Modal isOpen={showManageVehicles} onClose={() => setShowManageVehicles(false)} title="Manage Company Vehicles">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {companyVehicles.length === 0 ? (
+            <p style={{ fontSize: 13, color: '#8a8d7a', textAlign: 'center', margin: 0 }}>No company vehicles added yet</p>
+          ) : (
+            companyVehicles.map(v => (
+              <div key={v.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#f9f7f0', borderRadius: 10, border: '1px solid #e5ddd0' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>{v.number}</span>
+                <button onClick={() => deactivateVehicle(v.id)} style={{ fontSize: 11, color: '#d32f2f', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Remove</button>
+              </div>
+            ))
+          )}
+          <div style={{ borderTop: '1px solid #e5ddd0', paddingTop: 12, display: 'flex', gap: 8 }}>
+            <input type="text" placeholder="Vehicle number (e.g., UP70 AB 1234)" value={newVehicleNumber} onChange={e => setNewVehicleNumber(e.target.value)} style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0' }} />
+            <button onClick={addCompanyVehicle} disabled={addingVehicle} style={{ padding: '10px 16px', background: '#2d6a4f', color: '#fff', borderRadius: 10, border: 'none', cursor: addingVehicle ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600 }}>
+              {addingVehicle ? '...' : 'Add'}
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

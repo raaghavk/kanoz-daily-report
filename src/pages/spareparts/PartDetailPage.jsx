@@ -7,7 +7,7 @@ import PageHeader from '../../components/PageHeader'
 import { Loader2, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Building2, Pencil, Check, X } from 'lucide-react'
 
 export default function PartDetailPage() {
-  const { plant } = useAuth()
+  const { plant, employee } = useAuth()
   const navigate = useNavigate()
   const { id } = useParams()
   const [part, setPart] = useState(null)
@@ -54,6 +54,21 @@ export default function PartDetailPage() {
           .filter(p => p.stock !== 0 || p.min !== null || allPlants.length <= 3)
       )
     } catch { showToast('Failed to load part', 'error') } finally { setLoading(false) }
+  }
+
+  async function requestDeletion() {
+    const reason = window.prompt('Reason for deletion request:')
+    if (!reason?.trim()) return
+    const { error } = await supabase.from('delete_requests').insert([{
+      entity_type: 'spare_part',
+      entity_id: part.id,
+      requested_by: employee.id,
+      reason: reason.trim(),
+      status: 'pending',
+      org_id: plant.org_id,
+    }])
+    if (error) { showToast('Failed to submit request', 'error'); return }
+    showToast('Deletion request submitted', 'success')
   }
 
   async function deactivatePart() {
@@ -214,6 +229,11 @@ export default function PartDetailPage() {
         {/* Deactivate */}
         <button onClick={deactivatePart} style={{ width: '100%', padding: '12px 0', background: 'none', color: '#b91c1c', borderRadius: 12, fontSize: 13, fontWeight: 600, border: '1.5px solid #fca5a5', cursor: 'pointer' }}>
           Deactivate Part
+        </button>
+
+        {/* Request Deletion */}
+        <button onClick={requestDeletion} style={{ width: '100%', padding: '12px 0', background: 'none', color: '#d32f2f', borderRadius: 12, fontSize: 13, fontWeight: 600, border: '1.5px solid #fca5a5', cursor: 'pointer' }}>
+          Request Deletion
         </button>
 
         {/* History */}

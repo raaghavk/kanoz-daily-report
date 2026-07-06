@@ -9,6 +9,8 @@ const ENTITY_BADGES = {
   purchase: { bg: '#2d6a4f', label: 'Purchase' },
   dispatch: { bg: '#ff9800', label: 'Dispatch' },
   shift_report: { bg: '#2196f3', label: 'Shift Report' },
+  asset: { bg: '#dbeafe', color: '#1e40af', label: 'Asset' },
+  spare_part: { bg: '#fce7f3', color: '#9d174d', label: 'Spare Part' },
 }
 
 export default function DeleteRequests() {
@@ -66,7 +68,7 @@ export default function DeleteRequests() {
 
       if (updateError) throw updateError
 
-      const tableMap = { purchase: 'raw_material_purchases', dispatch: 'vehicle_dispatches', shift_report: 'shift_reports' }
+      const tableMap = { purchase: 'raw_material_purchases', dispatch: 'vehicle_dispatches', shift_report: 'shift_reports', asset: 'assets', spare_part: 'spare_part_items' }
       const table = tableMap[request.entity_type]
       const { error: deleteError } = await supabase
         .from(table)
@@ -252,7 +254,7 @@ export default function DeleteRequests() {
                         padding: '4px 10px',
                         borderRadius: 6,
                         background: ENTITY_BADGES[request.entity_type]?.bg || '#2c2c2c',
-                        color: '#fff',
+                        color: ENTITY_BADGES[request.entity_type]?.color || '#fff',
                         fontSize: 11,
                         fontWeight: 600,
                         marginBottom: 8,

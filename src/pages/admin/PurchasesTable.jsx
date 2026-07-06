@@ -23,7 +23,7 @@ export default function PurchasesTable() {
   const [rangeIdx, setRangeIdx] = useState(1)
 
   const fromDate = RANGES[rangeIdx].days
-    ? getLocalDate(new Date(Date.now() - (RANGES[rangeIdx].days - 1) * 86400000)) + 'T00:00:00'
+    ? getLocalDate(new Date(Date.now() - (RANGES[rangeIdx].days - 1) * 86400000))
     : null
 
   const { data: purchases = [], isLoading } = useQuery({
@@ -34,8 +34,8 @@ export default function PurchasesTable() {
         .select('id, purchase_datetime, quantity_kg, rate_per_kg, total_rm_amount, payment_status, suppliers(name), raw_material_types(name)')
         .eq('plant_id', plant.id)
         .eq('is_deleted', false)
-        .order('purchase_datetime', { ascending: false })
-      if (fromDate) q = q.gte('purchase_datetime', fromDate)
+        .order('date', { ascending: false })
+      if (fromDate) q = q.gte('date', fromDate)
       const { data, error } = await q.limit(500)
       if (error) throw error
       return data || []

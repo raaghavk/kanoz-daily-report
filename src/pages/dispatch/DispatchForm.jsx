@@ -732,6 +732,10 @@ export default function DispatchForm() {
                       if (selected) {
                         updateForm('transporter_id', selected.id)
                         updateForm('transporter', selected.name)
+                        if (selected.driver_name) updateForm('driver_name', selected.driver_name)
+                        if (selected.driver_phone) {
+                          updateForm('driver_phone', selected.driver_phone.replace(/^\+91/, ''))
+                        }
                       }
                     }}
                     style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}

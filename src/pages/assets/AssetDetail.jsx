@@ -67,6 +67,21 @@ export default function AssetDetail() {
       setEditEv(null); showToast('Event updated', 'success'); await load()
     } catch { showToast('Update failed', 'error') } finally { setBusy(false) }
   }
+  async function requestDeletion() {
+    const reason = window.prompt('Reason for deletion request:')
+    if (!reason?.trim()) return
+    const { error } = await supabase.from('delete_requests').insert([{
+      entity_type: 'asset',
+      entity_id: asset.id,
+      requested_by: employee.id,
+      reason: reason.trim(),
+      status: 'pending',
+      org_id: plant.org_id,
+    }])
+    if (error) { showToast('Failed to submit request', 'error'); return }
+    showToast('Deletion request submitted', 'success')
+  }
+
   async function deleteEv() {
     if (busy) return
     if (!window.confirm('Undo (delete) this event? This cannot be undone.')) return
@@ -119,6 +134,9 @@ export default function AssetDetail() {
           )}
           <button onClick={openQr} style={{ flex: asset.status === 'scrapped' ? 1 : 'none', padding: '14px 16px', borderRadius: 12, background: '#fff', color: '#2d6a4f', fontSize: 14, fontWeight: 800, border: '2px solid #e5ddd0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><QrCode size={18} /> QR tag</button>
         </div>
+        {!can(employee?.role, 'manage_users') && (
+          <button onClick={requestDeletion} style={{ width: '100%', padding: 12, borderRadius: 12, background: 'none', color: '#b91c1c', fontSize: 13, fontWeight: 600, border: '1.5px solid #fca5a5', cursor: 'pointer' }}>Request Deletion</button>
+        )}
 
         {showCost && asset.status !== 'scrapped' && ratio >= 0.5 && (
           <div style={{ ...card, borderColor: '#fca5a5', background: '#fff5f5' }}>
