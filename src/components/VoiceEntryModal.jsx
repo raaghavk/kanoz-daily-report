@@ -15,6 +15,7 @@ export default function VoiceEntryModal({ onClose }) {
   const [result, setResult] = useState(null)
   const [errorMsg, setErrorMsg] = useState('')
   const recognitionRef = useRef(null)
+  const accumulatedRef = useRef('')
 
   // Load plant master data for context
   const { data: suppliers = [] } = useQuery({
@@ -86,17 +87,20 @@ export default function VoiceEntryModal({ onClose }) {
       setPhase('listening')
       setTranscript('')
       setInterimText('')
+      accumulatedRef.current = ''
     }
 
     recognition.onresult = (event) => {
-      let final = ''
       let interim = ''
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const t = event.results[i][0].transcript
-        if (event.results[i].isFinal) final += t
-        else interim += t
+        if (event.results[i].isFinal) {
+          accumulatedRef.current += t
+          setTranscript(accumulatedRef.current)
+        } else {
+          interim += t
+        }
       }
-      if (final) setTranscript(prev => prev + final)
       setInterimText(interim)
     }
 
@@ -113,16 +117,12 @@ export default function VoiceEntryModal({ onClose }) {
 
     recognition.onend = () => {
       setInterimText('')
-      // Use a ref-captured final transcript to avoid stale closure
-      setTranscript(currentTranscript => {
-        const finalTranscript = currentTranscript
-        if (finalTranscript.trim()) {
-          processTranscript(finalTranscript.trim())
-        } else {
-          setPhase('idle')
-        }
-        return currentTranscript
-      })
+      const finalText = accumulatedRef.current.trim()
+      if (finalText) {
+        processTranscript(finalText)
+      } else {
+        setPhase('idle')
+      }
     }
 
     recognition.start()

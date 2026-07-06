@@ -126,6 +126,11 @@ export default function TransporterList() {
                       {[transporter.category, transporter.vehicle_number].filter(Boolean).join(' · ')}
                     </div>
                   )}
+                  {transporter.phone && (
+                    <a href={`tel:${transporter.phone}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#2d6a4f', textDecoration: 'none', display: 'block', marginTop: 1 }}>
+                      📞 {transporter.phone.replace('+91', '')}
+                    </a>
+                  )}
                   {transporter.address && (
                     <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {transporter.address}
@@ -189,13 +194,22 @@ export default function TransporterList() {
             <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Address (optional)" rows={2} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Type</label>
-            <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}>
-              <option value="">Select type...</option>
-              <option value="Tractor">Tractor</option>
-              <option value="Truck">Truck</option>
-              <option value="Other">Other</option>
-            </select>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Vehicle Type</label>
+            <input
+              type="text"
+              list="vehicle-types"
+              placeholder="Tractor, Truck, Pickup, etc."
+              value={formData.category}
+              onChange={e => setFormData({ ...formData, category: e.target.value })}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+            />
+            <datalist id="vehicle-types">
+              <option value="Tractor" />
+              <option value="Truck" />
+              <option value="Pickup" />
+              <option value="Mini Truck" />
+              <option value="Three Wheeler" />
+            </datalist>
           </div>
           <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Vehicle Number</label>

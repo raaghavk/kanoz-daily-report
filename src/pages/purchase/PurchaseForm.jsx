@@ -103,6 +103,21 @@ export default function PurchaseForm() {
     enabled: !!plant?.id,
   })
 
+  const { data: selectedTransporterVehicles = [] } = useQuery({
+    queryKey: ['transporter-vehicles-purchase', formData.transporter_id],
+    queryFn: async () => {
+      if (!formData.transporter_id) return []
+      const { data } = await supabase
+        .from('transporter_vehicles')
+        .select('*')
+        .eq('transporter_id', formData.transporter_id)
+        .eq('is_active', true)
+        .order('vehicle_number')
+      return data || []
+    },
+    enabled: !!formData.transporter_id,
+  })
+
   const { data: purchaseData, isLoading: loading, isError } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
@@ -168,12 +183,13 @@ export default function PurchaseForm() {
     setFormData(updated)
   }
 
-  async function scanKattaParchi() {
-    if (!formData.katta_parchi_photo) return
+  async function scanKattaParchi(directUrl) {
+    const imageUrl = directUrl !== undefined ? directUrl : formData.katta_parchi_photo
+    if (!imageUrl) return
     try {
       setScanning(true)
       const { data: result, error } = await supabase.functions.invoke('extract-receipt', {
-        body: { imageUrl: formData.katta_parchi_photo, type: 'katta_parchi' }
+        body: { imageUrl, type: 'katta_parchi' }
       })
 
       if (error) {
@@ -485,8 +501,9 @@ export default function PurchaseForm() {
             label=""
             required
             value={formData.katta_parchi_photo}
-            onChange={file => {
-              handleFieldChange('katta_parchi_photo', file)
+            onChange={async (url) => {
+              handleFieldChange('katta_parchi_photo', url)
+              if (url) scanKattaParchi(url)
             }}
             folder="purchases"
           />
@@ -494,7 +511,7 @@ export default function PurchaseForm() {
           {formData.katta_parchi_photo && (
             <button
               type="button"
-              onClick={scanKattaParchi}
+              onClick={() => scanKattaParchi()}
               disabled={scanning}
               style={{
                 marginTop: 12, width: '100%', padding: '12px 16px',
@@ -507,7 +524,7 @@ export default function PurchaseForm() {
               }}
             >
               <Sparkles size={18} />
-              {scanning ? 'Scanning...' : '✨ Auto-fill from Photo'}
+              {scanning ? 'Scanning...' : '↻ Re-scan Photo'}
             </button>
           )}
         </div>
@@ -685,6 +702,25 @@ export default function PurchaseForm() {
                   <option key={t.id} value={t.id}>{t.name}{t.category ? ` (${t.category})` : ''}</option>
                 ))}
               </select>
+              {formData.transporter_id && selectedTransporterVehicles.length > 0 && (
+                <>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Select Vehicle</label>
+                  <select
+                    value={formData.vehicle_number}
+                    onChange={e => {
+                      const updated = { ...formData, vehicle_number: e.target.value }
+                      updateCalculatedFields(updated)
+                      setFormData(updated)
+                    }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', marginBottom: 12, boxSizing: 'border-box' }}
+                  >
+                    <option value="">Select vehicle...</option>
+                    {selectedTransporterVehicles.map(v => (
+                      <option key={v.id} value={v.vehicle_number}>{v.vehicle_number} ({v.vehicle_type}){v.driver_name ? ` — ${v.driver_name}` : ''}</option>
+                    ))}
+                  </select>
+                </>
+              )}
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Number</label>
               <input type="text" placeholder="e.g., HR-01-AB-1234" value={formData.vehicle_number} onChange={e => handleFieldChange('vehicle_number', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
             </>

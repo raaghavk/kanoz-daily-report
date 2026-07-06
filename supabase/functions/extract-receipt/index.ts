@@ -32,7 +32,7 @@ Extract these fields from the image:
 - net_weight: "Net Wt" / "नेट" in KILOGRAMS. If not printed, compute gross_weight - tare_weight.
 - material_name: material being weighed (e.g. sarson bhusa, mustard husk, corn cob, paddy straw)
 - party_name: customer/party/supplier name if printed
-- date: date on the slip in YYYY-MM-DD format
+- date: date on the slip in YYYY-MM-DD format. CRITICAL: Indian weight bridge slips commonly use DD.MM.YY format (e.g., "15.05.26" means 15 May 2026, NOT 26 May 2015). The 2-digit year 26 = 2026, 25 = 2025, 24 = 2024. NEVER interpret the 2-digit year as a day. If you see "15.05.26 14:22", the date is 2026-05-15 and time is 14:22. Always return date as YYYY-MM-DD.
 - time: time in 24h HH:MM format
 - serial_no: the printed receipt/slip serial number (often labeled as Sr.No, Serial No, S.No, Parchi No, Slip No, Receipt No). Return as a string. Use null if not found.
 

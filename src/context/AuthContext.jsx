@@ -90,6 +90,20 @@ export function AuthProvider({ children }) {
     }
   }
 
+  async function refreshPlant() {
+    if (!user) return
+    try {
+      const { data } = await supabase
+        .from('employees')
+        .select('*, plants(*)')
+        .eq('auth_user_id', user.id)
+        .single()
+      if (data?.plants) setPlant(data.plants)
+    } catch (err) {
+      console.error('refreshPlant error:', err)
+    }
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     setUser(null)
@@ -98,7 +112,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, employee, plant, loading, noEmployeeRecord, signIn, signOut, switchPlant }}>
+    <AuthContext.Provider value={{ user, employee, plant, loading, noEmployeeRecord, signIn, signOut, switchPlant, refreshPlant }}>
       {children}
     </AuthContext.Provider>
   )

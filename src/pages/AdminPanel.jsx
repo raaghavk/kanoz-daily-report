@@ -13,7 +13,7 @@ const SECTIONS = [
 ]
 
 export default function AdminPanel() {
-  const { employee, plant } = useAuth()
+  const { employee, plant, refreshPlant } = useAuth()
 
   // Plant selector state
   const [plants, setPlants] = useState([])
@@ -41,6 +41,13 @@ export default function AdminPanel() {
   const [savingThreshold, setSavingThreshold] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  // Plant Location
+  const [showLocation, setShowLocation] = useState(false)
+  const [locationLat, setLocationLat] = useState(plant?.location_lat?.toString() || '')
+  const [locationLng, setLocationLng] = useState(plant?.location_lng?.toString() || '')
+  const [savingLocation, setSavingLocation] = useState(false)
+  const [gettingLocation, setGettingLocation] = useState(false)
+
   useEffect(() => {
     const sel = plants.find(p => p.id === selectedPlantId)
     setThresholdDraft(sel?.gcv_grade_threshold ?? 3200)
@@ -61,6 +68,45 @@ export default function AdminPanel() {
     }
     showToast('GCV grade threshold saved', 'success')
     setPlants(prev => prev.map(p => p.id === selectedPlantId ? { ...p, gcv_grade_threshold: val } : p))
+  }
+
+  useEffect(() => {
+    if (plant?.location_lat) {
+      setLocationLat(plant.location_lat.toString())
+      setLocationLng(plant.location_lng?.toString() || '')
+    }
+  }, [plant?.location_lat])
+
+  async function saveLocation() {
+    if (!locationLat || !locationLng) { showToast('Enter both latitude and longitude', 'error'); return }
+    setSavingLocation(true)
+    try {
+      const { error } = await supabase.from('plants').update({
+        location_lat: parseFloat(locationLat),
+        location_lng: parseFloat(locationLng),
+      }).eq('id', plant.id)
+      if (error) throw error
+      await refreshPlant()
+      showToast('Location saved — weather will now show on home screen', 'success')
+    } catch (err) {
+      console.error('saveLocation error:', err)
+      showToast('Failed to save location', 'error')
+    } finally { setSavingLocation(false) }
+  }
+
+  function captureLocation() {
+    if (!navigator.geolocation) { showToast('Geolocation not supported', 'error'); return }
+    setGettingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setLocationLat(pos.coords.latitude.toFixed(6))
+        setLocationLng(pos.coords.longitude.toFixed(6))
+        setGettingLocation(false)
+        showToast('Location captured — tap Save to apply', 'success')
+      },
+      () => { showToast('Could not get location', 'error'); setGettingLocation(false) },
+      { timeout: 8000 }
+    )
   }
 
   async function loadAllData() {
@@ -494,6 +540,54 @@ export default function AdminPanel() {
             )
           })
         )}
+
+        {/* Plant Location — for weather feature */}
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+          <button
+            onClick={() => setShowLocation(o => !o)}
+            style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 16 }}>🌤️</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Plant Location</div>
+                <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>
+                  {plant?.location_lat ? `${Number(plant.location_lat).toFixed(4)}, ${Number(plant.location_lng).toFixed(4)}` : 'Not set — needed for weather on home screen'}
+                </div>
+              </div>
+            </div>
+            <span style={{ fontSize: 12, color: '#8a8d7a' }}>{showLocation ? '▲' : '▼'}</span>
+          </button>
+
+          {showLocation && (
+            <div style={{ borderTop: '1px solid #f0ebe0', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Latitude</label>
+                  <input type="number" step="0.000001" placeholder="e.g. 25.4358" value={locationLat}
+                    onChange={e => setLocationLat(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Longitude</label>
+                  <input type="number" step="0.000001" placeholder="e.g. 81.8463" value={locationLng}
+                    onChange={e => setLocationLng(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={captureLocation} disabled={gettingLocation}
+                  style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 12, fontWeight: 600, color: '#2d6a4f', cursor: 'pointer' }}>
+                  {gettingLocation ? 'Getting...' : '📍 Use My Location'}
+                </button>
+                <button onClick={saveLocation} disabled={savingLocation}
+                  style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: 'none', background: '#2d6a4f', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: savingLocation ? 0.6 : 1 }}>
+                  {savingLocation ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

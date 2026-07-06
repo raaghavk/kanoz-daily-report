@@ -212,6 +212,21 @@ export default function DispatchForm() {
     }
   }
 
+  const { data: selectedTransporterVehicles = [] } = useQuery({
+    queryKey: ['transporter-vehicles-dispatch', form.transporter_id],
+    queryFn: async () => {
+      if (!form.transporter_id) return []
+      const { data } = await supabase
+        .from('transporter_vehicles')
+        .select('*')
+        .eq('transporter_id', form.transporter_id)
+        .eq('is_active', true)
+        .order('vehicle_number')
+      return data || []
+    },
+    enabled: !!form.transporter_id,
+  })
+
   const { data: latestPelletStock = {} } = useQuery({
     queryKey: ['latestPelletStock', plant?.id],
     queryFn: async () => {
@@ -340,6 +355,7 @@ export default function DispatchForm() {
     if (!form.driver_name.trim()) { showToast('Driver name is required', 'error'); return }
     if (!form.driver_phone.trim()) { showToast('Driver phone is required', 'error'); return }
     if (!/^\d{10}$/.test(form.driver_phone.trim())) { showToast('Driver phone must be 10 digits', 'error'); return }
+    if (!form.katta_parchi_photo) { showToast('Weight bridge photo is required', 'error'); return }
     if (form.pellets.some(p => !p.pellet_type_id || !p.quantity_mt)) { showToast('Fill all pellet entries', 'error'); return }
 
     // Pellet stock validation — prevent dispatching more than available closing stock
@@ -482,12 +498,13 @@ export default function DispatchForm() {
     }
   }
 
-  async function scanDispatchParchi() {
-    if (!form.katta_parchi_photo) return
+  async function scanDispatchParchi(directUrl) {
+    const imageUrl = directUrl !== undefined ? directUrl : form.katta_parchi_photo
+    if (!imageUrl) return
     try {
       setScanning(true)
       const { data: result, error } = await supabase.functions.invoke('extract-receipt', {
-        body: { imageUrl: form.katta_parchi_photo, type: 'katta_parchi' }
+        body: { imageUrl, type: 'katta_parchi' }
       })
       if (error || !result?.success) {
         showToast('Could not extract data from photo', 'error')
@@ -696,13 +713,16 @@ export default function DispatchForm() {
             <PhotoUpload
               label=""
               value={form.katta_parchi_photo}
-              onChange={file => updateForm('katta_parchi_photo', file)}
+              onChange={async (url) => {
+                updateForm('katta_parchi_photo', url)
+                if (url) scanDispatchParchi(url)
+              }}
               folder="dispatches"
             />
             {form.katta_parchi_photo && (
               <button
                 type="button"
-                onClick={scanDispatchParchi}
+                onClick={() => scanDispatchParchi()}
                 disabled={scanning}
                 style={{
                   marginTop: 12, width: '100%', padding: '12px 16px',
@@ -715,7 +735,7 @@ export default function DispatchForm() {
                 }}
               >
                 <Sparkles size={18} />
-                {scanning ? 'Scanning...' : '✨ Auto-fill from Photo'}
+                {scanning ? 'Scanning...' : '↻ Re-scan Photo'}
               </button>
             )}
           </div>
@@ -848,6 +868,27 @@ export default function DispatchForm() {
                   <Plus size={16} />
                 </button>
               </div>
+              {form.transporter_id && selectedTransporterVehicles.length > 0 && (
+                <>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6, marginTop: 12 }}>Select Vehicle</label>
+                  <select
+                    value={form.truck_number}
+                    onChange={e => {
+                      const v = selectedTransporterVehicles.find(v => v.vehicle_number === e.target.value)
+                      const updates = { truck_number: e.target.value }
+                      if (v?.driver_name) updates.driver_name = v.driver_name
+                      if (v?.driver_phone) updates.driver_phone = v.driver_phone.replace(/^\+91/, '')
+                      setForm(prev => ({ ...prev, ...updates }))
+                    }}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', marginBottom: 12, boxSizing: 'border-box' }}
+                  >
+                    <option value="">Select vehicle...</option>
+                    {selectedTransporterVehicles.map(v => (
+                      <option key={v.id} value={v.vehicle_number}>{v.vehicle_number} ({v.vehicle_type}){v.driver_name ? ` — ${v.driver_name}` : ''}</option>
+                    ))}
+                  </select>
+                </>
+              )}
             </div>
 
             {/* Driver Info */}
@@ -1019,15 +1060,6 @@ export default function DispatchForm() {
                 />
               </div>
             </div>
-
-            {/* Photo Upload */}
-            <PhotoUpload
-              label="Katta Parchi Photo"
-              value={form.katta_parchi_photo}
-              onChange={file => updateForm('katta_parchi_photo', file)}
-              bucket="photos"
-              folder="dispatches"
-            />
 
             {/* Remarks */}
             <div>

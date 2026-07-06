@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -8,7 +9,8 @@ import { MapPin, Phone, Edit2, Loader2, AlertCircle, Calendar } from 'lucide-rea
 import PageHeader from '../../components/PageHeader'
 
 export default function TransporterDetail() {
-  const { id } = useParams()
+  const { id: transporterId } = useParams()
+  const id = transporterId
   const navigate = useNavigate()
   const { plant } = useAuth()
   const [transporter, setTransporter] = useState(null)
@@ -24,6 +26,52 @@ export default function TransporterDetail() {
     driver_name: '',
     driver_phone: '',
   })
+
+  const [showAddVehicle, setShowAddVehicle] = useState(false)
+  const [newVehicle, setNewVehicle] = useState({ vehicle_number: '', vehicle_type: 'Tractor', driver_name: '', driver_phone: '' })
+  const [addingVehicle, setAddingVehicle] = useState(false)
+
+  const { data: vehicles = [], refetch: refetchVehicles } = useQuery({
+    queryKey: ['transporter-vehicles', transporterId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('transporter_vehicles')
+        .select('*')
+        .eq('transporter_id', transporterId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+      return data || []
+    },
+    enabled: !!transporterId,
+  })
+
+  async function addVehicle() {
+    if (!newVehicle.vehicle_number.trim()) { showToast('Vehicle number required', 'error'); return }
+    setAddingVehicle(true)
+    try {
+      const { error } = await supabase.from('transporter_vehicles').insert([{
+        transporter_id: transporterId,
+        vehicle_number: newVehicle.vehicle_number.trim().toUpperCase(),
+        vehicle_type: newVehicle.vehicle_type || 'Tractor',
+        driver_name: newVehicle.driver_name.trim() || null,
+        driver_phone: newVehicle.driver_phone.trim() ? '+91' + newVehicle.driver_phone.trim().replace(/^\+91/, '') : null,
+      }])
+      if (error) throw error
+      refetchVehicles()
+      setNewVehicle({ vehicle_number: '', vehicle_type: 'Tractor', driver_name: '', driver_phone: '' })
+      setShowAddVehicle(false)
+      showToast('Vehicle added', 'success')
+    } catch { showToast('Failed to add vehicle', 'error') }
+    finally { setAddingVehicle(false) }
+  }
+
+  async function deactivateVehicle(vehicleId) {
+    try {
+      await supabase.from('transporter_vehicles').update({ is_active: false }).eq('id', vehicleId)
+      refetchVehicles()
+      showToast('Vehicle removed', 'success')
+    } catch { showToast('Failed to remove', 'error') }
+  }
 
   useEffect(() => {
     if (id && plant?.org_id) {
@@ -206,7 +254,12 @@ export default function TransporterDetail() {
             {(transporter.driver_name || transporter.driver_phone) && (
               <div>
                 <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>Default Driver</p>
-                <p style={{ fontSize: 13, color: '#2c2c2c' }}>{[transporter.driver_name, transporter.driver_phone].filter(Boolean).join(' · ')}</p>
+                <p style={{ fontSize: 13, color: '#2c2c2c' }}>{transporter.driver_name || ''}</p>
+                {transporter.driver_phone && (
+                  <a href={`tel:${transporter.driver_phone}`} style={{ fontSize: 13, color: '#2d6a4f', textDecoration: 'none' }}>
+                    📞 {transporter.driver_phone.replace('+91', '')}
+                  </a>
+                )}
               </div>
             )}
 
@@ -222,6 +275,73 @@ export default function TransporterDetail() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Vehicles */}
+        <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Vehicles ({vehicles.length})</span>
+            <button onClick={() => setShowAddVehicle(v => !v)}
+              style={{ fontSize: 12, color: '#2d6a4f', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>
+              + Add Vehicle
+            </button>
+          </div>
+
+          {vehicles.length === 0 ? (
+            <div style={{ fontSize: 12, color: '#8a8d7a', textAlign: 'center', padding: '8px 0' }}>No vehicles added yet</div>
+          ) : (
+            vehicles.map(v => (
+              <div key={v.id} style={{ padding: '10px 0', borderBottom: '1px solid #f0ebe0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>{v.vehicle_number}</div>
+                  <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>{v.vehicle_type}</div>
+                  {v.driver_name && <div style={{ fontSize: 12, color: '#595c4a', marginTop: 2 }}>{v.driver_name}</div>}
+                  {v.driver_phone && (
+                    <a href={`tel:${v.driver_phone}`} style={{ fontSize: 12, color: '#2d6a4f', textDecoration: 'none', display: 'block', marginTop: 2 }}>
+                      📞 {v.driver_phone.replace('+91', '')}
+                    </a>
+                  )}
+                </div>
+                <button onClick={() => deactivateVehicle(v.id)}
+                  style={{ fontSize: 11, color: '#d32f2f', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+              </div>
+            ))
+          )}
+
+          {showAddVehicle && (
+            <div style={{ marginTop: 12, padding: '12px 0', borderTop: '1px solid #e5ddd0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>Vehicle No *</label>
+                  <input type="text" placeholder="UP70MT6151" value={newVehicle.vehicle_number}
+                    onChange={e => setNewVehicle(p => ({ ...p, vehicle_number: e.target.value }))}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>Type</label>
+                  <input type="text" list="vtypes" placeholder="Tractor" value={newVehicle.vehicle_type}
+                    onChange={e => setNewVehicle(p => ({ ...p, vehicle_type: e.target.value }))}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+                  <datalist id="vtypes">
+                    <option value="Tractor" /><option value="Truck" /><option value="Pickup" /><option value="Mini Truck" /><option value="Three Wheeler" />
+                  </datalist>
+                </div>
+              </div>
+              <input type="text" placeholder="Driver name" value={newVehicle.driver_name}
+                onChange={e => setNewVehicle(p => ({ ...p, driver_name: e.target.value }))}
+                style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+                <span style={{ padding: '9px 8px 9px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 13, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
+                <input type="tel" placeholder="Driver phone" value={newVehicle.driver_phone}
+                  onChange={e => setNewVehicle(p => ({ ...p, driver_phone: e.target.value }))}
+                  style={{ flex: 1, padding: '9px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0' }} />
+              </div>
+              <button onClick={addVehicle} disabled={addingVehicle}
+                style={{ width: '100%', padding: '10px 0', borderRadius: 12, background: '#2d6a4f', color: '#fff', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: addingVehicle ? 0.6 : 1 }}>
+                {addingVehicle ? 'Adding...' : 'Add Vehicle'}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
