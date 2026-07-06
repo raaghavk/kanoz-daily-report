@@ -6,16 +6,62 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Detect weather keywords
+function isWeatherQuery(q: string): boolean {
+  const keywords = ['weather', 'mausam', 'baarish', 'barish', 'rain', 'raining', 'temperature', 'temp', 'garmi', 'sardi', 'thand', 'bijli', 'aandhi', 'fog', 'dhund', 'cloudy', 'sunny', 'storm']
+  const lower = q.toLowerCase()
+  return keywords.some(k => lower.includes(k))
+}
+
+// Fetch weather from Open-Meteo
+async function fetchWeather(lat: number, lon: number): Promise<string> {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,weathercode,windspeed_10m&daily=precipitation_sum,precipitation_probability_max&forecast_days=3&timezone=Asia/Kolkata`
+    const res = await fetch(url)
+    const data = await res.json()
+    const cur = data?.current
+    const daily = data?.daily
+    const code = cur?.weathercode
+    const conditions: Record<number, string> = {
+      0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+      45: 'Fog', 48: 'Icy fog', 51: 'Light drizzle', 53: 'Moderate drizzle', 55: 'Heavy drizzle',
+      61: 'Slight rain', 63: 'Moderate rain', 65: 'Heavy rain',
+      80: 'Slight showers', 81: 'Moderate showers', 82: 'Heavy showers',
+      95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Heavy thunderstorm'
+    }
+    const condition = conditions[code] ?? `Code ${code}`
+    let result = `Current weather: ${condition}, ${Math.round(cur?.temperature_2m ?? 0)}°C, wind ${Math.round(cur?.windspeed_10m ?? 0)} km/h, precipitation ${cur?.precipitation ?? 0}mm now.\n`
+    result += 'Next 3 days forecast:\n'
+    const days = ['Today', 'Tomorrow', 'Day after']
+    for (let i = 0; i < 3; i++) {
+      const rain = (daily?.precipitation_sum?.[i] ?? 0).toFixed(1)
+      const prob = daily?.precipitation_probability_max?.[i] ?? 0
+      result += `  ${days[i]}: ${rain}mm rain, ${prob}% chance of rain\n`
+    }
+    return result
+  } catch {
+    return 'Weather data not available.'
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { question, plantId } = await req.json()
+    const { question, plantId, location } = await req.json() as { question?: string; plantId?: string; location?: { lat: number; lon: number } }
 
     if (!question || !plantId) {
       return new Response(JSON.stringify({ error: 'Missing question or plantId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Fetch weather if relevant
+    let weatherContext = ''
+    if (isWeatherQuery(question) && location?.lat && location?.lon) {
+      weatherContext = '\n\n## Current Weather & Forecast\n' + await fetchWeather(location.lat, location.lon)
+    } else if (isWeatherQuery(question)) {
+      weatherContext = '\n\n## Weather\nLocation not provided by user device — cannot fetch live weather.'
     }
 
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
@@ -138,7 +184,7 @@ BY CUSTOMER: ${Object.entries(byCustomer).sort((a,b) => b[1]-a[1]).map(([n, mt])
 
 TODAY (${todayStr}): ${todayPurchases.length} purchases, ${todayDispatches.length} dispatches, ${todayReports.length} shift reports
 
-${stockSummary}`
+${stockSummary}${weatherContext}`
 
     // Call Gemini Flash
     const geminiRes = await fetch(

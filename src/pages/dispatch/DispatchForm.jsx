@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
-import { Truck, Phone, Plus, X, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
+import { Truck, Phone, Plus, X, ChevronDown, ChevronRight, Loader2, Sparkles } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
@@ -60,6 +60,7 @@ export default function DispatchForm() {
   const [newCustomer, setNewCustomer] = useState('')
   const [newCustomerAddress, setNewCustomerAddress] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [scanning, setScanning] = useState(false)
 
   // Date filter logic
   function getDateFilter(tab) {
@@ -462,6 +463,40 @@ export default function DispatchForm() {
     }
   }
 
+  async function scanDispatchParchi() {
+    if (!form.katta_parchi_photo) return
+    try {
+      setScanning(true)
+      const { data: result, error } = await supabase.functions.invoke('extract-receipt', {
+        body: { imageUrl: form.katta_parchi_photo, type: 'katta_parchi' }
+      })
+      if (error || !result?.success) {
+        showToast('Could not extract data from photo', 'error')
+        return
+      }
+      const updates = {}
+      if (result.data?.vehicle_number) updates.truck_number = result.data.vehicle_number
+      if (result.data?.serial_no) updates.invoice_number = result.data.serial_no
+      if (result.data?.date) {
+        const parsed = new Date(result.data.date)
+        if (!isNaN(parsed.getTime())) {
+          updates.dispatch_date = result.data.date
+          updates.loading_date = result.data.date
+        }
+      }
+      if (result.data?.time) {
+        updates.dispatch_time = result.data.time
+        updates.loading_time = result.data.time
+      }
+      setForm(prev => ({ ...prev, ...updates }))
+      showToast('Fields auto-filled from photo', 'success')
+    } catch (err) {
+      showToast('Could not extract data from photo', 'error')
+    } finally {
+      setScanning(false)
+    }
+  }
+
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       {/* Header + Filter Tabs (sticky) */}
@@ -633,6 +668,39 @@ export default function DispatchForm() {
         {/* Dispatch Form */}
         {showForm && (
           <div style={{ padding: '0 20px', paddingBottom: 16 }}>
+          {/* Photo Scan — first thing in form */}
+          <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Sparkles size={16} style={{ color: '#2d6a4f' }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Weight Bridge Photo</span>
+            </div>
+            <PhotoUpload
+              label=""
+              value={form.katta_parchi_photo}
+              onChange={file => updateForm('katta_parchi_photo', file)}
+              folder="dispatches"
+            />
+            {form.katta_parchi_photo && (
+              <button
+                type="button"
+                onClick={scanDispatchParchi}
+                disabled={scanning}
+                style={{
+                  marginTop: 12, width: '100%', padding: '12px 16px',
+                  background: '#FEF3C7', color: '#92400E',
+                  border: '1.5px solid #F59E0B', borderRadius: 12,
+                  fontSize: 14, fontWeight: 600,
+                  cursor: scanning ? 'not-allowed' : 'pointer',
+                  opacity: scanning ? 0.6 : 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <Sparkles size={18} />
+                {scanning ? 'Scanning...' : '✨ Auto-fill from Photo'}
+              </button>
+            )}
+          </div>
+
           <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Truck Number */}

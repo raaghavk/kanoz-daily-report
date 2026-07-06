@@ -34,6 +34,7 @@ Extract these fields from the image:
 - party_name: customer/party/supplier name if printed
 - date: date on the slip in YYYY-MM-DD format
 - time: time in 24h HH:MM format
+- serial_no: the printed receipt/slip serial number (often labeled as Sr.No, Serial No, S.No, Parchi No, Slip No, Receipt No). Return as a string. Use null if not found.
 
 Return ONLY valid JSON with exactly these keys. Use null for anything not readable. Numbers must be plain numbers, not strings.`;
   }

@@ -162,14 +162,14 @@ export default function PurchaseForm() {
 
       if (result?.success) {
         const updated = { ...formData }
-        if (result.data?.vehicle_number) {
-          updated.vehicle_number = result.data.vehicle_number
-        }
-        if (result.data?.net_weight) {
-          updated.net_weight = result.data.net_weight
-        }
-        if (result.data?.time) {
-          updated.purchase_time = result.data.time
+        if (result.data?.vehicle_number) updated.vehicle_number = result.data.vehicle_number
+        if (result.data?.net_weight) updated.net_weight = result.data.net_weight
+        if (result.data?.time) updated.purchase_time = result.data.time
+        if (result.data?.serial_no) updated.serial_no = result.data.serial_no
+        if (result.data?.date) {
+          // Validate it looks like a real date before overriding
+          const parsed = new Date(result.data.date)
+          if (!isNaN(parsed.getTime())) updated.date = result.data.date
         }
         updateCalculatedFields(updated)
         setFormData(updated)
@@ -453,6 +453,44 @@ export default function PurchaseForm() {
       </div>
 
       <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Weight Bridge Photo — scan first card */}
+        <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <Sparkles size={16} style={{ color: '#2d6a4f' }} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Weight Bridge Photo</span>
+            <span style={{ fontSize: 11, color: '#d32f2f' }}>*</span>
+          </div>
+          <PhotoUpload
+            label=""
+            required
+            value={formData.katta_parchi_photo}
+            onChange={file => {
+              handleFieldChange('katta_parchi_photo', file)
+            }}
+            folder="purchases"
+          />
+          <div style={{ fontSize: 10, color: '#d32f2f', marginTop: 4 }}>* Required</div>
+          {formData.katta_parchi_photo && (
+            <button
+              type="button"
+              onClick={scanKattaParchi}
+              disabled={scanning}
+              style={{
+                marginTop: 12, width: '100%', padding: '12px 16px',
+                background: '#FEF3C7', color: '#92400E',
+                border: '1.5px solid #F59E0B', borderRadius: 12,
+                fontSize: 14, fontWeight: 600,
+                cursor: scanning ? 'not-allowed' : 'pointer',
+                opacity: scanning ? 0.6 : 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <Sparkles size={18} />
+              {scanning ? 'Scanning...' : '✨ Auto-fill from Photo'}
+            </button>
+          )}
+        </div>
+
         <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
@@ -651,43 +689,6 @@ export default function PurchaseForm() {
               onChange={e => handleFieldChange('net_weight', e.target.value)}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
             />
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <PhotoUpload
-              label="Weight Bridge Photo"
-              required
-              value={formData.katta_parchi_photo}
-              onChange={file => handleFieldChange('katta_parchi_photo', file)}
-              folder="purchases"
-            />
-            <div style={{ fontSize: 10, color: '#d32f2f', marginTop: 4 }}>* Weight bridge photo is mandatory</div>
-            {formData.katta_parchi_photo && (
-              <button
-                type="button"
-                onClick={scanKattaParchi}
-                disabled={scanning}
-                style={{
-                  marginTop: 12,
-                  width: '100%',
-                  padding: '12px 16px',
-                  background: '#FEF3C7',
-                  color: '#92400E',
-                  border: '1.5px solid #F59E0B',
-                  borderRadius: 12,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: scanning ? 'not-allowed' : 'pointer',
-                  opacity: scanning ? 0.6 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                }}
-              >
-                <Sparkles size={18} />
-                {scanning ? 'Scanning...' : '✨ Auto-fill from Photo'}
-              </button>
-            )}
           </div>
         </div>
 

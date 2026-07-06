@@ -25,6 +25,16 @@ export default function DataInsights() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
+  const [userLocation, setUserLocation] = useState(null)
+
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      pos => setUserLocation({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      () => {},
+      { timeout: 5000 }
+    )
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -38,7 +48,7 @@ export default function DataInsights() {
     setLoading(true)
     try {
       const { data, error } = await supabase.functions.invoke('plant-chat', {
-        body: { question, plantId: plant.id }
+        body: { question, plantId: plant.id, location: userLocation || undefined }
       })
       if (error) throw error
       const answer = data?.answer || 'No response received.'

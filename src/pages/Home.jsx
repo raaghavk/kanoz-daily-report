@@ -1,4 +1,4 @@
-import { useState, useCallback, startTransition } from 'react'
+import { useState, useCallback, useEffect, startTransition } from 'react'
 import { getLocalDate } from '../lib/dateUtils'
 import { useNavigate } from 'react-router-dom'
 import usePullToRefresh from '../hooks/usePullToRefresh'
@@ -17,6 +17,36 @@ export default function Home() {
   const [showProductionModal, setShowProductionModal] = useState(false)
   const [showTrucksModal, setShowTrucksModal] = useState(false)
   const [showIssuesModal, setShowIssuesModal] = useState(false)
+  const [weather, setWeather] = useState(null)
+
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude: lat, longitude: lon } = pos.coords
+          const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,weathercode&daily=precipitation_sum&forecast_days=1&timezone=Asia/Kolkata`
+          const res = await fetch(url)
+          const data = await res.json()
+          const code = data?.current?.weathercode
+          const temp = Math.round(data?.current?.temperature_2m ?? 0)
+          const precip = data?.daily?.precipitation_sum?.[0] ?? 0
+          const rainToday = precip > 0.5
+          let icon = '☀️', desc = 'Clear'
+          if (code === 0) { icon = '☀️'; desc = 'Clear' }
+          else if (code <= 3) { icon = '⛅'; desc = 'Partly cloudy' }
+          else if (code <= 48) { icon = '🌫️'; desc = 'Foggy' }
+          else if (code <= 67) { icon = '🌧️'; desc = 'Rain' }
+          else if (code <= 77) { icon = '❄️'; desc = 'Snow' }
+          else if (code <= 82) { icon = '🌧️'; desc = 'Showers' }
+          else { icon = '⛈️'; desc = 'Storm' }
+          setWeather({ temp, icon, desc, rainToday, precip: precip.toFixed(1) })
+        } catch {}
+      },
+      () => {}, // silently fail if location denied
+      { timeout: 5000 }
+    )
+  }, [])
 
   const now = new Date()
   const hour = now.getHours()
@@ -218,6 +248,29 @@ export default function Home() {
               Shift {currentShift} &bull; {shiftTime}
             </span>
           </div>
+          {/* Weather row — only shown when loaded */}
+          {weather && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginTop: 8,
+              background: weather.rainToday ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.06)',
+              borderRadius: 10, padding: '8px 12px',
+              border: weather.rainToday ? '1px solid rgba(59,130,246,0.3)' : 'none',
+            }}>
+              <span style={{ fontSize: 16 }}>{weather.icon}</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>
+                {weather.temp}°C · {weather.desc}
+              </span>
+              {weather.rainToday && (
+                <span style={{
+                  marginLeft: 'auto', fontSize: 11, fontWeight: 700,
+                  color: '#93c5fd', background: 'rgba(59,130,246,0.2)',
+                  padding: '2px 8px', borderRadius: 20,
+                }}>
+                  🌧️ Rain {weather.precip}mm today
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
