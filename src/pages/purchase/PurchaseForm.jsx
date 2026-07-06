@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Plus, Sparkles } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
@@ -14,6 +14,7 @@ import { getLocalDate } from '../../lib/dateUtils'
 export default function PurchaseForm() {
   const navigate = useNavigate()
   const { id } = useParams()
+  const location = useLocation()
   const { plant, employee } = useAuth()
   const queryClient = useQueryClient()
 
@@ -140,6 +141,26 @@ export default function PurchaseForm() {
       remarks: purchaseData.remarks || '',
     })
   }, [purchaseData])
+
+  // Apply voice prefill when master data is loaded
+  useEffect(() => {
+    const prefill = location.state?.prefill
+    if (!prefill) return
+    if (!rawMaterials.length && !suppliers.length) return // wait for data
+
+    const updated = { ...formData }
+    if (prefill.supplier_id) updated.supplier_id = prefill.supplier_id
+    if (prefill.raw_material_type_id) updated.raw_material_type_id = prefill.raw_material_type_id
+    if (prefill.net_weight) updated.net_weight = String(prefill.net_weight)
+    if (prefill.rate_per_kg) updated.rate_per_kg = String(prefill.rate_per_kg)
+    if (prefill.vehicle_number) {
+      updated.vehicle_number = prefill.vehicle_number
+      updated.vehicle_type = prefill.vehicle_type || 'other'
+    }
+    if (prefill.serial_no) updated.serial_no = String(prefill.serial_no)
+    updateCalculatedFields(updated)
+    setFormData(updated)
+  }, [location.state?.prefill, rawMaterials.length, suppliers.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleFieldChange(field, value) {
     const updated = { ...formData, [field]: value }

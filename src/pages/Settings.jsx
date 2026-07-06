@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
+import { showToast } from '../components/Toast'
 
 function MiniToggle({ on, onToggle, disabled }) {
   return (
@@ -101,6 +102,81 @@ function NotificationsSection({ pushEnabled, pushLoading, onTogglePush, prefs, p
             </div>
           )}
         </>
+      )}
+    </div>
+  )
+}
+
+function PlantLocationSection({ plant }) {
+  const [lat, setLat] = useState(plant?.location_lat?.toString() || '')
+  const [lng, setLng] = useState(plant?.location_lng?.toString() || '')
+  const [saving, setSaving] = useState(false)
+  const [gettingLocation, setGettingLocation] = useState(false)
+
+  useEffect(() => {
+    setLat(plant?.location_lat?.toString() || '')
+    setLng(plant?.location_lng?.toString() || '')
+  }, [plant?.location_lat, plant?.location_lng])
+
+  async function saveLocation() {
+    if (!lat || !lng) { showToast('Enter both latitude and longitude', 'error'); return }
+    setSaving(true)
+    try {
+      const { error } = await supabase.from('plants').update({
+        location_lat: parseFloat(lat),
+        location_lng: parseFloat(lng),
+      }).eq('id', plant.id)
+      if (error) throw error
+      showToast('Plant location saved', 'success')
+    } catch { showToast('Failed to save location', 'error') }
+    finally { setSaving(false) }
+  }
+
+  function useCurrentLocation() {
+    if (!navigator.geolocation) { showToast('Geolocation not supported', 'error'); return }
+    setGettingLocation(true)
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setLat(pos.coords.latitude.toFixed(6))
+        setLng(pos.coords.longitude.toFixed(6))
+        setGettingLocation(false)
+        showToast('Location captured — tap Save to apply', 'success')
+      },
+      () => { showToast('Could not get location', 'error'); setGettingLocation(false) },
+      { timeout: 8000 }
+    )
+  }
+
+  return (
+    <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', marginBottom: 4 }}>🌤️ Plant Location</div>
+      <div style={{ fontSize: 11, color: '#8a8d7a', marginBottom: 12 }}>Used for weather on home screen</div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+        <div>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Latitude</label>
+          <input type="number" step="0.000001" placeholder="e.g. 25.4358" value={lat} onChange={e => setLat(e.target.value)}
+            style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Longitude</label>
+          <input type="number" step="0.000001" placeholder="e.g. 81.8463" value={lng} onChange={e => setLng(e.target.value)}
+            style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={useCurrentLocation} disabled={gettingLocation}
+          style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 12, fontWeight: 600, color: '#2d6a4f', cursor: 'pointer' }}>
+          {gettingLocation ? 'Getting...' : '📍 Use My Location'}
+        </button>
+        <button onClick={saveLocation} disabled={saving}
+          style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: 'none', background: '#2d6a4f', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+      {plant?.location_lat && (
+        <div style={{ marginTop: 8, fontSize: 11, color: '#8a8d7a', textAlign: 'center' }}>
+          Current: {Number(plant.location_lat).toFixed(4)}, {Number(plant.location_lng).toFixed(4)}
+        </div>
       )}
     </div>
   )
@@ -236,6 +312,10 @@ export default function SettingsPage() {
           </select>
           {switching && <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 4 }}>Switching...</div>}
         </div>
+      )}
+      {/* Plant Location (admin only) */}
+      {isAdmin && (
+        <PlantLocationSection plant={plant} />
       )}
       {/* Directory Links */}
       {(() => {

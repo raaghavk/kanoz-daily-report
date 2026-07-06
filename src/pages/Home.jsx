@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
 import { ChevronRight, AlertTriangle, Wrench, CheckSquare, Circle } from 'lucide-react'
+import VoiceFAB from '../components/VoiceFAB'
 
 export default function Home() {
   const { employee, plant } = useAuth()
@@ -20,33 +21,30 @@ export default function Home() {
   const [weather, setWeather] = useState(null)
 
   useEffect(() => {
-    if (!navigator.geolocation) return
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude: lat, longitude: lon } = pos.coords
-          const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,weathercode&daily=precipitation_sum&forecast_days=1&timezone=Asia/Kolkata`
-          const res = await fetch(url)
-          const data = await res.json()
-          const code = data?.current?.weathercode
-          const temp = Math.round(data?.current?.temperature_2m ?? 0)
-          const precip = data?.daily?.precipitation_sum?.[0] ?? 0
-          const rainToday = precip > 0.5
-          let icon = '☀️', desc = 'Clear'
-          if (code === 0) { icon = '☀️'; desc = 'Clear' }
-          else if (code <= 3) { icon = '⛅'; desc = 'Partly cloudy' }
-          else if (code <= 48) { icon = '🌫️'; desc = 'Foggy' }
-          else if (code <= 67) { icon = '🌧️'; desc = 'Rain' }
-          else if (code <= 77) { icon = '❄️'; desc = 'Snow' }
-          else if (code <= 82) { icon = '🌧️'; desc = 'Showers' }
-          else { icon = '⛈️'; desc = 'Storm' }
-          setWeather({ temp, icon, desc, rainToday, precip: precip.toFixed(1) })
-        } catch {}
-      },
-      () => {}, // silently fail if location denied
-      { timeout: 5000 }
-    )
-  }, [])
+    const lat = plant?.location_lat
+    const lon = plant?.location_lng
+    if (!lat || !lon) return
+    ;(async () => {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,weathercode&daily=precipitation_sum&forecast_days=1&timezone=Asia/Kolkata`
+        const res = await fetch(url)
+        const data = await res.json()
+        const code = data?.current?.weathercode
+        const temp = Math.round(data?.current?.temperature_2m ?? 0)
+        const precip = data?.daily?.precipitation_sum?.[0] ?? 0
+        const rainToday = precip > 0.5
+        let icon = '☀️', desc = 'Clear'
+        if (code === 0) { icon = '☀️'; desc = 'Clear' }
+        else if (code <= 3) { icon = '⛅'; desc = 'Partly cloudy' }
+        else if (code <= 48) { icon = '🌫️'; desc = 'Foggy' }
+        else if (code <= 67) { icon = '🌧️'; desc = 'Rain' }
+        else if (code <= 77) { icon = '❄️'; desc = 'Snow' }
+        else if (code <= 82) { icon = '🌧️'; desc = 'Showers' }
+        else { icon = '⛈️'; desc = 'Storm' }
+        setWeather({ temp, icon, desc, rainToday, precip: precip.toFixed(1) })
+      } catch {}
+    })()
+  }, [plant?.location_lat, plant?.location_lng])
 
   const now = new Date()
   const hour = now.getHours()
@@ -554,6 +552,8 @@ export default function Home() {
         </div>
         <button onClick={() => setShowIssuesModal(false)} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, background: '#fefae0', border: '1px solid #e5ddd0', cursor: 'pointer' }}>Close</button>
       </Modal>
+
+      <VoiceFAB />
     </div>
   )
 }

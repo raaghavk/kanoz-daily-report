@@ -38,6 +38,25 @@ export default function DispatchForm() {
     if (location.state?.showForm) setShowForm(true)
   }, [location.state])
 
+  // Apply voice prefill
+  useEffect(() => {
+    const prefill = location.state?.prefill
+    if (!prefill) return
+
+    setForm(prev => ({
+      ...prev,
+      ...(prefill.customer_id && { customer_id: prefill.customer_id }),
+      ...(prefill.truck_number && { truck_number: prefill.truck_number }),
+      ...(prefill.transporter_id && { transporter_id: prefill.transporter_id }),
+      ...(prefill.transporter_name && !prefill.transporter_id && { transporter: prefill.transporter_name }),
+      ...(prefill.pellet_type_id && prefill.quantity_mt && {
+        pellets: [{ pellet_type_id: prefill.pellet_type_id, quantity_mt: String(prefill.quantity_mt) }]
+      }),
+    }))
+    // Make sure form is visible
+    setShowForm(true)
+  }, [location.state?.prefill]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const [form, setForm] = useState({
     truck_number: '',
     customer_id: '',
