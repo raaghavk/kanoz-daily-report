@@ -9,6 +9,7 @@ import PhotoUpload from '../../components/PhotoUpload'
 import { Truck, Phone, Plus, X, ChevronDown, ChevronRight, Loader2, Sparkles } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
+import AddTransporterModal from '../../components/AddTransporterModal'
 import { getLocalDate } from '../../lib/dateUtils'
 
 export default function DispatchForm() {
@@ -183,35 +184,6 @@ export default function DispatchForm() {
   // Company vehicles are only for raw material purchases, not outgoing dispatches
 
   const [showAddTransporter, setShowAddTransporter] = useState(false)
-  const [newTransporterName, setNewTransporterName] = useState('')
-  const [newTransporterPhone, setNewTransporterPhone] = useState('')
-
-  async function addTransporter() {
-    if (!plant?.org_id) {
-      showToast('Organization context missing. Please reload.', 'error')
-      return
-    }
-    if (!newTransporterName.trim()) { showToast('Transporter name is required', 'error'); return }
-    try {
-      const { data } = await supabase
-        .from('transporters')
-        .insert([{ name: newTransporterName.trim(), phone: newTransporterPhone.trim() || null, org_id: plant.org_id }])
-        .select()
-      if (data?.[0]) {
-        queryClient.invalidateQueries({ queryKey: ['transporters', plant?.org_id] })
-        updateForm('transporter_id', data[0].id)
-        updateForm('transporter', data[0].name)
-        setNewTransporterName('')
-        setNewTransporterPhone('')
-        setShowAddTransporter(false)
-        showToast('Transporter added', 'success')
-      }
-    } catch (err) {
-      console.error('Error adding transporter:', err)
-      showToast('Failed to add transporter', 'error')
-    }
-  }
-
   const { data: selectedTransporterVehicles = [] } = useQuery({
     queryKey: ['transporter-vehicles-dispatch', form.transporter_id],
     queryFn: async () => {
@@ -1088,51 +1060,17 @@ export default function DispatchForm() {
         )}
       </div>
 
-      {/* Add Transporter Modal */}
-      <Modal isOpen={showAddTransporter} onClose={() => setShowAddTransporter(false)} title="Add New Transporter">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-              Transporter Name <span style={{ color: '#D32F2F' }}>*</span>
-            </label>
-            <input
-              type="text"
-              placeholder="e.g., ABC Transport"
-              value={newTransporterName}
-              onChange={e => setNewTransporterName(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              placeholder="e.g., 9876543210"
-              value={newTransporterPhone}
-              onChange={e => setNewTransporterPhone(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
-            <button
-              onClick={() => setShowAddTransporter(false)}
-              style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={addTransporter}
-              style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
-            >
-              Add Transporter
-            </button>
-          </div>
-        </div>
-      </Modal>
+      {/* Add Transporter Modal (shared with Settings + Purchase) */}
+      <AddTransporterModal
+        isOpen={showAddTransporter}
+        onClose={() => setShowAddTransporter(false)}
+        orgId={plant?.org_id}
+        onAdded={t => {
+          queryClient.invalidateQueries({ queryKey: ['transporters', plant?.org_id] })
+          updateForm('transporter_id', t.id)
+          updateForm('transporter', t.name)
+        }}
+      />
     </div>
   )
 }

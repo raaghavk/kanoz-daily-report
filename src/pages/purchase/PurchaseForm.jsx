@@ -9,6 +9,7 @@ import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
+import AddTransporterModal from '../../components/AddTransporterModal'
 import { getLocalDate } from '../../lib/dateUtils'
 
 export default function PurchaseForm() {
@@ -20,6 +21,7 @@ export default function PurchaseForm() {
 
   const [saving, setSaving] = useState(false)
   const [showAddSupplier, setShowAddSupplier] = useState(false)
+  const [showAddTransporter, setShowAddTransporter] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [showManageVehicles, setShowManageVehicles] = useState(false)
   const [newVehicleNumber, setNewVehicleNumber] = useState('')
@@ -198,18 +200,23 @@ export default function PurchaseForm() {
       }
 
       if (result?.success) {
-        const updated = { ...formData }
-        if (result.data?.vehicle_number) updated.vehicle_number = result.data.vehicle_number
-        if (result.data?.net_weight) updated.net_weight = result.data.net_weight
-        if (result.data?.time) updated.purchase_time = result.data.time
-        if (result.data?.serial_no) updated.serial_no = result.data.serial_no
-        if (result.data?.date) {
-          // Validate it looks like a real date before overriding
-          const parsed = new Date(result.data.date)
-          if (!isNaN(parsed.getTime())) updated.date = result.data.date
-        }
-        updateCalculatedFields(updated)
-        setFormData(updated)
+        // Functional update: auto-scan fires right after upload, before React has
+        // re-rendered with the new photo — spreading stale formData here used to
+        // wipe katta_parchi_photo (photo "disappeared" after scanning).
+        setFormData(prev => {
+          const updated = { ...prev }
+          if (imageUrl && !updated.katta_parchi_photo) updated.katta_parchi_photo = imageUrl
+          if (result.data?.vehicle_number) updated.vehicle_number = result.data.vehicle_number
+          if (result.data?.net_weight) updated.net_weight = result.data.net_weight
+          if (result.data?.time) updated.purchase_time = result.data.time
+          if (result.data?.serial_no) updated.serial_no = String(result.data.serial_no)
+          if (result.data?.date) {
+            const parsed = new Date(result.data.date)
+            if (!isNaN(parsed.getTime())) updated.date = result.data.date
+          }
+          updateCalculatedFields(updated)
+          return updated
+        })
         showToast('Fields auto-filled from photo', 'success')
       } else {
         showToast('Could not extract data from photo', 'error')
@@ -685,7 +692,10 @@ export default function PurchaseForm() {
             </>
           ) : transporters.length > 0 ? (
             <>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Transporter</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>Transporter</label>
+                <button type="button" onClick={() => setShowAddTransporter(true)} style={{ background: 'none', border: 'none', color: '#2d6a4f', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}>+ Add New</button>
+              </div>
               <select
                 value={formData.transporter_id}
                 onChange={e => {
@@ -726,6 +736,7 @@ export default function PurchaseForm() {
             </>
           ) : (
             <>
+              <button type="button" onClick={() => setShowAddTransporter(true)} style={{ width: '100%', padding: '10px 0', background: '#fff', color: '#2d6a4f', border: '1.5px dashed #2d6a4f', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 12 }}>+ Add Transporter</button>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Number</label>
               <input type="text" placeholder="e.g., HR-01-AB-1234" value={formData.vehicle_number} onChange={e => handleFieldChange('vehicle_number', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
             </>
@@ -1051,6 +1062,16 @@ export default function PurchaseForm() {
           </div>
         </div>
       </Modal>
+      <AddTransporterModal
+        isOpen={showAddTransporter}
+        onClose={() => setShowAddTransporter(false)}
+        orgId={plant?.org_id}
+        onAdded={t => {
+          queryClient.invalidateQueries({ queryKey: ['transporters', plant?.org_id] })
+          handleFieldChange('transporter_id', t.id)
+        }}
+      />
+
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import AddTransporterModal from '../../components/AddTransporterModal'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
@@ -42,34 +43,6 @@ export default function TransporterList() {
       showToast('Failed to load transporters', 'error')
     } finally {
       setLoading(false)
-    }
-  }
-
-  async function handleAddTransporter() {
-    if (!formData.name.trim() || !formData.phone.trim()) {
-      showToast('Name and phone are required', 'error')
-      return
-    }
-    if (submitting) return
-    setSubmitting(true)
-    try {
-      const phoneWithPrefix = '+91' + formData.phone.replace(/^\+91/, '').trim()
-      const insertPayload = { org_id: plant.org_id, name: formData.name.trim(), phone: phoneWithPrefix, address: formData.address.trim() || null, is_active: true }
-      if (formData.category) insertPayload.category = formData.category
-      if (formData.vehicle_number.trim()) insertPayload.vehicle_number = formData.vehicle_number.trim()
-      if (formData.driver_name.trim()) insertPayload.driver_name = formData.driver_name.trim()
-      if (formData.driver_phone.trim()) insertPayload.driver_phone = '+91' + formData.driver_phone.replace(/^\+91/, '').trim()
-      const { data, error } = await supabase.from('transporters').insert([insertPayload]).select()
-      if (error) throw error
-      setTransporters([...transporters, data[0]])
-      setFormData({ name: '', phone: '', address: '', category: '', vehicle_number: '', driver_name: '', driver_phone: '' })
-      setShowAddModal(false)
-      showToast('Transporter added', 'success')
-    } catch (err) {
-      console.error('Error adding transporter:', err)
-      showToast('Failed to add transporter', 'error')
-    } finally {
-      setSubmitting(false)
     }
   }
 
@@ -176,62 +149,12 @@ export default function TransporterList() {
         <Plus size={24} strokeWidth={2.5} />
       </button>
 
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add New Transporter">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Name <span style={{ color: '#d32f2f' }}>*</span></label>
-            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Transporter name" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Phone <span style={{ color: '#d32f2f' }}>*</span></label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-              <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
-              <input type="tel" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} placeholder="10-digit number" style={{ flex: 1, padding: '10px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
-            </div>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>
-            <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Address (optional)" rows={2} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Vehicle Type</label>
-            <input
-              type="text"
-              list="vehicle-types"
-              placeholder="Tractor, Truck, Pickup, etc."
-              value={formData.category}
-              onChange={e => setFormData({ ...formData, category: e.target.value })}
-              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
-            />
-            <datalist id="vehicle-types">
-              <option value="Tractor" />
-              <option value="Truck" />
-              <option value="Pickup" />
-              <option value="Mini Truck" />
-              <option value="Three Wheeler" />
-            </datalist>
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Vehicle Number</label>
-            <input type="text" value={formData.vehicle_number} onChange={e => setFormData({ ...formData, vehicle_number: e.target.value })} placeholder="e.g., UP70 AB 1234" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Driver Name</label>
-            <input type="text" value={formData.driver_name} onChange={e => setFormData({ ...formData, driver_name: e.target.value })} placeholder="Default driver name" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Driver Phone</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-              <span style={{ padding: '10px 8px 10px 12px', background: '#e8f0ec', borderRadius: '12px 0 0 12px', border: '1.5px solid #e5ddd0', borderRight: 'none', fontSize: 14, color: '#2d6a4f', fontWeight: 600 }}>+91</span>
-              <input type="tel" value={formData.driver_phone} onChange={e => setFormData({ ...formData, driver_phone: e.target.value })} placeholder="10-digit number" style={{ flex: 1, padding: '10px 12px', borderRadius: '0 12px 12px 0', border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
-            <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Cancel</button>
-            <button onClick={handleAddTransporter} disabled={submitting} style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: 'white', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.6 : 1 }}>{submitting ? 'Adding...' : 'Add Transporter'}</button>
-          </div>
-        </div>
-      </Modal>
+      <AddTransporterModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        orgId={plant?.org_id}
+        onAdded={() => fetchTransporters()}
+      />
     </div>
   )
 }
