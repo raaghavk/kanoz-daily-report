@@ -16,6 +16,7 @@ export default function VoiceEntryModal({ onClose }) {
   const [errorMsg, setErrorMsg] = useState('')
   const recognitionRef = useRef(null)
   const accumulatedRef = useRef('')
+  const latestTranscriptRef = useRef('')
 
   // Load plant master data for context
   const { data: suppliers = [] } = useQuery({
@@ -88,6 +89,7 @@ export default function VoiceEntryModal({ onClose }) {
       setTranscript('')
       setInterimText('')
       accumulatedRef.current = ''
+      latestTranscriptRef.current = ''
     }
 
     recognition.onresult = (event) => {
@@ -102,6 +104,7 @@ export default function VoiceEntryModal({ onClose }) {
         }
       }
       setInterimText(interim)
+      latestTranscriptRef.current = accumulatedRef.current + interim
     }
 
     recognition.onerror = (event) => {
@@ -117,7 +120,7 @@ export default function VoiceEntryModal({ onClose }) {
 
     recognition.onend = () => {
       setInterimText('')
-      const finalText = accumulatedRef.current.trim()
+      const finalText = latestTranscriptRef.current.trim()
       if (finalText) {
         processTranscript(finalText)
       } else {

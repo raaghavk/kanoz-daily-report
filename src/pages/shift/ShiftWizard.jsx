@@ -82,6 +82,8 @@ export default function ShiftWizard() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [reportId, setReportId] = useState(editId || null)
   const [restoredFromStorage, setRestoredFromStorage] = useState(false)
+  const [loadingData, setLoadingData] = useState(true)
+  const [initError, setInitError] = useState(null)
 
   // Report data state — shared across all steps
   const [reportData, setReportData] = useState({
@@ -189,16 +191,7 @@ export default function ShiftWizard() {
     setPendingRestore(null)
   }, [])
 
-  // Guard: only ever load plant data once per wizard session.
-  // Without this, a plant reference change (AuthContext re-render) or a slow
-  // async return from loadPlantData could fire again and wipe user-entered timings.
-  const plantDataLoadedRef = useRef(false)
-  useEffect(() => {
-    if (plant?.id && initDone && !restoredFromStorage && !editId && !plantDataLoadedRef.current) {
-      plantDataLoadedRef.current = true
-      loadPlantData()
-    }
-  }, [plant, initDone, restoredFromStorage]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [duplicateReportId, setDuplicateReportId] = useState(null)
 
   // Auto-save wizard state to localStorage on changes (so it survives navigation/app close)
   useEffect(() => {
@@ -234,174 +227,118 @@ export default function ShiftWizard() {
     }
   }, [initDone, editId])
 
-  // For edit mode: load plant data first, then merge existing report on top
+  // Unified Loader Effect: runs on mount / plant context load and handles both Edit and New paths cleanly
   useEffect(() => {
-    if (editId && plant?.id) {
-      loadPlantData().then(() => loadExistingReport())
-    }
-  }, [editId, plant]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (!plant?.id || !initDone) return
 
-  async function loadPlantData() {
-    const [machinesRes, materialsRes, pelletTypesRes, equipmentRes] = await Promise.all([
-      supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
-      supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
-      supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
-      supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
-    ])
-
-    // Fetch previous shift data for carry-forward (opening = prev closing)
-    let prevPelletStock = []
-    let prevDieselLog = []
-    let prevRawMaterials = []
-    let prevDieselStock = null
-    const { data: prevReport } = await supabase
-      .from('shift_reports')
-      .select('id')
-      .eq('plant_id', plant.id)
-      .eq('is_deleted', false)
-      .order('date', { ascending: false })
-      .order('shift', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    let prevMixes = []
-    if (prevReport) {
-      const [psRes, dlRes, rmRes, dsRes, mixRes] = await Promise.all([
-        supabase.from('pellet_stock').select('*').eq('shift_report_id', prevReport.id),
-        supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', prevReport.id),
-        supabase.from('raw_material_usage').select('*').eq('shift_report_id', prevReport.id),
-        supabase.from('diesel_stock').select('*').eq('shift_report_id', prevReport.id).maybeSingle(),
-        supabase.from('shift_mixes').select('*, shift_mix_compositions(*)').eq('shift_report_id', prevReport.id),
-      ])
-      prevPelletStock = psRes.data || []
-      prevDieselLog = dlRes.data || []
-      prevRawMaterials = rmRes.data || []
-      prevDieselStock = dsRes.data
-      prevMixes = mixRes.data || []
+    // Skip initialization if we successfully restored a draft from local storage
+    if (restoredFromStorage && !editId) {
+      setLoadingData(false)
+      return
     }
 
-    // Carry forward mix opening stock from previous shift closing.
-    // Only carry forward mixes that still have remaining stock (closing_kg > 0).
-    // Fully-used mixes (closing = 0) are shown in their own shift report but not brought into the next shift.
-    if (prevMixes.length > 0) {
-      const carryForwardMixes = prevMixes
-        .filter(m => (parseFloat(m.closing_kg) || 0) > 0)
-        .map(m => ({
-          local_id: 'mix_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-          db_id: null,
-          name: m.name,
-          type: m.type,
-          derived_pellet_name: m.derived_pellet_name || m.type || null,
-          derived_gcv: m.derived_gcv != null ? parseFloat(m.derived_gcv) : null,
-          derived_grade: m.derived_grade || null,
-          opening_kg: parseFloat(m.closing_kg) || 0,
-          prepared_kg: 0,
-          consumed_ingredients: [],
-          isCarryForward: true,
-          recipeIngredients: (m.shift_mix_compositions || []).map(c => ({
-            raw_material_type_id: c.raw_material_type_id,
-            name: c.raw_material_name,
-            quantity_kg: parseFloat(c.quantity_kg) || 0,
-          })),
-          ingredients: (m.shift_mix_compositions || []).map(c => ({
-            raw_material_type_id: c.raw_material_type_id,
-            name: c.raw_material_name,
-            quantity_kg: parseFloat(c.quantity_kg) || 0,
-          })),
-        }))
-      if (carryForwardMixes.length > 0) {
-        updateData('mixes', carryForwardMixes)
-      }
-    }
+    let cancelled = false
 
-    if (machinesRes.data) {
-      updateData('machines', machinesRes.data.map(m => ({
-        id: m.id, name: m.name, did_not_run: true, from_time: '', to_time: '', breakdown_hrs: 0, production_hours: 0, remarks: '',
-      })))
-    }
-    if (materialsRes.data) {
-      updateData('rawMaterials', materialsRes.data.map(m => {
-        const prev = prevRawMaterials.find(r => r.raw_material_type_id === m.id)
-        const opening = prev ? parseFloat(prev.closing_kg) || 0 : 0
-        return { id: m.id, name: m.name, gcv_kcal_kg: m.gcv_kcal_kg ?? null, opening, purchased: 0, used: 0, closing: opening }
-      }))
-    }
-    if (pelletTypesRes.data) {
-      updateData('pelletStock', pelletTypesRes.data.map(p => {
-        const prev = prevPelletStock.find(ps => ps.pellet_type_id === p.id)
-        const opening = prev ? parseFloat(prev.closing_mt) || 0 : 0
-        return { id: p.id, name: p.name, opening, production: 0, dispatch: 0, wastage: 0, closing: opening }
-      }))
-    }
-    if (equipmentRes.data) {
-      updateData('diesel', equipmentRes.data.map(eq => {
-        const prev = prevDieselLog.find(d => d.equipment_name === eq.name)
-        const opening = prev ? parseFloat(prev.closing_litres) || 0 : 0
-        return {
-          id: eq.id, equipment_name: eq.name, opening, added: 0, used: 0,
-          closing: opening, hours: 0, avg_per_hr: 0, collapsed: true,
+    async function loadData() {
+      try {
+        setLoadingData(true)
+        setInitError(null)
+
+        // 1. Fetch active configurations (reference lists) in parallel
+        const [machinesRes, materialsRes, pelletTypesRes, equipmentRes] = await Promise.all([
+          supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
+          supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
+          supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
+          supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
+        ])
+
+        if (machinesRes.error) throw machinesRes.error
+        if (materialsRes.error) throw materialsRes.error
+        if (pelletTypesRes.error) throw pelletTypesRes.error
+        if (equipmentRes.error) throw equipmentRes.error
+
+        let freshReportData = {
+          date: getLocalDate(),
+          shift: 'A',
+          start_time: '08:00',
+          end_time: '20:00',
+          shift_start_date: getLocalDate(),
+          shift_end_date: getLocalDate(),
+          start_power_reading: 0,
+          end_power_reading: 0,
+          machines: [],
+          mixes: [],
+          production: [],
+          rawMaterials: [],
+          diesel: [],
+          diesel_stock: { opening: 0, purchases: [], closing: 0 },
+          dispatches: [],
+          dispatchTotals: {},
+          pelletStock: [],
+          issues: [],
+          handover_notes: '',
+          remarks: '',
         }
-      }))
-    }
 
-    // Carry forward diesel stock tank opening from previous shift closing
-    if (prevDieselStock) {
-      updateData('diesel_stock', {
-        opening: parseFloat(prevDieselStock.closing_litres) || 0,
-        purchases: [],
-        closing: parseFloat(prevDieselStock.closing_litres) || 0,
-      })
-    }
-  }
-
-  async function loadExistingReport() {
-    try {
-      const { data: report } = await supabase
-        .from('shift_reports')
-        .select('*')
-        .eq('id', editId)
-        .single()
-
-      if (!report) { showToast('Report not found', 'error'); navigate('/'); return }
-
-      setReportId(editId)
-      updateData('date', report.date)
-      updateData('shift', report.shift)
-      updateData('start_time', report.start_time)
-      updateData('end_time', report.end_time)
-      updateData('shift_start_date', report.shift_start_date || report.date)
-      updateData('shift_end_date', report.shift_end_date || report.date)
-      updateData('start_power_reading', report.start_power_reading || 0)
-      updateData('end_power_reading', report.end_power_reading || 0)
-      updateData('handover_notes', report.handover_notes || '')
-      updateData('remarks', report.remarks || '')
-
-      // Load machines, materials, equipment first (needed for merging data)
-      const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases, mixesRes] = await Promise.all([
-        supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
-        supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
-        supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
-        supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
-        supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
-        supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', editId),
-        supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', editId),
-        supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', editId),
-        supabase.from('issues').select('*').eq('shift_report_id', editId),
-        supabase.from('diesel_stock').select('*').eq('shift_report_id', editId).maybeSingle(),
-        supabase.from('diesel_purchases').select('*').eq('shift_report_id', editId),
-        supabase.from('shift_mixes').select('*, shift_mix_compositions(*), shift_mix_machine_usage(*)').eq('shift_report_id', editId),
-      ])
-
-      // Initialize machines array from active machines
-      if (machinesRes.data) {
-        const initialMachines = machinesRes.data.map(m => ({
-          id: m.id, name: m.name, from_time: '', to_time: '', breakdown_hrs: 0, total_hours: 0, production_hours: 0, remarks: '',
+        // Initialize active database lists as base
+        const activeMachines = (machinesRes.data || []).map(m => ({
+          id: m.id, name: m.name, did_not_run: true, from_time: '', to_time: '', breakdown_hrs: 0, production_hours: 0, remarks: '',
+        }))
+        const activeRawMaterials = (materialsRes.data || []).map(m => ({
+          id: m.id, name: m.name, gcv_kcal_kg: m.gcv_kcal_kg ?? null, opening: 0, purchased: 0, used: 0, closing: 0
+        }))
+        const activePellets = (pelletTypesRes.data || []).map(p => ({
+          id: p.id, name: p.name, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0
+        }))
+        const activeDiesel = (equipmentRes.data || []).map(eq => ({
+          id: eq.id, equipment_name: eq.name, opening: 0, added: 0, used: 0, closing: 0, hours: 0, avg_per_hr: 0, collapsed: true,
         }))
 
-        // Merge machine production hours back into machines
-        if (machProd.data?.length) {
-          const machinesWithProduction = initialMachines.map(m => {
-            const prod = machProd.data.find(mp => mp.machine_id === m.id)
+        if (editId) {
+          // ================= EDIT REPORT PATH =================
+          const { data: report, error: reportErr } = await supabase
+            .from('shift_reports')
+            .select('*')
+            .eq('id', editId)
+            .single()
+
+          if (reportErr) throw reportErr
+          if (!report) throw new Error('Shift report not found')
+
+          setReportId(editId)
+          freshReportData.date = report.date
+          freshReportData.shift = report.shift
+          freshReportData.start_time = report.start_time || '08:00'
+          freshReportData.end_time = report.end_time || '20:00'
+          freshReportData.shift_start_date = report.shift_start_date || report.date
+          freshReportData.shift_end_date = report.shift_end_date || report.date
+          freshReportData.start_power_reading = report.start_power_reading || 0
+          freshReportData.end_power_reading = report.end_power_reading || 0
+          freshReportData.handover_notes = report.handover_notes || ''
+          freshReportData.remarks = report.remarks || ''
+
+          // Load all child tables in parallel
+          const [machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases, mixesRes] = await Promise.all([
+            supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
+            supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', editId),
+            supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', editId),
+            supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', editId),
+            supabase.from('issues').select('*').eq('shift_report_id', editId),
+            supabase.from('diesel_stock').select('*').eq('shift_report_id', editId).maybeSingle(),
+            supabase.from('diesel_purchases').select('*').eq('shift_report_id', editId),
+            supabase.from('shift_mixes').select('*, shift_mix_compositions(*), shift_mix_machine_usage(*)').eq('shift_report_id', editId),
+          ])
+
+          if (machProd.error) throw machProd.error
+          if (rmUsage.error) throw rmUsage.error
+          if (diesel.error) throw diesel.error
+          if (pStock.error) throw pStock.error
+          if (issuesData.error) throw issuesData.error
+          if (mixesRes.error) throw mixesRes.error
+
+          // Merge machines production
+          freshReportData.machines = activeMachines.map(m => {
+            const prod = (machProd.data || []).find(mp => mp.machine_id === m.id)
             if (prod) {
               return {
                 ...m,
@@ -416,174 +353,283 @@ export default function ShiftWizard() {
             }
             return m
           })
-          updateData('machines', machinesWithProduction)
-        } else {
-          updateData('machines', initialMachines)
-        }
-      }
 
-      // Initialize raw materials and pellet stock for editing
-      if (materialsRes.data) {
-        const materialRows = materialsRes.data.map(m => {
-          const rmData = rmUsage.data?.find(r => r.raw_material_type_id === m.id)
-          return {
-            id: m.id,
-            name: m.name,
-            gcv_kcal_kg: m.gcv_kcal_kg ?? null,
-            opening: rmData ? parseFloat(rmData.opening_kg) || 0 : 0,
-            purchased: rmData ? parseFloat(rmData.purchased_kg) || 0 : 0,
-            used: rmData ? parseFloat(rmData.quantity_kg) || 0 : 0,
-            closing: rmData ? parseFloat(rmData.closing_kg) || 0 : 0,
-          }
-        })
-        updateData('rawMaterials', materialRows)
-      }
+          // Merge raw material usage
+          freshReportData.rawMaterials = activeRawMaterials.map(m => {
+            const rmData = (rmUsage.data || []).find(r => r.raw_material_type_id === m.id)
+            return {
+              ...m,
+              opening: rmData ? parseFloat(rmData.opening_kg) || 0 : 0,
+              purchased: rmData ? parseFloat(rmData.purchased_kg) || 0 : 0,
+              used: rmData ? parseFloat(rmData.quantity_kg) || 0 : 0,
+              closing: rmData ? parseFloat(rmData.closing_kg) || 0 : 0,
+            }
+          })
 
-      if (pelletTypesRes.data) {
-        const pelletRows = pelletTypesRes.data.map(p => {
-          const psData = pStock.data?.find(ps => ps.pellet_type_id === p.id)
-          return {
-            id: p.id,
-            name: p.name,
-            opening: psData ? parseFloat(psData.opening_mt) || 0 : 0,
-            production: psData ? parseFloat(psData.production_mt) || 0 : 0,
-            dispatch: psData ? parseFloat(psData.dispatch_mt) || 0 : 0,
-            wastage: psData ? parseFloat(psData.wastage_mt) || 0 : 0,
-            closing: psData ? parseFloat(psData.closing_mt) || 0 : 0,
-          }
-        })
-        // Keep stock rows whose pellet type no longer resolves (deleted/deactivated type)
-        // so they show with their raw name instead of being silently dropped
-        const knownTypeIds = new Set(pelletTypesRes.data.map(p => p.id))
-        for (const ps of (pStock.data || [])) {
-          if (ps.pellet_type_id && !knownTypeIds.has(ps.pellet_type_id)) {
-            pelletRows.push({
-              id: ps.pellet_type_id,
-              name: ps.pellet_types?.name || 'Unknown type',
-              opening: parseFloat(ps.opening_mt) || 0,
-              production: parseFloat(ps.production_mt) || 0,
-              dispatch: parseFloat(ps.dispatch_mt) || 0,
-              wastage: parseFloat(ps.wastage_mt) || 0,
-              closing: parseFloat(ps.closing_mt) || 0,
-            })
-          }
-        }
-        updateData('pelletStock', pelletRows)
-      }
+          // Merge pellet stock
+          freshReportData.pelletStock = activePellets.map(p => {
+            const psData = (pStock.data || []).find(ps => ps.pellet_type_id === p.id)
+            return {
+              ...p,
+              opening: psData ? parseFloat(psData.opening_mt) || 0 : 0,
+              production: psData ? parseFloat(psData.production_mt) || 0 : 0,
+              dispatch: psData ? parseFloat(psData.dispatch_mt) || 0 : 0,
+              wastage: psData ? parseFloat(psData.wastage_mt) || 0 : 0,
+              closing: psData ? parseFloat(psData.closing_mt) || 0 : 0,
+            }
+          })
 
-      if (equipmentRes.data) {
-        const equipmentRows = equipmentRes.data.map(eq => {
-          const dieselData = diesel.data?.find(d => d.equipment_name === eq.name)
-          return {
-            id: eq.id,
-            equipment_name: eq.name,
-            opening: dieselData ? parseFloat(dieselData.opening_litres) || 0 : 0,
-            added: dieselData ? parseFloat(dieselData.added_litres) || 0 : 0,
-            used: dieselData ? (parseFloat(dieselData.opening_litres) || 0) + (parseFloat(dieselData.added_litres) || 0) - (parseFloat(dieselData.closing_litres) || 0) : 0,
-            closing: dieselData ? parseFloat(dieselData.closing_litres) || 0 : 0,
-            hours: dieselData ? parseFloat(dieselData.hours_worked) || 0 : 0,
-            avg_per_hr: 0,
-            collapsed: true,
+          // Retain deactivated/deleted pellet stocks to prevent data loss
+          const knownTypeIds = new Set(activePellets.map(p => p.id))
+          for (const ps of (pStock.data || [])) {
+            if (ps.pellet_type_id && !knownTypeIds.has(ps.pellet_type_id)) {
+              freshReportData.pelletStock.push({
+                id: ps.pellet_type_id,
+                name: ps.pellet_types?.name || 'Unknown type',
+                opening: parseFloat(ps.opening_mt) || 0,
+                production: parseFloat(ps.production_mt) || 0,
+                dispatch: parseFloat(ps.dispatch_mt) || 0,
+                wastage: parseFloat(ps.wastage_mt) || 0,
+                closing: parseFloat(ps.closing_mt) || 0,
+              })
+            }
           }
-        })
-        updateData('diesel', equipmentRows)
-      }
 
-      // Load mixes (Step 3)
-      if (mixesRes.data?.length) {
-        const loadedMixes = mixesRes.data.map(m => ({
-          local_id: 'mix_' + m.id, // stable client-side ID derived from DB ID
-          db_id: m.id,
-          name: m.name,
-          type: m.type,
-          derived_pellet_name: m.derived_pellet_name || m.type || null,
-          derived_gcv: m.derived_gcv != null ? parseFloat(m.derived_gcv) : null,
-          derived_grade: m.derived_grade || null,
-          opening_kg: parseFloat(m.opening_kg) || 0,
-          prepared_kg: parseFloat(m.prepared_kg) || 0,
-          used_kg: parseFloat(m.used_kg) || 0,
-          ingredients: (m.shift_mix_compositions || []).map(c => ({
-            raw_material_type_id: c.raw_material_type_id,
-            name: c.raw_material_name,
-            quantity_kg: parseFloat(c.quantity_kg) || 0,
-          })),
-          // Compositions reflect this-shift consumption only when the mix was
-          // prepared this shift (prepared_kg > 0). A carried-over mix that was
-          // never prepared has recipe rows but consumed nothing this shift.
-          consumed_ingredients: (parseFloat(m.prepared_kg) || 0) > 0
-            ? (m.shift_mix_compositions || []).map(c => ({
+          // Merge equipment diesel
+          freshReportData.diesel = activeDiesel.map(eq => {
+            const dieselData = (diesel.data || []).find(d => d.equipment_name === eq.equipment_name)
+            return {
+              ...eq,
+              opening: dieselData ? parseFloat(dieselData.opening_litres) || 0 : 0,
+              added: dieselData ? parseFloat(dieselData.added_litres) || 0 : 0,
+              used: dieselData ? (parseFloat(dieselData.opening_litres) || 0) + (parseFloat(dieselData.added_litres) || 0) - (parseFloat(dieselData.closing_litres) || 0) : 0,
+              closing: dieselData ? parseFloat(dieselData.closing_litres) || 0 : 0,
+              hours: dieselData ? parseFloat(dieselData.hours_worked) || 0 : 0,
+            }
+          })
+
+          // Merge mixes
+          if (mixesRes.data?.length) {
+            freshReportData.mixes = mixesRes.data.map(m => ({
+              local_id: 'mix_' + m.id,
+              db_id: m.id,
+              name: m.name,
+              type: m.type,
+              derived_pellet_name: m.derived_pellet_name || m.type || null,
+              derived_gcv: m.derived_gcv != null ? parseFloat(m.derived_gcv) : null,
+              derived_grade: m.derived_grade || null,
+              opening_kg: parseFloat(m.opening_kg) || 0,
+              prepared_kg: parseFloat(m.prepared_kg) || 0,
+              used_kg: parseFloat(m.used_kg) || 0,
+              ingredients: (m.shift_mix_compositions || []).map(c => ({
                 raw_material_type_id: c.raw_material_type_id,
                 name: c.raw_material_name,
                 quantity_kg: parseFloat(c.quantity_kg) || 0,
-              }))
-            : [],
-        }))
-        updateData('mixes', loadedMixes)
+              })),
+              consumed_ingredients: (parseFloat(m.prepared_kg) || 0) > 0
+                ? (m.shift_mix_compositions || []).map(c => ({
+                    raw_material_type_id: c.raw_material_type_id,
+                    name: c.raw_material_name,
+                    quantity_kg: parseFloat(c.quantity_kg) || 0,
+                  }))
+                : [],
+            }))
 
-        // Load production entries with mix_usages restored (Step 4)
-        // Only load entries for machines that actually ran (exclude did_not_run)
-        if (machProd.data?.length) {
-          const productionEntries = machProd.data
-            .filter(mp => !mp.did_not_run)
-            .map(mp => {
-              // Restore mix_usages from shift_mix_machine_usage
-              const mixUsages = loadedMixes.flatMap(mix =>
-                (mix.db_id ? mixesRes.data.find(m => m.id === mix.db_id)?.shift_mix_machine_usage || [] : [])
-                  .filter(u => u.machine_id === mp.machine_id)
-                  .map(u => ({ mix_local_id: mix.local_id, quantity_kg: parseFloat(u.quantity_kg) || 0 }))
-              )
-              return {
+            if (machProd.data?.length) {
+              freshReportData.production = machProd.data
+                .filter(mp => !mp.did_not_run)
+                .map(mp => {
+                  const mixUsages = freshReportData.mixes.flatMap(mix =>
+                    (mix.db_id ? mixesRes.data.find(m => m.id === mix.db_id)?.shift_mix_machine_usage || [] : [])
+                      .filter(u => u.machine_id === mp.machine_id)
+                      .map(u => ({ mix_local_id: mix.local_id, quantity_kg: parseFloat(u.quantity_kg) || 0 }))
+                  )
+                  return {
+                    id: mp.id,
+                    machine_id: mp.machine_id,
+                    machine_name: mp.machines?.name || 'Unknown',
+                    quantity: parseFloat(mp.production_mt) || 0,
+                    mix_usages: mixUsages,
+                  }
+                })
+            }
+          } else if (machProd.data?.length) {
+            freshReportData.production = machProd.data
+              .filter(mp => !mp.did_not_run)
+              .map(mp => ({
                 id: mp.id,
                 machine_id: mp.machine_id,
                 machine_name: mp.machines?.name || 'Unknown',
                 quantity: parseFloat(mp.production_mt) || 0,
-                mix_usages: mixUsages,
-              }
-            })
-          if (productionEntries.length > 0) updateData('production', productionEntries)
+                mix_usages: [],
+              }))
+          }
+
+          // Merge issues
+          if (issuesData.data?.length) {
+            freshReportData.issues = issuesData.data.map(i => ({
+              id: i.id,
+              type: i.issue_type,
+              description: i.description,
+              severity: i.severity,
+              photo_url: i.photo_url,
+            }))
+          }
+
+          // Merge diesel stock
+          if (dStock.data) {
+            const purchases = (dPurchases.data || []).map(dp => ({
+              litres: parseFloat(dp.litres) || 0,
+              cost_per_litre: parseFloat(dp.cost_per_litre) || 0,
+              receipt_url: dp.receipt_url || null,
+            }))
+            freshReportData.diesel_stock = {
+              opening: parseFloat(dStock.data.opening_litres) || 0,
+              purchases,
+              closing: parseFloat(dStock.data.closing_litres) || 0,
+            }
+          }
+        } else {
+          // ================= NEW REPORT PATH =================
+          // Fetch previous shift report for carry-forward values
+          const { data: prevReport } = await supabase
+            .from('shift_reports')
+            .select('id')
+            .eq('plant_id', plant.id)
+            .eq('is_deleted', false)
+            .order('date', { ascending: false })
+            .order('shift', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+          let prevPelletStock = []
+          let prevDieselLog = []
+          let prevRawMaterials = []
+          let prevDieselStock = null
+          let prevMixes = []
+
+          if (prevReport) {
+            const [psRes, dlRes, rmRes, dsRes, mixRes] = await Promise.all([
+              supabase.from('pellet_stock').select('*').eq('shift_report_id', prevReport.id),
+              supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', prevReport.id),
+              supabase.from('raw_material_usage').select('*').eq('shift_report_id', prevReport.id),
+              supabase.from('diesel_stock').select('*').eq('shift_report_id', prevReport.id).maybeSingle(),
+              supabase.from('shift_mixes').select('*, shift_mix_compositions(*)').eq('shift_report_id', prevReport.id),
+            ])
+            prevPelletStock = psRes.data || []
+            prevDieselLog = dlRes.data || []
+            prevRawMaterials = rmRes.data || []
+            prevDieselStock = dsRes.data
+            prevMixes = mixRes.data || []
+          }
+
+          // Carry forward mix opening stock (only mixes with remaining stock)
+          if (prevMixes.length > 0) {
+            freshReportData.mixes = prevMixes
+              .filter(m => (parseFloat(m.closing_kg) || 0) > 0)
+              .map(m => ({
+                local_id: 'mix_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+                db_id: null,
+                name: m.name,
+                type: m.type,
+                derived_pellet_name: m.derived_pellet_name || m.type || null,
+                derived_gcv: m.derived_gcv != null ? parseFloat(m.derived_gcv) : null,
+                derived_grade: m.derived_grade || null,
+                opening_kg: parseFloat(m.closing_kg) || 0,
+                prepared_kg: 0,
+                consumed_ingredients: [],
+                isCarryForward: true,
+                recipeIngredients: (m.shift_mix_compositions || []).map(c => ({
+                  raw_material_type_id: c.raw_material_type_id,
+                  name: c.raw_material_name,
+                  quantity_kg: parseFloat(c.quantity_kg) || 0,
+                })),
+                ingredients: (m.shift_mix_compositions || []).map(c => ({
+                  raw_material_type_id: c.raw_material_type_id,
+                  name: c.raw_material_name,
+                  quantity_kg: parseFloat(c.quantity_kg) || 0,
+                })),
+              }))
+          }
+
+          // Machines
+          freshReportData.machines = activeMachines
+
+          // Carry forward raw materials (closing stock -> opening stock)
+          freshReportData.rawMaterials = activeRawMaterials.map(m => {
+            const prev = prevRawMaterials.find(r => r.raw_material_type_id === m.id)
+            const opening = prev ? parseFloat(prev.closing_kg) || 0 : 0
+            return { ...m, opening, closing: opening }
+          })
+
+          // Carry forward pellet stock
+          freshReportData.pelletStock = activePellets.map(p => {
+            const prev = prevPelletStock.find(ps => ps.pellet_type_id === p.id)
+            const opening = prev ? parseFloat(prev.closing_mt) || 0 : 0
+            return { ...p, opening, closing: opening }
+          })
+
+          // Carry forward diesel log
+          freshReportData.diesel = activeDiesel.map(eq => {
+            const prev = prevDieselLog.find(d => d.equipment_name === eq.equipment_name)
+            const opening = prev ? parseFloat(prev.closing_litres) || 0 : 0
+            return { ...eq, opening, closing: opening }
+          })
+
+          // Carry forward diesel stock overall tank
+          if (prevDieselStock) {
+            freshReportData.diesel_stock = {
+              opening: parseFloat(prevDieselStock.closing_litres) || 0,
+              purchases: [],
+              closing: parseFloat(prevDieselStock.closing_litres) || 0,
+            }
+          }
         }
-      } else if (machProd.data?.length) {
-        // No mixes — load production entries without mix_usages (exclude did_not_run)
-        const productionEntries = machProd.data
-          .filter(mp => !mp.did_not_run)
-          .map(mp => ({
-            id: mp.id,
-            machine_id: mp.machine_id,
-            machine_name: mp.machines?.name || 'Unknown',
-            quantity: parseFloat(mp.production_mt) || 0,
-            mix_usages: [],
-          }))
-        if (productionEntries.length > 0) updateData('production', productionEntries)
-      }
 
-
-      if (issuesData.data?.length) {
-        updateData('issues', issuesData.data.map(i => ({
-          id: i.id,
-          type: i.issue_type,
-          description: i.description,
-          severity: i.severity,
-          photo_url: i.photo_url,
-        })))
+        if (!cancelled) {
+          setReportData(freshReportData)
+          setLoadingData(false)
+        }
+      } catch (err) {
+        console.error('[ShiftWizard] Unified Data Loader Error:', err)
+        if (!cancelled) {
+          setInitError(err.message || 'Failed to initialize shift report data')
+          setLoadingData(false)
+        }
       }
-
-      if (dStock.data) {
-        const purchases = (dPurchases.data || []).map(dp => ({
-          litres: parseFloat(dp.litres) || 0,
-          cost_per_litre: parseFloat(dp.cost_per_litre) || 0,
-          receipt_url: dp.receipt_url || null,
-        }))
-        updateData('diesel_stock', {
-          opening: parseFloat(dStock.data.opening_litres) || 0,
-          purchases,
-          closing: parseFloat(dStock.data.closing_litres) || 0,
-        })
-      }
-    } catch (err) {
-      console.error('Error loading report:', err)
-      showToast('Failed to load report', 'error')
     }
-  }
+
+    loadData()
+    return () => { cancelled = true }
+  }, [plant?.id, editId, initDone, restoredFromStorage]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Live duplicate shift report detector for Step 1
+  useEffect(() => {
+    if (editId || !plant?.id || !reportData.date || !reportData.shift) {
+      setDuplicateReportId(null)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('shift_reports')
+          .select('id')
+          .eq('plant_id', plant.id)
+          .eq('date', reportData.date)
+          .eq('shift', reportData.shift)
+          .eq('is_deleted', false)
+          .maybeSingle()
+        if (error) throw error
+        if (!cancelled) {
+          setDuplicateReportId(data?.id || null)
+        }
+      } catch (err) {
+        console.error('Duplicate report check error:', err)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [reportData.date, reportData.shift, plant?.id, editId])
 
   // Validation is handled by the extracted getValidationErrors(reportData) function
 
@@ -651,7 +697,9 @@ export default function ShiftWizard() {
 
       // Save machine production
       if (reportData.machines.length) {
-        await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
+        const { error: mDelErr } = await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
+        if (mDelErr) throw mDelErr
+        
         const machineRows = reportData.machines
           .filter(m => m.did_not_run || sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time)
           .map(m => ({
@@ -670,14 +718,17 @@ export default function ShiftWizard() {
             pellet_type_name: derivePelletType(m.id),
           }))
         if (machineRows.length) {
-          await supabase.from('machine_production').insert(machineRows)
+          const { error: mInsErr } = await supabase.from('machine_production').insert(machineRows)
+          if (mInsErr) throw mInsErr
         }
       }
 
       // Save mixes (shift_mixes + compositions + machine_usage)
       // shift_mix_compositions and shift_mix_machine_usage cascade-delete via FK when shift_mixes is deleted
-      await supabase.from('shift_mix_machine_usage').delete().eq('shift_report_id', report.id)
-      await supabase.from('shift_mixes').delete().eq('shift_report_id', report.id)
+      const { error: muDelErr } = await supabase.from('shift_mix_machine_usage').delete().eq('shift_report_id', report.id)
+      if (muDelErr) throw muDelErr
+      const { error: mxDelErr } = await supabase.from('shift_mixes').delete().eq('shift_report_id', report.id)
+      if (mxDelErr) throw mxDelErr
 
       if ((reportData.mixes || []).length > 0) {
         for (const mix of reportData.mixes) {
@@ -702,7 +753,7 @@ export default function ShiftWizard() {
             derived_gcv: mix.derived_gcv != null ? sanitizeNumber(mix.derived_gcv) : null,
             derived_grade: sanitizeText(mix.derived_grade, 20) || null,
           }).select().single()
-          if (mixErr) { console.error('Mix save error:', mixErr); throw mixErr }
+          if (mixErr) throw mixErr
 
           // Save compositions
           if (mix.ingredients?.length > 0) {
@@ -714,7 +765,10 @@ export default function ShiftWizard() {
                 raw_material_name: sanitizeText(ing.name, 100),
                 quantity_kg: sanitizeNumber(ing.quantity_kg),
               }))
-            if (compRows.length > 0) await supabase.from('shift_mix_compositions').insert(compRows)
+            if (compRows.length > 0) {
+              const { error: compErr } = await supabase.from('shift_mix_compositions').insert(compRows)
+              if (compErr) throw compErr
+            }
           }
 
           // Save machine usages for this mix
@@ -729,13 +783,17 @@ export default function ShiftWizard() {
               })
             })
           })
-          if (machineUsageRows.length > 0) await supabase.from('shift_mix_machine_usage').insert(machineUsageRows)
+          if (machineUsageRows.length > 0) {
+            const { error: usageErr } = await supabase.from('shift_mix_machine_usage').insert(machineUsageRows)
+            if (usageErr) throw usageErr
+          }
         }
       }
 
       // Save raw material usage (with opening/closing for carry-forward)
       if (reportData.rawMaterials.length) {
-        await supabase.from('raw_material_usage').delete().eq('shift_report_id', report.id)
+        const { error: rmDelErr } = await supabase.from('raw_material_usage').delete().eq('shift_report_id', report.id)
+        if (rmDelErr) throw rmDelErr
         const rmRows = reportData.rawMaterials
           .map(rm => ({
             shift_report_id: report.id,
@@ -746,13 +804,15 @@ export default function ShiftWizard() {
             closing_kg: sanitizeNumber(rm.closing),
           }))
         if (rmRows.length) {
-          await supabase.from('raw_material_usage').insert(rmRows)
+          const { error: rmInsErr } = await supabase.from('raw_material_usage').insert(rmRows)
+          if (rmInsErr) throw rmInsErr
         }
       }
 
       // Save equipment diesel log
       if (reportData.diesel && reportData.diesel.length) {
-        await supabase.from('equipment_diesel_log').delete().eq('shift_report_id', report.id)
+        const { error: dDelErr } = await supabase.from('equipment_diesel_log').delete().eq('shift_report_id', report.id)
+        if (dDelErr) throw dDelErr
         const dieselRows = reportData.diesel
           .map(d => {
             const openL  = sanitizeNumber(d.opening)
@@ -771,13 +831,15 @@ export default function ShiftWizard() {
             }
           })
         if (dieselRows.length) {
-          await supabase.from('equipment_diesel_log').insert(dieselRows)
+          const { error: dInsErr } = await supabase.from('equipment_diesel_log').insert(dieselRows)
+          if (dInsErr) throw dInsErr
         }
       }
 
       // Save pellet stock (all entries — closing_mt is GENERATED, don't insert it)
       if (reportData.pelletStock && reportData.pelletStock.length) {
-        await supabase.from('pellet_stock').delete().eq('shift_report_id', report.id)
+        const { error: psDelErr } = await supabase.from('pellet_stock').delete().eq('shift_report_id', report.id)
+        if (psDelErr) throw psDelErr
         const stockRows = reportData.pelletStock
           .map(ps => ({
             shift_report_id: report.id,
@@ -788,13 +850,15 @@ export default function ShiftWizard() {
             wastage_mt: sanitizeNumber(ps.wastage),
           }))
         if (stockRows.length) {
-          await supabase.from('pellet_stock').insert(stockRows)
+          const { error: psInsErr } = await supabase.from('pellet_stock').insert(stockRows)
+          if (psInsErr) throw psInsErr
         }
       }
 
       // Save issues
       if (reportData.issues.length) {
-        await supabase.from('issues').delete().eq('shift_report_id', report.id)
+        const { error: isDelErr } = await supabase.from('issues').delete().eq('shift_report_id', report.id)
+        if (isDelErr) throw isDelErr
         const issueRows = reportData.issues.map(i => ({
           shift_report_id: report.id,
           issue_type: sanitizeText(i.type, 50),
@@ -802,12 +866,15 @@ export default function ShiftWizard() {
           severity: sanitizeText(i.severity, 20),
           photo_url: i.photo_url,
         }))
-        await supabase.from('issues').insert(issueRows)
+        const { error: isInsErr } = await supabase.from('issues').insert(issueRows)
+        if (isInsErr) throw isInsErr
       }
 
       // Save diesel stock (overall tank) + diesel purchases
-      await supabase.from('diesel_purchases').delete().eq('shift_report_id', report.id)
-      await supabase.from('diesel_stock').delete().eq('shift_report_id', report.id)
+      const { error: dpDelErr } = await supabase.from('diesel_purchases').delete().eq('shift_report_id', report.id)
+      if (dpDelErr) throw dpDelErr
+      const { error: dsDelErr } = await supabase.from('diesel_stock').delete().eq('shift_report_id', report.id)
+      if (dsDelErr) throw dsDelErr
       const totalAddedToEquipment = (reportData.diesel || []).reduce((sum, eq) => sum + sanitizeNumber(eq.added), 0)
       const ds = reportData.diesel_stock || {}
       const purchases = ds.purchases || []
@@ -816,7 +883,7 @@ export default function ShiftWizard() {
         return sum + (sanitizeNumber(p.litres) * sanitizeNumber(p.cost_per_litre))
       }, 0)
       const dsOpening = sanitizeNumber(ds.opening)
-      await supabase.from('diesel_stock').insert({
+      const { error: dsInsErr } = await supabase.from('diesel_stock').insert({
         shift_report_id: report.id,
         opening_litres: dsOpening,
         purchased_litres: totalPurchased,
@@ -824,6 +891,7 @@ export default function ShiftWizard() {
         used_litres: totalAddedToEquipment,
         closing_litres: dsOpening + totalPurchased - totalAddedToEquipment,
       })
+      if (dsInsErr) throw dsInsErr
       // Save individual purchase entries
       if (purchases.length > 0) {
         const purchaseRows = purchases
@@ -837,7 +905,8 @@ export default function ShiftWizard() {
             purchase_time: p.purchase_time || null,
           }))
         if (purchaseRows.length > 0) {
-          await supabase.from('diesel_purchases').insert(purchaseRows)
+          const { error: dpInsErr } = await supabase.from('diesel_purchases').insert(purchaseRows)
+          if (dpInsErr) throw dpInsErr
         }
       }
 
@@ -961,6 +1030,35 @@ export default function ShiftWizard() {
     }
   }
 
+  if (loadingData) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 40, height: 40, border: '4px solid #2d6a4f', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
+          <p style={{ fontSize: 14, color: '#595c4a', fontWeight: 600 }}>Loading shift report data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (initError) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0', padding: 20 }}>
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #fca5a5', padding: 24, maxWidth: 360, width: '100%', textAlign: 'center' }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: '#b91c1c', margin: '0 0 8px 0' }}>Failed to Load Data</h3>
+          <p style={{ fontSize: 13, color: '#595c4a', lineHeight: 1.5, margin: '0 0 20px 0' }}>{initError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', background: '#2d6a4f', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   const CurrentStep = STEPS[step - 1].component
   const allErrors = useMemo(() => {
     try {
@@ -1015,6 +1113,7 @@ export default function ShiftWizard() {
               plant={plant}
               employee={employee}
               saveWizardState={saveWizardState}
+              duplicateReportId={duplicateReportId}
             />
           </StepErrorBoundary>
         </div>

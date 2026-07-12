@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { Camera, Image, X, Loader2 } from 'lucide-react'
+import { Camera, Image, X, Loader2, AlertTriangle, RefreshCw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { showToast } from './Toast'
 
@@ -43,13 +43,50 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
   const legacy = isLegacyPath(value)
   const [preview, setPreview] = useState(legacy ? null : (value || null))
   const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState(false)
+  const [pendingFile, setPendingFile] = useState(null)
 
   // Sync preview when value prop changes (e.g. when edit form loads existing data)
   useEffect(() => {
     if (!isLegacyPath(value)) {
       setPreview(value || null)
+      if (value) {
+        setUploadError(false)
+        setPendingFile(null)
+      }
     }
   }, [value])
+
+  async function uploadFile(fileToUpload) {
+    setUploading(true)
+    setUploadError(false)
+    try {
+      const compressed = await compressImage(fileToUpload)
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
+      const filePath = `${folder}/${fileName}`
+
+      const { error } = await supabase.storage
+        .from(bucket)
+        .upload(filePath, compressed, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' })
+
+      if (error) throw error
+
+      // Get public URL
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath)
+      const publicUrl = urlData.publicUrl
+
+      setPreview(publicUrl)
+      onChange?.(publicUrl)
+      setPendingFile(null)
+    } catch (err) {
+      console.error('Upload error:', err)
+      showToast('Photo upload failed. Please try again.', 'error')
+      setUploadError(true)
+      onChange?.(null)
+    } finally {
+      setUploading(false)
+    }
+  }
 
   async function handleFile(e) {
     const file = e.target.files[0]
@@ -69,34 +106,8 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
     // Show local preview immediately
     const localUrl = URL.createObjectURL(file)
     setPreview(localUrl)
-
-    // Compress and upload to Supabase storage
-    setUploading(true)
-    try {
-      const compressed = await compressImage(file)
-      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`
-      const filePath = `${folder}/${fileName}`
-
-      const { error } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, compressed, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' })
-
-      if (error) throw error
-
-      // Get public URL
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filePath)
-      const publicUrl = urlData.publicUrl
-
-      setPreview(publicUrl)
-      onChange?.(publicUrl)
-    } catch (err) {
-      console.error('Upload error:', err)
-      showToast('Photo upload failed. Please try again.', 'error')
-      setPreview(null)
-      onChange?.(null)
-    } finally {
-      setUploading(false)
-    }
+    setPendingFile(file)
+    await uploadFile(file)
   }
 
   function resetInputs() {
@@ -106,6 +117,8 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
 
   function clear() {
     setPreview(null)
+    setPendingFile(null)
+    setUploadError(false)
     onChange?.(null)
     resetInputs()
   }
@@ -140,9 +153,32 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
           {uploading && (
             <div style={{
               position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 5
             }}>
               <Loader2 size={24} color="white" style={{ animation: 'spin 1s linear infinite' }} />
+            </div>
+          )}
+          {uploadError && (
+            <div style={{
+              position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 8,
+              zIndex: 5
+            }}>
+              <span style={{ color: '#fca5a5', fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <AlertTriangle size={14} /> Upload Failed
+              </span>
+              <button
+                type="button"
+                onClick={() => pendingFile && uploadFile(pendingFile)}
+                style={{
+                  padding: '6px 12px', background: '#2d6a4f', color: 'white', border: 'none',
+                  borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 4
+                }}
+              >
+                <RefreshCw size={12} /> Retry
+              </button>
             </div>
           )}
           <button
@@ -154,7 +190,8 @@ export default function PhotoUpload({ label, value, onChange, bucket = 'photos',
               borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: 'white',
-              border: 'none', cursor: 'pointer'
+              border: 'none', cursor: 'pointer',
+              zIndex: 10
             }}
           >
             <X size={14} />

@@ -143,6 +143,8 @@ export default function Home() {
       }
     },
     enabled: !!plant?.id,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   })
 
   const stats = dashboardData?.stats || { production: 0, trucks: 0, issues: 0 }
@@ -180,6 +182,8 @@ export default function Home() {
       return { totalParts: partIds.length, lowStock, purchasedToday, issuedToday }
     },
     enabled: !!plant?.id,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   })
   const sp = sparePartsData || { totalParts: 0, lowStock: 0, purchasedToday: 0, issuedToday: 0 }
 
@@ -196,6 +200,8 @@ export default function Home() {
       return data || []
     },
     enabled: !!plant?.id,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
   })
   const allTasks = tasksData || []
   // Only admin and plant_manager see all plant tasks; everyone else only sees their own

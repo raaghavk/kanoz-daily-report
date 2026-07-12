@@ -1,8 +1,10 @@
 import { memo } from 'react'
-import { Calendar, Clock } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Calendar, Clock, AlertTriangle } from 'lucide-react'
 import { getLocalDate } from '../../lib/dateUtils'
 
-export default memo(function Step1Header({ data, updateData }) {
+export default memo(function Step1Header({ data, updateData, duplicateReportId }) {
+  const navigate = useNavigate()
   function handleShiftChange(shift) {
     updateData('shift', shift)
     if (shift === 'A') {
@@ -69,6 +71,24 @@ export default memo(function Step1Header({ data, updateData }) {
           <option value="B">B Night</option>
         </select>
       </div>
+
+      {duplicateReportId && (
+        <div style={{ background: '#fee2e2', border: '1.5px solid #fca5a5', borderRadius: 12, padding: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#b91c1c', fontSize: 13, fontWeight: 700 }}>
+            <AlertTriangle size={16} /> A report already exists!
+          </div>
+          <p style={{ fontSize: 11, color: '#7f1d1d', margin: '6px 0 12px', lineHeight: 1.4 }}>
+            A shift report for this plant, date, and shift has already been submitted. If you submit this, it will overwrite the existing data.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate(`/shift/edit/${duplicateReportId}`)}
+            style={{ padding: '8px 14px', background: '#b91c1c', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+          >
+            Edit Existing Report
+          </button>
+        </div>
+      )}
 
       {/* Shift Schedule Box */}
       <div style={{ background: '#e8f0ec', borderRadius: 14, border: '1.5px solid #b8d4c4', padding: '16px 16px 20px' }}>
