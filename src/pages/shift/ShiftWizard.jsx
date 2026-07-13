@@ -633,10 +633,12 @@ export default function ShiftWizard() {
           // Machines
           freshReportData.machines = activeMachines
 
-          // Carry forward raw materials (closing stock -> opening stock)
+          // Carry forward raw materials (closing stock -> opening stock).
+          // First-ever shift (no previous): fall back to the opening_stock_kg
+          // configured in plant settings (pre-app stock on hand).
           freshReportData.rawMaterials = activeRawMaterials.map(m => {
             const prev = prevRawMaterials.find(r => r.raw_material_type_id === m.id)
-            const opening = prev ? parseFloat(prev.closing_kg) || 0 : 0
+            const opening = prev ? (parseFloat(prev.closing_kg) || 0) : (parseFloat(m.opening_stock_kg) || 0)
             return { ...m, opening, closing: opening }
           })
 
