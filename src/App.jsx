@@ -46,6 +46,7 @@ const ReorderRequestsPage = lazy(() => import('./pages/spareparts/ReorderRequest
 const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
 const SettingsPage = lazy(() => import('./pages/Settings'))
 const AdminDesktop = lazy(() => import('./pages/admin/AdminDesktop'))
+const StockHome = lazy(() => import('./pages/stock/StockHome'))
 
 function LoadingFallback() {
   return (
@@ -145,6 +146,7 @@ export default function App() {
         <Route path="assets/:id" element={<PermissionGuard action="view_spare_parts"><AssetDetail /></PermissionGuard>} />
         <Route path="assets/:id/log" element={<PermissionGuard action="create_spare_parts"><LogEvent /></PermissionGuard>} />
         <Route path="a/:code" element={<PermissionGuard action="view_spare_parts"><AssetByCode /></PermissionGuard>} />
+        <Route path="stock" element={<StockHome />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
