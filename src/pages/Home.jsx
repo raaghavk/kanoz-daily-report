@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
-import { ChevronRight, AlertTriangle, Wrench, CheckSquare, Circle } from 'lucide-react'
+import { ChevronRight, AlertTriangle, Wrench, CheckSquare, Circle, Boxes } from 'lucide-react'
 import VoiceFAB from '../components/VoiceFAB'
 
 export default function Home() {
@@ -385,6 +385,12 @@ export default function Home() {
             <ChevronRight size={15} color="#b5b8a8" />
           </button>
           )}
+
+          <button onClick={() => startTransition(() => navigate('/stock'))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #f0ebe0', cursor: 'pointer' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: '#e8f0ec', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Boxes size={15} color="#2d6a4f" /></div>
+            <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>Stock & Recipes</div>
+            <ChevronRight size={15} color="#b5b8a8" />
+          </button>
 
           {can(employee?.role, 'view_spare_parts') && (
           <button onClick={() => startTransition(() => navigate('/spare-parts'))} style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '10px 14px', background: sp.lowStock > 0 ? '#fff7f7' : 'none', border: 'none', cursor: 'pointer' }}>
