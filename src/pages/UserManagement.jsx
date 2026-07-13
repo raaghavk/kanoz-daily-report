@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { ROLE_OPTIONS } from '../lib/permissions'
-import { UserPlus, Edit2, Shield, ChevronLeft, Phone, MapPin, Check, X, Loader2, Mail, KeyRound, Eye, EyeOff } from 'lucide-react'
+import { UserPlus, Edit2, Shield, ChevronLeft, Phone, MapPin, Check, X, Loader2, Mail, KeyRound, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const ROLE_BADGE = {
   admin:            { bg: '#e8f0ec', text: '#2d6a4f',  label: 'Admin' },
@@ -28,6 +29,8 @@ export default function UserManagement() {
   const [settingPwd, setSettingPwd] = useState(false)
   const [toast, setToast] = useState(null)
   const [showPwd, setShowPwd] = useState(false)
+  const [showDelete, setShowDelete] = useState(null) // employee object
+  const [deleting, setDeleting] = useState(false)
 
   const [form, setForm] = useState({ name: '', mobile: '', email: '', role: 'supervisor', plant_id: '', is_active: true })
   const [editingAuthId, setEditingAuthId] = useState(null)
@@ -172,6 +175,23 @@ export default function UserManagement() {
     } finally { setSettingPwd(false) }
   }
 
+  async function deleteUser() {
+    if (!showDelete || deleting) return
+    setDeleting(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { employee_id: showDelete.id }
+      })
+      if (error) throw new Error(error.message)
+      if (data?.error) throw new Error(data.error)
+      showToast(`${showDelete.name} permanently deleted`)
+      setShowDelete(null)
+      loadData()
+    } catch (err) {
+      showToast(err.message || 'Failed to delete user', 'error')
+    } finally { setDeleting(false) }
+  }
+
   const inputStyle = {
     width: '100%', padding: '10px 12px', borderRadius: 10,
     border: '1.5px solid #e5ddd0', background: '#fefae0', color: '#2c2c2c',
@@ -227,7 +247,7 @@ export default function UserManagement() {
 
           const adminCards = admins.length > 0 ? [
             <div key="_admin_header" style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, paddingLeft: 4 }}>Admins</div>,
-            ...admins.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} onSetPwd={() => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) }} />)
+            ...admins.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} onSetPwd={() => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) }} onDelete={() => setShowDelete(emp)} />)
           ] : []
 
           let lastPlant = null
@@ -240,7 +260,7 @@ export default function UserManagement() {
                 {showHeader && (
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, paddingLeft: 4 }}>{plantName}</div>
                 )}
-                <EmployeeCard emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} onSetPwd={() => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) }} />
+                <EmployeeCard emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} onSetPwd={() => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) }} onDelete={() => setShowDelete(emp)} />
               </div>
             )
           })
@@ -252,7 +272,7 @@ export default function UserManagement() {
         {inactive.length > 0 && (
           <>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, paddingLeft: 4 }}>Inactive</div>
-            {inactive.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} onSetPwd={() => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) }} />)}
+            {inactive.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} onSetPwd={() => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) }} onDelete={() => setShowDelete(emp)} />)}
           </>
         )}
       </div>
@@ -384,6 +404,17 @@ export default function UserManagement() {
         </div>
       )}
 
+      {/* Permanent delete confirmation */}
+      <ConfirmDialog
+        isOpen={!!showDelete}
+        onClose={() => { if (!deleting) setShowDelete(null) }}
+        onConfirm={deleteUser}
+        title={showDelete ? `Delete ${showDelete.name}?` : 'Delete user?'}
+        message="This permanently deletes the user and their login. This cannot be undone."
+        confirmLabel={deleting ? 'Deleting...' : 'Delete permanently'}
+        variant="danger"
+      />
+
       {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: toast.type === 'error' ? '#d32f2f' : '#2d6a4f', color: 'white', padding: '10px 20px', borderRadius: 12, fontSize: 14, fontWeight: 600, zIndex: 200, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', whiteSpace: 'nowrap' }}>
@@ -394,7 +425,7 @@ export default function UserManagement() {
   )
 }
 
-function EmployeeCard({ emp, onEdit, onAccess, onSetPwd }) {
+function EmployeeCard({ emp, onEdit, onAccess, onSetPwd, onDelete }) {
   const badge = ROLE_BADGE[emp.role] || { bg: '#EBF4FF', text: '#3B82F6', label: emp.role }
   const isAdmin = emp.role === 'admin'
   return (
@@ -446,6 +477,10 @@ function EmployeeCard({ emp, onEdit, onAccess, onSetPwd }) {
               <Mail size={13} /> Invite
             </button>
           )}
+          <button onClick={onDelete} title="Delete permanently"
+            style={{ width: 34, height: 34, borderRadius: 10, border: '1.5px solid #f5c6c6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <Trash2 size={14} color="#d32f2f" />
+          </button>
         </div>
       </div>
     </div>
