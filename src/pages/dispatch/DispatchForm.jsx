@@ -12,6 +12,9 @@ import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import AddTransporterModal from '../../components/AddTransporterModal'
 import { getLocalDate } from '../../lib/dateUtils'
 
+const DISPATCH_DRAFT_KEY = 'kanoz_dispatch_draft'
+const DISPATCH_DRAFT_MAX_AGE = 6 * 60 * 60 * 1000 // 6 hours
+
 export default function DispatchForm() {
   const { employee, plant } = useAuth()
   const location = useLocation()
@@ -81,6 +84,40 @@ export default function DispatchForm() {
   const [newCustomerAddress, setNewCustomerAddress] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [scanning, setScanning] = useState(false)
+  const [restoredDraft, setRestoredDraft] = useState(false)
+
+  function clearDispatchDraft() {
+    try { localStorage.removeItem(DISPATCH_DRAFT_KEY) } catch (e) { /* ignore */ }
+    setRestoredDraft(false)
+  }
+
+  // Restore an unsaved dispatch draft on mount (create-only form, so always for new entries).
+  // Skip if we arrived via a voice prefill (prefill takes precedence).
+  useEffect(() => {
+    if (location.state?.prefill) return
+    try {
+      const saved = localStorage.getItem(DISPATCH_DRAFT_KEY)
+      if (!saved) return
+      const parsed = JSON.parse(saved)
+      const { form: savedForm, savedAt } = parsed || {}
+      if (!savedForm) return
+      if (savedAt && Date.now() - savedAt > DISPATCH_DRAFT_MAX_AGE) {
+        localStorage.removeItem(DISPATCH_DRAFT_KEY)
+        return
+      }
+      setForm(prev => ({ ...prev, ...savedForm }))
+      setRestoredDraft(true)
+    } catch (e) {
+      try { localStorage.removeItem(DISPATCH_DRAFT_KEY) } catch (_) { /* ignore */ }
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Persist the in-progress dispatch to localStorage so it survives navigating away.
+  useEffect(() => {
+    try {
+      localStorage.setItem(DISPATCH_DRAFT_KEY, JSON.stringify({ form, savedAt: Date.now() }))
+    } catch (e) { /* ignore */ }
+  }, [form])
 
   // Date filter logic
   function getDateFilter(tab) {
@@ -161,6 +198,8 @@ export default function DispatchForm() {
       return data || []
     },
     enabled: !!plant?.id,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const { data: pelletTypes = [] } = useQuery({
@@ -170,6 +209,8 @@ export default function DispatchForm() {
       return data || []
     },
     enabled: !!plant?.id,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const { data: transporters = [] } = useQuery({
@@ -179,6 +220,8 @@ export default function DispatchForm() {
       return data || []
     },
     enabled: !!plant?.id,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   // Company vehicles are only for raw material purchases, not outgoing dispatches
@@ -451,6 +494,7 @@ export default function DispatchForm() {
           katta_parchi_photo: null,
           remarks: ''
         })
+        clearDispatchDraft()
         queryClient.invalidateQueries({ queryKey: ['dispatches'] })
         queryClient.invalidateQueries({ queryKey: ['todayDispatches'] })
         queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -676,6 +720,14 @@ export default function DispatchForm() {
         {/* Dispatch Form */}
         {showForm && (
           <div style={{ padding: '0 20px', paddingBottom: 16 }}>
+          {restoredDraft && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#e8f0ec', border: '1px solid #b7d3c4', borderRadius: 12, padding: '10px 12px', marginBottom: 16 }}>
+              <span style={{ fontSize: 13, color: '#2d6a4f', fontWeight: 600 }}>Restored your unsaved dispatch</span>
+              <button onClick={() => setRestoredDraft(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2d6a4f', display: 'flex', alignItems: 'center' }} aria-label="Dismiss">
+                <X size={16} />
+              </button>
+            </div>
+          )}
           {/* Photo Scan — first thing in form */}
           <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
