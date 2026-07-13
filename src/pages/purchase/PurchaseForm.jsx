@@ -25,6 +25,7 @@ export default function PurchaseForm() {
   const [scanning, setScanning] = useState(false)
   const [showManageVehicles, setShowManageVehicles] = useState(false)
   const [newVehicleNumber, setNewVehicleNumber] = useState('')
+  const [newVehicleType, setNewVehicleType] = useState('Tractor')
   const [addingVehicle, setAddingVehicle] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -73,6 +74,8 @@ export default function PurchaseForm() {
       return data || []
     },
     enabled: !!plant?.id,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const { data: companyVehicles = [] } = useQuery({
@@ -83,6 +86,8 @@ export default function PurchaseForm() {
       return data || []
     },
     enabled: !!plant?.id,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const { data: transporters = [] } = useQuery({
@@ -93,6 +98,8 @@ export default function PurchaseForm() {
       return data || []
     },
     enabled: !!plant?.org_id,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const { data: rawMaterials = [] } = useQuery({
@@ -103,6 +110,8 @@ export default function PurchaseForm() {
       return data || []
     },
     enabled: !!plant?.id,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const { data: selectedTransporterVehicles = [] } = useQuery({
@@ -118,6 +127,8 @@ export default function PurchaseForm() {
       return data || []
     },
     enabled: !!formData.transporter_id,
+    refetchOnMount: 'always',
+    staleTime: 0,
   })
 
   const { data: purchaseData, isLoading: loading, isError } = useQuery({
@@ -345,10 +356,12 @@ export default function PurchaseForm() {
         plant_id: plant.id,
         number: newVehicleNumber.trim().toUpperCase(),
         type: 'company',
+        vehicle_type: newVehicleType,
         is_active: true,
       }])
       queryClient.invalidateQueries({ queryKey: ['companyVehicles', plant?.id] })
       setNewVehicleNumber('')
+      setNewVehicleType('Tractor')
       showToast('Vehicle added', 'success')
     } catch { showToast('Failed to add vehicle', 'error') }
     finally { setAddingVehicle(false) }
@@ -1049,13 +1062,16 @@ export default function PurchaseForm() {
           ) : (
             companyVehicles.map(v => (
               <div key={v.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#f9f7f0', borderRadius: 10, border: '1px solid #e5ddd0' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>{v.number}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>{v.number}{v.vehicle_type ? ` — ${v.vehicle_type}` : ''}</span>
                 <button onClick={() => deactivateVehicle(v.id)} style={{ fontSize: 11, color: '#d32f2f', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>Remove</button>
               </div>
             ))
           )}
           <div style={{ borderTop: '1px solid #e5ddd0', paddingTop: 12, display: 'flex', gap: 8 }}>
             <input type="text" placeholder="Vehicle number (e.g., UP70 AB 1234)" value={newVehicleNumber} onChange={e => setNewVehicleNumber(e.target.value)} style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0' }} />
+            <select value={newVehicleType} onChange={e => setNewVehicleType(e.target.value)} style={{ padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0' }}>
+              {['Tractor', 'Truck', 'Hywa', 'Pickup', 'Trolley', 'Other'].map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
             <button onClick={addCompanyVehicle} disabled={addingVehicle} style={{ padding: '10px 16px', background: '#2d6a4f', color: '#fff', borderRadius: 10, border: 'none', cursor: addingVehicle ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600 }}>
               {addingVehicle ? '...' : 'Add'}
             </button>
