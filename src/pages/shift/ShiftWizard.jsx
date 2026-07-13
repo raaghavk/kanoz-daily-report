@@ -1030,6 +1030,21 @@ export default function ShiftWizard() {
     }
   }
 
+  // Hooks must run on every render — keep above the early returns below
+  const allErrors = useMemo(() => {
+    try {
+      return getValidationErrors(reportData)
+    } catch (e) {
+      console.error('[ShiftWizard] Validation error:', e)
+      return []
+    }
+  }, [ // eslint-disable-line react-hooks/exhaustive-deps
+    reportData.date, reportData.shift, reportData.start_time, reportData.end_time,
+    reportData.machines, reportData.production, reportData.rawMaterials
+  ])
+  const stepsWithErrors = useMemo(() => [...new Set(allErrors.map(e => e.step))], [allErrors])
+  const currentWarnings = useMemo(() => allErrors.filter(e => e.step === step), [allErrors, step])
+
   if (loadingData) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>
@@ -1060,19 +1075,6 @@ export default function ShiftWizard() {
   }
 
   const CurrentStep = STEPS[step - 1].component
-  const allErrors = useMemo(() => {
-    try {
-      return getValidationErrors(reportData)
-    } catch (e) {
-      console.error('[ShiftWizard] Validation error:', e)
-      return []
-    }
-  }, [ // eslint-disable-line react-hooks/exhaustive-deps
-    reportData.date, reportData.shift, reportData.start_time, reportData.end_time,
-    reportData.machines, reportData.production, reportData.rawMaterials
-  ])
-  const stepsWithErrors = useMemo(() => [...new Set(allErrors.map(e => e.step))], [allErrors])
-  const currentWarnings = useMemo(() => allErrors.filter(e => e.step === step), [allErrors, step])
 
   return (
     <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#f5edd6' }}>
