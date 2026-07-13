@@ -233,6 +233,8 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
     }, 0)
   }
 
+  const rmProcDeltas = computeProcessingDeltas(data.processing, data.rawMaterials)
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
@@ -240,35 +242,47 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
       <div>
         <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Raw Material Stock</div>
         <div style={{ background: C.card, borderRadius: 14, border: `1.5px solid ${C.border}`, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(4, 1fr)', background: C.green, padding: '9px 12px' }}>
-            {['Material', 'Open', 'Purch', 'Used', 'Close'].map((h, i) => (
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 1fr)', background: C.green, padding: '9px 12px' }}>
+            {['Material', 'Open', 'Purch', 'Made', 'Used', 'Close'].map((h, i) => (
               <span key={h} style={{ fontSize: 10, fontWeight: 700, color: '#fff', textAlign: i > 0 ? 'right' : 'left' }}>{h}</span>
             ))}
           </div>
           {data.rawMaterials.length === 0 ? (
             <div style={{ padding: '16px 12px', textAlign: 'center', fontSize: 12, color: '#b5b8a8' }}>No raw materials configured</div>
           ) : (
-            data.rawMaterials.map((rm, idx) => (
-              <div key={rm.id} style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(4, 1fr)', padding: '10px 12px', borderTop: idx > 0 ? `1px solid ${C.border}` : 'none', alignItems: 'center' }}>
+            data.rawMaterials.map((rm, idx) => {
+              const d = rmProcDeltas[rm.id] || { produced: 0, procUsed: 0 }
+              const made = d.produced || 0
+              const usedTotal = (rm.used || 0) + (d.procUsed || 0)
+              const closing = (rm.opening || 0) + (rm.purchased || 0) + made - usedTotal
+              return (
+              <div key={rm.id} style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 1fr)', padding: '10px 12px', borderTop: idx > 0 ? `1px solid ${C.border}` : 'none', alignItems: 'center' }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{rm.name}</span>
                 <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{rm.opening || 0}</span>
                 <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{rm.purchased || 0}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, textAlign: 'right' }}>{rm.used || 0}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: C.green, textAlign: 'right' }}>{rm.closing || 0}</span>
+                <span style={{ fontSize: 12, color: made > 0 ? C.green : '#c9cbb8', fontWeight: made > 0 ? 700 : 400, textAlign: 'right' }}>{Math.round(made) || 0}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, textAlign: 'right' }}>{Math.round(usedTotal) || 0}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: closing < 0 ? '#c0392b' : C.green, textAlign: 'right' }}>{Math.round(closing) || 0}</span>
               </div>
-            ))
+              )
+            })
           )}
         </div>
-        <div style={{ fontSize: 11, color: C.dim, marginTop: 5 }}>RM "Used" is auto-calculated from mix ingredients below.</div>
+        <div style={{ fontSize: 11, color: C.dim, marginTop: 5 }}>RM "Used" = mix ingredients + in-house processing. "Made" = produced in-house this shift.</div>
         {(() => {
-          const proc = data.processing || []
-          if (!proc.length) return null
-          const sd = proc.reduce((s, r) => s + (parseFloat(r.output_kg) || 0), 0)
-          const wl = proc.reduce((s, r) => s + (parseFloat(r.input_kg) || 0), 0)
-          if (sd <= 0 && wl <= 0) return null
+          const nameById = {}
+          ;(data.rawMaterials || []).forEach(rm => { nameById[rm.id] = rm.name })
+          const made = []
+          const consumed = []
+          Object.entries(rmProcDeltas || {}).forEach(([id, d]) => {
+            const nm = nameById[id] || 'Material'
+            if ((d.produced || 0) > 0) made.push(`${nm} +${Math.round(d.produced)} kg`)
+            if ((d.procUsed || 0) > 0) consumed.push(`${nm} -${Math.round(d.procUsed)} kg`)
+          })
+          if (!made.length && !consumed.length) return null
           return (
-            <div style={{ fontSize: 11, color: C.green, marginTop: 4, fontWeight: 600 }}>
-              In-house this shift: Saw Dust produced {Math.round(sd)} kg; Wood Log consumed {Math.round(wl)} kg.
+            <div style={{ fontSize: 11, color: C.green, marginTop: 4, fontWeight: 600, lineHeight: 1.5 }}>
+              In-house this shift: {made.length ? 'made ' + made.join(', ') : ''}{made.length && consumed.length ? '; ' : ''}{consumed.length ? 'consumed ' + consumed.join(', ') : ''}.
             </div>
           )
         })()}
