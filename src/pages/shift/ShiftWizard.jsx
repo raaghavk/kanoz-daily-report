@@ -108,6 +108,7 @@ export default function ShiftWizard() {
   const [restoredFromStorage, setRestoredFromStorage] = useState(false)
   const [loadingData, setLoadingData] = useState(true)
   const [initError, setInitError] = useState(null)
+  const [processRoutes, setProcessRoutes] = useState([])
 
   // Report data state — shared across all steps
   const [reportData, setReportData] = useState({
@@ -270,17 +271,25 @@ export default function ShiftWizard() {
         setInitError(null)
 
         // 1. Fetch active configurations (reference lists) in parallel
-        const [machinesRes, materialsRes, pelletTypesRes, equipmentRes] = await Promise.all([
+        const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, routesRes] = await Promise.all([
           supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
           supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
           supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
           supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
+          supabase.from('process_routes').select('*, process_route_stages(*)').eq('plant_id', plant.id).eq('is_active', true),
         ])
 
         if (machinesRes.error) throw machinesRes.error
         if (materialsRes.error) throw materialsRes.error
         if (pelletTypesRes.error) throw pelletTypesRes.error
         if (equipmentRes.error) throw equipmentRes.error
+        if (routesRes.error) throw routesRes.error
+
+        const activeRoutes = (routesRes.data || []).map(rt => ({
+          ...rt,
+          process_route_stages: [...(rt.process_route_stages || [])].sort((a, b) => (a.seq || 0) - (b.seq || 0)),
+        }))
+        if (!cancelled) setProcessRoutes(activeRoutes)
 
         let freshReportData = {
           date: getLocalDate(),
@@ -364,20 +373,38 @@ export default function ShiftWizard() {
           if (mixesRes.error) throw mixesRes.error
           if (processingRes?.error) throw processingRes.error
 
-          // Hydrate in-house processing runs
-          freshReportData.processing = (processingRes?.data || []).map(pr => ({
-            local_id: 'proc_' + pr.id,
-            db_id: pr.id,
-            input_material: pr.input_material || 'Wood Log',
-            input_material_id: (activeRawMaterials.find(rm => rm.name === pr.input_material) || {}).id || null,
-            input_kg: pr.input_kg != null ? parseFloat(pr.input_kg) : '',
-            output_material: pr.output_material || 'Saw Dust',
-            output_material_id: (activeRawMaterials.find(rm => rm.name === pr.output_material) || {}).id || null,
-            output_kg: pr.output_kg != null ? parseFloat(pr.output_kg) : '',
-            log_eater_hours: pr.log_eater_hours != null ? parseFloat(pr.log_eater_hours) : '',
-            hammer_mill_hours: pr.hammer_mill_hours != null ? parseFloat(pr.hammer_mill_hours) : '',
-            note: pr.note || '',
-          }))
+          // Hydrate in-house processing runs (route-based). Resolve material
+          // ids from the route when present, else fall back to name lookup, so
+          // computeProcessingDeltas keeps matching the raw material rows.
+          freshReportData.processing = (processingRes?.data || []).map(pr => {
+            const route = activeRoutes.find(rt => rt.id === pr.route_id)
+            const stages = route
+              ? (route.process_route_stages || []).map(st => ({ seq: st.seq, machine_id: st.machine_id, machine_name: st.machine_name }))
+              : []
+            let machineHours = {}
+            if (pr.machine_hours && typeof pr.machine_hours === 'object') machineHours = { ...pr.machine_hours }
+            else if (typeof pr.machine_hours === 'string') { try { machineHours = JSON.parse(pr.machine_hours) || {} } catch (e) { machineHours = {} } }
+            const inId = (route && route.input_material_type_id) || (activeRawMaterials.find(rm => rm.name === pr.input_material) || {}).id || null
+            const outId = (route && route.output_material_type_id) || (activeRawMaterials.find(rm => rm.name === pr.output_material) || {}).id || null
+            return {
+              local_id: 'proc_' + pr.id,
+              db_id: pr.id,
+              route_id: pr.route_id || null,
+              route_name: route ? route.name : null,
+              input_material: pr.input_material || (route ? route.input_material_name : '') || '',
+              input_material_id: inId,
+              input_material_type_id: inId,
+              input_kg: pr.input_kg != null ? parseFloat(pr.input_kg) : '',
+              output_material: pr.output_material || (route ? route.output_material_name : '') || '',
+              output_material_id: outId,
+              output_material_type_id: outId,
+              output_kg: pr.output_kg != null ? parseFloat(pr.output_kg) : '',
+              expected_yield_pct: route && route.expected_yield_pct != null ? parseFloat(route.expected_yield_pct) : null,
+              stages,
+              machine_hours: machineHours,
+              note: pr.note || '',
+            }
+          })
 
           // Merge machines production
           freshReportData.machines = activeMachines.map(m => {
@@ -882,17 +909,24 @@ export default function ShiftWizard() {
           .map(r => {
             const inKg = sanitizeNumber(r.input_kg)
             const outKg = sanitizeNumber(r.output_kg)
+            // Sanitize per-machine hours into a clean { machine_id: number } jsonb.
+            const machineHours = {}
+            Object.entries(r.machine_hours || {}).forEach(([mid, hrs]) => {
+              if (!mid) return
+              const n = sanitizeNumber(hrs)
+              if (n > 0) machineHours[mid] = n
+            })
             return {
               shift_report_id: report.id,
               plant_id: plant.id,
               org_id: plant.org_id,
+              route_id: r.route_id || null,
               input_material: sanitizeText(r.input_material, 100),
               input_kg: inKg,
-              output_material: sanitizeText(r.output_material, 100) || 'Saw Dust',
+              output_material: sanitizeText(r.output_material, 100),
               output_kg: outKg,
               yield_pct: inKg > 0 ? Math.round((outKg / inKg) * 10000) / 100 : null,
-              log_eater_hours: r.log_eater_hours === '' || r.log_eater_hours == null ? null : sanitizeNumber(r.log_eater_hours),
-              hammer_mill_hours: r.hammer_mill_hours === '' || r.hammer_mill_hours == null ? null : sanitizeNumber(r.hammer_mill_hours),
+              machine_hours: machineHours,
               note: sanitizeText(r.note, 500) || null,
             }
           })
@@ -1207,6 +1241,7 @@ export default function ShiftWizard() {
               updateData={updateData}
               plant={plant}
               employee={employee}
+              routes={processRoutes}
               saveWizardState={saveWizardState}
               duplicateReportId={duplicateReportId}
             />

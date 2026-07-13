@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Plus, Trash2, Factory, AlertCircle } from 'lucide-react'
+import { Plus, Trash2, Factory, AlertCircle, ArrowRight } from 'lucide-react'
 
 const C = {
   cream: '#fefae0',
@@ -12,9 +12,13 @@ const C = {
 }
 
 // Compute per-material stock deltas from processing runs.
-//  - output material (Saw Dust) gains `produced` kg
-//  - input material (Wood Log) is consumed -> added to `used`
+//  - output material gains `produced` kg
+//  - input material is consumed -> added to `used`
 // Matching is done by material id when the run stores one, else by name.
+// A run now carries route-derived fields (input_material_id/name +
+// output_material_id/name), but the delta logic is unchanged so chaining via
+// intermediate materials falls out automatically: one route's output material
+// gains `produced`, another route consuming it as input gains `procUsed`.
 // Exported so ShiftWizard / Step3 can keep rawMaterials in sync.
 export function computeProcessingDeltas(processing, rawMaterials) {
   const producedById = {}
@@ -38,9 +42,24 @@ export function computeProcessingDeltas(processing, rawMaterials) {
   return perMaterial
 }
 
-export default memo(function StepProcessing({ data, updateData }) {
+// Ordered stages for a route (each { seq, machine_id, machine_name }).
+function routeStages(route) {
+  const stages = route?.process_route_stages || route?.stages || []
+  return [...stages].sort((a, b) => (a.seq || 0) - (b.seq || 0))
+}
+
+function routeLabel(route) {
+  const machines = routeStages(route).map(s => s.machine_name).filter(Boolean).join(' → ')
+  const inName = route?.input_material_name || 'Input'
+  const outName = route?.output_material_name || 'Output'
+  return machines
+    ? inName + ' → [' + machines + '] → ' + outName
+    : inName + ' → ' + outName
+}
+
+export default memo(function StepProcessing({ data, updateData, routes }) {
   const processing = data.processing || []
-  const rawMaterials = data.rawMaterials || []
+  const activeRoutes = routes || []
 
   const inputStyle = {
     width: '100%',
@@ -54,27 +73,33 @@ export default memo(function StepProcessing({ data, updateData }) {
   }
   const labelStyle = { display: 'block', fontSize: 10, fontWeight: 600, color: C.muted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }
 
-  const defaultInput = () => {
-    const wood = rawMaterials.find(rm => /wood\s*log|log/i.test(rm.name || ''))
-    return wood ? { input_material: wood.name, input_material_id: wood.id } : { input_material: 'Wood Log', input_material_id: null }
-  }
-  const defaultOutput = () => {
-    const sd = rawMaterials.find(rm => /saw\s*dust/i.test(rm.name || ''))
-    return sd ? { output_material: sd.name, output_material_id: sd.id } : { output_material: 'Saw Dust', output_material_id: null }
+  // Build a run from a selected route. Materials come straight off the route so
+  // they line up with the raw_material_types the stock accounting matches on.
+  function runFromRoute(route) {
+    const stages = routeStages(route)
+    return {
+      local_id: 'proc_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      route_id: route.id,
+      route_name: route.name,
+      input_material: route.input_material_name || '',
+      input_material_id: route.input_material_type_id || null,
+      input_material_type_id: route.input_material_type_id || null,
+      output_material: route.output_material_name || '',
+      output_material_id: route.output_material_type_id || null,
+      output_material_type_id: route.output_material_type_id || null,
+      expected_yield_pct: route.expected_yield_pct != null ? parseFloat(route.expected_yield_pct) : null,
+      stages: stages.map(s => ({ seq: s.seq, machine_id: s.machine_id, machine_name: s.machine_name })),
+      machine_hours: {},
+      input_kg: '',
+      output_kg: '',
+      note: '',
+    }
   }
 
   function addRun() {
-    const run = {
-      local_id: 'proc_' + Date.now() + '_' + Math.random().toString(36).slice(2),
-      ...defaultInput(),
-      input_kg: '',
-      ...defaultOutput(),
-      output_kg: '',
-      log_eater_hours: '',
-      hammer_mill_hours: '',
-      note: '',
-    }
-    updateData('processing', [...processing, run])
+    const route = activeRoutes[0]
+    if (!route) return
+    updateData('processing', [...processing, runFromRoute(route)])
   }
 
   function updateRun(idx, patch) {
@@ -86,13 +111,29 @@ export default memo(function StepProcessing({ data, updateData }) {
     updateData('processing', processing.filter((_, i) => i !== idx))
   }
 
-  function onInputMaterialChange(idx, name) {
-    const rm = rawMaterials.find(r => r.name === name)
-    updateRun(idx, { input_material: name, input_material_id: rm ? rm.id : null })
+  // Re-pick the route for an existing run: reset materials + stages, keep qty/note.
+  function onRouteChange(idx, routeId) {
+    const route = activeRoutes.find(r => r.id === routeId)
+    if (!route) return
+    const cur = processing[idx] || {}
+    const fresh = runFromRoute(route)
+    updateRun(idx, {
+      ...fresh,
+      local_id: cur.local_id || fresh.local_id,
+      db_id: cur.db_id,
+      input_kg: cur.input_kg != null ? cur.input_kg : '',
+      output_kg: cur.output_kg != null ? cur.output_kg : '',
+      note: cur.note != null ? cur.note : '',
+      machine_hours: {},
+    })
   }
-  function onOutputMaterialChange(idx, name) {
-    const rm = rawMaterials.find(r => r.name === name)
-    updateRun(idx, { output_material: name, output_material_id: rm ? rm.id : null })
+
+  function updateMachineHours(idx, machineId, value) {
+    const cur = processing[idx] || {}
+    const mh = { ...(cur.machine_hours || {}) }
+    if (value === '' || value == null) delete mh[machineId]
+    else mh[machineId] = value
+    updateRun(idx, { machine_hours: mh })
   }
 
   const yieldOf = (r) => {
@@ -100,21 +141,52 @@ export default memo(function StepProcessing({ data, updateData }) {
     const outKg = parseFloat(r.output_kg) || 0
     return inKg > 0 ? (outKg / inKg) * 100 : 0
   }
+  // "Wildly off" = more output than input, or actual yield deviates from the
+  // route's expected yield by more than 20 percentage points.
+  const yieldFlag = (r) => {
+    const y = yieldOf(r)
+    if ((parseFloat(r.input_kg) || 0) <= 0) return false
+    if (y > 100) return true
+    const exp = r.expected_yield_pct
+    if (exp != null && !Number.isNaN(exp) && Math.abs(y - exp) > 20) return true
+    return false
+  }
 
-  const totalSawDust = processing.reduce((s, r) => s + (parseFloat(r.output_kg) || 0), 0)
-  const totalWoodLog = processing.reduce((s, r) => s + (parseFloat(r.input_kg) || 0), 0)
+  const totalOutput = processing.reduce((s, r) => s + (parseFloat(r.output_kg) || 0), 0)
+  const totalInput = processing.reduce((s, r) => s + (parseFloat(r.input_kg) || 0), 0)
+
+  // ---- Empty state: no routes configured for this plant ----
+  if (activeRoutes.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>
+          Record material converted in-house this shift (e.g. wood log to saw dust).
+        </p>
+        <div style={{ textAlign: 'center', padding: '28px 16px', background: C.card, borderRadius: 14, border: '1.5px solid ' + C.border }}>
+          <Factory size={32} style={{ margin: '0 auto', color: '#b5b8a8', marginBottom: 10 }} />
+          <p style={{ fontSize: 14, color: '#595c4a', margin: 0, fontWeight: 600 }}>No process routes set up.</p>
+          <p style={{ fontSize: 12, color: C.muted, margin: '6px 0 0' }}>
+            Configure them in Settings {'→'} Process Routes.
+          </p>
+          <p style={{ fontSize: 11, color: C.muted, margin: '10px 0 0' }}>
+            You can skip this step {'—'} no processing will be recorded.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>
-        Record saw dust made in-house this shift: wood log to Log Eater to Hammer Mill to saw dust.
-        Leave empty if no saw dust was produced.
+        Record each in-house conversion done this shift. Pick a route, enter how much
+        went in and came out, and log hours per machine. Leave empty if nothing was processed.
       </p>
 
       {processing.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '28px 0' }}>
           <Factory size={32} style={{ margin: '0 auto', color: '#b5b8a8', marginBottom: 8 }} />
-          <p style={{ fontSize: 14, color: '#595c4a', margin: 0 }}>No in-house saw dust made this shift</p>
+          <p style={{ fontSize: 14, color: '#595c4a', margin: 0 }}>No in-house processing this shift</p>
           <button
             onClick={addRun}
             style={{ marginTop: 14, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', background: C.green, color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
@@ -126,7 +198,9 @@ export default memo(function StepProcessing({ data, updateData }) {
         <>
           {processing.map((r, idx) => {
             const y = yieldOf(r)
-            const overYield = y > 100
+            const flag = yieldFlag(r)
+            const stages = r.stages || []
+            const mh = r.machine_hours || {}
             return (
               <div key={r.local_id || idx} style={{ background: C.card, borderRadius: 14, border: '1.5px solid ' + C.border, padding: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -145,28 +219,35 @@ export default memo(function StepProcessing({ data, updateData }) {
                   </button>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <label style={labelStyle}>Input Material</label>
-                    {rawMaterials.length > 0 ? (
-                      <select
-                        value={r.input_material || ''}
-                        onChange={e => onInputMaterialChange(idx, e.target.value)}
-                        style={inputStyle}
-                      >
-                        {!rawMaterials.some(rm => rm.name === r.input_material) && r.input_material && (
-                          <option value={r.input_material}>{r.input_material}</option>
-                        )}
-                        {rawMaterials.map(rm => (
-                          <option key={rm.id} value={rm.name}>{rm.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input type="text" value={r.input_material || ''} onChange={e => onInputMaterialChange(idx, e.target.value)} style={inputStyle} />
+                <div style={{ marginBottom: 12 }}>
+                  <label style={labelStyle}>Route</label>
+                  <select
+                    value={r.route_id || ''}
+                    onChange={e => onRouteChange(idx, e.target.value)}
+                    style={inputStyle}
+                  >
+                    {!activeRoutes.some(rt => rt.id === r.route_id) && r.route_id && (
+                      <option value={r.route_id}>{routeLabel(r)}</option>
+                    )}
+                    {activeRoutes.map(rt => (
+                      <option key={rt.id} value={rt.id}>{routeLabel(rt)}</option>
+                    ))}
+                  </select>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12, color: C.darkGreen, flexWrap: 'wrap' }}>
+                    <strong>{r.input_material || 'Input'}</strong>
+                    <ArrowRight size={13} color={C.muted} />
+                    <span style={{ color: C.muted }}>{stages.map(s => s.machine_name).filter(Boolean).join(' → ') || 'no machines'}</span>
+                    <ArrowRight size={13} color={C.muted} />
+                    <strong>{r.output_material || 'Output'}</strong>
+                    {r.expected_yield_pct != null && !Number.isNaN(r.expected_yield_pct) && (
+                      <span style={{ color: C.muted }}>{'·'} expected {r.expected_yield_pct}%</span>
                     )}
                   </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <div>
-                    <label style={labelStyle}>Input kg</label>
+                    <label style={labelStyle}>Input kg ({r.input_material || 'input'})</label>
                     <input
                       type="number" min="0" step="1" inputMode="decimal"
                       value={r.input_kg}
@@ -175,30 +256,8 @@ export default memo(function StepProcessing({ data, updateData }) {
                       style={{ ...inputStyle, textAlign: 'right' }}
                     />
                   </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
                   <div>
-                    <label style={labelStyle}>Output Material</label>
-                    {rawMaterials.length > 0 ? (
-                      <select
-                        value={r.output_material || ''}
-                        onChange={e => onOutputMaterialChange(idx, e.target.value)}
-                        style={inputStyle}
-                      >
-                        {!rawMaterials.some(rm => rm.name === r.output_material) && r.output_material && (
-                          <option value={r.output_material}>{r.output_material}</option>
-                        )}
-                        {rawMaterials.map(rm => (
-                          <option key={rm.id} value={rm.name}>{rm.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input type="text" value={r.output_material || ''} onChange={e => onOutputMaterialChange(idx, e.target.value)} style={inputStyle} />
-                    )}
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Output kg (saw dust)</label>
+                    <label style={labelStyle}>Output kg ({r.output_material || 'output'})</label>
                     <input
                       type="number" min="0" step="1" inputMode="decimal"
                       value={r.output_kg}
@@ -210,40 +269,39 @@ export default memo(function StepProcessing({ data, updateData }) {
                 </div>
 
                 <div style={{ marginBottom: 12 }}>
-                  <label style={labelStyle}>Yield %</label>
-                  <div style={{ height: 42, boxSizing: 'border-box', display: 'flex', alignItems: 'center', padding: '0 12px', borderRadius: 8, background: overYield ? '#fef2f2' : 'rgba(198, 246, 213, 0.2)', border: '1.5px solid ' + (overYield ? '#fca5a5' : '#b8d4c4'), fontSize: 13, fontWeight: 700, color: overYield ? '#b91c1c' : C.green }}>
+                  <label style={labelStyle}>Actual Yield %</label>
+                  <div style={{ height: 42, boxSizing: 'border-box', display: 'flex', alignItems: 'center', padding: '0 12px', borderRadius: 8, background: flag ? '#fef2f2' : 'rgba(198, 246, 213, 0.2)', border: '1.5px solid ' + (flag ? '#fca5a5' : '#b8d4c4'), fontSize: 13, fontWeight: 700, color: flag ? '#b91c1c' : C.green }}>
                     {y.toFixed(1)}%
                   </div>
-                  {overYield && (
+                  {flag && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
                       <AlertCircle size={13} color="#b91c1c" />
-                      <span style={{ fontSize: 11, color: '#b91c1c' }}>Output exceeds input - please verify weights</span>
+                      <span style={{ fontSize: 11, color: '#b91c1c' }}>
+                        {y > 100 ? 'Output exceeds input — please verify weights' : 'Yield far from expected — please verify weights'}
+                      </span>
                     </div>
                   )}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                  <div>
-                    <label style={labelStyle}>Log Eater hrs</label>
-                    <input
-                      type="number" min="0" step="0.5" inputMode="decimal"
-                      value={r.log_eater_hours}
-                      onChange={e => updateRun(idx, { log_eater_hours: e.target.value })}
-                      placeholder="0"
-                      style={{ ...inputStyle, textAlign: 'right' }}
-                    />
+                {stages.length > 0 && (
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={labelStyle}>Machine hours</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: stages.length > 1 ? '1fr 1fr' : '1fr', gap: 10 }}>
+                      {stages.map((s, si) => (
+                        <div key={s.machine_id || si}>
+                          <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>{s.machine_name || 'Machine ' + (si + 1)}</div>
+                          <input
+                            type="number" min="0" step="0.5" inputMode="decimal"
+                            value={mh[s.machine_id] != null ? mh[s.machine_id] : ''}
+                            onChange={e => updateMachineHours(idx, s.machine_id, e.target.value)}
+                            placeholder="0"
+                            style={{ ...inputStyle, textAlign: 'right' }}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    <label style={labelStyle}>Hammer Mill hrs</label>
-                    <input
-                      type="number" min="0" step="0.5" inputMode="decimal"
-                      value={r.hammer_mill_hours}
-                      onChange={e => updateRun(idx, { hammer_mill_hours: e.target.value })}
-                      placeholder="0"
-                      style={{ ...inputStyle, textAlign: 'right' }}
-                    />
-                  </div>
-                </div>
+                )}
 
                 <div>
                   <label style={labelStyle}>Note (optional)</label>
@@ -261,9 +319,9 @@ export default memo(function StepProcessing({ data, updateData }) {
 
           <div style={{ background: 'rgba(198, 246, 213, 0.25)', border: '1.5px solid #b8d4c4', borderRadius: 12, padding: '12px 14px', fontSize: 12, color: C.darkGreen }}>
             <div style={{ fontWeight: 700, marginBottom: 4 }}>This shift (in-house)</div>
-            <div>Saw Dust produced: <strong>{Math.round(totalSawDust)} kg</strong></div>
-            <div>Wood Log consumed: <strong>{Math.round(totalWoodLog)} kg</strong></div>
-            <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>Reflected in Raw Material stock (Step 3): saw dust added to Produced, wood log added to Used.</div>
+            <div>Total output produced: <strong>{Math.round(totalOutput)} kg</strong></div>
+            <div>Total input consumed: <strong>{Math.round(totalInput)} kg</strong></div>
+            <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>Reflected in Raw Material stock (Step 3): each output added to Produced, each input added to Used.</div>
           </div>
 
           <button
