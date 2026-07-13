@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { Plus, Trash2, X, Edit2, Lock } from 'lucide-react'
 import { deriveMixPellet, gradeForGcv } from '../../lib/pelletGrading'
+import { computeProcessingDeltas } from './StepProcessing'
 
 const C = {
   green: '#2d6a4f',
@@ -75,11 +76,14 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
           purchasedByType[p.raw_material_type_id] = (purchasedByType[p.raw_material_type_id] || 0) + (parseFloat(p.quantity_kg) || 0)
         })
 
-        // Update rawMaterials — preserve existing used (from mixes)
+        // Update rawMaterials — preserve existing used (from mixes), and fold
+        // in-house processing (produced + processing input) into closing.
+        const procDeltas = computeProcessingDeltas(data.processing, data.rawMaterials)
         const updated = data.rawMaterials.map(rm => {
           const purchased = Math.round(purchasedByType[rm.id] || 0)
           const used = rm.used || 0
-          return { ...rm, purchased, closing: (rm.opening || 0) + purchased - used }
+          const d = procDeltas[rm.id] || { produced: 0, procUsed: 0 }
+          return { ...rm, purchased, produced: d.produced, closing: (rm.opening || 0) + purchased + d.produced - used - d.procUsed }
         })
         updateData('rawMaterials', updated)
         setPurchasesLoaded(true)
@@ -112,9 +116,11 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
         }
       })
     })
+    const procDeltas = computeProcessingDeltas(data.processing, data.rawMaterials)
     const updatedRM = data.rawMaterials.map(rm => {
       const used = rmUsed[rm.id] || 0
-      return { ...rm, used, closing: (rm.opening || 0) + (rm.purchased || 0) - used }
+      const d = procDeltas[rm.id] || { produced: 0, procUsed: 0 }
+      return { ...rm, used, produced: d.produced, closing: (rm.opening || 0) + (rm.purchased || 0) + d.produced - used - d.procUsed }
     })
 
     // Block save if any raw material goes negative
@@ -254,6 +260,18 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
           )}
         </div>
         <div style={{ fontSize: 11, color: C.dim, marginTop: 5 }}>RM "Used" is auto-calculated from mix ingredients below.</div>
+        {(() => {
+          const proc = data.processing || []
+          if (!proc.length) return null
+          const sd = proc.reduce((s, r) => s + (parseFloat(r.output_kg) || 0), 0)
+          const wl = proc.reduce((s, r) => s + (parseFloat(r.input_kg) || 0), 0)
+          if (sd <= 0 && wl <= 0) return null
+          return (
+            <div style={{ fontSize: 11, color: C.green, marginTop: 4, fontWeight: 600 }}>
+              In-house this shift: Saw Dust produced {Math.round(sd)} kg; Wood Log consumed {Math.round(wl)} kg.
+            </div>
+          )
+        })()}
       </div>
 
       {/* Mixes section */}

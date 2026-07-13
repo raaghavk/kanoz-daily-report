@@ -21,21 +21,45 @@ import Step6Dispatch from './Step6Dispatch'
 import Step7PelletStock from './Step7PelletStock'
 import Step8Issues from './Step8Issues'
 import Step9Submit from './Step9Submit'
+import StepProcessing, { computeProcessingDeltas } from './StepProcessing'
 
 const STEPS = [
   { num: 1, title: 'Report Header', component: Step1Header },
   { num: 2, title: 'Machine Timings', component: Step2Machines },
   { num: 3, title: 'Raw Material & Mix', component: Step3RawMaterialMix },
-  { num: 4, title: 'Production', component: Step4Production },
-  { num: 5, title: 'RM & Mix Review', component: Step5RawMaterialReview },
-  { num: 6, title: 'Equipment & Diesel', component: Step5Diesel },
-  { num: 7, title: 'Dispatch Summary', component: Step6Dispatch },
-  { num: 8, title: 'Pellet Stock', component: Step7PelletStock },
-  { num: 9, title: 'Issues', component: Step8Issues },
-  { num: 10, title: 'Submit', component: Step9Submit },
+  { num: 4, title: 'In-House Processing', component: StepProcessing },
+  { num: 5, title: 'Production', component: Step4Production },
+  { num: 6, title: 'RM & Mix Review', component: Step5RawMaterialReview },
+  { num: 7, title: 'Equipment & Diesel', component: Step5Diesel },
+  { num: 8, title: 'Dispatch Summary', component: Step6Dispatch },
+  { num: 9, title: 'Pellet Stock', component: Step7PelletStock },
+  { num: 10, title: 'Issues', component: Step8Issues },
+  { num: 11, title: 'Submit', component: Step9Submit },
 ]
 
 const WIZARD_STORAGE_KEY = 'kanoz_shift_wizard_state'
+
+// Fold in-house processing runs into raw material stock.
+//  - `used` on each row is mix-only consumption; processing input is added on top
+//  - `produced` captures in-house output (e.g. Saw Dust made this shift)
+//  - closing = opening + purchased + produced - used(mix) - processing input
+// Idempotent: derives everything from opening/purchased/used + processing.
+function foldProcessingIntoRawMaterials(rawMaterials, processing) {
+  const deltas = computeProcessingDeltas(processing, rawMaterials)
+  return (rawMaterials || []).map(rm => {
+    const d = deltas[rm.id] || { produced: 0, procUsed: 0 }
+    const opening = parseFloat(rm.opening) || 0
+    const purchased = parseFloat(rm.purchased) || 0
+    const mixUsed = parseFloat(rm.used) || 0
+    const produced = d.produced || 0
+    const procUsed = d.procUsed || 0
+    return {
+      ...rm,
+      produced,
+      closing: opening + purchased + produced - mixUsed - procUsed,
+    }
+  })
+}
 
 // Error boundary to catch render errors in individual steps and show an error
 // message instead of a blank screen. key={step} resets it on every step change.
@@ -98,6 +122,7 @@ export default function ShiftWizard() {
     machines: [],
     mixes: [],
     production: [],
+    processing: [],
     rawMaterials: [],
     diesel: [],
     diesel_stock: { opening: 0, purchases: [], closing: 0 },
@@ -145,7 +170,7 @@ export default function ShiftWizard() {
 
           // If returning from dispatch creation (returnToStep), always restore immediately
           if (returnToStep) {
-            setReportData(savedData)
+            setReportData({ ...savedData, processing: savedData.processing || [] })
             setStep(returnToStep)
             if (savedId) setReportId(savedId)
             setRestoredFromStorage(true)
@@ -176,7 +201,7 @@ export default function ShiftWizard() {
 
   const handleResume = useCallback(() => {
     if (pendingRestore) {
-      setReportData(pendingRestore.savedData)
+      setReportData({ ...pendingRestore.savedData, processing: pendingRestore.savedData.processing || [] })
       setStep(pendingRestore.savedStep || 1)
       if (pendingRestore.savedId) setReportId(pendingRestore.savedId)
       setRestoredFromStorage(true)
@@ -269,6 +294,7 @@ export default function ShiftWizard() {
           machines: [],
           mixes: [],
           production: [],
+          processing: [],
           rawMaterials: [],
           diesel: [],
           diesel_stock: { opening: 0, purchases: [], closing: 0 },
@@ -318,7 +344,7 @@ export default function ShiftWizard() {
           freshReportData.remarks = report.remarks || ''
 
           // Load all child tables in parallel
-          const [machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases, mixesRes] = await Promise.all([
+          const [machProd, rmUsage, diesel, pStock, issuesData, dStock, dPurchases, mixesRes, processingRes] = await Promise.all([
             supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', editId),
             supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', editId),
             supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', editId),
@@ -327,6 +353,7 @@ export default function ShiftWizard() {
             supabase.from('diesel_stock').select('*').eq('shift_report_id', editId).maybeSingle(),
             supabase.from('diesel_purchases').select('*').eq('shift_report_id', editId),
             supabase.from('shift_mixes').select('*, shift_mix_compositions(*), shift_mix_machine_usage(*)').eq('shift_report_id', editId),
+            supabase.from('processing_runs').select('*').eq('shift_report_id', editId),
           ])
 
           if (machProd.error) throw machProd.error
@@ -335,6 +362,22 @@ export default function ShiftWizard() {
           if (pStock.error) throw pStock.error
           if (issuesData.error) throw issuesData.error
           if (mixesRes.error) throw mixesRes.error
+          if (processingRes?.error) throw processingRes.error
+
+          // Hydrate in-house processing runs
+          freshReportData.processing = (processingRes?.data || []).map(pr => ({
+            local_id: 'proc_' + pr.id,
+            db_id: pr.id,
+            input_material: pr.input_material || 'Wood Log',
+            input_material_id: (activeRawMaterials.find(rm => rm.name === pr.input_material) || {}).id || null,
+            input_kg: pr.input_kg != null ? parseFloat(pr.input_kg) : '',
+            output_material: pr.output_material || 'Saw Dust',
+            output_material_id: (activeRawMaterials.find(rm => rm.name === pr.output_material) || {}).id || null,
+            output_kg: pr.output_kg != null ? parseFloat(pr.output_kg) : '',
+            log_eater_hours: pr.log_eater_hours != null ? parseFloat(pr.log_eater_hours) : '',
+            hammer_mill_hours: pr.hammer_mill_hours != null ? parseFloat(pr.hammer_mill_hours) : '',
+            note: pr.note || '',
+          }))
 
           // Merge machines production
           freshReportData.machines = activeMachines.map(m => {
@@ -354,17 +397,25 @@ export default function ShiftWizard() {
             return m
           })
 
-          // Merge raw material usage
-          freshReportData.rawMaterials = activeRawMaterials.map(m => {
-            const rmData = (rmUsage.data || []).find(r => r.raw_material_type_id === m.id)
-            return {
-              ...m,
-              opening: rmData ? parseFloat(rmData.opening_kg) || 0 : 0,
-              purchased: rmData ? parseFloat(rmData.purchased_kg) || 0 : 0,
-              used: rmData ? parseFloat(rmData.quantity_kg) || 0 : 0,
-              closing: rmData ? parseFloat(rmData.closing_kg) || 0 : 0,
-            }
-          })
+          // Merge raw material usage. Saved quantity_kg is TOTAL consumed
+          // (mix + in-house processing input). Recover mix-only `used` by
+          // subtracting this shift's processing input so the fold below is
+          // idempotent (closing recomputes to the saved value).
+          {
+            const procDeltas = computeProcessingDeltas(freshReportData.processing, activeRawMaterials)
+            freshReportData.rawMaterials = activeRawMaterials.map(m => {
+              const rmData = (rmUsage.data || []).find(r => r.raw_material_type_id === m.id)
+              const totalUsed = rmData ? parseFloat(rmData.quantity_kg) || 0 : 0
+              const procUsed = (procDeltas[m.id] || {}).procUsed || 0
+              return {
+                ...m,
+                opening: rmData ? parseFloat(rmData.opening_kg) || 0 : 0,
+                purchased: rmData ? parseFloat(rmData.purchased_kg) || 0 : 0,
+                used: Math.max(0, totalUsed - procUsed),
+                closing: rmData ? parseFloat(rmData.closing_kg) || 0 : 0,
+              }
+            })
+          }
 
           // Merge pellet stock
           freshReportData.pelletStock = activePellets.map(p => {
@@ -587,6 +638,8 @@ export default function ShiftWizard() {
         }
 
         if (!cancelled) {
+          // Reflect in-house processing in raw material stock (produced + closing)
+          freshReportData.rawMaterials = foldProcessingIntoRawMaterials(freshReportData.rawMaterials, freshReportData.processing)
           setReportData(freshReportData)
           setLoadingData(false)
         }
@@ -790,22 +843,62 @@ export default function ShiftWizard() {
         }
       }
 
-      // Save raw material usage (with opening/closing for carry-forward)
+      // Save raw material usage (with opening/closing for carry-forward).
+      // Fold in-house processing: quantity_kg = mix used + processing input;
+      // closing = opening + purchased + produced - mix used - processing input.
+      const procDeltasSave = computeProcessingDeltas(reportData.processing, reportData.rawMaterials)
       if (reportData.rawMaterials.length) {
         const { error: rmDelErr } = await supabase.from('raw_material_usage').delete().eq('shift_report_id', report.id)
         if (rmDelErr) throw rmDelErr
         const rmRows = reportData.rawMaterials
-          .map(rm => ({
-            shift_report_id: report.id,
-            raw_material_type_id: rm.id,
-            quantity_kg: sanitizeNumber(rm.used),
-            opening_kg: sanitizeNumber(rm.opening),
-            purchased_kg: sanitizeNumber(rm.purchased),
-            closing_kg: sanitizeNumber(rm.closing),
-          }))
+          .map(rm => {
+            const d = procDeltasSave[rm.id] || { produced: 0, procUsed: 0 }
+            const opening = sanitizeNumber(rm.opening)
+            const purchased = sanitizeNumber(rm.purchased)
+            const mixUsed = sanitizeNumber(rm.used)
+            const totalUsed = mixUsed + (d.procUsed || 0)
+            const closing = opening + purchased + (d.produced || 0) - totalUsed
+            return {
+              shift_report_id: report.id,
+              raw_material_type_id: rm.id,
+              quantity_kg: totalUsed,
+              opening_kg: opening,
+              purchased_kg: purchased,
+              closing_kg: closing,
+            }
+          })
         if (rmRows.length) {
           const { error: rmInsErr } = await supabase.from('raw_material_usage').insert(rmRows)
           if (rmInsErr) throw rmInsErr
+        }
+      }
+
+      // Save in-house processing runs
+      {
+        const { error: prDelErr } = await supabase.from('processing_runs').delete().eq('shift_report_id', report.id)
+        if (prDelErr) throw prDelErr
+        const procRows = (reportData.processing || [])
+          .filter(r => sanitizeNumber(r.input_kg) > 0 || sanitizeNumber(r.output_kg) > 0)
+          .map(r => {
+            const inKg = sanitizeNumber(r.input_kg)
+            const outKg = sanitizeNumber(r.output_kg)
+            return {
+              shift_report_id: report.id,
+              plant_id: plant.id,
+              org_id: plant.org_id,
+              input_material: sanitizeText(r.input_material, 100),
+              input_kg: inKg,
+              output_material: sanitizeText(r.output_material, 100) || 'Saw Dust',
+              output_kg: outKg,
+              yield_pct: inKg > 0 ? Math.round((outKg / inKg) * 10000) / 100 : null,
+              log_eater_hours: r.log_eater_hours === '' || r.log_eater_hours == null ? null : sanitizeNumber(r.log_eater_hours),
+              hammer_mill_hours: r.hammer_mill_hours === '' || r.hammer_mill_hours == null ? null : sanitizeNumber(r.hammer_mill_hours),
+              note: sanitizeText(r.note, 500) || null,
+            }
+          })
+        if (procRows.length) {
+          const { error: prInsErr } = await supabase.from('processing_runs').insert(procRows)
+          if (prInsErr) throw prInsErr
         }
       }
 
@@ -1081,7 +1174,7 @@ export default function ShiftWizard() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#fefae0', width: '100%', maxWidth: 480, boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
       <PageHeader
         title={STEPS[step - 1].title}
-        subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of 10 · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
+        subtitle={`${editId ? 'Editing · ' : ''}Step ${step} of ${STEPS.length} · ${plant?.name || 'Plant'} · Shift ${reportData.shift}`}
         onBack={() => {
           if (step === 1) {
             if (window.confirm('Stop editing? Any unsaved changes will be lost.')) {
@@ -1131,7 +1224,7 @@ export default function ShiftWizard() {
             <ArrowLeft size={16} /> Previous
           </button>
         )}
-        {step < 10 ? (
+        {step < STEPS.length ? (
           <button
             onClick={() => setStep(step + 1)}
             style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '14px 0', background: '#2d6a4f', color: 'white', borderRadius: 14, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer' }}
