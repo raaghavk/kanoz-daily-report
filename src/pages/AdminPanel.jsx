@@ -27,6 +27,13 @@ export default function AdminPanel() {
   const [editingItem, setEditingItem] = useState(null) // { section, id, name }
   const [addingTo, setAddingTo] = useState(null) // section key
   const [newItemName, setNewItemName] = useState('')
+  // Extra fields for machines/equipment add flow (type, capacity MT/hr, motor HP)
+  const [newItemType, setNewItemType] = useState('')
+  const [newItemCapacity, setNewItemCapacity] = useState('')
+  const [newItemMotorHp, setNewItemMotorHp] = useState('')
+  const [newItemStock, setNewItemStock] = useState('')
+  // Pellet recipe ratios derived from most recent shift mixes (keyed by lowercased pellet name)
+  const [pelletRatios, setPelletRatios] = useState({})
   const [addingPlant, setAddingPlant] = useState(false)
   const [newPlantName, setNewPlantName] = useState('')
 
@@ -164,6 +171,49 @@ export default function AdminPanel() {
         if (!cancelled) {
           setData(results)
         }
+
+        // Derive pellet recipe ratios from the most recent shift mix per pellet name
+        try {
+          const { data: mixes } = await supabase
+            .from('shift_mixes')
+            .select('id, derived_pellet_name, name, type, created_at')
+            .eq('plant_id', selectedPlantId)
+            .order('created_at', { ascending: false })
+          const mixList = mixes || []
+          // Keep the most recent mix per pellet name (list already sorted desc)
+          const latestByName = {}
+          for (const m of mixList) {
+            const pname = (m.derived_pellet_name || m.type || m.name || '').trim().toLowerCase()
+            if (!pname) continue
+            if (!latestByName[pname]) latestByName[pname] = m
+          }
+          const mixIds = Object.values(latestByName).map(m => m.id)
+          const ratios = {}
+          if (mixIds.length) {
+            const { data: comps } = await supabase
+              .from('shift_mix_compositions')
+              .select('mix_id, raw_material_name, quantity_kg')
+              .in('mix_id', mixIds)
+            const compsByMix = {}
+            for (const c of comps || []) {
+              if (!compsByMix[c.mix_id]) compsByMix[c.mix_id] = []
+              compsByMix[c.mix_id].push(c)
+            }
+            for (const [pname, mix] of Object.entries(latestByName)) {
+              const list = (compsByMix[mix.id] || []).filter(c => Number(c.quantity_kg) > 0)
+              const total = list.reduce((sum, c) => sum + Number(c.quantity_kg || 0), 0)
+              if (!total) continue
+              ratios[pname] = list
+                .map(c => ({ name: c.raw_material_name, pct: Math.round((Number(c.quantity_kg) / total) * 100) }))
+                .sort((a, b) => b.pct - a.pct)
+                .map(c => `${c.name} ${c.pct}%`)
+                .join(' · ')
+            }
+          }
+          if (!cancelled) setPelletRatios(ratios)
+        } catch (mixErr) {
+          console.error('Failed to derive pellet ratios:', mixErr)
+        }
       } catch (err) {
         console.error('Error loading admin data:', err)
         if (!cancelled) showToast('Failed to load plant settings', 'error')
@@ -195,6 +245,22 @@ export default function AdminPanel() {
       const existing = data[sectionKey] || []
       payload.sort_order = existing.length + 1
     }
+    // Machines & equipment: type, production/hr (MT), motor HP
+    if (sectionKey === 'machines' || sectionKey === 'equipment') {
+      const typeCol = sectionKey === 'machines' ? 'machine_type' : 'equipment_type'
+      const cap = parseFloat(newItemCapacity)
+      const hp = parseFloat(newItemMotorHp)
+      payload[typeCol] = newItemType.trim() || null
+      payload.capacity_mt_per_hour = Number.isNaN(cap) ? null : cap
+      payload.motor_hp = Number.isNaN(hp) ? null : hp
+    }
+    // Raw material types: GCV (newItemType field) + opening stock
+    if (sectionKey === 'raw_material_types') {
+      const g = parseFloat(newItemType)
+      payload.gcv_kcal_kg = Number.isNaN(g) ? null : g
+      const stock = parseFloat(newItemStock)
+      payload.opening_stock_kg = Number.isNaN(stock) ? 0 : stock
+    }
     const { error } = await supabase.from(section.table).insert(payload)
     setBusy(false)
     if (error) {
@@ -203,6 +269,10 @@ export default function AdminPanel() {
     }
     showToast(`${section.singular} added`, 'success')
     setNewItemName('')
+    setNewItemType('')
+    setNewItemCapacity('')
+    setNewItemMotorHp('')
+    setNewItemStock('')
     setAddingTo(null)
     loadAllData()
   }
@@ -213,6 +283,16 @@ export default function AdminPanel() {
     if (sectionKey === 'raw_material_types') {
       const g = parseFloat(editingItem?.gcv)
       payload.gcv_kcal_kg = Number.isNaN(g) ? null : g
+      const stock = parseFloat(editingItem?.stock)
+      payload.opening_stock_kg = Number.isNaN(stock) ? 0 : stock
+    }
+    if (sectionKey === 'machines' || sectionKey === 'equipment') {
+      const typeCol = sectionKey === 'machines' ? 'machine_type' : 'equipment_type'
+      const cap = parseFloat(editingItem?.capacity)
+      const hp = parseFloat(editingItem?.motorHp)
+      payload[typeCol] = (editingItem?.type || '').trim() || null
+      payload.capacity_mt_per_hour = Number.isNaN(cap) ? null : cap
+      payload.motor_hp = Number.isNaN(hp) ? null : hp
     }
     const { error } = await supabase.from(section.table).update(payload).eq('id', id)
     if (error) {
@@ -447,6 +527,47 @@ export default function AdminPanel() {
                                 style={{ width: 84, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                               />
                             )}
+                            {section.key === 'raw_material_types' && (
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                placeholder="Opening kg"
+                                value={editingItem.stock}
+                                onChange={e => setEditingItem({ ...editingItem, stock: e.target.value })}
+                                title="Opening stock (kg)"
+                                style={{ width: 90, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                              />
+                            )}
+                            {(section.key === 'machines' || section.key === 'equipment') && (
+                              <>
+                                <input
+                                  type="text"
+                                  placeholder="Type"
+                                  value={editingItem.type}
+                                  onChange={e => setEditingItem({ ...editingItem, type: e.target.value })}
+                                  title={section.key === 'machines' ? 'Machine type' : 'Equipment type'}
+                                  style={{ width: 90, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                                />
+                                <input
+                                  type="number"
+                                  inputMode="decimal"
+                                  placeholder="MT/hr"
+                                  value={editingItem.capacity}
+                                  onChange={e => setEditingItem({ ...editingItem, capacity: e.target.value })}
+                                  title="Production per hour (MT)"
+                                  style={{ width: 74, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                                />
+                                <input
+                                  type="number"
+                                  inputMode="decimal"
+                                  placeholder="HP"
+                                  value={editingItem.motorHp}
+                                  onChange={e => setEditingItem({ ...editingItem, motorHp: e.target.value })}
+                                  title="Motor HP"
+                                  style={{ width: 64, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                                />
+                              </>
+                            )}
                             <button
                               onClick={() => updateItem(section.key, item.id, editingItem.name)}
                               style={{ padding: '4px 8px', background: '#2d6a4f', color: 'white', borderRadius: 6, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -462,10 +583,30 @@ export default function AdminPanel() {
                           </>
                         ) : (
                           <>
-                            <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: '#2c2c2c' }}>{item.name}</span>
+                            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                              <span style={{ fontSize: 13, fontWeight: 500, color: '#2c2c2c' }}>{item.name}</span>
+                              {(section.key === 'machines' || section.key === 'equipment') && (() => {
+                                const typeVal = item.machine_type || item.equipment_type
+                                const parts = []
+                                if (typeVal) parts.push(typeVal)
+                                if (item.capacity_mt_per_hour != null) parts.push(`${item.capacity_mt_per_hour} MT/hr`)
+                                if (item.motor_hp != null) parts.push(`${item.motor_hp} HP`)
+                                if (!parts.length) return null
+                                return <span style={{ fontSize: 11, color: '#8a8d7a' }}>{parts.join(' · ')}</span>
+                              })()}
+                              {section.key === 'pellet_types' && (() => {
+                                const ratio = pelletRatios[(item.name || '').trim().toLowerCase()]
+                                return <span style={{ fontSize: 11, color: ratio ? '#2d6a4f' : '#8a8d7a', fontStyle: ratio ? 'normal' : 'italic' }}>{ratio || 'recipe not set yet'}</span>
+                              })()}
+                            </div>
                             {section.key === 'raw_material_types' && (
                               <span style={{ fontSize: 11, fontWeight: 600, color: item.gcv_kcal_kg != null ? '#2d6a4f' : '#8a8d7a', background: '#fefae0', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>
                                 {item.gcv_kcal_kg != null ? `${item.gcv_kcal_kg} kcal/kg` : 'GCV not set'}
+                              </span>
+                            )}
+                            {section.key === 'raw_material_types' && (
+                              <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a', background: '#fefae0', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+                                {`Open ${Number(item.opening_stock_kg || 0)} kg`}
                               </span>
                             )}
                             {section.key === 'pellet_types' && item.grade && (
@@ -477,7 +618,7 @@ export default function AdminPanel() {
                               <span style={{ fontSize: 10, color: '#d32f2f', fontWeight: 600 }}>Inactive</span>
                             )}
                             <button
-                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '' })}
+                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: item.opening_stock_kg ?? '', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '' })}
                               style={{ padding: '4px 8px', background: '#fefae0', borderRadius: 6, border: '1px solid #e5ddd0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                             >
                               <Edit3 size={12} color="#595c4a" />
@@ -499,29 +640,85 @@ export default function AdminPanel() {
 
                     {/* Add new item */}
                     {addingTo === section.key ? (
-                      <div style={{ display: 'flex', gap: 8, padding: '10px 16px' }}>
-                        <input
-                          type="text"
-                          placeholder={`New ${section.singular.toLowerCase()} name`}
-                          value={newItemName}
-                          onChange={e => setNewItemName(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && addItem(section.key)}
-                          autoFocus
-                          style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none' }}
-                        />
-                        <button
-                          onClick={() => addItem(section.key)}
-                          disabled={busy}
-                          style={{ padding: '8px 12px', background: '#2d6a4f', color: 'white', borderRadius: 8, border: 'none', cursor: busy ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, opacity: busy ? 0.6 : 1 }}
-                        >
-                          Add
-                        </button>
-                        <button
-                          onClick={() => { setAddingTo(null); setNewItemName('') }}
-                          style={{ padding: '8px 12px', background: '#fefae0', color: '#595c4a', borderRadius: 8, border: '1px solid #e5ddd0', cursor: 'pointer', fontSize: 12 }}
-                        >
-                          Cancel
-                        </button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 16px' }}>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <input
+                            type="text"
+                            placeholder={`New ${section.singular.toLowerCase()} name`}
+                            value={newItemName}
+                            onChange={e => setNewItemName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && addItem(section.key)}
+                            autoFocus
+                            style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', minWidth: 0 }}
+                          />
+                          <button
+                            onClick={() => addItem(section.key)}
+                            disabled={busy}
+                            style={{ padding: '8px 12px', background: '#2d6a4f', color: 'white', borderRadius: 8, border: 'none', cursor: busy ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600, opacity: busy ? 0.6 : 1 }}
+                          >
+                            Add
+                          </button>
+                          <button
+                            onClick={() => { setAddingTo(null); setNewItemName(''); setNewItemType(''); setNewItemCapacity(''); setNewItemMotorHp(''); setNewItemStock('') }}
+                            style={{ padding: '8px 12px', background: '#fefae0', color: '#595c4a', borderRadius: 8, border: '1px solid #e5ddd0', cursor: 'pointer', fontSize: 12 }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        {(section.key === 'machines' || section.key === 'equipment') && (
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <input
+                              type="text"
+                              placeholder={section.key === 'machines' ? 'Machine type' : 'Equipment type'}
+                              value={newItemType}
+                              onChange={e => setNewItemType(e.target.value)}
+                              style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', minWidth: 0 }}
+                            />
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              placeholder="MT/hr"
+                              value={newItemCapacity}
+                              onChange={e => setNewItemCapacity(e.target.value)}
+                              title="Production per hour (MT)"
+                              style={{ width: 84, padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                            />
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              placeholder="HP"
+                              value={newItemMotorHp}
+                              onChange={e => setNewItemMotorHp(e.target.value)}
+                              title="Motor HP"
+                              style={{ width: 70, padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                            />
+                          </div>
+                        )}
+                        {section.key === 'raw_material_types' && (
+                          <>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                placeholder="GCV (kcal/kg)"
+                                value={newItemType}
+                                onChange={e => setNewItemType(e.target.value)}
+                                title="GCV (kcal/kg)"
+                                style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', minWidth: 0 }}
+                              />
+                              <input
+                                type="number"
+                                inputMode="decimal"
+                                placeholder="Opening stock (kg)"
+                                value={newItemStock}
+                                onChange={e => setNewItemStock(e.target.value)}
+                                title="Opening stock (kg)"
+                                style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', minWidth: 0 }}
+                              />
+                            </div>
+                            <div style={{ fontSize: 11, color: '#8a8d7a' }}>Stock already on hand before app usage began. Used as opening for the first shift report.</div>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <button
