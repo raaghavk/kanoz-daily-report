@@ -248,12 +248,13 @@ export default function SettingsPage() {
           { path: '/transporters', emoji: '🚛', label: 'Transporters', show: role !== 'purchase_manager' },
           { path: '/spare-parts', emoji: '🔧', label: 'Spare Parts', show: can(role, 'view_spare_parts') },
           { path: '/assets', emoji: '🏷️', label: 'Assets', show: can(role, 'view_spare_parts') },
+          { path: '/dashboard', emoji: '📊', label: 'Admin Dashboard', show: ['admin','plant_manager','accountant'].includes(role) },
         ].filter(i => i.show)
         if (!dirItems.length) return null
         return (
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Directory</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div className="tile-grid">
               {dirItems.map(item => (
                 <button key={item.path} onClick={() => nav(item.path)}
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '16px 8px', background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', cursor: 'pointer' }}>
@@ -268,15 +269,6 @@ export default function SettingsPage() {
       {/* Admin action buttons */}
       {(can(employee?.role, 'manage_users') || can(employee?.role, 'plant_settings')) && (
         <>
-          {can(employee?.role, 'plant_settings') && (
-            <button onClick={() => nav('/dashboard')} style={{
-              width: '100%', padding: '14px 16px', background: '#1b4332', color: 'white',
-              borderRadius: 14, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}>
-              <span style={{ fontSize: 16 }}>📊</span> Admin Dashboard
-            </button>
-          )}
           <div style={{ display: 'flex', gap: 8 }}>
             {can(employee?.role, 'manage_users') && (
               <button onClick={() => nav('/users')} style={{ flex: 1, padding: '12px 6px', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>

@@ -8,7 +8,7 @@ export default function Layout() {
 
   return (
     <div style={{ height: '100%', display: 'flex', justifyContent: 'center', background: '#fefae0' }}>
-      <div style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column', position: 'relative', maxWidth: 480, background: '#fefae0', boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
+      <div className="app-shell" style={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', background: '#fefae0', boxShadow: '0 0 40px rgba(0,0,0,0.08)' }}>
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <Outlet />
         </div>

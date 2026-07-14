@@ -61,6 +61,11 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; }
 
+/* App shell — phone-width column on mobile, wider on tablets/iPad */
+.app-shell { width: 100%; max-width: 480px; }
+@media (min-width: 768px)  { .app-shell { max-width: 760px; } }
+@media (min-width: 1100px) { .app-shell { max-width: 900px; } }
+
 /* Bottom nav — fixed to viewport bottom, with safe area */
 .bottom-nav {
   position: fixed;
@@ -99,3 +104,11 @@ input:focus, select:focus, textarea:focus {
   background: rgba(255,255,255,0.1) !important;
   box-shadow: 0 0 0 3px rgba(45,106,79,0.25) !important;
 }
+
+@media (min-width: 768px)  { .bottom-nav { max-width: 760px; } }
+@media (min-width: 1100px) { .bottom-nav { max-width: 900px; } }
+
+/* Responsive tile grids: 2 cols phone, 3 tablet, 4 large */
+.tile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (min-width: 768px)  { .tile-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1100px) { .tile-grid { grid-template-columns: repeat(4, 1fr); } }
