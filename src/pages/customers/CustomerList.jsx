@@ -15,7 +15,7 @@ export default function CustomerList() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
-  const [formData, setFormData] = useState({ name: '', address: '' })
+  const [formData, setFormData] = useState({ name: '', mobile: '', address: '', contact_person: '', contact_phone: '', gst_number: '', account_owner: '', email: '', notes: '' })
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -53,10 +53,10 @@ export default function CustomerList() {
     if (submitting) return
     setSubmitting(true)
     try {
-      const { data, error } = await supabase.from('customers').insert([{ org_id: plant.org_id, name: formData.name.trim(), address: formData.address.trim() || null, is_active: true }]).select()
+      const { data, error } = await supabase.from('customers').insert([{ org_id: plant.org_id, name: formData.name.trim(), mobile: formData.mobile.trim() || null, address: formData.address.trim() || null, contact_person: formData.contact_person.trim() || null, contact_phone: formData.contact_phone.trim() || null, gst_number: formData.gst_number.trim() || null, account_owner: formData.account_owner.trim() || null, email: formData.email.trim() || null, notes: formData.notes.trim() || null, is_active: true }]).select()
       if (error) throw error
       setCustomers([...customers, data[0]])
-      setFormData({ name: '', address: '' })
+      setFormData({ name: '', mobile: '', address: '', contact_person: '', contact_phone: '', gst_number: '', account_owner: '', email: '', notes: '' })
       setShowAddModal(false)
       showToast('Customer added', 'success')
     } catch (err) {
@@ -120,6 +120,11 @@ export default function CustomerList() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {customer.name}
                   </div>
+                  {customer.contact_person && (
+                    <div style={{ fontSize: 10, color: '#595c4a', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {customer.contact_person}
+                    </div>
+                  )}
                   {customer.address && (
                     <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {customer.address}
@@ -169,8 +174,36 @@ export default function CustomerList() {
             <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Customer name" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
           </div>
           <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Mobile</label>
+            <input type="tel" value={formData.mobile} onChange={e => setFormData({ ...formData, mobile: e.target.value })} placeholder="Mobile number (optional)" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Address</label>
             <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} placeholder="Address (optional)" rows={2} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Contact Person</label>
+            <input type="text" value={formData.contact_person} onChange={e => setFormData({ ...formData, contact_person: e.target.value })} placeholder="Their point of contact (optional)" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Contact Phone</label>
+            <input type="tel" value={formData.contact_phone} onChange={e => setFormData({ ...formData, contact_phone: e.target.value })} placeholder="Contact person's number (optional)" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Email</label>
+            <input type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="Email (optional)" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>GST Number</label>
+            <input type="text" value={formData.gst_number} onChange={e => setFormData({ ...formData, gst_number: e.target.value })} placeholder="GST number (optional)" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Handled by (our team)</label>
+            <input type="text" value={formData.account_owner} onChange={e => setFormData({ ...formData, account_owner: e.target.value })} placeholder="Account owner on our side (optional)" style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Notes</label>
+            <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} placeholder="Notes (optional)" rows={2} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box' }} />
           </div>
           <div style={{ display: 'flex', gap: 8, paddingTop: 8 }}>
             <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}>Cancel</button>

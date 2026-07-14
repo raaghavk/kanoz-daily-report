@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
-import { MapPin, Edit2, Navigation, Loader2, AlertCircle, Calendar } from 'lucide-react'
+import { MapPin, Edit2, Navigation, Loader2, AlertCircle, Calendar, Phone, Mail, User, Building2, FileText } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function CustomerDetail() {
@@ -15,7 +15,7 @@ export default function CustomerDetail() {
   const [dispatches, setDispatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [editData, setEditData] = useState({ name: '', address: '' })
+  const [editData, setEditData] = useState({ name: '', mobile: '', address: '', contact_person: '', contact_phone: '', gst_number: '', account_owner: '', email: '', notes: '' })
 
   useEffect(() => {
     if (id && plant?.org_id) {
@@ -35,7 +35,7 @@ export default function CustomerDetail() {
 
       if (customerError) throw customerError
       setCustomer(customerData)
-      setEditData({ name: customerData.name, address: customerData.address || '' })
+      setEditData({ name: customerData.name, mobile: customerData.mobile || '', address: customerData.address || '', contact_person: customerData.contact_person || '', contact_phone: customerData.contact_phone || '', gst_number: customerData.gst_number || '', account_owner: customerData.account_owner || '', email: customerData.email || '', notes: customerData.notes || '' })
 
       const { data: dispatchesData, error: dispatchesError } = await supabase
         .from('vehicle_dispatches')
@@ -62,14 +62,25 @@ export default function CustomerDetail() {
     }
 
     try {
+      const payload = {
+        name: editData.name.trim(),
+        mobile: editData.mobile.trim() || null,
+        address: editData.address.trim() || null,
+        contact_person: editData.contact_person.trim() || null,
+        contact_phone: editData.contact_phone.trim() || null,
+        gst_number: editData.gst_number.trim() || null,
+        account_owner: editData.account_owner.trim() || null,
+        email: editData.email.trim() || null,
+        notes: editData.notes.trim() || null,
+      }
       const { error } = await supabase
         .from('customers')
-        .update({ name: editData.name, address: editData.address })
+        .update(payload)
         .eq('id', id)
 
       if (error) throw error
 
-      setCustomer({ ...customer, name: editData.name, address: editData.address })
+      setCustomer({ ...customer, ...payload })
       setShowEditModal(false)
       showToast('Customer updated successfully', 'success')
     } catch (err) {
@@ -146,6 +157,76 @@ export default function CustomerDetail() {
               </div>
             )}
 
+            {customer.mobile && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <Phone size={16} style={{ color: '#2d6a4f', marginTop: 2, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Mobile</p>
+                  <a href={`tel:${customer.mobile}`} style={{ fontSize: 13, color: '#2d6a4f', marginTop: 2, display: 'inline-block', textDecoration: 'none', fontWeight: 600 }}>{customer.mobile}</a>
+                </div>
+              </div>
+            )}
+
+            {customer.contact_person && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <User size={16} style={{ color: '#d4a373', marginTop: 2, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Contact Person</p>
+                  <p style={{ fontSize: 13, color: '#2c2c2c', marginTop: 2 }}>{customer.contact_person}</p>
+                </div>
+              </div>
+            )}
+
+            {customer.contact_phone && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <Phone size={16} style={{ color: '#d4a373', marginTop: 2, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Contact Phone</p>
+                  <a href={`tel:${customer.contact_phone}`} style={{ fontSize: 13, color: '#2d6a4f', marginTop: 2, display: 'inline-block', textDecoration: 'none', fontWeight: 600 }}>{customer.contact_phone}</a>
+                </div>
+              </div>
+            )}
+
+            {customer.email && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <Mail size={16} style={{ color: '#d4a373', marginTop: 2, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Email</p>
+                  <a href={`mailto:${customer.email}`} style={{ fontSize: 13, color: '#2d6a4f', marginTop: 2, display: 'inline-block', textDecoration: 'none', fontWeight: 600 }}>{customer.email}</a>
+                </div>
+              </div>
+            )}
+
+            {customer.gst_number && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <Building2 size={16} style={{ color: '#d4a373', marginTop: 2, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>GST Number</p>
+                  <p style={{ fontSize: 13, color: '#2c2c2c', marginTop: 2 }}>{customer.gst_number}</p>
+                </div>
+              </div>
+            )}
+
+            {customer.account_owner && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <User size={16} style={{ color: '#2d6a4f', marginTop: 2, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Handled by (our team)</p>
+                  <p style={{ fontSize: 13, color: '#2c2c2c', marginTop: 2 }}>{customer.account_owner}</p>
+                </div>
+              </div>
+            )}
+
+            {customer.notes && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <FileText size={16} style={{ color: '#d4a373', marginTop: 2, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase' }}>Notes</p>
+                  <p style={{ fontSize: 13, color: '#2c2c2c', marginTop: 2, whiteSpace: 'pre-wrap' }}>{customer.notes}</p>
+                </div>
+              </div>
+            )}
+
             {customer.created_at && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingTop: 8, borderTop: '1px solid #e5ddd0' }}>
                 <Calendar size={16} style={{ color: '#b5b8a8', flexShrink: 0 }} />
@@ -218,6 +299,69 @@ export default function CustomerDetail() {
               value={editData.address}
               onChange={e => setEditData({ ...editData, address: e.target.value })}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Mobile</label>
+            <input
+              type="tel"
+              value={editData.mobile}
+              onChange={e => setEditData({ ...editData, mobile: e.target.value })}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Contact Person</label>
+            <input
+              type="text"
+              value={editData.contact_person}
+              onChange={e => setEditData({ ...editData, contact_person: e.target.value })}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Contact Phone</label>
+            <input
+              type="tel"
+              value={editData.contact_phone}
+              onChange={e => setEditData({ ...editData, contact_phone: e.target.value })}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Email</label>
+            <input
+              type="email"
+              value={editData.email}
+              onChange={e => setEditData({ ...editData, email: e.target.value })}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>GST Number</label>
+            <input
+              type="text"
+              value={editData.gst_number}
+              onChange={e => setEditData({ ...editData, gst_number: e.target.value })}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Handled by (our team)</label>
+            <input
+              type="text"
+              value={editData.account_owner}
+              onChange={e => setEditData({ ...editData, account_owner: e.target.value })}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Notes</label>
+            <textarea
+              value={editData.notes}
+              onChange={e => setEditData({ ...editData, notes: e.target.value })}
+              rows={2}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none', resize: 'none', boxSizing: 'border-box' }}
             />
           </div>
 
