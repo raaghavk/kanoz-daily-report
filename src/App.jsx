@@ -44,6 +44,7 @@ const SparePartsPurchaseHistoryPage = lazy(() => import('./pages/spareparts/Spar
 const SparePartsUsageHistoryPage = lazy(() => import('./pages/spareparts/SparePartsUsageHistoryPage'))
 const ReorderRequestsPage = lazy(() => import('./pages/spareparts/ReorderRequestsPage'))
 const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
+const AttendancePage = lazy(() => import('./pages/attendance/AttendancePage'))
 const SettingsPage = lazy(() => import('./pages/Settings'))
 const AdminDesktop = lazy(() => import('./pages/admin/AdminDesktop'))
 const StockHome = lazy(() => import('./pages/stock/StockHome'))
@@ -148,6 +149,7 @@ export default function App() {
         <Route path="a/:code" element={<PermissionGuard action="view_spare_parts"><AssetByCode /></PermissionGuard>} />
         <Route path="stock" element={<StockHome />} />
         <Route path="tasks" element={<TasksPage />} />
+        <Route path="attendance" element={<AttendancePage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
