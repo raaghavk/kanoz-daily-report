@@ -248,7 +248,6 @@ export default function SettingsPage() {
           { path: '/transporters', emoji: '🚛', label: 'Transporters', show: role !== 'purchase_manager' },
           { path: '/spare-parts', emoji: '🔧', label: 'Spare Parts', show: can(role, 'view_spare_parts') },
           { path: '/assets', emoji: '🏷️', label: 'Assets', show: can(role, 'view_spare_parts') },
-          { path: '/dashboard', emoji: '📊', label: 'Admin Dashboard', show: ['admin','plant_manager','accountant'].includes(role) },
         ].filter(i => i.show)
         if (!dirItems.length) return null
         return (
