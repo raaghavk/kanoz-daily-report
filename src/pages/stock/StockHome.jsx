@@ -11,6 +11,11 @@ const num = v => Number(v) || 0
 const live = q => q.or('is_deleted.is.null,is_deleted.eq.false')
 
 // Pull the current raw material + pellet stock and known recipes for a plant.
+// Current raw-material stock is a live computed balance:
+//   current = opening_stock_kg
+//           + SUM(purchases.quantity_kg)
+//           + SUM(processing_runs.output_kg where output is this material)
+//           - SUM(raw_material_usage.quantity_kg)   // already folds mix + processing input
 async function loadStock(plant) {
   // Latest non-deleted shift report for this plant (most recent date, then shift)
   const latestRes = await live(
@@ -24,7 +29,7 @@ async function loadStock(plant) {
   )
   const latest = (latestRes.data && latestRes.data[0]) || null
 
-  // Raw material types (names + fallback opening stock + gcv)
+  // Raw material types (names + opening stock + gcv)
   const rmTypesRes = await supabase
     .from('raw_material_types')
     .select('id, name, unit, opening_stock_kg, gcv_kcal_kg, is_active')
@@ -32,53 +37,134 @@ async function loadStock(plant) {
     .eq('is_active', true)
   const rmTypes = rmTypesRes.data || []
 
-  let rawMaterials = []
-  let rmAsOf = null
+  // All non-deleted shift report ids for this plant (to scope usage + processing runs).
+  let shiftIds = []
+  try {
+    const srRes = await live(
+      supabase.from('shift_reports').select('id').eq('plant_id', plant.id)
+    )
+    shiftIds = (srRes.data || []).map(r => r.id)
+  } catch { shiftIds = [] }
 
-  if (latest) {
-    const rmuRes = await supabase
-      .from('raw_material_usage')
-      .select('raw_material_type_id, closing_kg, raw_material_types(name, unit)')
-      .eq('shift_report_id', latest.id)
-    const rmu = rmuRes.data || []
-    if (rmu.length) {
-      rmAsOf = { date: latest.date, shift: latest.shift }
-      const closingByType = {}
-      for (const r of rmu) closingByType[r.raw_material_type_id] = r
-      // Prefer material types (stable ordering); fall back to whatever the usage rows carry.
-      if (rmTypes.length) {
-        rawMaterials = rmTypes.map(t => {
-          const row = closingByType[t.id]
-          return {
-            id: t.id,
-            name: t.name,
-            unit: t.unit || 'kg',
-            kg: row ? num(row.closing_kg) : num(t.opening_stock_kg),
-            fromReport: !!row,
-          }
-        })
-      } else {
-        rawMaterials = rmu.map(r => ({
-          id: r.raw_material_type_id,
-          name: r.raw_material_types?.name || 'Unknown material',
-          unit: r.raw_material_types?.unit || 'kg',
-          kg: num(r.closing_kg),
-          fromReport: true,
-        }))
-      }
+  // Purchases for this plant (live only). Match to material by type id, else by name.
+  let purchases = []
+  try {
+    const pRes = await live(
+      supabase
+        .from('raw_material_purchases')
+        .select('raw_material_type_id, raw_material_type, quantity_kg')
+        .eq('plant_id', plant.id)
+    )
+    purchases = pRes.data || []
+  } catch { purchases = [] }
+
+  // Raw material usage across this plant's non-deleted shift reports.
+  // quantity_kg already includes mix consumption AND in-house processing input.
+  let usageRows = []
+  try {
+    if (shiftIds.length) {
+      const uRes = await supabase
+        .from('raw_material_usage')
+        .select('raw_material_type_id, quantity_kg')
+        .in('shift_report_id', shiftIds)
+      usageRows = uRes.data || []
     }
+  } catch { usageRows = [] }
+
+  // Processing runs across this plant's non-deleted shift reports (adds output only).
+  let procRuns = []
+  try {
+    if (shiftIds.length) {
+      const prRes = await supabase
+        .from('processing_runs')
+        .select('output_material, output_kg')
+        .in('shift_report_id', shiftIds)
+      procRuns = prRes.data || []
+    }
+  } catch { procRuns = [] }
+
+  // Active process routes for this plant (to flag "made in-house" materials).
+  let routes = []
+  try {
+    const rtRes = await supabase
+      .from('process_routes')
+      .select('output_material_type_id, output_material_name, is_active')
+      .eq('plant_id', plant.id)
+    routes = (rtRes.data || []).filter(r => r.is_active !== false)
+  } catch { routes = [] }
+
+  // --- Index helpers ---
+  const normName = n => (n || '').toString().trim().toLowerCase()
+  const typeById = {}
+  const typeByName = {}
+  for (const t of rmTypes) {
+    typeById[t.id] = t
+    typeByName[normName(t.name)] = t
   }
 
-  // Fall back to opening stock when no shift report / usage rows exist yet.
-  if (!rawMaterials.length) {
-    rawMaterials = rmTypes.map(t => ({
+  // Purchased sum + which materials were purchased.
+  const purchasedByType = {}
+  const purchasedNames = new Set()
+  for (const p of purchases) {
+    let t = p.raw_material_type_id ? typeById[p.raw_material_type_id] : null
+    if (!t) t = typeByName[normName(p.raw_material_type)]
+    const key = t ? t.id : ('name:' + normName(p.raw_material_type))
+    purchasedByType[key] = (purchasedByType[key] || 0) + num(p.quantity_kg)
+    if (t) purchasedNames.add(t.id)
+  }
+
+  // Produced (processing output) sum matched by output_material name + which materials produced.
+  const producedByType = {}
+  const producedTypeIds = new Set()
+  for (const r of procRuns) {
+    const t = typeByName[normName(r.output_material)]
+    const key = t ? t.id : ('name:' + normName(r.output_material))
+    producedByType[key] = (producedByType[key] || 0) + num(r.output_kg)
+    if (t) producedTypeIds.add(t.id)
+  }
+
+  // Usage (consumption) sum by type id.
+  const usedByType = {}
+  for (const u of usageRows) {
+    if (u.raw_material_type_id == null) continue
+    usedByType[u.raw_material_type_id] = (usedByType[u.raw_material_type_id] || 0) + num(u.quantity_kg)
+  }
+
+  // Route outputs -> made-in-house type ids / names.
+  const routeOutputIds = new Set()
+  const routeOutputNames = new Set()
+  for (const rt of routes) {
+    if (rt.output_material_type_id) routeOutputIds.add(rt.output_material_type_id)
+    if (rt.output_material_name) routeOutputNames.add(normName(rt.output_material_name))
+  }
+
+  // Build the material list with live computed balance + source category.
+  const rawMaterials = rmTypes.map(t => {
+    const opening = num(t.opening_stock_kg)
+    const purchased = num(purchasedByType[t.id])
+    const produced = num(producedByType[t.id])
+    const used = num(usedByType[t.id])
+    const kg = opening + purchased + produced - used
+
+    const madeInHouse =
+      routeOutputIds.has(t.id) ||
+      routeOutputNames.has(normName(t.name)) ||
+      producedTypeIds.has(t.id)
+    const wasPurchased = purchasedNames.has(t.id)
+
+    let source
+    if (madeInHouse && wasPurchased) source = 'both'
+    else if (madeInHouse) source = 'made'
+    else source = 'purchased' // purchased, or neither (default to purchased: input awaiting purchase)
+
+    return {
       id: t.id,
       name: t.name,
       unit: t.unit || 'kg',
-      kg: num(t.opening_stock_kg),
-      fromReport: false,
-    }))
-  }
+      kg,
+      source,
+    }
+  })
 
   // Pellet stock from the latest shift report
   let pellets = []
@@ -133,7 +219,7 @@ async function loadStock(plant) {
     })
   }
 
-  return { rawMaterials, rmAsOf, pellets, pelletAsOf, recipes }
+  return { rawMaterials, pellets, pelletAsOf, recipes }
 }
 
 function fmtKg(v) {
@@ -185,7 +271,7 @@ export default function StockHome() {
 
         {!isLoading && !isError && data && (
           <>
-            {/* Raw material stock */}
+            {/* Raw material stock — live computed balance, grouped by source */}
             <div>
               <div style={sectionTitle}><Package size={13} /> Current Raw Material Stock</div>
               {data.rawMaterials.length === 0 ? (
@@ -193,19 +279,38 @@ export default function StockHome() {
                   No raw materials set up for this plant yet.
                 </div>
               ) : (
-                <div style={cardStyle}>
-                  {data.rawMaterials.map((m, idx) => (
-                    <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>{m.name}</div>
-                        <AsOf info={m.fromReport ? data.rmAsOf : null} fallbackText="opening stock" />
+                <>
+                  <div style={{ fontSize: 11, color: '#8a8d7a', marginBottom: 8 }}>
+                    Live balance: opening + purchases + in-house production − usage.
+                  </div>
+                  {[
+                    { key: 'made', label: 'Made in-house' },
+                    { key: 'both', label: 'Both (made + bought)' },
+                    { key: 'purchased', label: 'Purchased' },
+                  ].map(group => {
+                    const items = data.rawMaterials.filter(m => m.source === group.key)
+                    if (items.length === 0) return null
+                    return (
+                      <div key={group.key} style={{ marginBottom: 12 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#2d6a4f', marginBottom: 6, marginLeft: 2 }}>
+                          {group.label}
+                        </div>
+                        <div style={cardStyle}>
+                          {items.map((m, idx) => (
+                            <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>{m.name}</div>
+                              </div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: '#1b4332', flexShrink: 0, marginLeft: 12 }}>
+                                {fmtKg(m.kg)} <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>{m.unit}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#1b4332', flexShrink: 0, marginLeft: 12 }}>
-                        {fmtKg(m.kg)} <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>{m.unit}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    )
+                  })}
+                </>
               )}
             </div>
 
