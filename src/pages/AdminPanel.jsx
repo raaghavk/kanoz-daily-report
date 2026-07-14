@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import PageHeader from '../components/PageHeader'
-import { Plus, Edit3, Check, X, ChevronDown, ChevronUp, Archive, RotateCcw } from 'lucide-react'
+import { Plus, Edit3, Check, X, ChevronDown, ChevronUp, Archive, RotateCcw, Trash2 } from 'lucide-react'
 import ProcessRoutes from './settings/ProcessRoutes'
 
 // Default type options seeded per org on first load when none exist.
@@ -177,6 +177,14 @@ export default function AdminPanel() {
     loadTypeOptions()
   }
 
+  async function deleteTypeOption(id) {
+    if (!window.confirm('Delete this type permanently?')) return
+    const { error } = await supabase.from('machine_type_options').delete().eq('id', id)
+    if (error) { showToast('Failed to delete type: ' + error.message, 'error'); return }
+    showToast('Type deleted', 'success')
+    loadTypeOptions()
+  }
+
   async function loadAllData() {
     setLoading(true)
     const results = {}
@@ -319,10 +327,12 @@ export default function AdminPanel() {
     // Equipment does NOT produce MT/hr — capacity_mt_per_hour is not surfaced.
     if (sectionKey === 'equipment') {
       const hp = parseFloat(newItemMotorHp)
+      const litres = parseFloat(newItemStock)
       payload.equipment_type = newItemType.trim() || null
       payload.fuel_type = newItemFuel.trim() || null
       payload.rating = newItemRating.trim() || null
       payload.motor_hp = Number.isNaN(hp) ? null : hp
+      payload.opening_stock_litres = Number.isNaN(litres) ? 0 : litres
     }
     // Raw material types: GCV (newItemType field) + opening stock
     if (sectionKey === 'raw_material_types') {
@@ -367,10 +377,12 @@ export default function AdminPanel() {
     }
     if (sectionKey === 'equipment') {
       const hp = parseFloat(editingItem?.motorHp)
+      const litres = parseFloat(editingItem?.stock)
       payload.equipment_type = (editingItem?.type || '').trim() || null
       payload.fuel_type = (editingItem?.fuel || '').trim() || null
       payload.rating = (editingItem?.rating || '').trim() || null
       payload.motor_hp = Number.isNaN(hp) ? null : hp
+      payload.opening_stock_litres = Number.isNaN(litres) ? 0 : litres
     }
     const { error } = await supabase.from(section.table).update(payload).eq('id', id)
     if (error) {
@@ -600,6 +612,13 @@ export default function AdminPanel() {
                                   >
                                     {o.is_active !== false ? 'Active' : 'Enable'}
                                   </button>
+                                  <button
+                                    onClick={() => deleteTypeOption(o.id)}
+                                    title="Delete this type permanently"
+                                    style={{ padding: '3px 6px', borderRadius: 6, border: 'none', cursor: 'pointer', background: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center' }}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
                                 </div>
                               ))}
                               <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
@@ -720,6 +739,15 @@ export default function AdminPanel() {
                                   {FUEL_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
                                 </select>
                                 <input
+                                  type="number"
+                                  inputMode="decimal"
+                                  placeholder="L on hand"
+                                  value={editingItem.stock}
+                                  onChange={e => setEditingItem({ ...editingItem, stock: e.target.value })}
+                                  title="Opening Stock (litres) — fuel on hand"
+                                  style={{ width: 76, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                                />
+                                <input
                                   type="text"
                                   placeholder="Rating"
                                   value={editingItem.rating}
@@ -769,6 +797,7 @@ export default function AdminPanel() {
                                 if (item.fuel_type) parts.push(item.fuel_type)
                                 if (item.rating) parts.push(item.rating)
                                 if (item.motor_hp != null) parts.push(`${item.motor_hp} HP`)
+                                if (Number(item.opening_stock_litres) > 0) parts.push(`${Number(item.opening_stock_litres)} L on hand`)
                                 if (!parts.length) return null
                                 return <span style={{ fontSize: 11, color: '#8a8d7a' }}>{parts.join(' · ')}</span>
                               })()}
@@ -796,7 +825,7 @@ export default function AdminPanel() {
                               <span style={{ fontSize: 10, color: '#d32f2f', fontWeight: 600 }}>Inactive</span>
                             )}
                             <button
-                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: item.opening_stock_kg ?? '', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '' })}
+                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '' })}
                               style={{ padding: '4px 8px', background: '#fefae0', borderRadius: 6, border: '1px solid #e5ddd0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                             >
                               <Edit3 size={12} color="#595c4a" />
@@ -898,6 +927,15 @@ export default function AdminPanel() {
                               <option value="">Fuel type…</option>
                               {FUEL_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
                             </select>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              placeholder="Opening Stock (litres)"
+                              value={newItemStock}
+                              onChange={e => setNewItemStock(e.target.value)}
+                              title="Opening Stock (litres) — fuel on hand"
+                              style={{ flex: '1 1 45%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', boxSizing: 'border-box', minWidth: 0 }}
+                            />
                             <input
                               type="text"
                               placeholder="Rating (e.g. 125 kVA)"
