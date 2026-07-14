@@ -41,11 +41,21 @@ export default function DataInsights() {
     setMessages(prev => [...prev, { role: 'user', text: question }])
     setLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke('plant-chat', {
-        body: { question, plantId: plant.id, location }
+      // Try the analytics engine first (answers ANY question by querying live data);
+      // fall back to plant-chat for weather / directory small-talk if it can't.
+      let answer = ''
+      const aq = await supabase.functions.invoke('ai-query', {
+        body: { question, plantId: plant.id }
       })
-      if (error) throw error
-      const answer = data?.answer || 'No response received.'
+      answer = aq?.data?.answer || ''
+      const weak = !answer || /can't answer|cannot answer|couldn't build|didn't run|no answer produced|unanswerable/i.test(answer)
+      if (weak) {
+        const { data, error } = await supabase.functions.invoke('plant-chat', {
+          body: { question, plantId: plant.id, location }
+        })
+        if (error && !answer) throw error
+        answer = data?.answer || answer || 'No response received.'
+      }
       setMessages(prev => [...prev, { role: 'bot', text: answer }])
     } catch (err) {
       console.error('Chat error:', err)
