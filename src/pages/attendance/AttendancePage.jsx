@@ -5,7 +5,7 @@ import { can } from '../../lib/permissions'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { getLocalDate } from '../../lib/dateUtils'
-import { Loader2, LogIn, LogOut, MapPin, CheckCircle2, Circle, Clock, CalendarDays, UserPlus, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { Loader2, LogIn, LogOut, MapPin, CheckCircle2, Circle, Clock, CalendarDays, UserPlus, X, ChevronDown, ChevronUp, Trash2, UserCheck } from 'lucide-react'
 
 const GREEN = '#2d6a4f'
 const DARK = '#1b4332'
@@ -68,12 +68,20 @@ export default function AttendancePage() {
   const [history, setHistory] = useState([])
   const [loadingHist, setLoadingHist] = useState(false)
 
+  const [machines, setMachines] = useState([])   // plant machines + equipment (for attach-to)
+
   // Add-labourer modal
   const [showAdd, setShowAdd] = useState(false)
   const [addName, setAddName] = useState('')
   const [addMobile, setAddMobile] = useState('')
-  const [addType, setAddType] = useState('labour')
+  const [addType, setAddType] = useState('labour')   // 'labour' | 'driver'
+  const [addWage, setAddWage] = useState('')
+  const [addMachineId, setAddMachineId] = useState('')
   const [addSaving, setAddSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
+
+  // Collapsible staff role groups — track collapsed role keys
+  const [collapsedRoles, setCollapsedRoles] = useState({})
 
   // Supervisor marking-for-others
   const [markingId, setMarkingId] = useState(null)   // employee id currently saving
@@ -102,7 +110,7 @@ export default function AttendancePage() {
     try {
       const { data: emps } = await supabase
         .from('employees')
-        .select('id, name, role, worker_type, mobile')
+        .select('id, name, role, worker_type, mobile, labour_daily_wage, machine_id')
         .eq('plant_id', plant.id)
         .eq('is_active', true)
         .order('name')
@@ -121,7 +129,7 @@ export default function AttendancePage() {
       const visibleEmps = (emps || []).filter(e => !exempt.has(e.role))
       const { data: rows } = await supabase
         .from('attendance')
-        .select('id, employee_id, check_in_at, check_out_at, status, hours, marked_by')
+        .select('id, employee_id, check_in_at, check_out_at, status, hours, marked_by, machine_id')
         .eq('plant_id', plant.id)
         .eq('work_date', today)
       const nameById = {}
@@ -131,6 +139,17 @@ export default function AttendancePage() {
       setRoster(visibleEmps.map(e => ({ ...e, att: byEmp[e.id] || null, markerName: byEmp[e.id]?.marked_by ? (nameById[byEmp[e.id].marked_by] || null) : null })))
     } catch { /* silent */ } finally { setLoadingRoster(false) }
   }, [plant?.id, today])
+
+  const loadMachines = useCallback(async () => {
+    if (!plant?.id) return
+    try {
+      const [mRes, eRes] = await Promise.all([
+        supabase.from('machines').select('id, name').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
+        supabase.from('equipment').select('id, name').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
+      ])
+      setMachines([...(mRes.data || []), ...(eRes.data || [])])
+    } catch { /* silent */ }
+  }, [plant?.id])
 
   const loadHistory = useCallback(async () => {
     if (!plant?.id || !isAdmin) return
@@ -155,6 +174,7 @@ export default function AttendancePage() {
 
   useEffect(() => { loadMine() }, [loadMine])
   useEffect(() => { loadRoster() }, [loadRoster])
+  useEffect(() => { loadMachines() }, [loadMachines])
   useEffect(() => { loadHistory() }, [loadHistory])
 
   async function handleCheckIn() {
@@ -186,12 +206,15 @@ export default function AttendancePage() {
     setSaving(true)
     try {
       const coords = await getCoords()
+      const outAt = new Date().toISOString()
+      const autoHrs = hoursBetween(myRow.check_in_at, outAt)
       const { error } = await supabase
         .from('attendance')
         .update({
-          check_out_at: new Date().toISOString(),
+          check_out_at: outAt,
           check_out_lat: coords?.lat ?? null,
           check_out_lng: coords?.lng ?? null,
+          hours: autoHrs != null ? Number(autoHrs) : null,
         })
         .eq('id', myRow.id)
       if (error) throw error
@@ -208,6 +231,7 @@ export default function AttendancePage() {
     if (!plant?.id) { showToast('No plant selected', 'error'); return }
     setAddSaving(true)
     try {
+      const wage = addWage.trim() === '' ? null : Number(addWage)
       const { error } = await supabase
         .from('employees')
         .insert({
@@ -215,17 +239,35 @@ export default function AttendancePage() {
           plant_id: plant.id,
           name,
           mobile: addMobile.trim() || null,
-          worker_type: addType,
+          worker_type: addType === 'driver' ? 'driver' : 'labour',
           role: 'labour',
           is_active: true,
           auth_user_id: null,
+          labour_daily_wage: (wage != null && !Number.isNaN(wage)) ? wage : null,
+          machine_id: addMachineId || null,
         })
       if (error) throw error
       showToast('Worker added', 'success')
       setShowAdd(false)
-      setAddName(''); setAddMobile(''); setAddType('labour')
+      setAddName(''); setAddMobile(''); setAddType('labour'); setAddWage(''); setAddMachineId('')
       await loadRoster()
     } catch { showToast('Failed to add worker', 'error') } finally { setAddSaving(false) }
+  }
+
+  // --- Delete a labourer (soft: deactivate) ---
+  async function deleteLabourer(emp) {
+    if (deletingId) return
+    if (!window.confirm(`Remove ${emp.name}? They will no longer appear on the roster.`)) return
+    setDeletingId(emp.id)
+    try {
+      const { error } = await supabase
+        .from('employees')
+        .update({ is_active: false })
+        .eq('id', emp.id)
+      if (error) throw error
+      showToast('Worker removed', 'success')
+      await loadRoster()
+    } catch { showToast('Failed to remove worker', 'error') } finally { setDeletingId(null) }
   }
 
   // --- Mark present/absent for another employee ---
@@ -246,6 +288,10 @@ export default function AttendancePage() {
         payload.check_in_at = null
         payload.check_out_at = null
         payload.hours = null
+        payload.machine_id = null
+      } else if (emp.machine_id) {
+        // Carry the labourer's attached machine onto today's attendance
+        payload.machine_id = emp.machine_id
       }
       const { error } = await supabase
         .from('attendance')
@@ -272,7 +318,11 @@ export default function AttendancePage() {
     try {
       const checkIn = combineDateTime(today, timeIn)
       const checkOut = combineDateTime(today, timeOut)
-      const hrs = hoursInput.trim() === '' ? null : Number(hoursInput)
+      // Auto hours: if both in & out are set, derive hours; otherwise fall back to manual entry.
+      const autoHrs = hoursBetween(checkIn, checkOut)
+      let hours = null
+      if (autoHrs != null) hours = Number(autoHrs)
+      else if (hoursInput.trim() !== '') { const h = Number(hoursInput); if (!Number.isNaN(h)) hours = h }
       const payload = {
         org_id: plant.org_id,
         plant_id: plant.id,
@@ -282,7 +332,7 @@ export default function AttendancePage() {
         marked_by: employee.id,
         check_in_at: checkIn,
         check_out_at: checkOut,
-        hours: (hrs != null && !Number.isNaN(hrs)) ? hrs : null,
+        hours,
       }
       const { error } = await supabase
         .from('attendance')
@@ -318,6 +368,103 @@ export default function AttendancePage() {
     padding: '6px 10px', borderRadius: 8, border: border || 'none',
     fontSize: 11, fontWeight: 700, cursor: 'pointer', background: bg, color,
   })
+
+  const machineNameById = {}
+  for (const m of machines) machineNameById[m.id] = m.name
+
+  // Split roster: app-user staff (grouped by role) vs login-less labour/drivers
+  const staff = roster.filter(e => (e.worker_type || 'staff') === 'staff')
+  const labour = roster.filter(e => e.worker_type === 'labour' || e.worker_type === 'driver')
+
+  // Group staff by role, preserving name order within each group
+  const staffGroups = []
+  const groupIndex = {}
+  for (const e of staff) {
+    const key = e.role || 'other'
+    if (groupIndex[key] == null) { groupIndex[key] = staffGroups.length; staffGroups.push({ key, label: (key).replace(/_/g, ' '), members: [] }) }
+    staffGroups[groupIndex[key]].members.push(e)
+  }
+  const isPresent = (att) => !!(att && (att.check_in_at || att.status === 'present'))
+
+  // Reusable per-person row (status pill + supervisor mark controls + times expander)
+  function renderPersonRow(e, idx, extra) {
+    const pill = statusPill(e.att)
+    const busy = markingId === e.id
+    const markedByOther = e.att?.marked_by && e.att.marked_by !== e.id && e.markerName
+    const isExpanded = expandedId === e.id
+    const attachedName = (e.att?.machine_id && machineNameById[e.att.machine_id]) || (e.machine_id && machineNameById[e.machine_id]) || null
+    return (
+      <div key={e.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {e.name}{e.id === employee?.id ? ' (You)' : ''}
+              </div>
+              {extra?.typeTag && (
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, background: '#f0ebe0', color: MUTED, borderRadius: 5, padding: '1px 5px', flexShrink: 0, textTransform: 'uppercase' }}>{extra.typeTag}</span>
+              )}
+            </div>
+            {extra?.showRole && (
+              <div style={{ fontSize: 10, color: MUTED, marginTop: 1, textTransform: 'capitalize' }}>{(e.role || '').replace(/_/g, ' ')}</div>
+            )}
+            {attachedName && (
+              <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>On: {attachedName}</div>
+            )}
+            {e.labour_daily_wage != null && (
+              <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>Wage: ₹{e.labour_daily_wage}/day</div>
+            )}
+            {markedByOther && (
+              <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>Marked by {e.markerName}</div>
+            )}
+          </div>
+          <span style={{ fontSize: 11, fontWeight: 700, background: pill.bg, color: pill.text, borderRadius: 7, padding: '3px 9px', flexShrink: 0 }}>
+            {pill.label}
+          </span>
+        </div>
+        {canMarkOthers && (
+          <div style={{ display: 'flex', gap: 8, padding: '0 14px 11px', flexWrap: 'wrap' }}>
+            <button disabled={busy} onClick={() => markStatus(e, 'present')} style={{ ...smallBtn('#e8f0ec', GREEN), opacity: busy ? 0.6 : 1 }}>
+              {busy ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={12} />} Present
+            </button>
+            <button disabled={busy} onClick={() => markStatus(e, 'absent')} style={{ ...smallBtn('#fdecec', '#c0392b'), opacity: busy ? 0.6 : 1 }}>
+              <Circle size={12} /> Absent
+            </button>
+            <button disabled={busy} onClick={() => toggleExpander(e)} style={{ ...smallBtn('#fff', DARK, `1.5px solid ${BORDER}`), opacity: busy ? 0.6 : 1 }}>
+              <Clock size={12} /> Times/Hours {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            </button>
+            {extra?.deletable && (
+              <button disabled={deletingId === e.id} onClick={() => deleteLabourer(e)} style={{ ...smallBtn('#fff', '#c0392b', `1.5px solid ${BORDER}`), marginLeft: 'auto', opacity: deletingId === e.id ? 0.6 : 1 }}>
+                {deletingId === e.id ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Trash2 size={12} />} Remove
+              </button>
+            )}
+          </div>
+        )}
+        {canMarkOthers && isExpanded && (
+          <div style={{ padding: '0 14px 12px' }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div>
+                <div style={{ fontSize: 10, color: MUTED, marginBottom: 3 }}>Check in</div>
+                <input type="time" value={timeIn} onChange={(ev) => setTimeIn(ev.target.value)} style={{ padding: '7px 8px', borderRadius: 8, border: `1.5px solid ${BORDER}`, background: '#fefae0', fontSize: 13, color: TEXT, outline: 'none' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: MUTED, marginBottom: 3 }}>Check out</div>
+                <input type="time" value={timeOut} onChange={(ev) => setTimeOut(ev.target.value)} style={{ padding: '7px 8px', borderRadius: 8, border: `1.5px solid ${BORDER}`, background: '#fefae0', fontSize: 13, color: TEXT, outline: 'none' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 10, color: MUTED, marginBottom: 3 }}>Hours</div>
+                <input type="number" step="0.5" min="0" value={hoursInput} onChange={(ev) => setHoursInput(ev.target.value)} placeholder="e.g. 8" style={{ width: 64, padding: '7px 8px', borderRadius: 8, border: `1.5px solid ${BORDER}`, background: '#fefae0', fontSize: 13, color: TEXT, outline: 'none' }} />
+              </div>
+              <button disabled={busy} onClick={() => saveTimesHours(e)} style={{ ...smallBtn(GREEN, '#fff'), padding: '8px 14px', opacity: busy ? 0.6 : 1 }}>
+                {busy ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : null} Save
+              </button>
+            </div>
+            <div style={{ fontSize: 10, color: MUTED, marginTop: 6 }}>Hours auto-fill from check-in/out; enter manually if only marking present.</div>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
@@ -395,89 +542,65 @@ export default function AttendancePage() {
         </div>
         )}
 
-        {/* Today's roster — shared board */}
+        {/* Staff roster — grouped by role, collapsible */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ ...sectionLabel, marginBottom: 0 }}>Today's Roster · Who's In</div>
+          <div style={{ ...sectionLabel, marginBottom: 0 }}>Staff · Who's In</div>
           {canMarkOthers && (
             <button onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 8, border: `1.5px solid ${GREEN}`, background: '#fff', color: GREEN, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
-              <UserPlus size={13} /> Add worker/labourer
+              <UserPlus size={13} /> Add labourer
             </button>
           )}
         </div>
-        <div style={{ ...cardStyle, marginBottom: 20 }}>
-          {loadingRoster ? (
-            <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 8, color: MUTED, fontSize: 13 }}>
-              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading…
-            </div>
-          ) : roster.length === 0 ? (
-            <div style={{ padding: 16, fontSize: 13, color: MUTED }}>No active employees.</div>
-          ) : (
-            roster.map((e, idx) => {
-              const pill = statusPill(e.att)
-              const isLabour = e.worker_type === 'labour'
-              const busy = markingId === e.id
-              const markedByOther = e.att?.marked_by && e.att.marked_by !== e.id && e.markerName
-              const isExpanded = expandedId === e.id
-              return (
-                <div key={e.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {e.name}{e.id === employee?.id ? ' (You)' : ''}
-                        </div>
-                        {isLabour && (
-                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, background: '#f0ebe0', color: MUTED, borderRadius: 5, padding: '1px 5px', flexShrink: 0, textTransform: 'uppercase' }}>Labour</span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: 10, color: MUTED, marginTop: 1, textTransform: 'capitalize' }}>{(e.role || '').replace(/_/g, ' ')}</div>
-                      {markedByOther && (
-                        <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>Marked by {e.markerName}</div>
-                      )}
-                    </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, background: pill.bg, color: pill.text, borderRadius: 7, padding: '3px 9px', flexShrink: 0 }}>
-                      {pill.label}
-                    </span>
+        {loadingRoster ? (
+          <div style={{ ...cardStyle, marginBottom: 20, padding: 16, display: 'flex', alignItems: 'center', gap: 8, color: MUTED, fontSize: 13 }}>
+            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading…
+          </div>
+        ) : staffGroups.length === 0 ? (
+          <div style={{ ...cardStyle, marginBottom: 20, padding: 16, fontSize: 13, color: MUTED }}>No active staff.</div>
+        ) : (
+          staffGroups.map((g) => {
+            const collapsed = !!collapsedRoles[g.key]
+            const presentCount = g.members.filter(m => isPresent(m.att)).length
+            return (
+              <div key={g.key} style={{ ...cardStyle, marginBottom: 12 }}>
+                <button
+                  onClick={() => setCollapsedRoles(prev => ({ ...prev, [g.key]: !prev[g.key] }))}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#fff', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: DARK, textTransform: 'capitalize' }}>{g.label}</div>
+                    <div style={{ fontSize: 11, color: MUTED, marginTop: 1 }}>{presentCount}/{g.members.length} present</div>
                   </div>
-                  {canMarkOthers && (
-                    <div style={{ display: 'flex', gap: 8, padding: '0 14px 11px', flexWrap: 'wrap' }}>
-                      <button disabled={busy} onClick={() => markStatus(e, 'present')} style={{ ...smallBtn('#e8f0ec', GREEN), opacity: busy ? 0.6 : 1 }}>
-                        {busy ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={12} />} Present
-                      </button>
-                      <button disabled={busy} onClick={() => markStatus(e, 'absent')} style={{ ...smallBtn('#fdecec', '#c0392b'), opacity: busy ? 0.6 : 1 }}>
-                        <Circle size={12} /> Absent
-                      </button>
-                      <button disabled={busy} onClick={() => toggleExpander(e)} style={{ ...smallBtn('#fff', DARK, `1.5px solid ${BORDER}`), opacity: busy ? 0.6 : 1 }}>
-                        <Clock size={12} /> Times/Hours {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                      </button>
-                    </div>
-                  )}
-                  {canMarkOthers && isExpanded && (
-                    <div style={{ padding: '0 14px 12px' }}>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                        <div>
-                          <div style={{ fontSize: 10, color: MUTED, marginBottom: 3 }}>Check in</div>
-                          <input type="time" value={timeIn} onChange={(ev) => setTimeIn(ev.target.value)} style={{ padding: '7px 8px', borderRadius: 8, border: `1.5px solid ${BORDER}`, background: '#fefae0', fontSize: 13, color: TEXT, outline: 'none' }} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 10, color: MUTED, marginBottom: 3 }}>Check out</div>
-                          <input type="time" value={timeOut} onChange={(ev) => setTimeOut(ev.target.value)} style={{ padding: '7px 8px', borderRadius: 8, border: `1.5px solid ${BORDER}`, background: '#fefae0', fontSize: 13, color: TEXT, outline: 'none' }} />
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 10, color: MUTED, marginBottom: 3 }}>Hours</div>
-                          <input type="number" step="0.5" min="0" value={hoursInput} onChange={(ev) => setHoursInput(ev.target.value)} placeholder="e.g. 8" style={{ width: 64, padding: '7px 8px', borderRadius: 8, border: `1.5px solid ${BORDER}`, background: '#fefae0', fontSize: 13, color: TEXT, outline: 'none' }} />
-                        </div>
-                        <button disabled={busy} onClick={() => saveTimesHours(e)} style={{ ...smallBtn(GREEN, '#fff'), padding: '8px 14px', opacity: busy ? 0.6 : 1 }}>
-                          {busy ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : null} Save
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  <span style={{ fontSize: 11, fontWeight: 700, color: MUTED, background: '#f0ebe0', borderRadius: 7, padding: '3px 9px', flexShrink: 0 }}>{g.members.length}</span>
+                  {collapsed ? <ChevronDown size={18} color={MUTED} /> : <ChevronUp size={18} color={MUTED} />}
+                </button>
+                {!collapsed && (
+                  <div style={{ borderTop: `1px solid #f0ebe0` }}>
+                    {g.members.map((e, idx) => renderPersonRow(e, idx, { showRole: false }))}
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
+
+        {/* Labour & Workers — separate section, only when marking others */}
+        {canMarkOthers && (
+          <>
+            <div style={{ ...sectionLabel, marginTop: 8 }}>Labour &amp; Workers</div>
+            <div style={{ ...cardStyle, marginBottom: 20 }}>
+              {loadingRoster ? (
+                <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 8, color: MUTED, fontSize: 13 }}>
+                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Loading…
                 </div>
-              )
-            })
-          )}
-        </div>
+              ) : labour.length === 0 ? (
+                <div style={{ padding: 16, fontSize: 13, color: MUTED }}>No labourers yet. Use “Add labourer” to add today's workers.</div>
+              ) : (
+                labour.map((e, idx) => renderPersonRow(e, idx, { typeTag: e.worker_type === 'driver' ? 'Driver' : 'Labour', deletable: true }))
+              )}
+            </div>
+          </>
+        )}
 
         {/* Admin history */}
         {isAdmin && (
@@ -549,13 +672,26 @@ export default function AttendancePage() {
               <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Mobile (optional)</div>
               <input value={addMobile} onChange={(ev) => setAddMobile(ev.target.value)} placeholder="Phone number" inputMode="tel" style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', fontSize: 14, color: TEXT, outline: 'none', boxSizing: 'border-box' }} />
             </div>
-            <div style={{ marginBottom: 20 }}>
+            <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Type</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {['labour', 'staff'].map((t) => (
+                {['labour', 'driver'].map((t) => (
                   <button key={t} onClick={() => setAddType(t)} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `1.5px solid ${addType === t ? GREEN : BORDER}`, background: addType === t ? '#e8f0ec' : '#fff', color: addType === t ? GREEN : MUTED, fontSize: 13, fontWeight: 700, cursor: 'pointer', textTransform: 'capitalize' }}>{t}</button>
                 ))}
               </div>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Daily wage ₹ (optional)</div>
+              <input value={addWage} onChange={(ev) => setAddWage(ev.target.value)} placeholder="e.g. 500" inputMode="numeric" type="number" min="0" style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', fontSize: 14, color: TEXT, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Attach to machine (optional)</div>
+              <select value={addMachineId} onChange={(ev) => setAddMachineId(ev.target.value)} style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', fontSize: 14, color: TEXT, outline: 'none', boxSizing: 'border-box' }}>
+                <option value="">General / any</option>
+                {machines.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
             </div>
             <button onClick={handleAddLabourer} disabled={addSaving || !addName.trim()} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 0', borderRadius: 12, border: 'none', background: (addSaving || !addName.trim()) ? '#c3d2c9' : GREEN, color: '#fff', fontSize: 14, fontWeight: 700, cursor: (addSaving || !addName.trim()) ? 'default' : 'pointer' }}>
               {addSaving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <UserPlus size={16} />} Add worker

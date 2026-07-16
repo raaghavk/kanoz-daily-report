@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Settings, Plus, ClipboardList, Truck, Package, X, MessageCircle, ArrowDownCircle, CheckSquare } from 'lucide-react'
+import { Home, Settings, Plus, ClipboardList, Truck, Package, X, MessageCircle, ArrowDownCircle, CheckSquare, UserCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
 
@@ -117,6 +117,18 @@ export default function BottomNav() {
                 </div>
               </button>
               )}
+              <button onClick={() => handleAction('/attendance')} style={{
+                display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px',
+                background: '#fefae0', borderRadius: 14, border: '1px solid #e5ddd0', cursor: 'pointer', width: '100%', textAlign: 'left',
+              }}>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: '#1b4332', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <UserCheck size={20} color="white" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c' }}>Mark Attendance</div>
+                  <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>Check in & mark the roster</div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
