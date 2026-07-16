@@ -33,13 +33,25 @@ export default function UserManagement() {
   const [deleting, setDeleting] = useState(false)
 
   const [form, setForm] = useState({ name: '', mobile: '', email: '', role: 'supervisor', plant_id: '', is_active: true })
+  const [dbRoles, setDbRoles] = useState([])
   const [editingAuthId, setEditingAuthId] = useState(null)
   const [accessEmail, setAccessEmail] = useState('')
   const [pwdForm, setPwdForm] = useState({ email: '', password: '' })
 
   const isAdmin = employee?.role === 'admin'
 
-  useEffect(() => { if (isAdmin) loadData() }, [isAdmin]) // eslint-disable-line
+  useEffect(() => {
+    if (!isAdmin) return
+    loadData()
+    ;(async () => {
+      try {
+        const orgId = employee?.org_id
+        if (!orgId) return
+        const { data } = await supabase.from('roles').select('key, name, description').eq('org_id', orgId).order('is_default', { ascending: false }).order('name')
+        if (data && data.length) setDbRoles(data.map(r => ({ value: r.key || r.name, label: r.name, description: r.description || '' })))
+      } catch (e) { console.error('roles load', e) }
+    })()
+  }, [isAdmin]) // eslint-disable-line
 
   if (!isAdmin) return (
     <div style={{ padding: 20, textAlign: 'center', paddingTop: 80 }}>
@@ -304,9 +316,9 @@ export default function UserManagement() {
               <div>
                 <label style={labelStyle}>Role *</label>
                 <select style={{ ...inputStyle, cursor: 'pointer' }} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}>
-                  {ROLE_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  {(dbRoles.length ? dbRoles : ROLE_OPTIONS).map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
-                <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 4 }}>{ROLE_OPTIONS.find(r => r.value === form.role)?.description}</div>
+                <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 4 }}>{(dbRoles.length ? dbRoles : ROLE_OPTIONS).find(r => r.value === form.role)?.description}</div>
               </div>
               <div>
                 <label style={labelStyle}>Plant *</label>
