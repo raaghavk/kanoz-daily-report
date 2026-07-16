@@ -38,6 +38,7 @@ export default function AdminPanel() {
   const [newItemCapacity, setNewItemCapacity] = useState('')
   const [newItemMotorHp, setNewItemMotorHp] = useState('')
   const [newItemStock, setNewItemStock] = useState('')
+  const [newItemSource, setNewItemSource] = useState('purchased')
   // Equipment-specific add fields (equipment is NOT MT/hr producing)
   const [newItemFuel, setNewItemFuel] = useState('')
   const [newItemRating, setNewItemRating] = useState('')
@@ -340,6 +341,7 @@ export default function AdminPanel() {
       payload.gcv_kcal_kg = Number.isNaN(g) ? null : g
       const stock = parseFloat(newItemStock)
       payload.opening_stock_kg = Number.isNaN(stock) ? 0 : stock
+      payload.source = newItemSource || 'purchased'
     }
     const { error } = await supabase.from(section.table).insert(payload)
     setBusy(false)
@@ -353,6 +355,7 @@ export default function AdminPanel() {
     setNewItemCapacity('')
     setNewItemMotorHp('')
     setNewItemStock('')
+    setNewItemSource('purchased')
     setNewItemFuel('')
     setNewItemRating('')
     setAddingTo(null)
@@ -367,6 +370,7 @@ export default function AdminPanel() {
       payload.gcv_kcal_kg = Number.isNaN(g) ? null : g
       const stock = parseFloat(editingItem?.stock)
       payload.opening_stock_kg = Number.isNaN(stock) ? 0 : stock
+      payload.source = editingItem?.source || 'purchased'
     }
     if (sectionKey === 'machines') {
       const cap = parseFloat(editingItem?.capacity)
@@ -683,6 +687,18 @@ export default function AdminPanel() {
                                 style={{ width: 90, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                               />
                             )}
+                            {section.key === 'raw_material_types' && (
+                              <select
+                                value={editingItem.source || 'purchased'}
+                                onChange={e => setEditingItem({ ...editingItem, source: e.target.value })}
+                                title="Source"
+                                style={{ width: 110, padding: '6px 6px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 12, outline: 'none', boxSizing: 'border-box', background: '#fff' }}
+                              >
+                                <option value="in_house">In-house</option>
+                                <option value="purchased">Purchased</option>
+                                <option value="both">Both</option>
+                              </select>
+                            )}
                             {section.key === 'machines' && (
                               <>
                                 <select
@@ -801,6 +817,10 @@ export default function AdminPanel() {
                                 if (!parts.length) return null
                                 return <span style={{ fontSize: 11, color: '#8a8d7a' }}>{parts.join(' · ')}</span>
                               })()}
+                              {section.key === 'raw_material_types' && (() => {
+                                const label = item.source === 'in_house' ? 'In-house' : item.source === 'both' ? 'Both' : 'Purchased'
+                                return <span style={{ fontSize: 11, color: '#8a8d7a' }}>{`\u00b7 ${label}`}</span>
+                              })()}
                               {section.key === 'pellet_types' && (() => {
                                 const ratio = pelletRatios[(item.name || '').trim().toLowerCase()]
                                 return <span style={{ fontSize: 11, color: ratio ? '#2d6a4f' : '#8a8d7a', fontStyle: ratio ? 'normal' : 'italic' }}>{ratio || 'recipe not set yet'}</span>
@@ -825,7 +845,7 @@ export default function AdminPanel() {
                               <span style={{ fontSize: 10, color: '#d32f2f', fontWeight: 600 }}>Inactive</span>
                             )}
                             <button
-                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '' })}
+                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '' })}
                               style={{ padding: '4px 8px', background: '#fefae0', borderRadius: 6, border: '1px solid #e5ddd0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                             >
                               <Edit3 size={12} color="#595c4a" />
@@ -977,6 +997,16 @@ export default function AdminPanel() {
                                 style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', minWidth: 0 }}
                               />
                             </div>
+                            <select
+                              value={newItemSource}
+                              onChange={e => setNewItemSource(e.target.value)}
+                              title="Source"
+                              style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', boxSizing: 'border-box', background: '#fff', color: '#2c2c2c' }}
+                            >
+                              <option value="in_house">Source: In-house</option>
+                              <option value="purchased">Source: Purchased</option>
+                              <option value="both">Source: Both</option>
+                            </select>
                             <div style={{ fontSize: 11, color: '#8a8d7a' }}>Stock already on hand before app usage began. Used as opening for the first shift report.</div>
                           </>
                         )}
