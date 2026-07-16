@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { setDynamicRoles } from '../lib/permissions'
 
 const AuthContext = createContext({})
 
@@ -44,6 +45,7 @@ export function AuthProvider({ children }) {
         setEmployee(data)
         setPlant(data.plants)
         setNoEmployeeRecord(false)
+        loadRoles(data.org_id ?? data.plants?.org_id)
       } else {
         setNoEmployeeRecord(true)
       }
@@ -52,6 +54,33 @@ export function AuthProvider({ children }) {
       setNoEmployeeRecord(true)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Fetch this org's roles and register them as the dynamic permission source.
+  // Defensive: any failure leaves DYNAMIC_ROLES untouched so can() falls back
+  // to the hardcoded PERMISSIONS matrix. Keyed by BOTH role.key and role.name
+  // so employees.role storing either a built-in key or a custom role name resolves.
+  async function loadRoles(orgId) {
+    if (!orgId) return
+    try {
+      const { data, error } = await supabase
+        .from('roles')
+        .select('key,name,permissions')
+        .eq('org_id', orgId)
+      if (error) throw error
+      if (Array.isArray(data)) {
+        const map = {}
+        for (const r of data) {
+          const perms = Array.isArray(r.permissions) ? r.permissions : []
+          if (r.key) map[r.key] = perms
+          if (r.name) map[r.name] = perms
+        }
+        setDynamicRoles(map)
+      }
+    } catch (err) {
+      // Do not crash — can() falls back to hardcoded PERMISSIONS.
+      console.error('Error loading roles:', err)
     }
   }
 
@@ -83,7 +112,10 @@ export function AuthProvider({ children }) {
         .eq('id', newPlantId)
         .single()
       if (error) throw error
-      if (newPlant) setPlant(newPlant)
+      if (newPlant) {
+        setPlant(newPlant)
+        loadRoles(newPlant.org_id)
+      }
     } catch (err) {
       console.error('Error switching plant:', err)
       throw err

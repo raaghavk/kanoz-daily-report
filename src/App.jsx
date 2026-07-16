@@ -46,6 +46,7 @@ const ReorderRequestsPage = lazy(() => import('./pages/spareparts/ReorderRequest
 const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
 const AttendancePage = lazy(() => import('./pages/attendance/AttendancePage'))
 const SettingsPage = lazy(() => import('./pages/Settings'))
+const RolesPage = lazy(() => import('./pages/RolesPage'))
 const AdminDesktop = lazy(() => import('./pages/admin/AdminDesktop'))
 const StockHome = lazy(() => import('./pages/stock/StockHome'))
 
@@ -152,6 +153,7 @@ export default function App() {
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="users" element={<PermissionGuard action="manage_users"><UserManagement /></PermissionGuard>} />
+        <Route path="roles" element={<PermissionGuard action="manage_users"><RolesPage /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
         <Route path="delete-requests" element={<PermissionGuard action="manage_users"><DeleteRequests /></PermissionGuard>} />
       </Route>

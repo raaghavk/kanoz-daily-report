@@ -275,6 +275,11 @@ export default function SettingsPage() {
                 Team
               </button>
             )}
+            {can(employee?.role, 'manage_users') && (
+              <button onClick={() => nav('/roles')} style={{ flex: 1, padding: '12px 6px', background: '#1b4332', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                Roles
+              </button>
+            )}
             {can(employee?.role, 'plant_settings') && (
               <button onClick={() => nav('/admin')} style={{ flex: 1, padding: '12px 6px', background: '#d4a373', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 Plant Settings
