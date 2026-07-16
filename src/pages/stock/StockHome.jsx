@@ -32,7 +32,7 @@ async function loadStock(plant) {
   // Raw material types (names + opening stock + gcv)
   const rmTypesRes = await supabase
     .from('raw_material_types')
-    .select('id, name, unit, opening_stock_kg, gcv_kcal_kg, is_active')
+    .select('id, name, unit, opening_stock_kg, gcv_kcal_kg, is_active, source')
     .eq('plant_id', plant.id)
     .eq('is_active', true)
   const rmTypes = rmTypesRes.data || []
@@ -152,8 +152,14 @@ async function loadStock(plant) {
       producedTypeIds.has(t.id)
     const wasPurchased = purchasedNames.has(t.id)
 
+    // Explicit raw_material_types.source is authoritative when set.
+    // Map DB values (in_house / purchased / both) to display buckets (made / purchased / both).
+    // Fall back to route+purchase inference only when source is null/unset.
     let source
-    if (madeInHouse && wasPurchased) source = 'both'
+    if (t.source === 'in_house') source = 'made'
+    else if (t.source === 'purchased') source = 'purchased'
+    else if (t.source === 'both') source = 'both'
+    else if (madeInHouse && wasPurchased) source = 'both'
     else if (madeInHouse) source = 'made'
     else source = 'purchased' // purchased, or neither (default to purchased: input awaiting purchase)
 

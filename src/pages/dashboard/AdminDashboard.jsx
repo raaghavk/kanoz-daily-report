@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import { can } from '../../lib/permissions'
 import { loadPeriod, loadDaily, loadAssets, loadSpares, latestReportDate, PERIOD_LABEL } from '../../lib/dashboardData'
 import { Loader2 } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
 const money = n => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN')
 const lakh = n => (Number(n) >= 100000 ? '₹' + (n / 100000).toFixed(1) + 'L' : money(n))
@@ -36,8 +37,10 @@ export default function AdminDashboard() {
   const [assets, setAssets] = useState(null), [spares, setSpares] = useState(null)
   const [realisation, setRealisation] = useState(11000)
   const [loadingP, setLoadingP] = useState(true), [loadingD, setLoadingD] = useState(true)
+  const [rmSources, setRmSources] = useState([])
 
   useEffect(() => { if (plant?.id) { latestReportDate(plant).then(setDate); loadAssets(plant).then(setAssets); loadSpares(plant).then(setSpares) } }, [plant]) // eslint-disable-line
+  useEffect(() => { if (plant?.id) { supabase.from('raw_material_types').select('name, source').eq('plant_id', plant.id).eq('is_active', true).then(({ data }) => setRmSources(data || [])) } }, [plant]) // eslint-disable-line
   useEffect(() => { if (plant?.id) { setLoadingP(true); loadPeriod(plant, period).then(d => { setPd(d); setLoadingP(false) }) } }, [plant, period]) // eslint-disable-line
   useEffect(() => { if (plant?.id && date) { setLoadingD(true); loadDaily(plant, date).then(d => { setDaily(d); setLoadingD(false) }) } }, [plant, date]) // eslint-disable-line
 
@@ -70,7 +73,7 @@ export default function AdminDashboard() {
           {section !== 'daily' && (loadingP || !pd ? spin : <>
             {section === 'overview' && <Overview d={pd} assets={assets} spares={spares} />}
             {section === 'production' && <Production d={pd} />}
-            {section === 'rawmat' && <RawMat d={pd} />}
+            {section === 'rawmat' && <RawMat d={pd} sources={rmSources} />}
             {section === 'dispatch' && <Dispatch d={pd} />}
             {section === 'finance' && <Finance d={pd} assets={assets} spares={spares} realisation={realisation} setR={setRealisation} />}
           </>)}
@@ -144,9 +147,23 @@ function Production({ d }) {
   </>
 }
 
-function RawMat({ d }) {
+function RawMat({ d, sources = [] }) {
+  const SRC = [
+    ['in_house', 'In-house'],
+    ['purchased', 'Purchased'],
+    ['both', 'Both'],
+  ]
+  const bySource = SRC.map(([key, label]) => {
+    const names = sources.filter(m => (m.source || 'purchased') === key).map(m => m.name)
+    return { key, label, names }
+  })
   return <>
     <div style={S.kpis}><Kpi l="RM purchased" n={(d.rmKg / 1000).toFixed(1) + ' MT'} /><Kpi l="RM spend" n={lakh(d.rmSpend)} /><Kpi l="Avg cost / kg" n={d.rmKg ? '₹' + (d.rmSpend / d.rmKg).toFixed(2) : '—'} /><Kpi l="Materials" n={d.rmByType.length} /></div>
+    <Card title="By source" sub="Material category">
+      <table style={S.table}><thead><tr><Th>Source</Th><Th>Count</Th><Th>Materials</Th></tr></thead><tbody>
+        {sources.length === 0 ? <tr><Td>—</Td><Td>0</Td><Td>—</Td></tr> : bySource.map(g => <tr key={g.key} className="kdrow"><Td b>{g.label}</Td><Td>{g.names.length}</Td><Td>{g.names.length ? g.names.join(', ') : '—'}</Td></tr>)}
+      </tbody></table>
+    </Card>
     <Card title="By material" sub="This period">
       <table style={S.table}><thead><tr><Th>Material</Th><Th>Purchased (kg)</Th><Th>Spend</Th><Th>Avg ₹/kg</Th></tr></thead><tbody>
         {d.rmByType.length === 0 ? <tr><Td>—</Td><Td>0</Td><Td>₹0</Td><Td>—</Td></tr> : d.rmByType.map((r, i) => <tr key={i} className="kdrow"><Td b>{r.type}</Td><Td>{r.kg.toLocaleString('en-IN')}</Td><Td>{money(r.spend)}</Td><Td>{r.kg ? '₹' + (r.spend / r.kg).toFixed(2) : '—'}</Td></tr>)}
