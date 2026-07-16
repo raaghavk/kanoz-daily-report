@@ -5,7 +5,7 @@ import { can } from '../../lib/permissions'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { getLocalDate } from '../../lib/dateUtils'
-import { Loader2, LogIn, LogOut, MapPin, CheckCircle2, Circle, Clock, CalendarDays } from 'lucide-react'
+import { Loader2, LogIn, LogOut, MapPin, CheckCircle2, Circle, Clock, CalendarDays, UserPlus, X, ChevronDown, ChevronUp } from 'lucide-react'
 
 const GREEN = '#2d6a4f'
 const DARK = '#1b4332'
@@ -27,6 +27,16 @@ function hoursBetween(a, b) {
   return h.toFixed(1)
 }
 
+// Combine an HH:MM time input with a YYYY-MM-DD date into an ISO timestamp
+function combineDateTime(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return null
+  const [h, m] = timeStr.split(':').map(Number)
+  if (Number.isNaN(h) || Number.isNaN(m)) return null
+  const d = new Date(`${dateStr}T00:00:00`)
+  d.setHours(h, m, 0, 0)
+  return d.toISOString()
+}
+
 // Try to grab GPS coords; resolves to {lat,lng} or null (never rejects)
 function getCoords() {
   return new Promise((resolve) => {
@@ -44,6 +54,7 @@ export default function AttendancePage() {
   const role = employee?.role
   const isAdmin = can(role, 'manage_users') || can(role, 'plant_settings')
   const today = getLocalDate()
+  const canMarkOthers = can(employee?.role, 'mark_attendance_others') || ['admin', 'plant_manager', 'supervisor'].includes(employee?.role)
 
   const [myRow, setMyRow] = useState(null)
   const [loadingMine, setLoadingMine] = useState(true)
@@ -55,6 +66,20 @@ export default function AttendancePage() {
   const [histDate, setHistDate] = useState(today)
   const [history, setHistory] = useState([])
   const [loadingHist, setLoadingHist] = useState(false)
+
+  // Add-labourer modal
+  const [showAdd, setShowAdd] = useState(false)
+  const [addName, setAddName] = useState('')
+  const [addMobile, setAddMobile] = useState('')
+  const [addType, setAddType] = useState('labour')
+  const [addSaving, setAddSaving] = useState(false)
+
+  // Supervisor marking-for-others
+  const [markingId, setMarkingId] = useState(null)   // employee id currently saving
+  const [expandedId, setExpandedId] = useState(null) // row with times/hours expander open
+  const [timeIn, setTimeIn] = useState('')
+  const [timeOut, setTimeOut] = useState('')
+  const [hoursInput, setHoursInput] = useState('')
 
   const loadMine = useCallback(async () => {
     if (!employee?.id) return
@@ -76,18 +101,20 @@ export default function AttendancePage() {
     try {
       const { data: emps } = await supabase
         .from('employees')
-        .select('id, name, role')
+        .select('id, name, role, worker_type, mobile')
         .eq('plant_id', plant.id)
         .eq('is_active', true)
         .order('name')
       const { data: rows } = await supabase
         .from('attendance')
-        .select('employee_id, check_in_at, check_out_at')
+        .select('id, employee_id, check_in_at, check_out_at, status, hours, marked_by')
         .eq('plant_id', plant.id)
         .eq('work_date', today)
+      const nameById = {}
+      for (const e of (emps || [])) nameById[e.id] = e.name
       const byEmp = {}
       for (const r of (rows || [])) byEmp[r.employee_id] = r
-      setRoster((emps || []).map(e => ({ ...e, att: byEmp[e.id] || null })))
+      setRoster((emps || []).map(e => ({ ...e, att: byEmp[e.id] || null, markerName: byEmp[e.id]?.marked_by ? (nameById[byEmp[e.id].marked_by] || null) : null })))
     } catch { /* silent */ } finally { setLoadingRoster(false) }
   }, [plant?.id, today])
 
@@ -97,13 +124,13 @@ export default function AttendancePage() {
     try {
       const { data: emps } = await supabase
         .from('employees')
-        .select('id, name')
+        .select('id, name, worker_type')
         .eq('plant_id', plant.id)
         .eq('is_active', true)
         .order('name')
       const { data: rows } = await supabase
         .from('attendance')
-        .select('employee_id, check_in_at, check_out_at, note')
+        .select('employee_id, check_in_at, check_out_at, status, hours, note')
         .eq('plant_id', plant.id)
         .eq('work_date', histDate)
       const byEmp = {}
@@ -159,6 +186,100 @@ export default function AttendancePage() {
     } catch { showToast('Check-out failed', 'error') } finally { setSaving(false) }
   }
 
+  // --- Add labourer (login-less employee row) ---
+  async function handleAddLabourer() {
+    if (addSaving) return
+    const name = addName.trim()
+    if (!name) { showToast('Name is required', 'error'); return }
+    if (!plant?.id) { showToast('No plant selected', 'error'); return }
+    setAddSaving(true)
+    try {
+      const { error } = await supabase
+        .from('employees')
+        .insert({
+          org_id: plant.org_id,
+          plant_id: plant.id,
+          name,
+          mobile: addMobile.trim() || null,
+          worker_type: addType,
+          role: 'labour',
+          is_active: true,
+          auth_user_id: null,
+        })
+      if (error) throw error
+      showToast('Worker added', 'success')
+      setShowAdd(false)
+      setAddName(''); setAddMobile(''); setAddType('labour')
+      await loadRoster()
+    } catch { showToast('Failed to add worker', 'error') } finally { setAddSaving(false) }
+  }
+
+  // --- Mark present/absent for another employee ---
+  async function markStatus(emp, status) {
+    if (markingId || !plant?.id || !employee?.id) return
+    setMarkingId(emp.id)
+    try {
+      const payload = {
+        org_id: plant.org_id,
+        plant_id: plant.id,
+        employee_id: emp.id,
+        work_date: today,
+        status,
+        marked_by: employee.id,
+      }
+      // Absent clears any recorded times/hours; present (quick) leaves times as-is
+      if (status === 'absent') {
+        payload.check_in_at = null
+        payload.check_out_at = null
+        payload.hours = null
+      }
+      const { error } = await supabase
+        .from('attendance')
+        .upsert(payload, { onConflict: 'employee_id,work_date' })
+      if (error) throw error
+      showToast(status === 'present' ? 'Marked present' : 'Marked absent', 'success')
+      await Promise.all([loadRoster(), loadMine()])
+    } catch { showToast('Failed to mark attendance', 'error') } finally { setMarkingId(null) }
+  }
+
+  // Open/close the per-row times/hours expander, seeding from existing values
+  function toggleExpander(emp) {
+    if (expandedId === emp.id) { setExpandedId(null); return }
+    setExpandedId(emp.id)
+    setTimeIn(fmtTime(emp.att?.check_in_at) || '')
+    setTimeOut(fmtTime(emp.att?.check_out_at) || '')
+    setHoursInput(emp.att?.hours != null ? String(emp.att.hours) : '')
+  }
+
+  // --- Save exact times / hours for another employee ---
+  async function saveTimesHours(emp) {
+    if (markingId || !plant?.id || !employee?.id) return
+    setMarkingId(emp.id)
+    try {
+      const checkIn = combineDateTime(today, timeIn)
+      const checkOut = combineDateTime(today, timeOut)
+      const hrs = hoursInput.trim() === '' ? null : Number(hoursInput)
+      const payload = {
+        org_id: plant.org_id,
+        plant_id: plant.id,
+        employee_id: emp.id,
+        work_date: today,
+        status: 'present',
+        marked_by: employee.id,
+        check_in_at: checkIn,
+        check_out_at: checkOut,
+        hours: (hrs != null && !Number.isNaN(hrs)) ? hrs : null,
+      }
+      const { error } = await supabase
+        .from('attendance')
+        .upsert(payload, { onConflict: 'employee_id,work_date' })
+      if (error) throw error
+      showToast('Times saved', 'success')
+      setExpandedId(null)
+      await Promise.all([loadRoster(), loadMine()])
+    } catch { showToast('Failed to save times', 'error') } finally { setMarkingId(null) }
+  }
+
   const checkedIn = !!myRow?.check_in_at
   const checkedOut = !!myRow?.check_out_at
   const totalHrs = hoursBetween(myRow?.check_in_at, myRow?.check_out_at)
@@ -173,8 +294,16 @@ export default function AttendancePage() {
   function statusPill(att) {
     if (att?.check_out_at) return { label: `Out ${fmtTime(att.check_out_at)}`, bg: '#e8f0ec', text: GREEN }
     if (att?.check_in_at) return { label: `In ${fmtTime(att.check_in_at)}`, bg: '#EEF2FF', text: '#2563EB' }
+    if (att?.status === 'present') return { label: att.hours != null ? `Present · ${att.hours}h` : 'Present', bg: '#e8f0ec', text: GREEN }
+    if (att?.status === 'absent') return { label: 'Absent', bg: '#fdecec', text: '#c0392b' }
     return { label: 'Absent', bg: '#f3f4f6', text: '#9ca3af' }
   }
+
+  const smallBtn = (bg, color, border) => ({
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+    padding: '6px 10px', borderRadius: 8, border: border || 'none',
+    fontSize: 11, fontWeight: 700, cursor: 'pointer', background: bg, color,
+  })
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
@@ -247,7 +376,14 @@ export default function AttendancePage() {
         </div>
 
         {/* Today's roster — shared board */}
-        <div style={sectionLabel}>Today's Roster · Who's In</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ ...sectionLabel, marginBottom: 0 }}>Today's Roster · Who's In</div>
+          {canMarkOthers && (
+            <button onClick={() => setShowAdd(true)} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 8, border: `1.5px solid ${GREEN}`, background: '#fff', color: GREEN, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+              <UserPlus size={13} /> Add worker/labourer
+            </button>
+          )}
+        </div>
         <div style={{ ...cardStyle, marginBottom: 20 }}>
           {loadingRoster ? (
             <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 8, color: MUTED, fontSize: 13 }}>
@@ -258,17 +394,65 @@ export default function AttendancePage() {
           ) : (
             roster.map((e, idx) => {
               const pill = statusPill(e.att)
+              const isLabour = e.worker_type === 'labour'
+              const busy = markingId === e.id
+              const markedByOther = e.att?.marked_by && e.att.marked_by !== e.id && e.markerName
+              const isExpanded = expandedId === e.id
               return (
-                <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {e.name}{e.id === employee?.id ? ' (You)' : ''}
+                <div key={e.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {e.name}{e.id === employee?.id ? ' (You)' : ''}
+                        </div>
+                        {isLabour && (
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, background: '#f0ebe0', color: MUTED, borderRadius: 5, padding: '1px 5px', flexShrink: 0, textTransform: 'uppercase' }}>Labour</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 10, color: MUTED, marginTop: 1, textTransform: 'capitalize' }}>{(e.role || '').replace(/_/g, ' ')}</div>
+                      {markedByOther && (
+                        <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>Marked by {e.markerName}</div>
+                      )}
                     </div>
-                    <div style={{ fontSize: 10, color: MUTED, marginTop: 1, textTransform: 'capitalize' }}>{(e.role || '').replace(/_/g, ' ')}</div>
+                    <span style={{ fontSize: 11, fontWeight: 700, background: pill.bg, color: pill.text, borderRadius: 7, padding: '3px 9px', flexShrink: 0 }}>
+                      {pill.label}
+                    </span>
                   </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, background: pill.bg, color: pill.text, borderRadius: 7, padding: '3px 9px', flexShrink: 0 }}>
-                    {pill.label}
-                  </span>
+                  {canMarkOthers && (
+                    <div style={{ display: 'flex', gap: 8, padding: '0 14px 11px', flexWrap: 'wrap' }}>
+                      <button disabled={busy} onClick={() => markStatus(e, 'present')} style={{ ...smallBtn('#e8f0ec', GREEN), opacity: busy ? 0.6 : 1 }}>
+                        {busy ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={12} />} Present
+                      </button>
+                      <button disabled={busy} onClick={() => markStatus(e, 'absent')} style={{ ...smallBtn('#fdecec', '#c0392b'), opacity: busy ? 0.6 : 1 }}>
+                        <Circle size={12} /> Absent
+                      </button>
+                      <button disabled={busy} onClick={() => toggleExpander(e)} style={{ ...smallBtn('#fff', DARK, `1.5px solid ${BORDER}`), opacity: busy ? 0.6 : 1 }}>
+                        <Clock size={12} /> Times/Hours {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      </button>
+                    </div>
+                  )}
+                  {canMarkOthers && isExpanded && (
+                    <div style={{ padding: '0 14px 12px' }}>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                        <div>
+                          <div style={{ fontSize: 10, color: MUTED, marginBottom: 3 }}>Check in</div>
+                          <input type="time" value={timeIn} onChange={(ev) => setTimeIn(ev.target.value)} style={{ padding: '7px 8px', borderRadius: 8, border: `1.5px solid ${BORDER}`, background: '#fefae0', fontSize: 13, color: TEXT, outline: 'none' }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: MUTED, marginBottom: 3 }}>Check out</div>
+                          <input type="time" value={timeOut} onChange={(ev) => setTimeOut(ev.target.value)} style={{ padding: '7px 8px', borderRadius: 8, border: `1.5px solid ${BORDER}`, background: '#fefae0', fontSize: 13, color: TEXT, outline: 'none' }} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: MUTED, marginBottom: 3 }}>Hours</div>
+                          <input type="number" step="0.5" min="0" value={hoursInput} onChange={(ev) => setHoursInput(ev.target.value)} placeholder="e.g. 8" style={{ width: 64, padding: '7px 8px', borderRadius: 8, border: `1.5px solid ${BORDER}`, background: '#fefae0', fontSize: 13, color: TEXT, outline: 'none' }} />
+                        </div>
+                        <button disabled={busy} onClick={() => saveTimesHours(e)} style={{ ...smallBtn(GREEN, '#fff'), padding: '8px 14px', opacity: busy ? 0.6 : 1 }}>
+                          {busy ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : null} Save
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })
@@ -298,16 +482,27 @@ export default function AttendancePage() {
                 <div style={{ padding: 16, fontSize: 13, color: MUTED }}>No employees.</div>
               ) : (
                 history.map((e, idx) => {
-                  const hrs = hoursBetween(e.att?.check_in_at, e.att?.check_out_at)
+                  const hrs = e.att?.hours != null ? `${e.att.hours}` : hoursBetween(e.att?.check_in_at, e.att?.check_out_at)
+                  let detail = 'Absent'
+                  if (e.att?.check_in_at) {
+                    detail = `In ${fmtTime(e.att.check_in_at)}`
+                    if (e.att?.check_out_at) detail += ` · Out ${fmtTime(e.att.check_out_at)}`
+                  } else if (e.att?.status === 'present') {
+                    detail = 'Present'
+                  } else if (e.att?.status === 'absent') {
+                    detail = 'Absent'
+                  }
+                  if (hrs) detail += ` · ${hrs} hrs`
                   return (
                     <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</div>
-                        <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
-                          {e.att?.check_in_at ? `In ${fmtTime(e.att.check_in_at)}` : 'Absent'}
-                          {e.att?.check_out_at ? ` · Out ${fmtTime(e.att.check_out_at)}` : ''}
-                          {hrs ? ` · ${hrs} hrs` : ''}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</div>
+                          {e.worker_type === 'labour' && (
+                            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, background: '#f0ebe0', color: MUTED, borderRadius: 5, padding: '1px 5px', flexShrink: 0, textTransform: 'uppercase' }}>Labour</span>
+                          )}
                         </div>
+                        <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{detail}</div>
                       </div>
                     </div>
                   )
@@ -317,6 +512,37 @@ export default function AttendancePage() {
           </>
         )}
       </div>
+
+      {/* Add worker / labourer modal */}
+      {showAdd && (
+        <div onClick={() => !addSaving && setShowAdd(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 50 }}>
+          <div onClick={(ev) => ev.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: '#fefae0', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: '18px 20px 24px', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: DARK }}>Add worker / labourer</div>
+              <button onClick={() => !addSaving && setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: MUTED, padding: 4 }}><X size={20} /></button>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Name *</div>
+              <input value={addName} onChange={(ev) => setAddName(ev.target.value)} placeholder="Full name" style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', fontSize: 14, color: TEXT, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Mobile (optional)</div>
+              <input value={addMobile} onChange={(ev) => setAddMobile(ev.target.value)} placeholder="Phone number" inputMode="tel" style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', fontSize: 14, color: TEXT, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Type</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {['labour', 'staff'].map((t) => (
+                  <button key={t} onClick={() => setAddType(t)} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `1.5px solid ${addType === t ? GREEN : BORDER}`, background: addType === t ? '#e8f0ec' : '#fff', color: addType === t ? GREEN : MUTED, fontSize: 13, fontWeight: 700, cursor: 'pointer', textTransform: 'capitalize' }}>{t}</button>
+                ))}
+              </div>
+            </div>
+            <button onClick={handleAddLabourer} disabled={addSaving || !addName.trim()} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 0', borderRadius: 12, border: 'none', background: (addSaving || !addName.trim()) ? '#c3d2c9' : GREEN, color: '#fff', fontSize: 14, fontWeight: 700, cursor: (addSaving || !addName.trim()) ? 'default' : 'pointer' }}>
+              {addSaving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <UserPlus size={16} />} Add worker
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
