@@ -18,6 +18,7 @@ export default function DispatchDetail() {
   const [editForm, setEditForm] = useState({})
   const [editPellets, setEditPellets] = useState([])
   const [customers, setCustomers] = useState([])
+  const [pelletTypes, setPelletTypes] = useState([])
   const [createdByName, setCreatedByName] = useState(null)
 
   const fetchDispatch = useCallback(async () => {
@@ -65,6 +66,13 @@ export default function DispatchDetail() {
       .then(({ data }) => { if (data) setCustomers(data) })
   }, [plant?.org_id])
 
+  useEffect(() => {
+    const plantId = dispatch?.plant_id
+    if (!plantId) return
+    supabase.from('pellet_types').select('id, name').eq('plant_id', plantId).eq('is_active', true).order('name')
+      .then(({ data }) => { if (data) setPelletTypes(data) })
+  }, [dispatch?.plant_id])
+
   function formatShortDate(dateStr) {
     if (!dateStr) return ''
     const d = new Date(dateStr + 'T00:00:00')
@@ -105,13 +113,17 @@ export default function DispatchDetail() {
       driver_name: dispatch.driver_name || '',
       driver_phone: dispatch.driver_phone || '',
       transporter: dispatch.transporter || '',
+      serial_no: dispatch.serial_no || '',
       invoice_no: dispatch.invoice_no || '',
+      loading_date: dispatch.loading_date || '',
       loading_time: dispatch.loading_time?.slice(0, 5) || '',
+      dispatch_date: dispatch.dispatch_date || '',
       dispatch_time: dispatch.dispatch_time?.slice(0, 5) || '',
       remarks: dispatch.remarks || '',
     })
     setEditPellets((dispatch.dispatch_pellets || []).map(p => ({
       id: p.id,
+      pellet_type_id: p.pellet_type_id || '',
       pellet_type_name: p.pellet_types?.name || p.pellet_type_name || 'Unknown',
       quantity_mt: parseFloat(p.quantity_mt) || 0,
     })))
@@ -128,8 +140,11 @@ export default function DispatchDetail() {
         driver_name: editForm.driver_name,
         driver_phone: editForm.driver_phone,
         transporter: editForm.transporter,
+        serial_no: editForm.serial_no || null,
         invoice_no: editForm.invoice_no,
+        loading_date: editForm.loading_date || null,
         loading_time: editForm.loading_time || null,
+        dispatch_date: editForm.dispatch_date || null,
         dispatch_time: editForm.dispatch_time || null,
         remarks: editForm.remarks || null,
       }
@@ -141,7 +156,11 @@ export default function DispatchDetail() {
 
       // Update pellet quantities
       const pelletUpdates = editPellets.map(p =>
-        supabase.from('dispatch_pellets').update({ quantity_mt: p.quantity_mt }).eq('id', p.id)
+        supabase.from('dispatch_pellets').update({
+          quantity_mt: p.quantity_mt,
+          pellet_type_id: p.pellet_type_id || null,
+          pellet_type_name: pelletTypes.find(pt => pt.id === p.pellet_type_id)?.name || p.pellet_type_name || null,
+        }).eq('id', p.id)
       )
       const pelletResults = await Promise.all(pelletUpdates)
       const pelletErr = pelletResults.find(r => r.error)
@@ -248,9 +267,12 @@ export default function DispatchDetail() {
                 </select>
               </div>
               <EditField label="Transporter" value={editForm.transporter} onChange={v => setEditForm({ ...editForm, transporter: v })} />
+              <EditField label="Serial No" value={editForm.serial_no} onChange={v => setEditForm({ ...editForm, serial_no: v })} />
               <EditField label="Invoice No" value={editForm.invoice_no} onChange={v => setEditForm({ ...editForm, invoice_no: v })} />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <EditField label="Loading Date" value={editForm.loading_date} onChange={v => setEditForm({ ...editForm, loading_date: v })} type="date" />
                 <EditField label="Loading Time" value={editForm.loading_time} onChange={v => setEditForm({ ...editForm, loading_time: v })} type="time" />
+                <EditField label="Dispatch Date" value={editForm.dispatch_date} onChange={v => setEditForm({ ...editForm, dispatch_date: v })} type="date" />
                 <EditField label="Dispatch Time" value={editForm.dispatch_time} onChange={v => setEditForm({ ...editForm, dispatch_time: v })} type="time" />
               </div>
               <EditField label="Driver Name" value={editForm.driver_name} onChange={v => setEditForm({ ...editForm, driver_name: v })} />
@@ -262,7 +284,21 @@ export default function DispatchDetail() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {editPellets.map((p, idx) => (
                       <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f5f0e1', borderRadius: 10 }}>
-                        <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#2c2c2c' }}>{p.pellet_type_name}</span>
+                        <select
+                          value={p.pellet_type_id || ''}
+                          onChange={e => {
+                            const val = e.target.value
+                            const updated = [...editPellets]
+                            updated[idx] = { ...updated[idx], pellet_type_id: val, pellet_type_name: pelletTypes.find(pt => pt.id === val)?.name || updated[idx].pellet_type_name }
+                            setEditPellets(updated)
+                          }}
+                          style={{ flex: 1, minWidth: 0, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, fontWeight: 600, color: '#2c2c2c', outline: 'none', background: '#fff' }}
+                        >
+                          {!pelletTypes.some(pt => pt.id === p.pellet_type_id) && (
+                            <option value={p.pellet_type_id || ''}>{p.pellet_type_name}</option>
+                          )}
+                          {pelletTypes.map(pt => <option key={pt.id} value={pt.id}>{pt.name}</option>)}
+                        </select>
                         <input
                           type="number" step="0.1" min="0"
                           value={p.quantity_mt}
@@ -287,6 +323,7 @@ export default function DispatchDetail() {
             <InfoRow label="Customer" value={dispatch.customers?.name || 'N/A'} />
             <InfoRow label="Destination" value={dispatch.destination || 'N/A'} />
             <InfoRow label="Transporter" value={dispatch.transporter || 'N/A'} />
+            <InfoRow label="Serial No" value={dispatch.serial_no || 'N/A'} />
             <InfoRow label="Invoice No" value={dispatch.invoice_no || 'N/A'} />
           </div>
 

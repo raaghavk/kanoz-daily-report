@@ -70,6 +70,7 @@ export default function DispatchForm() {
     driver_name: '',
     driver_phone: '',
     pellets: [{ pellet_type_id: '', quantity_mt: '' }],
+    serial_no: '',
     invoice_number: '',
     loading_date: today,
     loading_time: new Date().toTimeString().slice(0, 5),
@@ -437,6 +438,7 @@ export default function DispatchForm() {
           transporter_id: form.transporter_id || null,
           driver_name: sanitizeText(form.driver_name, 100),
           driver_phone: sanitizeText(form.driver_phone, 15),
+          serial_no: sanitizeText(form.serial_no, 50) || null,
           invoice_no: sanitizeText(form.invoice_number, 50),
           loading_date: form.loading_date || today,
           loading_time: form.loading_time || null,
@@ -486,6 +488,7 @@ export default function DispatchForm() {
           driver_name: '',
           driver_phone: '',
           pellets: [{ pellet_type_id: '', quantity_mt: '' }],
+          serial_no: '',
           invoice_number: '',
           loading_date: today,
           loading_time: new Date().toTimeString().slice(0, 5),
@@ -528,7 +531,7 @@ export default function DispatchForm() {
       }
       const updates = {}
       if (result.data?.vehicle_number) updates.truck_number = result.data.vehicle_number
-      if (result.data?.serial_no) updates.invoice_number = result.data.serial_no
+      if (result.data?.serial_no) updates.serial_no = result.data.serial_no
       if (result.data?.date) {
         const parsed = new Date(result.data.date)
         if (!isNaN(parsed.getTime())) {
@@ -1017,6 +1020,20 @@ export default function DispatchForm() {
               >
                 <Plus size={14} /> Add Pellet Type
               </button>
+            </div>
+
+            {/* Serial Number (from weighbridge slip) */}
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>
+                Serial Number
+              </label>
+              <input
+                type="text"
+                placeholder="Slip serial #"
+                value={form.serial_no}
+                onChange={e => updateForm('serial_no', e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none' }}
+              />
             </div>
 
             {/* Invoice Number */}
