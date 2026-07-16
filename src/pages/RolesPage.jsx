@@ -34,6 +34,7 @@ function RoleModal({ initial, onClose, onSave, saving }) {
     const set = new Set(Array.isArray(initial?.permissions) ? initial.permissions : [])
     return set
   })
+  const [trackAttendance, setTrackAttendance] = useState(initial?.track_attendance !== false)
 
   function toggle(key) {
     setChecked(prev => {
@@ -53,6 +54,7 @@ function RoleModal({ initial, onClose, onSave, saving }) {
       name: name.trim(),
       description: description.trim() || null,
       permissions: PERMISSION_CATALOG.filter(p => checked.has(p.key)).map(p => p.key),
+      track_attendance: trackAttendance,
     })
   }
 
@@ -80,6 +82,15 @@ function RoleModal({ initial, onClose, onSave, saving }) {
             placeholder="Short description of this role"
             style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${BORDER}`, fontSize: 14, color: TEXT, boxSizing: 'border-box', marginBottom: 18 }}
           />
+          <button
+            onClick={() => setTrackAttendance(v => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${trackAttendance ? GREEN : BORDER}`, background: trackAttendance ? '#f0f5f1' : '#fff', cursor: 'pointer', textAlign: 'left', width: '100%', marginBottom: 16 }}
+          >
+            <span style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${trackAttendance ? GREEN : BORDER}`, background: trackAttendance ? GREEN : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {trackAttendance && <Check size={14} color="#fff" />}
+            </span>
+            <span style={{ fontSize: 13.5, color: TEXT, fontWeight: 500 }}>Track attendance for this role<br/><span style={{ fontSize: 11, color: MUTED, fontWeight: 400 }}>Turn off so people with this role are not marked (e.g. Admin/owner).</span></span>
+          </button>
           <label style={{ fontSize: 12, fontWeight: 600, color: MUTED, display: 'block', marginBottom: 10 }}>Permissions</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {PERMISSION_CATALOG.map(p => {
@@ -154,14 +165,14 @@ export default function RolesPage() {
       if (modal?.mode === 'edit' && modal.role) {
         const { error } = await supabase
           .from('roles')
-          .update({ name: payload.name, description: payload.description, permissions: payload.permissions })
+          .update({ name: payload.name, description: payload.description, permissions: payload.permissions, track_attendance: payload.track_attendance })
           .eq('id', modal.role.id)
         if (error) throw error
         showToast('Role updated')
       } else {
         const { error } = await supabase
           .from('roles')
-          .insert({ org_id: orgId, name: payload.name, description: payload.description, permissions: payload.permissions, is_default: false })
+          .insert({ org_id: orgId, name: payload.name, description: payload.description, permissions: payload.permissions, is_default: false, track_attendance: payload.track_attendance })
         if (error) throw error
         showToast('Role created')
       }

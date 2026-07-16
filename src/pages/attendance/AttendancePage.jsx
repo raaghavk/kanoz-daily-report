@@ -61,6 +61,7 @@ export default function AttendancePage() {
   const [saving, setSaving] = useState(false)
 
   const [roster, setRoster] = useState([])
+  const [myTracksAttendance, setMyTracksAttendance] = useState(true)
   const [loadingRoster, setLoadingRoster] = useState(true)
 
   const [histDate, setHistDate] = useState(today)
@@ -105,6 +106,19 @@ export default function AttendancePage() {
         .eq('plant_id', plant.id)
         .eq('is_active', true)
         .order('name')
+      // Roles flagged track_attendance = false are excluded from attendance entirely.
+      const exempt = new Set()
+      try {
+        const orgId = plant?.org_id || employee?.org_id
+        if (orgId) {
+          const { data: roleRows } = await supabase.from('roles').select('key, name, track_attendance').eq('org_id', orgId)
+          for (const r of (roleRows || [])) {
+            if (r.track_attendance === false) { if (r.key) exempt.add(r.key); if (r.name) exempt.add(r.name) }
+          }
+        }
+      } catch { /* ignore */ }
+      setMyTracksAttendance(!exempt.has(employee?.role))
+      const visibleEmps = (emps || []).filter(e => !exempt.has(e.role))
       const { data: rows } = await supabase
         .from('attendance')
         .select('id, employee_id, check_in_at, check_out_at, status, hours, marked_by')
@@ -114,7 +128,7 @@ export default function AttendancePage() {
       for (const e of (emps || [])) nameById[e.id] = e.name
       const byEmp = {}
       for (const r of (rows || [])) byEmp[r.employee_id] = r
-      setRoster((emps || []).map(e => ({ ...e, att: byEmp[e.id] || null, markerName: byEmp[e.id]?.marked_by ? (nameById[byEmp[e.id].marked_by] || null) : null })))
+      setRoster(visibleEmps.map(e => ({ ...e, att: byEmp[e.id] || null, markerName: byEmp[e.id]?.marked_by ? (nameById[byEmp[e.id].marked_by] || null) : null })))
     } catch { /* silent */ } finally { setLoadingRoster(false) }
   }, [plant?.id, today])
 
@@ -312,6 +326,11 @@ export default function AttendancePage() {
       <div style={{ padding: '16px 20px 32px' }}>
         {/* My status / check-in-out */}
         <div style={sectionLabel}>My Attendance · Today</div>
+        {!myTracksAttendance ? (
+          <div style={{ ...cardStyle, padding: 16, marginBottom: 20, fontSize: 13, color: MUTED }}>
+            Attendance isn't tracked for your role.
+          </div>
+        ) : (
         <div style={{ ...cardStyle, padding: 16, marginBottom: 20 }}>
           {loadingMine ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: MUTED, fontSize: 13 }}>
@@ -374,6 +393,7 @@ export default function AttendancePage() {
             </>
           )}
         </div>
+        )}
 
         {/* Today's roster — shared board */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
