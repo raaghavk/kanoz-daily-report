@@ -70,6 +70,11 @@ export default function AdminPanel() {
   const [savingLocation, setSavingLocation] = useState(false)
   const [gettingLocation, setGettingLocation] = useState(false)
 
+  // Finance foundation — plant energy cost inputs
+  const [electricityTariff, setElectricityTariff] = useState(plant?.electricity_tariff?.toString() || '')
+  const [dieselRate, setDieselRate] = useState(plant?.diesel_rate?.toString() || '')
+  const [savingEnergyCosts, setSavingEnergyCosts] = useState(false)
+
   useEffect(() => {
     const sel = plants.find(p => p.id === selectedPlantId)
     setThresholdDraft(sel?.gcv_grade_threshold ?? 3200)
@@ -90,6 +95,34 @@ export default function AdminPanel() {
     }
     showToast('GCV grade threshold saved', 'success')
     setPlants(prev => prev.map(p => p.id === selectedPlantId ? { ...p, gcv_grade_threshold: val } : p))
+  }
+
+  // Load / save plant energy cost inputs (electricity tariff, diesel rate)
+  useEffect(() => {
+    setElectricityTariff(plant?.electricity_tariff != null ? plant.electricity_tariff.toString() : '')
+    setDieselRate(plant?.diesel_rate != null ? plant.diesel_rate.toString() : '')
+  }, [plant?.id, plant?.electricity_tariff, plant?.diesel_rate])
+
+  async function saveEnergyCosts() {
+    const tariff = electricityTariff === '' ? null : parseFloat(electricityTariff)
+    const diesel = dieselRate === '' ? null : parseFloat(dieselRate)
+    if ((tariff != null && (Number.isNaN(tariff) || tariff < 0)) || (diesel != null && (Number.isNaN(diesel) || diesel < 0))) {
+      showToast('Enter valid non-negative rates', 'error')
+      return
+    }
+    setSavingEnergyCosts(true)
+    try {
+      const { error } = await supabase.from('plants').update({
+        electricity_tariff: tariff,
+        diesel_rate: diesel,
+      }).eq('id', plant.id)
+      if (error) throw error
+      await refreshPlant()
+      showToast('Energy cost inputs saved', 'success')
+    } catch (err) {
+      console.error('saveEnergyCosts error:', err)
+      showToast('Failed to save energy costs', 'error')
+    } finally { setSavingEnergyCosts(false) }
   }
 
   useEffect(() => {
@@ -559,6 +592,45 @@ export default function AdminPanel() {
               style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingThreshold ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingThreshold ? 0.6 : 1 }}
             >
               {savingThreshold ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+
+        {/* Energy Cost Inputs (per plant) — finance foundation */}
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>Energy Costs</div>
+          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Used to estimate machine running costs on the dashboard</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Electricity tariff (₹/unit)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                value={electricityTariff}
+                onChange={e => setElectricityTariff(e.target.value)}
+                placeholder="e.g. 8.50"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Diesel rate (₹/litre)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                value={dieselRate}
+                onChange={e => setDieselRate(e.target.value)}
+                placeholder="e.g. 92.00"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <button
+              onClick={saveEnergyCosts}
+              disabled={savingEnergyCosts}
+              style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingEnergyCosts ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingEnergyCosts ? 0.6 : 1 }}
+            >
+              {savingEnergyCosts ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>

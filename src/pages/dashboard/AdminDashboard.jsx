@@ -38,9 +38,11 @@ export default function AdminDashboard() {
   const [realisation, setRealisation] = useState(11000)
   const [loadingP, setLoadingP] = useState(true), [loadingD, setLoadingD] = useState(true)
   const [rmSources, setRmSources] = useState([])
+  const [machinesHp, setMachinesHp] = useState([])
 
   useEffect(() => { if (plant?.id) { latestReportDate(plant).then(setDate); loadAssets(plant).then(setAssets); loadSpares(plant).then(setSpares) } }, [plant]) // eslint-disable-line
   useEffect(() => { if (plant?.id) { supabase.from('raw_material_types').select('name, source').eq('plant_id', plant.id).eq('is_active', true).then(({ data }) => setRmSources(data || [])) } }, [plant]) // eslint-disable-line
+  useEffect(() => { if (plant?.id) { supabase.from('machines').select('name, motor_hp').eq('plant_id', plant.id).then(({ data }) => setMachinesHp(data || [])) } }, [plant]) // eslint-disable-line
   useEffect(() => { if (plant?.id) { setLoadingP(true); loadPeriod(plant, period).then(d => { setPd(d); setLoadingP(false) }) } }, [plant, period]) // eslint-disable-line
   useEffect(() => { if (plant?.id && date) { setLoadingD(true); loadDaily(plant, date).then(d => { setDaily(d); setLoadingD(false) }) } }, [plant, date]) // eslint-disable-line
 
@@ -72,7 +74,7 @@ export default function AdminDashboard() {
           {section === 'daily' && (loadingD || !daily ? spin : <Daily d={daily} date={date} />)}
           {section !== 'daily' && (loadingP || !pd ? spin : <>
             {section === 'overview' && <Overview d={pd} assets={assets} spares={spares} />}
-            {section === 'production' && <Production d={pd} />}
+            {section === 'production' && <Production d={pd} machinesHp={machinesHp} tariff={plant?.electricity_tariff} />}
             {section === 'rawmat' && <RawMat d={pd} sources={rmSources} />}
             {section === 'dispatch' && <Dispatch d={pd} />}
             {section === 'finance' && <Finance d={pd} assets={assets} spares={spares} realisation={realisation} setR={setRealisation} />}
@@ -132,8 +134,19 @@ function Overview({ d, assets, spares }) {
   </>
 }
 
-function Production({ d }) {
+function Production({ d, machinesHp = [], tariff }) {
   const max = Math.max(1, ...d.byMachine.map(m => m.mt))
+  // Est. electricity running cost per machine: kW = motor_hp * 0.746; cost = kW * run_hours * tariff
+  const hpByName = Object.fromEntries(machinesHp.map(m => [m.name, Number(m.motor_hp) || 0]))
+  const tariffNum = Number(tariff) || 0
+  const costRows = d.byMachine.map(m => {
+    const runHrs = (Number(m.hours) || 0) - (Number(m.breakdown) || 0)
+    const hp = hpByName[m.name] || 0
+    const kW = hp * 0.746
+    const cost = kW * runHrs * tariffNum
+    return { name: m.name, runHrs, hp, cost }
+  })
+  const totalCost = costRows.reduce((a, r) => a + r.cost, 0)
   return <>
     <div style={S.kpis}><Kpi l="Production" n={mt(d.production)} /><Kpi l="Machines active" n={d.byMachine.length} /><Kpi l="Power used" n={Math.round(d.power).toLocaleString('en-IN') + ' kWh'} /><Kpi l="kWh / MT" n={d.production ? Math.round(d.power / d.production) : '—'} /></div>
     <div style={S.g2}>
@@ -144,6 +157,15 @@ function Production({ d }) {
         </tbody></table>
       </Card>
     </div>
+    <Card title="Machine Running Cost (estimate)" sub="Estimated grid-electricity cost this period">
+      {!tariffNum ? <div style={{ fontSize: 12, color: '#a7a999' }}>Set electricity tariff in Plant Settings to see cost estimates.</div> : <>
+        <table style={S.table}><thead><tr><Th>Machine</Th><Th right>Run hrs</Th><Th right>HP</Th><Th right>Est. electricity ₹</Th></tr></thead><tbody>
+          {costRows.length === 0 ? <tr><Td>—</Td><Td right>0</Td><Td right>0</Td><Td right>₹0</Td></tr> : costRows.map((r, i) => <tr key={i} className="kdrow"><Td b>{r.name}</Td><Td right>{Math.round(r.runHrs * 10) / 10} h</Td><Td right>{r.hp}</Td><Td right>{money(r.cost)}</Td></tr>)}
+          <tr style={{ fontWeight: 800, background: '#f6f3ea' }}><Td b>Total</Td><Td right></Td><Td right></Td><Td right>{money(totalCost)}</Td></tr>
+        </tbody></table>
+        <div style={S.muted}>Estimate = motor HP × 0.746 × run-hours × ₹/unit. Diesel-generator and labour costs are added in the full finance module (coming next).</div>
+      </>}
+    </Card>
   </>
 }
 
