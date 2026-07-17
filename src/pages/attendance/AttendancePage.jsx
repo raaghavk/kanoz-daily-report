@@ -157,10 +157,22 @@ export default function AttendancePage() {
     try {
       const { data: emps } = await supabase
         .from('employees')
-        .select('id, name, worker_type')
+        .select('id, name, role, worker_type')
         .eq('plant_id', plant.id)
         .eq('is_active', true)
         .order('name')
+      // Exclude roles flagged track_attendance = false (e.g. Admin) from history too.
+      const exempt = new Set()
+      try {
+        const orgId = plant?.org_id || employee?.org_id
+        if (orgId) {
+          const { data: roleRows } = await supabase.from('roles').select('key, name, track_attendance').eq('org_id', orgId)
+          for (const r of (roleRows || [])) {
+            if (r.track_attendance === false) { if (r.key) exempt.add(r.key); if (r.name) exempt.add(r.name) }
+          }
+        }
+      } catch { /* ignore */ }
+      const visibleEmps = (emps || []).filter(e => !exempt.has(e.role))
       const { data: rows } = await supabase
         .from('attendance')
         .select('employee_id, check_in_at, check_out_at, status, hours, note')
@@ -168,9 +180,9 @@ export default function AttendancePage() {
         .eq('work_date', histDate)
       const byEmp = {}
       for (const r of (rows || [])) byEmp[r.employee_id] = r
-      setHistory((emps || []).map(e => ({ ...e, att: byEmp[e.id] || null })))
+      setHistory(visibleEmps.map(e => ({ ...e, att: byEmp[e.id] || null })))
     } catch { /* silent */ } finally { setLoadingHist(false) }
-  }, [plant?.id, isAdmin, histDate])
+  }, [plant?.id, isAdmin, histDate, plant?.org_id, employee?.org_id])
 
   useEffect(() => { loadMine() }, [loadMine])
   useEffect(() => { loadRoster() }, [loadRoster])
@@ -298,7 +310,7 @@ export default function AttendancePage() {
         .upsert(payload, { onConflict: 'employee_id,work_date' })
       if (error) throw error
       showToast(status === 'present' ? 'Marked present' : 'Marked absent', 'success')
-      await Promise.all([loadRoster(), loadMine()])
+      await Promise.all([loadRoster(), loadMine(), loadHistory()])
     } catch { showToast('Failed to mark attendance', 'error') } finally { setMarkingId(null) }
   }
 
@@ -340,7 +352,7 @@ export default function AttendancePage() {
       if (error) throw error
       showToast('Times saved', 'success')
       setExpandedId(null)
-      await Promise.all([loadRoster(), loadMine()])
+      await Promise.all([loadRoster(), loadMine(), loadHistory()])
     } catch { showToast('Failed to save times', 'error') } finally { setMarkingId(null) }
   }
 
