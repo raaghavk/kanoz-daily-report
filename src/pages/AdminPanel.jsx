@@ -604,7 +604,7 @@ export default function AdminPanel() {
         {/* Energy Cost Inputs (per plant) — finance foundation */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>Energy Costs</div>
-          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Grid electricity is priced by time of day, so day and night shifts cost different amounts per unit. Enter the all-in rate for each (energy + duty + fuel surcharge).</div>
+          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Grid electricity is priced by time of day, so day and night shifts cost different amounts per unit. Enter the energy rate for each from your bill (the fixed demand charge below is separate).</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Day rate — Shift A (₹ per unit)</label>
@@ -614,7 +614,7 @@ export default function AdminPanel() {
                 step="0.01"
                 value={rateDay}
                 onChange={e => setRateDay(e.target.value)}
-                placeholder="e.g. 10.40"
+                placeholder="e.g. 7.90"
                 style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
@@ -626,7 +626,7 @@ export default function AdminPanel() {
                 step="0.01"
                 value={rateNight}
                 onChange={e => setRateNight(e.target.value)}
-                placeholder="e.g. 8.40"
+                placeholder="e.g. 6.40"
                 style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
               />
               <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 5, lineHeight: 1.4 }}>Night units are cheaper (off-peak ToD). Leave both equal if you don't want a day/night split.</div>
