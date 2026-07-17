@@ -70,9 +70,10 @@ export default function AdminPanel() {
   const [savingLocation, setSavingLocation] = useState(false)
   const [gettingLocation, setGettingLocation] = useState(false)
 
-  // Finance foundation — plant energy cost inputs
-  const [electricityTariff, setElectricityTariff] = useState(plant?.electricity_tariff?.toString() || '')
-  const [dieselRate, setDieselRate] = useState(plant?.diesel_rate?.toString() || '')
+  // Finance foundation — plant energy cost inputs (ToD-aware: day vs night + fixed demand charge)
+  const [rateDay, setRateDay] = useState(plant?.electricity_rate_day?.toString() || '')
+  const [rateNight, setRateNight] = useState(plant?.electricity_rate_night?.toString() || '')
+  const [demandCharge, setDemandCharge] = useState(plant?.electricity_demand_charge?.toString() || '')
   const [savingEnergyCosts, setSavingEnergyCosts] = useState(false)
 
   useEffect(() => {
@@ -97,24 +98,28 @@ export default function AdminPanel() {
     setPlants(prev => prev.map(p => p.id === selectedPlantId ? { ...p, gcv_grade_threshold: val } : p))
   }
 
-  // Load / save plant energy cost inputs (electricity tariff, diesel rate)
+  // Load / save plant energy cost inputs (day rate, night rate, fixed demand charge)
   useEffect(() => {
-    setElectricityTariff(plant?.electricity_tariff != null ? plant.electricity_tariff.toString() : '')
-    setDieselRate(plant?.diesel_rate != null ? plant.diesel_rate.toString() : '')
-  }, [plant?.id, plant?.electricity_tariff, plant?.diesel_rate])
+    setRateDay(plant?.electricity_rate_day != null ? plant.electricity_rate_day.toString() : '')
+    setRateNight(plant?.electricity_rate_night != null ? plant.electricity_rate_night.toString() : '')
+    setDemandCharge(plant?.electricity_demand_charge != null ? plant.electricity_demand_charge.toString() : '')
+  }, [plant?.id, plant?.electricity_rate_day, plant?.electricity_rate_night, plant?.electricity_demand_charge])
 
   async function saveEnergyCosts() {
-    const tariff = electricityTariff === '' ? null : parseFloat(electricityTariff)
-    const diesel = dieselRate === '' ? null : parseFloat(dieselRate)
-    if ((tariff != null && (Number.isNaN(tariff) || tariff < 0)) || (diesel != null && (Number.isNaN(diesel) || diesel < 0))) {
-      showToast('Enter valid non-negative rates', 'error')
+    const day = rateDay === '' ? null : parseFloat(rateDay)
+    const night = rateNight === '' ? null : parseFloat(rateNight)
+    const demand = demandCharge === '' ? null : parseFloat(demandCharge)
+    const bad = [day, night, demand].some(v => v != null && (Number.isNaN(v) || v < 0))
+    if (bad) {
+      showToast('Enter valid non-negative amounts', 'error')
       return
     }
     setSavingEnergyCosts(true)
     try {
       const { error } = await supabase.from('plants').update({
-        electricity_tariff: tariff,
-        diesel_rate: diesel,
+        electricity_rate_day: day,
+        electricity_rate_night: night,
+        electricity_demand_charge: demand,
       }).eq('id', plant.id)
       if (error) throw error
       await refreshPlant()
@@ -599,31 +604,49 @@ export default function AdminPanel() {
         {/* Energy Cost Inputs (per plant) — finance foundation */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>Energy Costs</div>
-          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Used to estimate machine running costs on the dashboard</div>
+          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Grid electricity is priced by time of day, so day and night shifts cost different amounts per unit. Enter the all-in rate for each (energy + duty + fuel surcharge).</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Electricity tariff (₹/unit)</label>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Day rate — Shift A (₹ per unit)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 step="0.01"
-                value={electricityTariff}
-                onChange={e => setElectricityTariff(e.target.value)}
-                placeholder="e.g. 8.50"
+                value={rateDay}
+                onChange={e => setRateDay(e.target.value)}
+                placeholder="e.g. 10.40"
                 style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Diesel rate (₹/litre)</label>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Night rate — Shift B (₹ per unit)</label>
               <input
                 type="number"
                 inputMode="decimal"
                 step="0.01"
-                value={dieselRate}
-                onChange={e => setDieselRate(e.target.value)}
-                placeholder="e.g. 92.00"
+                value={rateNight}
+                onChange={e => setRateNight(e.target.value)}
+                placeholder="e.g. 8.40"
                 style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
               />
+              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 5, lineHeight: 1.4 }}>Night units are cheaper (off-peak ToD). Leave both equal if you don't want a day/night split.</div>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Fixed demand charge (₹ per month)</label>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="1"
+                value={demandCharge}
+                onChange={e => setDemandCharge(e.target.value)}
+                placeholder="e.g. 337500"
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              />
+              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 5, lineHeight: 1.4 }}>Paid every month regardless of how much you run (sanctioned/billed demand × ₹/kVA).</div>
+            </div>
+            <div style={{ background: '#f5f7f4', border: '1px solid #e0e6df', borderRadius: 10, padding: '10px 12px' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#2d6a4f', marginBottom: 3 }}>Diesel — auto from shift entries</div>
+              <div style={{ fontSize: 11, color: '#8a8d7a', lineHeight: 1.4 }}>Generator diesel cost is taken from each shift's diesel litres × rate, so it updates daily. No fixed rate needed here.</div>
             </div>
             <button
               onClick={saveEnergyCosts}
