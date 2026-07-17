@@ -15,6 +15,12 @@ const C = {
   card: '#fff',
 }
 
+// Trim floating-point noise: show up to 2 decimals, no trailing zeros (99.88399999 -> "99.88", 100 -> "100").
+function fmtKg(n) {
+  const v = Math.round((Number(n) || 0) * 100) / 100
+  return String(v)
+}
+
 function formatGcv(gcv) {
   return `${Math.round(gcv).toLocaleString('en-IN')} kcal/kg`
 }
@@ -258,11 +264,11 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
               return (
               <div key={rm.id} style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 1fr)', padding: '10px 12px', borderTop: idx > 0 ? `1px solid ${C.border}` : 'none', alignItems: 'center' }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{rm.name}</span>
-                <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{rm.opening || 0}</span>
-                <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{rm.purchased || 0}</span>
-                <span style={{ fontSize: 12, color: made > 0 ? C.green : '#c9cbb8', fontWeight: made > 0 ? 700 : 400, textAlign: 'right' }}>{Math.round(made) || 0}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, textAlign: 'right' }}>{Math.round(usedTotal) || 0}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: closing < 0 ? '#c0392b' : C.green, textAlign: 'right' }}>{Math.round(closing) || 0}</span>
+                <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{fmtKg(rm.opening)}</span>
+                <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{fmtKg(rm.purchased)}</span>
+                <span style={{ fontSize: 12, color: made > 0 ? C.green : '#c9cbb8', fontWeight: made > 0 ? 700 : 400, textAlign: 'right' }}>{fmtKg(made)}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, textAlign: 'right' }}>{fmtKg(usedTotal)}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: closing < 0 ? '#c0392b' : C.green, textAlign: 'right' }}>{fmtKg(closing)}</span>
               </div>
               )
             })
@@ -369,7 +375,7 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
                     ].map((cell, i) => (
                       <div key={cell.label} style={{ padding: '10px 8px', borderLeft: i > 0 ? `1px solid ${C.border}` : 'none', textAlign: 'center' }}>
                         <div style={{ fontSize: 9, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>{cell.label}</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: cell.color }}>{cell.value.toFixed(0)} kg</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: cell.color }}>{fmtKg(cell.value)} kg</div>
                       </div>
                     ))}
                   </div>
