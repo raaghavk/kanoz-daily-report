@@ -18,6 +18,7 @@ const AdminDashboard = lazy(() => import('./pages/dashboard/AdminDashboard'))
 const Home = lazy(() => import('./pages/Home'))
 const ShiftWizard = lazy(() => import('./pages/shift/ShiftWizard'))
 const PurchaseList = lazy(() => import('./pages/purchase/PurchaseList'))
+const FinancePage = lazy(() => import('./pages/finance/FinancePage'))
 const PurchaseForm = lazy(() => import('./pages/purchase/PurchaseForm'))
 const PurchaseDetail = lazy(() => import('./pages/purchase/PurchaseDetail'))
 const SupplierList = lazy(() => import('./pages/suppliers/SupplierList'))
@@ -119,6 +120,7 @@ export default function App() {
         <Route path="reports" element={<PermissionGuard action="view_reports"><ReportList /></PermissionGuard>} />
         <Route path="reports/:id" element={<PermissionGuard action="view_reports"><ReportView /></PermissionGuard>} />
         <Route path="purchase" element={<PermissionGuard action="view_purchases"><PurchaseList /></PermissionGuard>} />
+        <Route path="finance" element={<FinancePage />} />
         <Route path="purchase/new" element={<PermissionGuard action="create_purchase"><PurchaseForm /></PermissionGuard>} />
         <Route path="purchase/:id" element={<PermissionGuard action="view_purchases"><PurchaseDetail /></PermissionGuard>} />
         <Route path="purchase/:id/edit" element={<PermissionGuard action="create_purchase"><PurchaseForm /></PermissionGuard>} />

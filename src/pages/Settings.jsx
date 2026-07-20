@@ -249,6 +249,7 @@ export default function SettingsPage() {
           { path: '/spare-parts', emoji: '🔧', label: 'Spare Parts', show: can(role, 'view_spare_parts') },
           { path: '/assets', emoji: '🏷️', label: 'Assets', show: can(role, 'view_spare_parts') },
           { path: '/dashboard', emoji: '📊', label: 'Admin Dashboard', show: ['admin','plant_manager','accountant'].includes(role) },
+          { path: '/finance', emoji: '💰', label: 'Finance', show: can(role, 'plant_settings') || role === 'admin' },
         ].filter(i => i.show)
         if (!dirItems.length) return null
         return (
