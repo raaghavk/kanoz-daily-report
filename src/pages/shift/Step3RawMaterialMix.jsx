@@ -1,7 +1,9 @@
 import { memo, useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { getLocalDate } from '../../lib/dateUtils'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
-import { Plus, Trash2, X, Edit2, Lock } from 'lucide-react'
+import { Plus, Trash2, X, Edit2, Lock, ShoppingCart } from 'lucide-react'
 import { deriveMixPellet, gradeForGcv } from '../../lib/pelletGrading'
 import { computeProcessingDeltas } from './StepProcessing'
 
@@ -40,7 +42,49 @@ function GradeBadge({ grade, small }) {
   )
 }
 
-export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
+export default memo(function Step3RawMaterialMix({ data, updateData, plant, saveWizardState }) {
+  const navigate = useNavigate()
+
+  // Keep today's "purchased" column live with the purchases ledger, so purchases
+  // recorded from the Purchases module (incl. via the button below) show up here.
+  // Only for a current-day report — never overwrites a historical edit.
+  useEffect(() => {
+    let cancelled = false
+    const shiftDate = data.shift_start_date || data.date
+    if (!plant?.id || !shiftDate || shiftDate !== getLocalDate()) return
+    ;(async () => {
+      const { data: purch } = await supabase
+        .from('raw_material_purchases')
+        .select('raw_material_type_id, raw_material_type, quantity_kg')
+        .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
+        .eq('date', shiftDate)
+      if (cancelled || !purch) return
+      const norm = (x) => (x || '').toString().trim().toLowerCase()
+      const idByName = {}
+      ;(data.rawMaterials || []).forEach(rm => { idByName[norm(rm.name)] = rm.id })
+      const sums = {}
+      for (const p of purch) {
+        const id = p.raw_material_type_id || idByName[norm(p.raw_material_type)]
+        if (!id) continue
+        sums[id] = (sums[id] || 0) + (parseFloat(p.quantity_kg) || 0)
+      }
+      let changed = false
+      const updated = (data.rawMaterials || []).map(rm => {
+        const next = sums[rm.id] || 0
+        if ((parseFloat(rm.purchased) || 0) !== next) { changed = true; return { ...rm, purchased: next } }
+        return rm
+      })
+      if (changed) updateData('rawMaterials', updated)
+    })()
+    return () => { cancelled = true }
+  }, [plant?.id, data.shift_start_date, data.date]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function goAddPurchase() {
+    if (saveWizardState) saveWizardState()
+    navigate('/purchase/new', { state: { returnToShift: true, returnToStep: 3 } })
+  }
+
   const [purchasesLoaded, setPurchasesLoaded] = useState(false)
   const [slideOpen, setSlideOpen] = useState(false)
   const [editingMix, setEditingMix] = useState(null)
@@ -246,7 +290,12 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant }) {
 
       {/* RM Stock table */}
       <div>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Raw Material Stock</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.dim, textTransform: 'uppercase', letterSpacing: 1 }}>Raw Material Stock</div>
+          <button onClick={goAddPurchase} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 9, border: `1.5px solid ${C.green}`, background: '#fff', color: C.green, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+            <ShoppingCart size={13} /> Add Purchase
+          </button>
+        </div>
         <div style={{ background: C.card, borderRadius: 14, border: `1.5px solid ${C.border}`, overflow: 'hidden' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 1fr)', background: C.green, padding: '9px 12px' }}>
             {['Material', 'Open', 'Purch', 'Made', 'Used', 'Close'].map((h, i) => (

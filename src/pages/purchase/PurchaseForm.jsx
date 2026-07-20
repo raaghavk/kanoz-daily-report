@@ -16,6 +16,8 @@ export default function PurchaseForm() {
   const navigate = useNavigate()
   const { id } = useParams()
   const location = useLocation()
+  const returnToShift = location.state?.returnToShift || false
+  const returnToStep = location.state?.returnToStep || 3
   const { plant, employee } = useAuth()
   const queryClient = useQueryClient()
 
@@ -475,6 +477,7 @@ export default function PurchaseForm() {
       }
 
       if (id) queryClient.invalidateQueries({ queryKey: ['purchase', id] })
+      if (returnToShift) { navigate('/shift/new', { state: { returnToStep } }); return }
       navigate(id ? `/purchase/${id}` : '/purchase')
     } catch (err) {
       console.error('Error saving purchase:', err)
@@ -506,7 +509,7 @@ export default function PurchaseForm() {
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle="Raw Material Purchase Entry" backTo="/purchase" />
+        <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle={returnToShift ? 'Add purchase, then back to shift' : 'Raw Material Purchase Entry'} {...(returnToShift ? { onBack: () => navigate('/shift/new', { state: { returnToStep } }) } : { backTo: '/purchase' })} />
       </div>
 
       <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
