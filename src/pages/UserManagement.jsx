@@ -69,7 +69,7 @@ export default function UserManagement() {
         supabase.from('plants').select('*').eq('org_id', employee.org_id).eq('is_active', true).order('name')
       ])
       // Labourers/drivers are login-less workers managed on the Attendance screen — keep them out of Team.
-      if (empRes.data) setEmployees(empRes.data.filter(e => !['labour', 'driver'].includes(e.worker_type)))
+      if (empRes.data) setEmployees(empRes.data.filter(e => !['labour', 'driver', 'operator'].includes(e.worker_type)))
       if (plantRes.data) setPlants(plantRes.data)
     } catch (err) { console.error(err) } finally { setLoading(false) }
   }

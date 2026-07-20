@@ -76,9 +76,10 @@ export default function AttendancePage() {
   const [addMobile, setAddMobile] = useState('')
   const [addType, setAddType] = useState('labour')   // 'labour' | 'driver'
   const [addWage, setAddWage] = useState('')
-  const [addMachineId, setAddMachineId] = useState('')
+  const [addMachineIds, setAddMachineIds] = useState([])
   const [addSaving, setAddSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [markingAll, setMarkingAll] = useState(false)
 
   // Collapsible staff role groups — track collapsed role keys
   const [collapsedRoles, setCollapsedRoles] = useState({})
@@ -110,7 +111,7 @@ export default function AttendancePage() {
     try {
       const { data: emps } = await supabase
         .from('employees')
-        .select('id, name, role, worker_type, mobile, labour_daily_wage, machine_id')
+        .select('id, name, role, worker_type, mobile, labour_daily_wage, machine_id, machine_ids')
         .eq('plant_id', plant.id)
         .eq('is_active', true)
         .order('name')
@@ -129,7 +130,7 @@ export default function AttendancePage() {
       const visibleEmps = (emps || []).filter(e => !exempt.has(e.role))
       const { data: rows } = await supabase
         .from('attendance')
-        .select('id, employee_id, check_in_at, check_out_at, status, hours, marked_by, machine_id')
+        .select('id, employee_id, check_in_at, check_out_at, status, hours, marked_by, machine_id, machine_ids')
         .eq('plant_id', plant.id)
         .eq('work_date', today)
       const nameById = {}
@@ -157,7 +158,7 @@ export default function AttendancePage() {
     try {
       const { data: emps } = await supabase
         .from('employees')
-        .select('id, name, role, worker_type')
+        .select('id, name, role, worker_type, labour_daily_wage')
         .eq('plant_id', plant.id)
         .eq('is_active', true)
         .order('name')
@@ -251,17 +252,18 @@ export default function AttendancePage() {
           plant_id: plant.id,
           name,
           mobile: addMobile.trim() || null,
-          worker_type: addType === 'driver' ? 'driver' : 'labour',
-          role: 'labour',
+          worker_type: addType,
+          role: addType,
           is_active: true,
           auth_user_id: null,
           labour_daily_wage: (wage != null && !Number.isNaN(wage)) ? wage : null,
-          machine_id: addMachineId || null,
+          machine_id: addMachineIds[0] || null,
+          machine_ids: addMachineIds.length ? addMachineIds : null,
         })
       if (error) throw error
       showToast('Worker added', 'success')
       setShowAdd(false)
-      setAddName(''); setAddMobile(''); setAddType('labour'); setAddWage(''); setAddMachineId('')
+      setAddName(''); setAddMobile(''); setAddType('labour'); setAddWage(''); setAddMachineIds([])
       await loadRoster()
     } catch { showToast('Failed to add worker', 'error') } finally { setAddSaving(false) }
   }
@@ -280,6 +282,25 @@ export default function AttendancePage() {
       showToast('Worker removed', 'success')
       await loadRoster()
     } catch { showToast('Failed to remove worker', 'error') } finally { setDeletingId(null) }
+  }
+
+  // --- Mark everyone in a group present in one tap (then unselect absentees) ---
+  async function markAllPresent(members) {
+    if (markingAll || !plant?.id || !employee?.id) return
+    const targets = (members || []).filter(m => !isPresent(m.att))
+    if (targets.length === 0) { showToast('Everyone already present', 'success'); return }
+    setMarkingAll(true)
+    try {
+      const rows = targets.map(m => ({
+        org_id: plant.org_id, plant_id: plant.id, employee_id: m.id, work_date: today,
+        status: 'present', marked_by: employee.id,
+        ...(m.machine_ids?.length ? { machine_ids: m.machine_ids, machine_id: m.machine_ids[0] } : (m.machine_id ? { machine_id: m.machine_id } : {})),
+      }))
+      const { error } = await supabase.from('attendance').upsert(rows, { onConflict: 'employee_id,work_date' })
+      if (error) throw error
+      showToast(`Marked ${targets.length} present`, 'success')
+      await Promise.all([loadRoster(), loadMine(), loadHistory()])
+    } catch { showToast('Failed to mark all present', 'error') } finally { setMarkingAll(false) }
   }
 
   // --- Mark present/absent for another employee ---
@@ -301,8 +322,12 @@ export default function AttendancePage() {
         payload.check_out_at = null
         payload.hours = null
         payload.machine_id = null
+        payload.machine_ids = null
+      } else if (emp.machine_ids?.length) {
+        // Carry the worker's attached machines onto today's attendance
+        payload.machine_ids = emp.machine_ids
+        payload.machine_id = emp.machine_ids[0]
       } else if (emp.machine_id) {
-        // Carry the labourer's attached machine onto today's attendance
         payload.machine_id = emp.machine_id
       }
       const { error } = await supabase
@@ -386,7 +411,7 @@ export default function AttendancePage() {
 
   // Split roster: app-user staff (grouped by role) vs login-less labour/drivers
   const staff = roster.filter(e => (e.worker_type || 'staff') === 'staff')
-  const labour = roster.filter(e => e.worker_type === 'labour' || e.worker_type === 'driver')
+  const labour = roster.filter(e => ['labour','driver','operator'].includes(e.worker_type))
 
   // Group staff by role, preserving name order within each group
   const staffGroups = []
@@ -404,7 +429,8 @@ export default function AttendancePage() {
     const busy = markingId === e.id
     const markedByOther = e.att?.marked_by && e.att.marked_by !== e.id && e.markerName
     const isExpanded = expandedId === e.id
-    const attachedName = (e.att?.machine_id && machineNameById[e.att.machine_id]) || (e.machine_id && machineNameById[e.machine_id]) || null
+    const attIds = (e.att?.machine_ids?.length ? e.att.machine_ids : null) || (e.machine_ids?.length ? e.machine_ids : null) || (e.att?.machine_id ? [e.att.machine_id] : null) || (e.machine_id ? [e.machine_id] : null) || []
+    const attachedNames = attIds.map(id => machineNameById[id]).filter(Boolean)
     return (
       <div key={e.id} style={{ borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px' }}>
@@ -420,8 +446,8 @@ export default function AttendancePage() {
             {extra?.showRole && (
               <div style={{ fontSize: 10, color: MUTED, marginTop: 1, textTransform: 'capitalize' }}>{(e.role || '').replace(/_/g, ' ')}</div>
             )}
-            {attachedName && (
-              <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>On: {attachedName}</div>
+            {attachedNames.length > 0 && (
+              <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>On: {attachedNames.join(', ')}</div>
             )}
             {e.labour_daily_wage != null && (
               <div style={{ fontSize: 10, color: MUTED, marginTop: 1 }}>Wage: ₹{e.labour_daily_wage}/day</div>
@@ -588,7 +614,12 @@ export default function AttendancePage() {
                 </button>
                 {!collapsed && (
                   <div style={{ borderTop: `1px solid #f0ebe0` }}>
-                    {g.members.map((e, idx) => renderPersonRow(e, idx, { showRole: false }))}
+                    {canMarkOthers && g.members.some(m => !isPresent(m.att)) && (
+                      <button disabled={markingAll} onClick={() => markAllPresent(g.members)} style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '10px 14px 2px', padding: '7px 12px', borderRadius: 9, border: `1.5px solid ${GREEN}`, background: '#e8f0ec', color: GREEN, fontSize: 12, fontWeight: 700, cursor: markingAll ? 'default' : 'pointer', opacity: markingAll ? 0.6 : 1 }}>
+                        {markingAll ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={13} />} Mark all present
+                      </button>
+                    )}
+                    {g.members.map((e, idx) => renderPersonRow(e, idx, { typeTag: (e.role || 'staff').replace(/_/g, ' ') }))}
                   </div>
                 )}
               </div>
@@ -608,7 +639,14 @@ export default function AttendancePage() {
               ) : labour.length === 0 ? (
                 <div style={{ padding: 16, fontSize: 13, color: MUTED }}>No labourers yet. Use “Add labourer” to add today's workers.</div>
               ) : (
-                labour.map((e, idx) => renderPersonRow(e, idx, { typeTag: e.worker_type === 'driver' ? 'Driver' : 'Labour', deletable: true }))
+                <>
+                  {labour.some(m => !isPresent(m.att)) && (
+                    <button disabled={markingAll} onClick={() => markAllPresent(labour)} style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '10px 14px 2px', padding: '7px 12px', borderRadius: 9, border: `1.5px solid ${GREEN}`, background: '#e8f0ec', color: GREEN, fontSize: 12, fontWeight: 700, cursor: markingAll ? 'default' : 'pointer', opacity: markingAll ? 0.6 : 1 }}>
+                      {markingAll ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={13} />} Mark all present
+                    </button>
+                  )}
+                  {labour.map((e, idx) => renderPersonRow(e, idx, { typeTag: e.worker_type, deletable: true }))}
+                </>
               )}
             </div>
           </>
@@ -653,11 +691,9 @@ export default function AttendancePage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</div>
-                          {e.worker_type === 'labour' && (
-                            <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, background: '#f0ebe0', color: MUTED, borderRadius: 5, padding: '1px 5px', flexShrink: 0, textTransform: 'uppercase' }}>Labour</span>
-                          )}
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.5, background: '#f0ebe0', color: MUTED, borderRadius: 5, padding: '1px 5px', flexShrink: 0, textTransform: 'uppercase' }}>{(['labour','driver','operator'].includes(e.worker_type) ? e.worker_type : (e.role || 'staff')).replace(/_/g, ' ')}</span>
                         </div>
-                        <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{detail}</div>
+                        <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{detail}{e.labour_daily_wage != null ? ` · ₹${e.labour_daily_wage}/day` : ''}</div>
                       </div>
                     </div>
                   )
@@ -687,7 +723,7 @@ export default function AttendancePage() {
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Type</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {['labour', 'driver'].map((t) => (
+                {['labour', 'driver', 'operator'].map((t) => (
                   <button key={t} onClick={() => setAddType(t)} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: `1.5px solid ${addType === t ? GREEN : BORDER}`, background: addType === t ? '#e8f0ec' : '#fff', color: addType === t ? GREEN : MUTED, fontSize: 13, fontWeight: 700, cursor: 'pointer', textTransform: 'capitalize' }}>{t}</button>
                 ))}
               </div>
@@ -697,13 +733,16 @@ export default function AttendancePage() {
               <input value={addWage} onChange={(ev) => setAddWage(ev.target.value)} placeholder="e.g. 500" inputMode="numeric" type="number" min="0" style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', fontSize: 14, color: TEXT, outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Attach to machine (optional)</div>
-              <select value={addMachineId} onChange={(ev) => setAddMachineId(ev.target.value)} style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1.5px solid ${BORDER}`, background: '#fff', fontSize: 14, color: TEXT, outline: 'none', boxSizing: 'border-box' }}>
-                <option value="">General / any</option>
-                {machines.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
+              <div style={{ fontSize: 11, fontWeight: 700, color: MUTED, marginBottom: 5 }}>Attach to machines (optional) — tap any</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {machines.length === 0 && <div style={{ fontSize: 12, color: MUTED }}>No machines configured.</div>}
+                {machines.map((m) => {
+                  const on = addMachineIds.includes(m.id)
+                  return (
+                    <button key={m.id} type="button" onClick={() => setAddMachineIds(prev => on ? prev.filter(x => x !== m.id) : [...prev, m.id])} style={{ padding: '8px 12px', borderRadius: 10, border: `1.5px solid ${on ? GREEN : BORDER}`, background: on ? '#e8f0ec' : '#fff', color: on ? GREEN : MUTED, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>{m.name}</button>
+                  )
+                })}
+              </div>
             </div>
             <button onClick={handleAddLabourer} disabled={addSaving || !addName.trim()} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 0', borderRadius: 12, border: 'none', background: (addSaving || !addName.trim()) ? '#c3d2c9' : GREEN, color: '#fff', fontSize: 14, fontWeight: 700, cursor: (addSaving || !addName.trim()) ? 'default' : 'pointer' }}>
               {addSaving ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <UserPlus size={16} />} Add worker
