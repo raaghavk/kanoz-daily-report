@@ -572,7 +572,7 @@ export default function ShiftWizard() {
           // Fetch previous shift report for carry-forward values
           const { data: prevReport } = await supabase
             .from('shift_reports')
-            .select('id')
+            .select('id, date')
             .eq('plant_id', plant.id)
             .eq('is_deleted', false)
             .order('date', { ascending: false })
@@ -633,13 +633,46 @@ export default function ShiftWizard() {
           // Machines
           freshReportData.machines = activeMachines
 
+          // Roll the raw-material PURCHASES ledger (Purchases module) into opening/purchased
+          // so recorded purchases show up even before the first shift report exists.
+          // Purchases dated before this shift's date -> opening; on this shift's date -> purchased.
+          // Lower-bounded by the previous report's date so each purchase is counted exactly once.
+          const shiftDate = freshReportData.shift_start_date
+          const prevDate = prevReport?.date || null
+          const openingAdd = {}
+          const purchasedAdd = {}
+          {
+            // Resolve purchases to a material id by id first, else by name — matching
+            // exactly how the Stock screen aggregates the ledger, so the two never diverge.
+            const normNm = (x) => (x || '').toString().trim().toLowerCase()
+            const idByName = {}
+            for (const rm of activeRawMaterials) idByName[normNm(rm.name)] = rm.id
+            let pq = supabase
+              .from('raw_material_purchases')
+              .select('raw_material_type_id, raw_material_type, date, quantity_kg')
+              .eq('plant_id', plant.id)
+              .eq('is_deleted', false)
+              .lte('date', shiftDate)
+            if (prevDate) pq = pq.gt('date', prevDate)
+            const { data: purchLedger } = await pq
+            for (const p of (purchLedger || [])) {
+              const id = p.raw_material_type_id || idByName[normNm(p.raw_material_type)]
+              if (!id) continue
+              const qty = parseFloat(p.quantity_kg) || 0
+              if (p.date < shiftDate) openingAdd[id] = (openingAdd[id] || 0) + qty
+              else purchasedAdd[id] = (purchasedAdd[id] || 0) + qty
+            }
+          }
+
           // Carry forward raw materials (closing stock -> opening stock).
           // First-ever shift (no previous): fall back to the opening_stock_kg
-          // configured in plant settings (pre-app stock on hand).
+          // configured in plant settings (pre-app stock on hand), plus any ledger purchases.
           freshReportData.rawMaterials = activeRawMaterials.map(m => {
             const prev = prevRawMaterials.find(r => r.raw_material_type_id === m.id)
-            const opening = prev ? (parseFloat(prev.closing_kg) || 0) : (parseFloat(m.opening_stock_kg) || 0)
-            return { ...m, opening, closing: opening }
+            const base = prev ? (parseFloat(prev.closing_kg) || 0) : (parseFloat(m.opening_stock_kg) || 0)
+            const opening = base + (openingAdd[m.id] || 0)
+            const purchased = purchasedAdd[m.id] || 0
+            return { ...m, opening, purchased, closing: opening + purchased }
           })
 
           // Carry forward pellet stock
