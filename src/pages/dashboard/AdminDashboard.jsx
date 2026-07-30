@@ -29,7 +29,7 @@ function Bars({ rows, max, fmt, color = '#2d6a4f' }) {
 export default function AdminDashboard() {
   const { plant, employee } = useAuth()
   const navigate = useNavigate()
-  const allowed = ['admin', 'plant_manager', 'accountant'].includes(employee?.role)
+  const allowed = employee?.role === 'admin'
   const [section, setSection] = useState('daily')
   const [period, setPeriod] = useState('mtd')
   const [date, setDate] = useState('')

@@ -79,7 +79,7 @@ serve(async (req) => {
     // Verify employee exists and has no auth user yet
     const { data: targetEmployee, error: empError } = await adminClient
       .from('employees')
-      .select('id, auth_user_id')
+      .select('id, auth_user_id, name, mobile')
       .eq('id', employee_id)
       .single()
 
@@ -105,6 +105,10 @@ serve(async (req) => {
       email,
       password: tempPassword,
       email_confirm: true, // skip email confirmation, we send reset link instead
+      user_metadata: {
+        name: targetEmployee.name || null,
+        display_name: targetEmployee.name || null,
+      },
     })
 
     if (createError) {
@@ -127,6 +131,18 @@ serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    // Best-effort: copy the employee's mobile into the auth user's phone field so it
+    // shows in the Supabase dashboard. Never block account creation if this fails.
+    try {
+      const digits = (targetEmployee.mobile || '').replace(/\D/g, '')
+      if (digits.length >= 10) {
+        const e164 = '+91' + digits.slice(-10)
+        await adminClient.auth.admin.updateUserById(newUser.user.id, { phone: e164, phone_confirm: true })
+      }
+    } catch (phoneErr) {
+      console.error('Phone set skipped:', phoneErr?.message || phoneErr)
     }
 
     // Send password recovery email so the employee sets their own password
