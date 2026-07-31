@@ -747,6 +747,7 @@ export default function AdminPanel() {
                         key={item.id}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px',
+                          flexWrap: 'wrap',
                           borderBottom: '1px solid #f5f0e1',
                           opacity: item.is_active === false ? 0.5 : 1,
                         }}
