@@ -274,7 +274,7 @@ export default memo(function Step5Diesel({ data, updateData }) {
                 <PhotoUpload
                   label="Receipt Photo"
                   value={p.receipt_url}
-                  onChange={url => updatePurchase(idx, 'receipt_url', url)}
+                  onChange={url => { updatePurchase(idx, 'receipt_url', url); if (url) scanDieselReceipt(idx, url) }}
                   bucket="photos"
                 />
                 {p.receipt_url && (
