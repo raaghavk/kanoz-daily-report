@@ -76,6 +76,8 @@ export default function AdminPanel() {
   const [rateNight, setRateNight] = useState(plant?.electricity_rate_night?.toString() || '')
   const [demandCharge, setDemandCharge] = useState(plant?.electricity_demand_charge?.toString() || '')
   const [savingEnergyCosts, setSavingEnergyCosts] = useState(false)
+  const [stockOpeningDate, setStockOpeningDate] = useState(plant?.stock_opening_date || '')
+  const [savingStockDate, setSavingStockDate] = useState(false)
 
   useEffect(() => {
     const sel = plants.find(p => p.id === selectedPlantId)
@@ -105,6 +107,23 @@ export default function AdminPanel() {
     setRateNight(plant?.electricity_rate_night != null ? plant.electricity_rate_night.toString() : '')
     setDemandCharge(plant?.electricity_demand_charge != null ? plant.electricity_demand_charge.toString() : '')
   }, [plant?.id, plant?.electricity_rate_day, plant?.electricity_rate_night, plant?.electricity_demand_charge])
+
+  useEffect(() => {
+    setStockOpeningDate(plant?.stock_opening_date || '')
+  }, [plant?.id, plant?.stock_opening_date])
+
+  async function saveStockOpeningDate() {
+    setSavingStockDate(true)
+    try {
+      const { error } = await supabase.from('plants').update({ stock_opening_date: stockOpeningDate || null }).eq('id', plant.id)
+      if (error) throw error
+      await refreshPlant()
+      showToast('Stock opening date saved', 'success')
+    } catch (err) {
+      console.error('saveStockOpeningDate error:', err)
+      showToast('Failed to save date', 'error')
+    } finally { setSavingStockDate(false) }
+  }
 
   async function saveEnergyCosts() {
     const day = rateDay === '' ? null : parseFloat(rateDay)
@@ -598,6 +617,30 @@ export default function AdminPanel() {
               style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingThreshold ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingThreshold ? 0.6 : 1 }}
             >
               {savingThreshold ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+
+        {/* Stock opening (as-of) date */}
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>Stock Opening Date</div>
+          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>The opening stock figures above are the physical stock as of this date's shift start. Purchases dated before it are treated as already inside the opening (so they aren't double-counted). Set this to the day you switched from paper to the app.</div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>As-of date</label>
+              <input
+                type="date"
+                value={stockOpeningDate || ''}
+                onChange={e => setStockOpeningDate(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+            <button
+              onClick={saveStockOpeningDate}
+              disabled={savingStockDate}
+              style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingStockDate ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingStockDate ? 0.6 : 1 }}
+            >
+              {savingStockDate ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>

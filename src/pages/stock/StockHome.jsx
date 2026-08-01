@@ -49,12 +49,15 @@ async function loadStock(plant) {
   // Purchases for this plant (live only). Match to material by type id, else by name.
   let purchases = []
   try {
-    const pRes = await live(
-      supabase
-        .from('raw_material_purchases')
-        .select('raw_material_type_id, raw_material_type, quantity_kg')
-        .eq('plant_id', plant.id)
-    )
+    // Only count non-deleted purchases dated on/after the stock opening (as-of) date —
+    // purchases before it are already inside the opening_stock figure.
+    let pq = supabase
+      .from('raw_material_purchases')
+      .select('raw_material_type_id, raw_material_type, quantity_kg')
+      .eq('plant_id', plant.id)
+      .eq('is_deleted', false)
+    if (plant?.stock_opening_date) pq = pq.gte('date', plant.stock_opening_date)
+    const pRes = await live(pq)
     purchases = pRes.data || []
   } catch { purchases = [] }
 

@@ -639,6 +639,9 @@ export default function ShiftWizard() {
           // Lower-bounded by the previous report's date so each purchase is counted exactly once.
           const shiftDate = freshReportData.shift_start_date
           const prevDate = prevReport?.date || null
+          // The opening_stock figures are as of this date; purchases before it are already
+          // inside the opening and must NOT be added again.
+          const stockAsOf = plant?.stock_opening_date || null
           const openingAdd = {}
           const purchasedAdd = {}
           {
@@ -653,6 +656,7 @@ export default function ShiftWizard() {
               .eq('plant_id', plant.id)
               .eq('is_deleted', false)
               .lte('date', shiftDate)
+            if (stockAsOf) pq = pq.gte('date', stockAsOf)
             if (prevDate) pq = pq.gt('date', prevDate)
             const { data: purchLedger } = await pq
             for (const p of (purchLedger || [])) {
