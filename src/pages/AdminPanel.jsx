@@ -51,6 +51,8 @@ export default function AdminPanel() {
   const [newTypeName, setNewTypeName] = useState('')
   // Pellet recipe ratios derived from most recent shift mixes (keyed by lowercased pellet name)
   const [pelletRatios, setPelletRatios] = useState({})
+  const [pelletModal, setPelletModal] = useState(null)
+  const [savingPellet, setSavingPellet] = useState(false)
   const [addingPlant, setAddingPlant] = useState(false)
   const [newPlantName, setNewPlantName] = useState('')
 
@@ -209,6 +211,29 @@ export default function AdminPanel() {
     if (error) { showToast('Failed to delete type: ' + error.message, 'error'); return }
     showToast('Type deleted', 'success')
     loadTypeOptions()
+  }
+
+  async function savePellet() {
+    if (!pelletModal) return
+    const g = parseFloat(pelletModal.gcv)
+    const open = parseFloat(pelletModal.opening)
+    if (!pelletModal.name.trim()) { showToast('Name is required', 'error'); return }
+    const recipe = (pelletModal.recipe || [])
+      .filter(r => r.material_name && String(r.pct).trim() !== '')
+      .map(r => ({ material_name: r.material_name, pct: Number(r.pct) || 0 }))
+    setSavingPellet(true)
+    try {
+      const { error } = await supabase.from('pellet_types').update({
+        name: pelletModal.name.trim(),
+        gcv_kcal_kg: Number.isNaN(g) ? null : g,
+        opening_stock_mt: Number.isNaN(open) ? null : open,
+        recipe: recipe.length ? recipe : null,
+      }).eq('id', pelletModal.id)
+      if (error) throw error
+      showToast('Pellet type saved', 'success')
+      setPelletModal(null)
+      loadAllData()
+    } catch { showToast('Failed to save pellet type', 'error') } finally { setSavingPellet(false) }
   }
 
   async function loadAllData() {
@@ -860,7 +885,10 @@ export default function AdminPanel() {
                                 return <span style={{ fontSize: 11, color: '#8a8d7a' }}>{`\u00b7 ${label}`}</span>
                               })()}
                               {section.key === 'pellet_types' && (() => {
-                                const ratio = pelletRatios[(item.name || '').trim().toLowerCase()]
+                                const setRatio = Array.isArray(item.recipe) && item.recipe.length
+                                  ? item.recipe.map(r => `${r.material_name} ${r.pct}%`).join(' · ')
+                                  : null
+                                const ratio = setRatio || pelletRatios[(item.name || '').trim().toLowerCase()]
                                 return <span style={{ fontSize: 11, color: ratio ? '#2d6a4f' : '#8a8d7a', fontStyle: ratio ? 'normal' : 'italic' }}>{ratio || 'recipe not set yet'}</span>
                               })()}
                             </div>
@@ -879,11 +907,22 @@ export default function AdminPanel() {
                                 {item.grade}
                               </span>
                             )}
+                            {section.key === 'pellet_types' && Number(item.opening_stock_mt) > 0 && (
+                              <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a', background: '#fefae0', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+                                {`Open ${Number(item.opening_stock_mt)} MT`}
+                              </span>
+                            )}
                             {item.is_active === false && (
                               <span style={{ fontSize: 10, color: '#d32f2f', fontWeight: 600 }}>Inactive</span>
                             )}
                             <button
-                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '', identifier: item.identifier ?? '' })}
+                              onClick={() => {
+                                if (section.key === 'pellet_types') {
+                                  setPelletModal({ id: item.id, name: item.name || '', gcv: item.gcv_kcal_kg ?? '', opening: item.opening_stock_mt ?? '', recipe: Array.isArray(item.recipe) ? item.recipe.map(r => ({ ...r })) : [] })
+                                } else {
+                                  setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '', identifier: item.identifier ?? '' })
+                                }
+                              }}
                               style={{ padding: '4px 8px', background: '#fefae0', borderRadius: 6, border: '1px solid #e5ddd0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                             >
                               <Edit3 size={12} color="#595c4a" />
@@ -1159,6 +1198,64 @@ export default function AdminPanel() {
             </div>
           )}
         </div>
+
+      {pelletModal && (() => {
+        const rms = (data.raw_material_types || []).filter(m => m.is_active !== false)
+        const total = (pelletModal.recipe || []).reduce((a, r) => a + (Number(r.pct) || 0), 0)
+        const setRecipe = (rec) => setPelletModal(pm => ({ ...pm, recipe: rec }))
+        return (
+          <div onClick={() => !savingPellet && setPelletModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 16 }}>
+            <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, maxHeight: '88vh', overflowY: 'auto', background: '#fefae0', borderRadius: 16, padding: '18px 18px 22px', boxSizing: 'border-box' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#1b4332' }}>Edit Pellet Type</div>
+                <button onClick={() => setPelletModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8a8d7a' }}><X size={20} /></button>
+              </div>
+
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Name</div>
+                <input value={pelletModal.name} onChange={e => setPelletModal(pm => ({ ...pm, name: e.target.value }))} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>GCV (kcal/kg)</div>
+                  <input type="number" inputMode="decimal" value={pelletModal.gcv} onChange={e => setPelletModal(pm => ({ ...pm, gcv: e.target.value }))} placeholder="optional" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Opening stock (MT)</div>
+                  <input type="number" inputMode="decimal" value={pelletModal.opening} onChange={e => setPelletModal(pm => ({ ...pm, opening: e.target.value }))} placeholder="0" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a' }}>Mix recipe (default ratio)</div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: total === 100 ? '#2d6a4f' : '#b45309' }}>{total}%</span>
+              </div>
+              <div style={{ fontSize: 11, color: '#8a8d7a', marginBottom: 8, lineHeight: 1.4 }}>Saved as the default recipe for this pellet (shown on the pellet). Actual usage still comes from the shift mix you build.</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+                {(pelletModal.recipe || []).map((r, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <select value={r.material_name || ''} onChange={e => { const rec = [...pelletModal.recipe]; rec[i] = { ...rec[i], material_name: e.target.value }; setRecipe(rec) }} style={{ flex: 1, padding: '9px 8px', borderRadius: 9, border: '1.5px solid #e5ddd0', fontSize: 13, background: '#fff', outline: 'none' }}>
+                      <option value="">Material…</option>
+                      {rms.map(m => <option key={m.id} value={m.name}>{m.name}</option>)}
+                    </select>
+                    <input type="number" inputMode="decimal" value={r.pct} onChange={e => { const rec = [...pelletModal.recipe]; rec[i] = { ...rec[i], pct: e.target.value }; setRecipe(rec) }} placeholder="%" style={{ width: 66, padding: '9px 8px', borderRadius: 9, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', boxSizing: 'border-box' }} />
+                    <button onClick={() => setRecipe(pelletModal.recipe.filter((_, x) => x !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', padding: 4 }}><X size={16} /></button>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setRecipe([...(pelletModal.recipe || []), { material_name: '', pct: '' }])} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '8px 12px', background: '#fff', border: '1.5px solid #b8d4c4', borderRadius: 9, color: '#2d6a4f', fontSize: 12, fontWeight: 700, cursor: 'pointer', marginBottom: 16 }}>
+                <Plus size={13} /> Add material
+              </button>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={() => setPelletModal(null)} style={{ flex: 1, padding: '12px 0', background: '#fff', color: '#595c4a', borderRadius: 11, border: '1.5px solid #e5ddd0', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={savePellet} disabled={savingPellet} style={{ flex: 1, padding: '12px 0', background: savingPellet ? '#c3d2c9' : '#2d6a4f', color: '#fff', borderRadius: 11, border: 'none', fontSize: 14, fontWeight: 700, cursor: savingPellet ? 'default' : 'pointer' }}>{savingPellet ? 'Saving...' : 'Save'}</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
       </div>
     </div>
   )

@@ -323,7 +323,7 @@ export default function ShiftWizard() {
           id: m.id, name: m.name, gcv_kcal_kg: m.gcv_kcal_kg ?? null, opening_stock_kg: m.opening_stock_kg ?? 0, opening: 0, purchased: 0, used: 0, closing: 0
         }))
         const activePellets = (pelletTypesRes.data || []).map(p => ({
-          id: p.id, name: p.name, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0
+          id: p.id, name: p.name, opening_stock_mt: p.opening_stock_mt ?? 0, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0
         }))
         const activeDiesel = (equipmentRes.data || []).map(eq => ({
           id: eq.id, equipment_name: eq.name, opening_stock_litres: eq.opening_stock_litres ?? 0, opening: 0, added: 0, used: 0, closing: 0, hours: 0, avg_per_hr: 0, collapsed: true,
@@ -682,7 +682,7 @@ export default function ShiftWizard() {
           // Carry forward pellet stock
           freshReportData.pelletStock = activePellets.map(p => {
             const prev = prevPelletStock.find(ps => ps.pellet_type_id === p.id)
-            const opening = prev ? parseFloat(prev.closing_mt) || 0 : 0
+            const opening = prev ? (parseFloat(prev.closing_mt) || 0) : (parseFloat(p.opening_stock_mt) || 0)
             return { ...p, opening, closing: opening }
           })
 
