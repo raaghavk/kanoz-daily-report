@@ -43,6 +43,7 @@ export default function AdminPanel() {
   // Equipment-specific add fields (equipment is NOT MT/hr producing)
   const [newItemFuel, setNewItemFuel] = useState('')
   const [newItemRating, setNewItemRating] = useState('')
+  const [newItemIdentifier, setNewItemIdentifier] = useState('')
   // Managed machine/equipment type dropdowns (machine_type_options), keyed by kind
   const [typeOptions, setTypeOptions] = useState({ machine: [], equipment: [] })
   // Inline "type manager" (list + add + deactivate) UI state
@@ -356,6 +357,7 @@ export default function AdminPanel() {
       payload.equipment_type = newItemType.trim() || null
       payload.fuel_type = newItemFuel.trim() || null
       payload.rating = newItemRating.trim() || null
+      payload.identifier = newItemIdentifier.trim() || null
       payload.motor_hp = Number.isNaN(hp) ? null : hp
       payload.opening_stock_litres = Number.isNaN(litres) ? 0 : litres
     }
@@ -382,6 +384,7 @@ export default function AdminPanel() {
     setNewItemSource('purchased')
     setNewItemFuel('')
     setNewItemRating('')
+    setNewItemIdentifier('')
     setAddingTo(null)
     loadAllData()
   }
@@ -409,6 +412,7 @@ export default function AdminPanel() {
       payload.equipment_type = (editingItem?.type || '').trim() || null
       payload.fuel_type = (editingItem?.fuel || '').trim() || null
       payload.rating = (editingItem?.rating || '').trim() || null
+      payload.identifier = (editingItem?.identifier || '').trim() || null
       payload.motor_hp = Number.isNaN(hp) ? null : hp
       payload.opening_stock_litres = Number.isNaN(litres) ? 0 : litres
     }
@@ -688,7 +692,7 @@ export default function AdminPanel() {
                               value={editingItem.name}
                               onChange={e => setEditingItem({ ...editingItem, name: e.target.value })}
                               autoFocus
-                              style={{ flex: 1, padding: '6px 10px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', minWidth: 0 }}
+                              style={{ flex: '1 1 130px', padding: '6px 10px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', minWidth: 110, maxWidth: 240 }}
                             />
                             {section.key === 'raw_material_types' && (
                               <input
@@ -759,11 +763,19 @@ export default function AdminPanel() {
                             )}
                             {section.key === 'equipment' && (
                               <>
+                                <input
+                                  type="text"
+                                  placeholder="Vehicle / Gen no"
+                                  value={editingItem.identifier}
+                                  onChange={e => setEditingItem({ ...editingItem, identifier: e.target.value })}
+                                  title="Vehicle number / Generator number (optional)"
+                                  style={{ width: 120, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                                />
                                 <select
                                   value={editingItem.type}
                                   onChange={e => setEditingItem({ ...editingItem, type: e.target.value })}
                                   title="Equipment type"
-                                  style={{ width: 100, padding: '6px 6px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 12, outline: 'none', boxSizing: 'border-box', background: '#fff' }}
+                                  style={{ width: 92, padding: '6px 6px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 12, outline: 'none', boxSizing: 'border-box', background: '#fff' }}
                                 >
                                   <option value="">Type…</option>
                                   {(typeOptions.equipment || []).filter(o => o.is_active !== false || o.name === editingItem.type).map(o => (
@@ -774,7 +786,7 @@ export default function AdminPanel() {
                                   value={editingItem.fuel}
                                   onChange={e => setEditingItem({ ...editingItem, fuel: e.target.value })}
                                   title="Fuel type"
-                                  style={{ width: 84, padding: '6px 6px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 12, outline: 'none', boxSizing: 'border-box', background: '#fff' }}
+                                  style={{ width: 76, padding: '6px 6px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 12, outline: 'none', boxSizing: 'border-box', background: '#fff' }}
                                 >
                                   <option value="">Fuel…</option>
                                   {FUEL_TYPES.map(f => <option key={f} value={f}>{f}</option>)}
@@ -786,7 +798,7 @@ export default function AdminPanel() {
                                   value={editingItem.stock}
                                   onChange={e => setEditingItem({ ...editingItem, stock: e.target.value })}
                                   title="Opening Stock (litres) — fuel on hand"
-                                  style={{ width: 76, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                                  style={{ width: 70, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                                 />
                                 <input
                                   type="text"
@@ -794,7 +806,7 @@ export default function AdminPanel() {
                                   value={editingItem.rating}
                                   onChange={e => setEditingItem({ ...editingItem, rating: e.target.value })}
                                   title="Rating (e.g. 125 kVA)"
-                                  style={{ width: 80, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                                  style={{ width: 72, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                                 />
                                 <input
                                   type="number"
@@ -834,6 +846,7 @@ export default function AdminPanel() {
                               })()}
                               {section.key === 'equipment' && (() => {
                                 const parts = []
+                                if (item.identifier) parts.push(item.identifier)
                                 if (item.equipment_type) parts.push(item.equipment_type)
                                 if (item.fuel_type) parts.push(item.fuel_type)
                                 if (item.rating) parts.push(item.rating)
@@ -870,7 +883,7 @@ export default function AdminPanel() {
                               <span style={{ fontSize: 10, color: '#d32f2f', fontWeight: 600 }}>Inactive</span>
                             )}
                             <button
-                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '' })}
+                              onClick={() => setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '', identifier: item.identifier ?? '' })}
                               style={{ padding: '4px 8px', background: '#fefae0', borderRadius: 6, border: '1px solid #e5ddd0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                             >
                               <Edit3 size={12} color="#595c4a" />
@@ -952,6 +965,14 @@ export default function AdminPanel() {
                         )}
                         {section.key === 'equipment' && (
                           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            <input
+                              type="text"
+                              placeholder="Vehicle / Generator no (optional)"
+                              value={newItemIdentifier}
+                              onChange={e => setNewItemIdentifier(e.target.value)}
+                              title="Vehicle number / Generator number"
+                              style={{ flex: '1 1 45%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', minWidth: 0 }}
+                            />
                             <select
                               value={newItemType}
                               onChange={e => setNewItemType(e.target.value)}
