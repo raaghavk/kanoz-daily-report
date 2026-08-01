@@ -10,7 +10,7 @@ export default function ProcessRoutes({ plantId, orgId }) {
   const [materials, setMaterials] = useState([]) // raw_material_types for this plant
   const [machines, setMachines] = useState([]) // machines for this plant
   const [loading, setLoading] = useState(true)
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, setExpanded] = useState(false)
   const [busy, setBusy] = useState(false)
 
   // Editing state — null when not editing. { id } present when editing existing route.
