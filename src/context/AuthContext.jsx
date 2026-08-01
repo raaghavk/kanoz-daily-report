@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { setDynamicRoles } from '../lib/permissions'
+import { setDynamicRoles, can } from '../lib/permissions'
 
 const AuthContext = createContext({})
 
@@ -104,7 +104,7 @@ export function AuthProvider({ children }) {
   }
 
   async function switchPlant(newPlantId) {
-    if (!employee || employee.role !== 'admin') return
+    if (!employee || !can(employee.role, 'switch_plant')) return
     try {
       const { data: newPlant, error } = await supabase
         .from('plants')
