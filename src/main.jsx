@@ -42,6 +42,12 @@ const updateSW = registerSW({
   onRegisteredSW(swUrl, registration) {
     if (registration) {
       setInterval(() => { registration.update() }, 10 * 60 * 1000)
+      // Also check for a new version every time the app returns to the foreground,
+      // so a reopened app picks up the latest build immediately (no stale bundles).
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') registration.update()
+      })
+      window.addEventListener('focus', () => registration.update())
     }
   },
 })
