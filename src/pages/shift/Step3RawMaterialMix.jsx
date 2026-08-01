@@ -45,40 +45,83 @@ function GradeBadge({ grade, small }) {
 export default memo(function Step3RawMaterialMix({ data, updateData, plant, saveWizardState }) {
   const navigate = useNavigate()
 
-  // Keep today's "purchased" column live with the purchases ledger, so purchases
-  // recorded from the Purchases module (incl. via the button below) show up here.
-  // Only for a current-day report — never overwrites a historical edit.
+  // Opening/Purchased are DERIVED (settings opening + purchases ledger). Recompute them
+  // from source so they never show stale values from an old saved draft.
+  // - First report (no prior shift report yet = paper->app transition): opening =
+  //   settings opening + purchases dated (>= as-of AND < report date); purchased =
+  //   purchases dated == report date. Purchases before the plant's stock as-of date are
+  //   already inside the opening figure and are excluded.
+  // - Later reports: opening comes from the previous shift's closing (left untouched);
+  //   we only refresh the current day's purchased so Add-Purchase reflects immediately.
   useEffect(() => {
     let cancelled = false
     const shiftDate = data.shift_start_date || data.date
-    if (!plant?.id || !shiftDate || shiftDate !== getLocalDate()) return
+    if (!plant?.id || !shiftDate || !(data.rawMaterials || []).length) return
     ;(async () => {
-      const { data: purch } = await supabase
-        .from('raw_material_purchases')
-        .select('raw_material_type_id, raw_material_type, quantity_kg')
+      const { count } = await supabase
+        .from('shift_reports')
+        .select('id', { count: 'exact', head: true })
         .eq('plant_id', plant.id)
         .eq('is_deleted', false)
-        .eq('date', shiftDate)
+      if (cancelled) return
+      const isFirstReport = (count || 0) === 0
+      const stockAsOf = plant.stock_opening_date || null
+
+      // Settings opening baselines (only needed for the first-report recompute)
+      const openingBase = {}
+      if (isFirstReport) {
+        const { data: types } = await supabase
+          .from('raw_material_types')
+          .select('id, opening_stock_kg')
+          .eq('plant_id', plant.id)
+        if (cancelled) return
+        for (const t of (types || [])) openingBase[t.id] = parseFloat(t.opening_stock_kg) || 0
+      }
+
+      // Ledger purchases up to the report date (bounded below by the stock as-of date)
+      let pq = supabase
+        .from('raw_material_purchases')
+        .select('raw_material_type_id, raw_material_type, date, quantity_kg')
+        .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
+        .lte('date', shiftDate)
+      if (stockAsOf) pq = pq.gte('date', stockAsOf)
+      const { data: purch } = await pq
       if (cancelled || !purch) return
+
       const norm = (x) => (x || '').toString().trim().toLowerCase()
       const idByName = {}
       ;(data.rawMaterials || []).forEach(rm => { idByName[norm(rm.name)] = rm.id })
-      const sums = {}
+      const openAdd = {}, purchOn = {}
       for (const p of purch) {
         const id = p.raw_material_type_id || idByName[norm(p.raw_material_type)]
         if (!id) continue
-        sums[id] = (sums[id] || 0) + (parseFloat(p.quantity_kg) || 0)
+        const q = parseFloat(p.quantity_kg) || 0
+        if (p.date < shiftDate) openAdd[id] = (openAdd[id] || 0) + q
+        else purchOn[id] = (purchOn[id] || 0) + q
       }
+
+      // For later reports, only refresh purchased for a current-day report.
+      const refreshPurchased = isFirstReport || shiftDate === getLocalDate()
       let changed = false
       const updated = (data.rawMaterials || []).map(rm => {
-        const next = sums[rm.id] || 0
-        if ((parseFloat(rm.purchased) || 0) !== next) { changed = true; return { ...rm, purchased: next } }
-        return rm
+        const next = { ...rm }
+        let diff = false
+        if (refreshPurchased) {
+          const nextPurch = purchOn[rm.id] || 0
+          if ((parseFloat(rm.purchased) || 0) !== nextPurch) { next.purchased = nextPurch; diff = true }
+        }
+        if (isFirstReport) {
+          const nextOpen = (openingBase[rm.id] || 0) + (openAdd[rm.id] || 0)
+          if ((parseFloat(rm.opening) || 0) !== nextOpen) { next.opening = nextOpen; diff = true }
+        }
+        if (diff) changed = true
+        return next
       })
       if (changed) updateData('rawMaterials', updated)
     })()
     return () => { cancelled = true }
-  }, [plant?.id, data.shift_start_date, data.date]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [plant?.id, data.shift_start_date, data.date, (data.rawMaterials || []).length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function goAddPurchase() {
     if (saveWizardState) saveWizardState()
