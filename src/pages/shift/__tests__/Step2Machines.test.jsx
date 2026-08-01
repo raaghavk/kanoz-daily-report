@@ -25,9 +25,15 @@ function Harness({ machine = baseMachine, onWrite = () => {} }) {
   return <Step2Machines data={data} updateData={updateData} />
 }
 
+// Machine groups start collapsed by default; expand them to reach the controls.
+function expandGroups() {
+  document.querySelectorAll('button[aria-expanded="false"]').forEach(b => fireEvent.click(b))
+}
+
 describe('Step2Machines', () => {
   it('toggling to No Production removes timing fields', () => {
     render(<Harness />)
+    expandGroups()
 
     expect(screen.getAllByDisplayValue(/\d{2}:\d{2}/)).toHaveLength(2)
     fireEvent.click(screen.getByRole('button', { name: 'No Production' }))
@@ -38,6 +44,7 @@ describe('Step2Machines', () => {
 
   it('toggling back to Running allows timing entry', () => {
     render(<Harness machine={{ ...baseMachine, did_not_run: true, from_time: '', to_time: '' }} />)
+    expandGroups()
 
     fireEvent.click(screen.getByRole('button', { name: 'Running' }))
 
@@ -50,6 +57,7 @@ describe('Step2Machines', () => {
   it('writes did_not_run correctly', () => {
     const writes = []
     render(<Harness onWrite={(_, value) => writes.push(value[0].did_not_run)} />)
+    expandGroups()
 
     fireEvent.click(screen.getByRole('button', { name: 'No Production' }))
     fireEvent.click(screen.getByRole('button', { name: 'Running' }))
