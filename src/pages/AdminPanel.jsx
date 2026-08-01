@@ -54,7 +54,7 @@ export default function AdminPanel() {
   const [newPlantName, setNewPlantName] = useState('')
 
   // Expanded sections
-  const [expandedSections, setExpandedSections] = useState({ machines: true, equipment: true, raw_material_types: true, pellet_types: true })
+  const [expandedSections, setExpandedSections] = useState({ machines: false, equipment: false, raw_material_types: false, pellet_types: false })
 
   // Show archived plants toggle
   const [showArchived, setShowArchived] = useState(false)
@@ -71,13 +71,9 @@ export default function AdminPanel() {
   const [savingLocation, setSavingLocation] = useState(false)
   const [gettingLocation, setGettingLocation] = useState(false)
 
-  // Finance foundation — plant energy cost inputs (ToD-aware: day vs night + fixed demand charge)
-  const [rateDay, setRateDay] = useState(plant?.electricity_rate_day?.toString() || '')
-  const [rateNight, setRateNight] = useState(plant?.electricity_rate_night?.toString() || '')
-  const [demandCharge, setDemandCharge] = useState(plant?.electricity_demand_charge?.toString() || '')
-  const [savingEnergyCosts, setSavingEnergyCosts] = useState(false)
   const [stockOpeningDate, setStockOpeningDate] = useState(plant?.stock_opening_date || '')
   const [savingStockDate, setSavingStockDate] = useState(false)
+  const [editStockDate, setEditStockDate] = useState(false)
 
   useEffect(() => {
     const sel = plants.find(p => p.id === selectedPlantId)
@@ -101,13 +97,6 @@ export default function AdminPanel() {
     setPlants(prev => prev.map(p => p.id === selectedPlantId ? { ...p, gcv_grade_threshold: val } : p))
   }
 
-  // Load / save plant energy cost inputs (day rate, night rate, fixed demand charge)
-  useEffect(() => {
-    setRateDay(plant?.electricity_rate_day != null ? plant.electricity_rate_day.toString() : '')
-    setRateNight(plant?.electricity_rate_night != null ? plant.electricity_rate_night.toString() : '')
-    setDemandCharge(plant?.electricity_demand_charge != null ? plant.electricity_demand_charge.toString() : '')
-  }, [plant?.id, plant?.electricity_rate_day, plant?.electricity_rate_night, plant?.electricity_demand_charge])
-
   useEffect(() => {
     setStockOpeningDate(plant?.stock_opening_date || '')
   }, [plant?.id, plant?.stock_opening_date])
@@ -118,6 +107,7 @@ export default function AdminPanel() {
       const { error } = await supabase.from('plants').update({ stock_opening_date: stockOpeningDate || null }).eq('id', plant.id)
       if (error) throw error
       await refreshPlant()
+      setEditStockDate(false)
       showToast('Stock opening date saved', 'success')
     } catch (err) {
       console.error('saveStockOpeningDate error:', err)
@@ -125,30 +115,6 @@ export default function AdminPanel() {
     } finally { setSavingStockDate(false) }
   }
 
-  async function saveEnergyCosts() {
-    const day = rateDay === '' ? null : parseFloat(rateDay)
-    const night = rateNight === '' ? null : parseFloat(rateNight)
-    const demand = demandCharge === '' ? null : parseFloat(demandCharge)
-    const bad = [day, night, demand].some(v => v != null && (Number.isNaN(v) || v < 0))
-    if (bad) {
-      showToast('Enter valid non-negative amounts', 'error')
-      return
-    }
-    setSavingEnergyCosts(true)
-    try {
-      const { error } = await supabase.from('plants').update({
-        electricity_rate_day: day,
-        electricity_rate_night: night,
-        electricity_demand_charge: demand,
-      }).eq('id', plant.id)
-      if (error) throw error
-      await refreshPlant()
-      showToast('Energy cost inputs saved', 'success')
-    } catch (err) {
-      console.error('saveEnergyCosts error:', err)
-      showToast('Failed to save energy costs', 'error')
-    } finally { setSavingEnergyCosts(false) }
-  }
 
   useEffect(() => {
     if (plant?.location_lat) {
@@ -617,87 +583,6 @@ export default function AdminPanel() {
               style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingThreshold ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingThreshold ? 0.6 : 1 }}
             >
               {savingThreshold ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </div>
-
-        {/* Stock opening (as-of) date */}
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>Stock Opening Date</div>
-          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>The opening stock figures above are the physical stock as of this date's shift start. Purchases dated before it are treated as already inside the opening (so they aren't double-counted). Set this to the day you switched from paper to the app.</div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-            <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>As-of date</label>
-              <input
-                type="date"
-                value={stockOpeningDate || ''}
-                onChange={e => setStockOpeningDate(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-            <button
-              onClick={saveStockOpeningDate}
-              disabled={savingStockDate}
-              style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingStockDate ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingStockDate ? 0.6 : 1 }}
-            >
-              {savingStockDate ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </div>
-
-        {/* Energy Cost Inputs (per plant) — finance foundation */}
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>Energy Costs</div>
-          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Grid electricity is priced by time of day, so day and night shifts cost different amounts per unit. Enter the energy rate for each from your bill (the fixed demand charge below is separate).</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Day rate — Shift A (₹ per unit)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                value={rateDay}
-                onChange={e => setRateDay(e.target.value)}
-                placeholder="e.g. 7.90"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Night rate — Shift B (₹ per unit)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="0.01"
-                value={rateNight}
-                onChange={e => setRateNight(e.target.value)}
-                placeholder="e.g. 6.40"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
-              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 5, lineHeight: 1.4 }}>Night units are cheaper (off-peak ToD). Leave both equal if you don't want a day/night split.</div>
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Fixed demand charge (₹ per month)</label>
-              <input
-                type="number"
-                inputMode="decimal"
-                step="1"
-                value={demandCharge}
-                onChange={e => setDemandCharge(e.target.value)}
-                placeholder="e.g. 337500"
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
-              />
-              <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 5, lineHeight: 1.4 }}>Paid every month regardless of how much you run (sanctioned/billed demand × ₹/kVA).</div>
-            </div>
-            <div style={{ background: '#f5f7f4', border: '1px solid #e0e6df', borderRadius: 10, padding: '10px 12px' }}>
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#2d6a4f', marginBottom: 3 }}>Diesel — auto from shift entries</div>
-              <div style={{ fontSize: 11, color: '#8a8d7a', lineHeight: 1.4 }}>Generator diesel cost is taken from each shift's diesel litres × rate, so it updates daily. No fixed rate needed here.</div>
-            </div>
-            <button
-              onClick={saveEnergyCosts}
-              disabled={savingEnergyCosts}
-              style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingEnergyCosts ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingEnergyCosts ? 0.6 : 1 }}
-            >
-              {savingEnergyCosts ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -1173,6 +1058,38 @@ export default function AdminPanel() {
         {!loading && selectedPlantId && (
           <ProcessRoutes plantId={selectedPlantId} orgId={plant?.org_id} />
         )}
+
+        {/* Stock Opening (as-of) date — locked after first set to avoid accidental edits */}
+        {(() => {
+          const isSet = !!stockOpeningDate
+          const editing = editStockDate || !isSet
+          const pretty = isSet ? stockOpeningDate.split('-').reverse().join('/') : ''
+          if (!editing) {
+            return (
+              <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c' }}>Stock opening date</div>
+                  <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 2 }}>{pretty} · opening figures are as of this day</div>
+                </div>
+                <button onClick={() => setEditStockDate(true)} style={{ padding: '7px 14px', background: '#fff', color: '#2d6a4f', borderRadius: 9, border: '1.5px solid #b8d4c4', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Edit</button>
+              </div>
+            )
+          }
+          return (
+            <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>Stock Opening Date</div>
+              <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>The opening stock figures are the physical stock as of this date's shift start. Purchases dated before it are already inside the opening (not double-counted). Set this to the day you switched from paper to the app.</div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>As-of date</label>
+                  <input type="date" value={stockOpeningDate || ''} onChange={e => setStockOpeningDate(e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+                </div>
+                <button onClick={saveStockOpeningDate} disabled={savingStockDate} style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingStockDate ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingStockDate ? 0.6 : 1 }}>{savingStockDate ? 'Saving...' : 'Save'}</button>
+                {isSet && <button onClick={() => { setStockOpeningDate(plant?.stock_opening_date || ''); setEditStockDate(false) }} style={{ padding: '10px 14px', background: '#fefae0', color: '#595c4a', borderRadius: 10, border: '1px solid #e5ddd0', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Plant Location — for weather feature */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>

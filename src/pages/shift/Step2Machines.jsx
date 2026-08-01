@@ -70,7 +70,7 @@ export default memo(function Step2Machines({ data, updateData }) {
   // open; the header chevron lets the user collapse to condense the list.
   const [collapsed, setCollapsed] = useState({})
   const toggleGroup = (type) =>
-    setCollapsed(prev => ({ ...prev, [type]: !prev[type] }))
+    setCollapsed(prev => ({ ...prev, [type]: !(prev[type] ?? true) }))
 
   if (!data.machines.length) {
     return (
@@ -226,7 +226,7 @@ export default memo(function Step2Machines({ data, updateData }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <p style={{ fontSize: 12, color: '#595c4a', margin: 0 }}>Enter runtime for each machine this shift.</p>
       {groups.map(({ type, items }) => {
-        const isCollapsed = !!collapsed[type]
+        const isCollapsed = collapsed[type] ?? true
         const runningCount = items.filter(({ m }) => !m.did_not_run).length
         return (
           <div key={type} style={{ background: '#fefae0', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>

@@ -14,7 +14,7 @@ const CATEGORIES = ['Electricity', 'Diesel / Fuel', 'Labour & Wages', 'Salaries'
 const inr = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN')
 
 export default function FinancePage() {
-  const { plant, employee } = useAuth()
+  const { plant, employee, refreshPlant } = useAuth()
   const navigate = useNavigate()
   const isAdmin = can(employee?.role, 'view_finance')
 
@@ -28,6 +28,30 @@ export default function FinancePage() {
   const [amount, setAmount] = useState('')
   const [frequency, setFrequency] = useState('monthly')
   const [costDate, setCostDate] = useState(getLocalDate())
+
+  // Energy costs (moved here from Plant Settings) — ToD day/night rate + fixed demand charge
+  const [rateDay, setRateDay] = useState('')
+  const [rateNight, setRateNight] = useState('')
+  const [demandCharge, setDemandCharge] = useState('')
+  const [savingEnergy, setSavingEnergy] = useState(false)
+  useEffect(() => {
+    setRateDay(plant?.electricity_rate_day != null ? String(plant.electricity_rate_day) : '')
+    setRateNight(plant?.electricity_rate_night != null ? String(plant.electricity_rate_night) : '')
+    setDemandCharge(plant?.electricity_demand_charge != null ? String(plant.electricity_demand_charge) : '')
+  }, [plant?.id, plant?.electricity_rate_day, plant?.electricity_rate_night, plant?.electricity_demand_charge])
+  async function saveEnergy() {
+    const day = rateDay === '' ? null : parseFloat(rateDay)
+    const night = rateNight === '' ? null : parseFloat(rateNight)
+    const demand = demandCharge === '' ? null : parseFloat(demandCharge)
+    if ([day, night, demand].some(v => v != null && (Number.isNaN(v) || v < 0))) { showToast('Enter valid non-negative amounts', 'error'); return }
+    setSavingEnergy(true)
+    try {
+      const { error } = await supabase.from('plants').update({ electricity_rate_day: day, electricity_rate_night: night, electricity_demand_charge: demand }).eq('id', plant.id)
+      if (error) throw error
+      if (refreshPlant) await refreshPlant()
+      showToast('Energy costs saved', 'success')
+    } catch { showToast('Failed to save energy costs', 'error') } finally { setSavingEnergy(false) }
+  }
 
   const load = useCallback(async () => {
     if (!plant?.id) return
@@ -125,6 +149,28 @@ export default function FinancePage() {
             <div style={{ fontSize: 22, fontWeight: 800, color: DARK }}>{inr(oneTimeThisMonth)}</div>
             <div style={{ fontSize: 10, fontWeight: 600, color: MUTED, textTransform: 'uppercase', marginTop: 4 }}>One-time this month</div>
           </div>
+        </div>
+
+        {/* Energy Costs (electricity) */}
+        <div style={{ ...card, padding: 16, marginBottom: 18 }}>
+          <div style={label}>Electricity costs</div>
+          <div style={{ fontSize: 12, color: MUTED, marginBottom: 10, lineHeight: 1.4 }}>Grid electricity is priced by time of day — day and night shifts cost different amounts per unit. Enter the rate for each from your bill; the fixed demand charge is separate.</div>
+          <div style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: MUTED, marginBottom: 5 }}>Day rate — Shift A (₹/unit)</div>
+              <input value={rateDay} onChange={e => setRateDay(e.target.value)} type="number" inputMode="decimal" step="0.01" placeholder="e.g. 7.90" style={input} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: MUTED, marginBottom: 5 }}>Night rate — Shift B (₹/unit)</div>
+              <input value={rateNight} onChange={e => setRateNight(e.target.value)} type="number" inputMode="decimal" step="0.01" placeholder="e.g. 6.40" style={input} />
+            </div>
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: MUTED, marginBottom: 5 }}>Fixed demand charge (₹/month)</div>
+            <input value={demandCharge} onChange={e => setDemandCharge(e.target.value)} type="number" inputMode="decimal" step="1" placeholder="e.g. 337500" style={input} />
+            <div style={{ fontSize: 11, color: MUTED, marginTop: 5, lineHeight: 1.4 }}>Paid every month regardless of run-hours. Diesel is taken from each shift's entries automatically.</div>
+          </div>
+          <button onClick={saveEnergy} disabled={savingEnergy} style={{ padding: '11px 18px', background: savingEnergy ? '#c3d2c9' : GREEN, color: '#fff', borderRadius: 10, border: 'none', fontWeight: 700, fontSize: 13, cursor: savingEnergy ? 'default' : 'pointer' }}>{savingEnergy ? 'Saving...' : 'Save energy costs'}</button>
         </div>
 
         {/* Add cost */}
