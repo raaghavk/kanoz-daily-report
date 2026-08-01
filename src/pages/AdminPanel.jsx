@@ -51,6 +51,7 @@ export default function AdminPanel() {
   const [newTypeName, setNewTypeName] = useState('')
   // Pellet recipe ratios derived from most recent shift mixes (keyed by lowercased pellet name)
   const [pelletRatios, setPelletRatios] = useState({})
+  const [pelletRecipesStructured, setPelletRecipesStructured] = useState({})
   const [pelletModal, setPelletModal] = useState(null)
   const [savingPellet, setSavingPellet] = useState(false)
   const [addingPlant, setAddingPlant] = useState(false)
@@ -310,6 +311,7 @@ export default function AdminPanel() {
           }
           const mixIds = Object.values(latestByName).map(m => m.id)
           const ratios = {}
+          const structured = {}
           if (mixIds.length) {
             const { data: comps } = await supabase
               .from('shift_mix_compositions')
@@ -324,14 +326,14 @@ export default function AdminPanel() {
               const list = (compsByMix[mix.id] || []).filter(c => Number(c.quantity_kg) > 0)
               const total = list.reduce((sum, c) => sum + Number(c.quantity_kg || 0), 0)
               if (!total) continue
-              ratios[pname] = list
-                .map(c => ({ name: c.raw_material_name, pct: Math.round((Number(c.quantity_kg) / total) * 100) }))
+              const parts = list
+                .map(c => ({ material_name: c.raw_material_name, pct: Math.round((Number(c.quantity_kg) / total) * 100) }))
                 .sort((a, b) => b.pct - a.pct)
-                .map(c => `${c.name} ${c.pct}%`)
-                .join(' · ')
+              structured[pname] = parts
+              ratios[pname] = parts.map(c => `${c.material_name} ${c.pct}%`).join(' · ')
             }
           }
-          if (!cancelled) setPelletRatios(ratios)
+          if (!cancelled) { setPelletRatios(ratios); setPelletRecipesStructured(structured) }
         } catch (mixErr) {
           console.error('Failed to derive pellet ratios:', mixErr)
         }
@@ -918,7 +920,7 @@ export default function AdminPanel() {
                             <button
                               onClick={() => {
                                 if (section.key === 'pellet_types') {
-                                  setPelletModal({ id: item.id, name: item.name || '', gcv: item.gcv_kcal_kg ?? '', opening: item.opening_stock_mt ?? '', recipe: Array.isArray(item.recipe) ? item.recipe.map(r => ({ ...r })) : [] })
+                                  setPelletModal({ id: item.id, name: item.name || '', gcv: item.gcv_kcal_kg ?? '', opening: item.opening_stock_mt ?? '', recipe: (Array.isArray(item.recipe) && item.recipe.length) ? item.recipe.map(r => ({ ...r })) : (pelletRecipesStructured[(item.name || '').trim().toLowerCase()] || []).map(r => ({ ...r })) })
                                 } else {
                                   setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '', identifier: item.identifier ?? '' })
                                 }
