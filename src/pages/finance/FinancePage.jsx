@@ -16,7 +16,7 @@ const inr = (n) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN')
 export default function FinancePage() {
   const { plant, employee } = useAuth()
   const navigate = useNavigate()
-  const isAdmin = employee?.role === 'admin'
+  const isAdmin = can(employee?.role, 'view_finance')
 
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)

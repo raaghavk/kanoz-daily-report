@@ -13,6 +13,8 @@ const PERMISSIONS = {
     plant_settings: true,
     switch_plant: true,
     assign_tasks: true,
+    view_finance: true,
+    view_dashboard: true,
   },
   plant_manager: {
     create_report: true,
@@ -107,6 +109,8 @@ export const PERMISSION_CATALOG = [
   { key: 'plant_settings', label: 'Plant settings' },
   { key: 'switch_plant', label: 'Switch plants' },
   { key: 'mark_attendance_others', label: 'Mark attendance for others' },
+  { key: 'view_dashboard', label: 'Admin dashboard' },
+  { key: 'view_finance', label: 'Finance' },
 ]
 
 export const ROLE_OPTIONS = [

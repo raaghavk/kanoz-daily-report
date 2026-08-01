@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { ROLE_OPTIONS } from '../lib/permissions'
+import { ROLE_OPTIONS, can } from '../lib/permissions'
 import { UserPlus, Edit2, Shield, ChevronLeft, Phone, MapPin, Check, X, Loader2, Mail, KeyRound, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -38,7 +38,7 @@ export default function UserManagement() {
   const [accessEmail, setAccessEmail] = useState('')
   const [pwdForm, setPwdForm] = useState({ email: '', password: '' })
 
-  const isAdmin = employee?.role === 'admin'
+  const isAdmin = can(employee?.role, 'manage_users')
 
   useEffect(() => {
     if (!isAdmin) return

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { can } from '../lib/permissions'
 import { showToast } from '../components/Toast'
 import PageHeader from '../components/PageHeader'
 import { CheckCircle, XCircle, Clock, Shield } from 'lucide-react'
@@ -50,7 +51,7 @@ export default function DeleteRequests() {
   }, [fetchRequests, plant?.org_id])
 
   const handleApprove = async (request) => {
-    if (employee.role !== 'admin') {
+    if (!can(employee.role, 'manage_users')) {
       showToast('Only admins can approve delete requests', 'error')
       return
     }
@@ -88,7 +89,7 @@ export default function DeleteRequests() {
   }
 
   const handleReject = async (request) => {
-    if (employee.role !== 'admin') {
+    if (!can(employee.role, 'manage_users')) {
       showToast('Only admins can reject delete requests', 'error')
       return
     }

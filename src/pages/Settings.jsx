@@ -248,8 +248,8 @@ export default function SettingsPage() {
           { path: '/transporters', emoji: '🚛', label: 'Transporters', show: role !== 'purchase_manager' },
           { path: '/spare-parts', emoji: '🔧', label: 'Spare Parts', show: can(role, 'view_spare_parts') },
           { path: '/assets', emoji: '🏷️', label: 'Assets', show: can(role, 'view_spare_parts') },
-          { path: '/dashboard', emoji: '📊', label: 'Admin Dashboard', show: role === 'admin' },
-          { path: '/finance', emoji: '💰', label: 'Finance', show: role === 'admin' },
+          { path: '/dashboard', emoji: '📊', label: 'Admin Dashboard', show: can(role, 'view_dashboard') },
+          { path: '/finance', emoji: '💰', label: 'Finance', show: can(role, 'view_finance') },
         ].filter(i => i.show)
         if (!dirItems.length) return null
         return (

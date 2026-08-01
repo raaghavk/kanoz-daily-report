@@ -55,12 +55,20 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey)
     const { data: callerEmployee } = await adminClient
       .from('employees')
-      .select('role')
+      .select('role, org_id')
       .eq('auth_user_id', callerUser.id)
       .single()
 
-    if (!callerEmployee || callerEmployee.role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Only admins can delete users' }), {
+    let callerAllowed = callerEmployee?.role === 'admin'
+    if (callerEmployee && !callerAllowed) {
+      const { data: roleRow } = await adminClient
+        .from('roles').select('permissions').eq('org_id', callerEmployee.org_id).eq('key', callerEmployee.role).maybeSingle()
+      const perms = Array.isArray(roleRow?.permissions) ? roleRow.permissions : []
+      callerAllowed = perms.includes('manage_users')
+    }
+
+    if (!callerEmployee || !callerAllowed) {
+      return new Response(JSON.stringify({ error: 'You do not have permission to delete users' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
