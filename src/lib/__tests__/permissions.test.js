@@ -22,7 +22,7 @@ describe('can(role, action)', () => {
     expect(can('plant_manager', 'view_dispatches')).toBe(true)
     expect(can('plant_manager', 'view_purchases')).toBe(true)
     expect(can('plant_manager', 'export')).toBe(true)
-    expect(can('plant_manager', 'manage_users')).toBe(true)
+    expect(can('plant_manager', 'manage_users')).toBe(false) // user/role management is admin-only
     expect(can('plant_manager', 'plant_settings')).toBe(true)
     expect(can('plant_manager', 'switch_plant')).toBe(false)
   })

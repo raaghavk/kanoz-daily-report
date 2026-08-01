@@ -24,7 +24,7 @@ const PERMISSIONS = {
     view_spare_parts: true,
     create_spare_parts: true,
     export: true,
-    manage_users: true,
+    manage_users: false,  // user/role management is admin-only
     plant_settings: true,
     switch_plant: false,
     assign_tasks: true,
