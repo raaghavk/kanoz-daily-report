@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { can } from '../lib/permissions'
 import { supabase } from '../lib/supabase'
 import { showToast } from '../components/Toast'
 import PageHeader from '../components/PageHeader'
@@ -241,7 +242,7 @@ export default function AdminPanel() {
   }
 
   useEffect(() => {
-    if (employee?.role !== 'admin') return
+    if (!can(employee?.role, 'plant_settings')) return
     const ctrl = new AbortController()
     supabase
       .from('plants')
@@ -260,7 +261,7 @@ export default function AdminPanel() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!selectedPlantId || employee?.role !== 'admin') return
+    if (!selectedPlantId || !can(employee?.role, 'plant_settings')) return
     let cancelled = false
     ;(async () => {
       try {
@@ -333,10 +334,10 @@ export default function AdminPanel() {
     return () => { cancelled = true }
   }, [selectedPlantId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (employee?.role !== 'admin') {
+  if (!can(employee?.role, 'plant_settings')) {
     return (
       <div style={{ minHeight: '100vh', background: '#fefae0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#595c4a', fontSize: 14 }}>Admin access required</p>
+        <p style={{ color: '#595c4a', fontSize: 14 }}>You don't have access to Plant Settings.</p>
       </div>
     )
   }
