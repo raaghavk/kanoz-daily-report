@@ -310,8 +310,18 @@ export default memo(function Step5Diesel({ data, updateData }) {
         )}
       </div>
 
-      {/* Equipment Cards */}
-      {data.diesel.map((entry, idx) => (
+      {/* Equipment Cards — grouped by type */}
+      {(() => {
+        const groups = {}
+        data.diesel.forEach((entry, idx) => {
+          const key = (entry.equipment_type && String(entry.equipment_type).trim()) || 'Other'
+          if (!groups[key]) groups[key] = []
+          groups[key].push({ entry, idx })
+        })
+        return Object.entries(groups).map(([type, items]) => (
+          <div key={type} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.6, margin: '2px 2px 0' }}>{type}</div>
+            {items.map(({ entry, idx }) => (
         <div key={entry.id} style={{
           background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden'
         }}>
@@ -323,9 +333,6 @@ export default memo(function Step5Diesel({ data, updateData }) {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <h4 style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', margin: 0 }}>{entry.equipment_name}</h4>
-              <div style={{ background: '#2d6a4f', color: '#fff', fontSize: 9, fontWeight: 600, padding: '3px 8px', borderRadius: 3 }}>
-                Running
-              </div>
             </div>
             <button onClick={() => toggleCollapse(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#595c4a', padding: 0 }}>
               <ChevronDown size={20} style={{ transform: entry.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
@@ -376,7 +383,10 @@ export default memo(function Step5Diesel({ data, updateData }) {
             </div>
           )}
         </div>
-      ))}
+            ))}
+          </div>
+        ))
+      })()}
     </div>
   )
 })

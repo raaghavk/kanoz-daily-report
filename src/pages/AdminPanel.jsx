@@ -6,6 +6,7 @@ import { showToast } from '../components/Toast'
 import PageHeader from '../components/PageHeader'
 import { Plus, Edit3, Check, X, ChevronDown, ChevronUp, Archive, RotateCcw, Trash2 } from 'lucide-react'
 import ProcessRoutes from './settings/ProcessRoutes'
+import { gradeForGcv } from '../lib/pelletGrading'
 
 // Default type options seeded per org on first load when none exist.
 const DEFAULT_MACHINE_TYPES = ['Log Eater', 'Hammer Mill', 'Pellet Machine', 'Mixer', 'Screener', 'Other']
@@ -216,17 +217,29 @@ export default function AdminPanel() {
 
   async function savePellet() {
     if (!pelletModal) return
-    const g = parseFloat(pelletModal.gcv)
+    let g = parseFloat(pelletModal.gcv)
     const open = parseFloat(pelletModal.opening)
     if (!pelletModal.name.trim()) { showToast('Name is required', 'error'); return }
     const recipe = (pelletModal.recipe || [])
       .filter(r => r.material_name && String(r.pct).trim() !== '')
       .map(r => ({ material_name: r.material_name, pct: Number(r.pct) || 0 }))
+    // Auto-derive GCV from the recipe (kg-weighted average of ingredient GCVs) when not typed in.
+    if (Number.isNaN(g) && recipe.length) {
+      const norm = (x) => (x || '').toString().trim().toLowerCase()
+      const gcvByName = {}
+      for (const rm of (data.raw_material_types || [])) if (rm.gcv_kcal_kg != null) gcvByName[norm(rm.name)] = Number(rm.gcv_kcal_kg)
+      let num = 0, den = 0
+      for (const r of recipe) { const gv = gcvByName[norm(r.material_name)]; if (gv != null) { num += gv * (Number(r.pct) || 0); den += (Number(r.pct) || 0) } }
+      if (den > 0) g = Math.round(num / den)
+    }
+    const threshold = parseFloat(thresholdDraft) || 3200
+    const grade = gradeForGcv(Number.isNaN(g) ? null : g, threshold)
     setSavingPellet(true)
     try {
       const { error } = await supabase.from('pellet_types').update({
         name: pelletModal.name.trim(),
         gcv_kcal_kg: Number.isNaN(g) ? null : g,
+        grade,
         opening_stock_mt: Number.isNaN(open) ? null : open,
         recipe: recipe.length ? recipe : null,
       }).eq('id', pelletModal.id)
@@ -594,30 +607,6 @@ export default function AdminPanel() {
       </div>
 
       <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* GCV grade threshold (per plant) */}
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>GCV Grade Threshold</div>
-          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Mixes at or above this GCV are graded High GCV</div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={thresholdDraft}
-              onChange={e => setThresholdDraft(e.target.value)}
-              placeholder="3200"
-              style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', minWidth: 0, boxSizing: 'border-box' }}
-            />
-            <span style={{ fontSize: 12, color: '#8a8d7a', whiteSpace: 'nowrap' }}>kcal/kg</span>
-            <button
-              onClick={saveThreshold}
-              disabled={savingThreshold}
-              style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingThreshold ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingThreshold ? 0.6 : 1 }}
-            >
-              {savingThreshold ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </div>
-
         {loading ? (
           <div style={{ textAlign: 'center', padding: '32px 0', color: '#595c4a', fontSize: 14 }}>Loading...</div>
         ) : (
@@ -1120,6 +1109,30 @@ export default function AdminPanel() {
         {!loading && selectedPlantId && (
           <ProcessRoutes plantId={selectedPlantId} orgId={plant?.org_id} />
         )}
+
+        {/* GCV grade threshold (per plant) */}
+        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>GCV Grade Threshold</div>
+          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Mixes at or above this GCV are graded High GCV</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={thresholdDraft}
+              onChange={e => setThresholdDraft(e.target.value)}
+              placeholder="3200"
+              style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', minWidth: 0, boxSizing: 'border-box' }}
+            />
+            <span style={{ fontSize: 12, color: '#8a8d7a', whiteSpace: 'nowrap' }}>kcal/kg</span>
+            <button
+              onClick={saveThreshold}
+              disabled={savingThreshold}
+              style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingThreshold ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingThreshold ? 0.6 : 1 }}
+            >
+              {savingThreshold ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
 
         {/* Stock Opening (as-of) date — locked after first set to avoid accidental edits */}
         {(() => {
