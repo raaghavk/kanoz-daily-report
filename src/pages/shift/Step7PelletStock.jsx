@@ -49,6 +49,41 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
   // without a matching stock row get one created via ensurePelletType — legacy
   // rows (e.g. Sample / N Sample) are kept as-is, never deleted or migrated.
   const resolvedKeyRef = useRef(null)
+
+  // First (transition) report only: pull each pellet's opening from its settings
+  // opening_stock_mt, so a pellet opening set after the report was created still shows.
+  useEffect(() => {
+    let cancelled = false
+    if (!plant?.id || !(data.pelletStock || []).length) return
+    ;(async () => {
+      const { count } = await supabase
+        .from('shift_reports')
+        .select('id', { count: 'exact', head: true })
+        .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
+      if (cancelled || (count || 0) !== 0) return
+      const { data: types } = await supabase
+        .from('pellet_types')
+        .select('id, name, opening_stock_mt')
+        .eq('plant_id', plant.id)
+      if (cancelled || !types) return
+      const norm = (x) => (x || '').toString().trim().toLowerCase()
+      const byId = {}, byName = {}
+      for (const t of types) { const v = parseFloat(t.opening_stock_mt) || 0; byId[t.id] = v; byName[norm(t.name)] = v }
+      let changed = false
+      const stock = (data.pelletStock || []).map(ps => {
+        const nextOpen = (byId[ps.id] != null) ? byId[ps.id] : (byName[norm(ps.name)] || 0)
+        if ((parseFloat(ps.opening) || 0) !== nextOpen) {
+          changed = true
+          return { ...ps, opening: nextOpen, closing: nextOpen + (ps.production || 0) - (ps.dispatch || 0) - (ps.wastage || 0) }
+        }
+        return ps
+      })
+      if (changed) updateData('pelletStock', stock)
+    })()
+    return () => { cancelled = true }
+  }, [plant?.id, (data.pelletStock || []).length]) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!plant?.id) return
     const mixes = data.mixes || []

@@ -773,8 +773,6 @@ export default function ShiftWizard() {
         start_power_reading: sanitizeNumber(reportData.start_power_reading) || 0,
         end_power_reading: sanitizeNumber(reportData.end_power_reading) || 0,
         pellet_production_mt: reportData.production.reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
-        supervisor_id: employee?.id,
-        created_by: employee?.id,
         handover_notes: sanitizeText(reportData.handover_notes, 1000),
         remarks: sanitizeText(reportData.remarks, 1000),
       }
@@ -785,7 +783,7 @@ export default function ShiftWizard() {
         if (error) throw error
         report = data
       } else {
-        const { data, error } = await supabase.from('shift_reports').insert(reportPayload).select().single()
+        const { data, error } = await supabase.from('shift_reports').insert({ ...reportPayload, supervisor_id: employee?.id, created_by: employee?.id }).select().single()
         if (error) throw error
         report = data
         setReportId(report.id)
