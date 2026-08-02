@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { useAuth } from '../../context/AuthContext'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
-import { Phone, MessageSquare, Truck, Clock, Timer, Edit3, Save, X, Download } from 'lucide-react'
+import { Phone, MessageSquare, Truck, Clock, Timer, Edit3, Save, X, Download, Plus } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 
 export default function DispatchDetail() {
@@ -132,9 +132,15 @@ export default function DispatchDetail() {
 
   async function saveEdit() {
     try {
+      // Dispatch must be later than loading (date + time)
+      if (editForm.loading_date && editForm.loading_time && editForm.dispatch_date && editForm.dispatch_time) {
+        const loadingDT = new Date(`${editForm.loading_date}T${editForm.loading_time}`)
+        const dispatchDT = new Date(`${editForm.dispatch_date}T${editForm.dispatch_time}`)
+        if (!(dispatchDT > loadingDT)) { showToast('Dispatch date & time must be later than the loading date & time', 'error'); return }
+      }
       setSaving(true)
 
-      // Update main dispatch record
+      // Update main dispatch record. Keep `date` (history grouping key) in sync with dispatch_date.
       const dispatchPayload = {
         truck_number: editForm.truck_number || dispatch.truck_number,
         driver_name: editForm.driver_name,
@@ -146,6 +152,7 @@ export default function DispatchDetail() {
         loading_time: editForm.loading_time || null,
         dispatch_date: editForm.dispatch_date || null,
         dispatch_time: editForm.dispatch_time || null,
+        date: editForm.dispatch_date || dispatch.date || null,
         remarks: editForm.remarks || null,
       }
       if (editForm.customer_id) dispatchPayload.customer_id = editForm.customer_id
@@ -154,15 +161,15 @@ export default function DispatchDetail() {
         .from('vehicle_dispatches').update(dispatchPayload).eq('id', id)
       if (dispErr) throw dispErr
 
-      // Update pellet quantities
-      const pelletUpdates = editPellets.map(p =>
-        supabase.from('dispatch_pellets').update({
-          quantity_mt: p.quantity_mt,
-          pellet_type_id: p.pellet_type_id || null,
-          pellet_type_name: pelletTypes.find(pt => pt.id === p.pellet_type_id)?.name || p.pellet_type_name || null,
-        }).eq('id', p.id)
-      )
-      const pelletResults = await Promise.all(pelletUpdates)
+      // Update existing pellet rows; insert newly-added rows (those without a db id).
+      const nameFor = (p) => pelletTypes.find(pt => pt.id === p.pellet_type_id)?.name || p.pellet_type_name || null
+      const ops = editPellets
+        .filter(p => (Number(p.quantity_mt) > 0) || p.id)
+        .map(p => p.id
+          ? supabase.from('dispatch_pellets').update({ quantity_mt: p.quantity_mt, pellet_type_id: p.pellet_type_id || null, pellet_type_name: nameFor(p) }).eq('id', p.id)
+          : supabase.from('dispatch_pellets').insert({ dispatch_id: id, quantity_mt: p.quantity_mt, pellet_type_id: p.pellet_type_id || null, pellet_type_name: nameFor(p) })
+        )
+      const pelletResults = await Promise.all(ops)
       const pelletErr = pelletResults.find(r => r.error)
       if (pelletErr) throw pelletErr.error
 
@@ -278,12 +285,12 @@ export default function DispatchDetail() {
               <EditField label="Driver Name" value={editForm.driver_name} onChange={v => setEditForm({ ...editForm, driver_name: v })} />
               <EditField label="Driver Phone" value={editForm.driver_phone} onChange={v => setEditForm({ ...editForm, driver_phone: v })} type="tel" />
               {/* Pellet Quantities */}
-              {editPellets.length > 0 && (
+              {(
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>PELLET QUANTITIES (MT)</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {editPellets.map((p, idx) => (
-                      <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f5f0e1', borderRadius: 10 }}>
+                      <div key={p.id || `new-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: '#f5f0e1', borderRadius: 10 }}>
                         <select
                           value={p.pellet_type_id || ''}
                           onChange={e => {
@@ -310,9 +317,16 @@ export default function DispatchDetail() {
                           style={{ width: 80, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, textAlign: 'right', outline: 'none', background: '#fff' }}
                         />
                         <span style={{ fontSize: 11, color: '#595c4a' }}>MT</span>
+                        <button onClick={() => setEditPellets(editPellets.filter((_, x) => x !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#c0392b', padding: 2 }}><X size={15} /></button>
                       </div>
                     ))}
                   </div>
+                  <button
+                    onClick={() => setEditPellets([...editPellets, { id: null, pellet_type_id: pelletTypes[0]?.id || '', pellet_type_name: pelletTypes[0]?.name || '', quantity_mt: 0 }])}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, padding: '8px 12px', background: '#fff', border: '1.5px solid #b8d4c4', borderRadius: 9, color: '#2d6a4f', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    <Plus size={14} /> Add pellet type
+                  </button>
                 </div>
               )}
               <EditField label="Remarks" value={editForm.remarks} onChange={v => setEditForm({ ...editForm, remarks: v })} />

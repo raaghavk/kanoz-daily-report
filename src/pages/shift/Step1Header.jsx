@@ -109,6 +109,7 @@ export default memo(function Step1Header({ data, updateData, duplicateReportId }
                 value={data.shift_start_date || data.date}
                 onChange={e => {
                   updateData('shift_start_date', e.target.value)
+                  updateData('date', e.target.value)
                   if (data.shift === 'B') {
                     const next = new Date(e.target.value)
                     next.setDate(next.getDate() + 1)

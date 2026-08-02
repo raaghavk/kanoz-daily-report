@@ -162,7 +162,7 @@ export default function DispatchForm() {
   // Group dispatches by date
   const groupedDispatches = {}
   dispatches.forEach(d => {
-    const date = d.date || ''
+    const date = d.dispatch_date || d.date || ''
     if (!groupedDispatches[date]) groupedDispatches[date] = []
     groupedDispatches[date].push(d)
   })
@@ -390,7 +390,7 @@ export default function DispatchForm() {
     // Loading happens before dispatch — enforce datetime ordering
     const loadingDT = new Date(`${form.loading_date || today}T${form.loading_time}`)
     const dispatchDT = new Date(`${form.dispatch_date || today}T${form.dispatch_time}`)
-    if (dispatchDT < loadingDT) { showToast('Dispatch time cannot be before loading time', 'error'); return }
+    if (!(dispatchDT > loadingDT)) { showToast('Dispatch date & time must be later than the loading date & time', 'error'); return }
     try {
       setSubmitting(true)
 
