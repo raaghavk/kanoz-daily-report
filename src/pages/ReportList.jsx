@@ -112,7 +112,7 @@ export default function ReportList() {
   function groupReportsByDate(data) {
     const grouped = {}
     data.forEach(report => {
-      const date = report.shift_start_date || report.date || ''
+      const date = report.shift_end_date || report.shift_start_date || report.date || ''
       if (!grouped[date]) grouped[date] = []
       grouped[date].push(report)
     })

@@ -764,7 +764,7 @@ export default function ShiftWizard() {
       // Create or update the shift report
       const reportPayload = {
         plant_id: plant.id,
-        date: reportData.shift_start_date || reportData.date,
+        date: reportData.shift_end_date || reportData.shift_start_date || reportData.date,
         shift: reportData.shift,
         start_time: reportData.start_time,
         end_time: reportData.end_time,
