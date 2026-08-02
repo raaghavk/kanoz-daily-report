@@ -60,7 +60,9 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
           const dDate = d.dispatch_date || d.date
           const dTime = d.dispatch_time || '00:00:00'
           const dt = new Date(`${dDate}T${dTime}`)
-          return dt >= new Date(shiftStart) && dt <= new Date(shiftEnd)
+          // Include the start boundary, exclude the end, so a dispatch exactly on
+          // the 8pm/8am handover counts for exactly one shift (never both).
+          return dt >= new Date(shiftStart) && dt < new Date(shiftEnd)
         })
       }
 

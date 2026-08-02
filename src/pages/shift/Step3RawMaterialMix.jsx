@@ -160,8 +160,12 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
           const shiftEnd = new Date(`${data.shift_end_date || data.shift_start_date}T${norm(data.end_time)}:00`)
           filtered = purchases.filter(p => {
             if (!p.purchase_time) return true
-            const pDt = new Date(`${data.shift_start_date}T${p.purchase_time}`)
-            return pDt >= shiftStart && pDt <= shiftEnd
+            // Use the purchase's OWN date (not the shift start date) so overnight
+            // purchases logged after midnight land in the right shift. Include the
+            // start boundary, exclude the end, so a purchase exactly on the 8pm/8am
+            // handover belongs to exactly one shift (never both).
+            const pDt = new Date(`${p.date}T${p.purchase_time}`)
+            return pDt >= shiftStart && pDt < shiftEnd
           })
         }
 
