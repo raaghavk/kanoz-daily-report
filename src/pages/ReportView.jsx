@@ -173,7 +173,7 @@ export default function ReportView() {
       // Use !supervisor_id hint to disambiguate — shift_reports has 2 FKs to employees
       const { data: reportData, error: reportError } = await supabase
         .from('shift_reports')
-        .select('*, plants(name), employees!supervisor_id(name)')
+        .select('*, plants(name), employees!supervisor_id(name), creator:employees!created_by(name), editor:employees!last_edited_by(name)')
         .eq('id', id)
         .eq('is_deleted', false)
         .single()
@@ -654,10 +654,14 @@ export default function ReportView() {
         </div>
       )}
 
-      {/* Created By + Supervisor info */}
+      {/* Record info — creation, last edit, supervisor (all distinct) */}
       <div style={{ padding: '0 20px', marginTop: 24 }}>
-        <div style={{ background: '#f5f0e1', borderRadius: 14, padding: '10px 14px', fontSize: 11, color: '#595c4a' }}>
-          Created by {report.employees?.name || 'N/A'}{report.created_at ? ' on ' + new Date(report.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+        <div style={{ background: '#f5f0e1', borderRadius: 14, padding: '10px 14px', fontSize: 11, color: '#595c4a', lineHeight: 1.6 }}>
+          <div>Created by <b>{report.creator?.name || report.employees?.name || 'N/A'}</b>{report.created_at ? ' on ' + new Date(report.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</div>
+          {report.updated_at && report.created_at && new Date(report.updated_at).getTime() - new Date(report.created_at).getTime() > 1000 && (
+            <div>Last edited{report.editor?.name ? <> by <b>{report.editor.name}</b></> : ''} on {new Date(report.updated_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</div>
+          )}
+          <div>Supervisor: <b>{report.employees?.name || 'N/A'}</b></div>
         </div>
       </div>
 

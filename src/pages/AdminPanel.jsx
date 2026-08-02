@@ -719,7 +719,7 @@ export default function AdminPanel() {
                               value={editingItem.name}
                               onChange={e => setEditingItem({ ...editingItem, name: e.target.value })}
                               autoFocus
-                              style={{ flex: '1 1 130px', padding: '6px 10px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', minWidth: 110, maxWidth: 240 }}
+                              style={{ flex: '0 1 170px', padding: '6px 9px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', minWidth: 90, maxWidth: 170 }}
                             />
                             {section.key === 'raw_material_types' && (
                               <input
@@ -796,7 +796,7 @@ export default function AdminPanel() {
                                   value={editingItem.identifier}
                                   onChange={e => setEditingItem({ ...editingItem, identifier: e.target.value })}
                                   title="Vehicle number / Generator number (optional)"
-                                  style={{ width: 120, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                                  style={{ width: 96, padding: '6px 7px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
                                 />
                                 <select
                                   value={editingItem.type}

@@ -779,7 +779,7 @@ export default function ShiftWizard() {
 
       let report
       if (reportId) {
-        const { data, error } = await supabase.from('shift_reports').update(reportPayload).eq('id', reportId).select().single()
+        const { data, error } = await supabase.from('shift_reports').update({ ...reportPayload, updated_at: new Date().toISOString(), last_edited_by: employee?.id }).eq('id', reportId).select().single()
         if (error) throw error
         report = data
       } else {
