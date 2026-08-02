@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react'
-import { ChevronDown, Plus, X, Camera, Sparkles } from 'lucide-react'
+import { ChevronDown, ChevronUp, Plus, X, Camera, Sparkles } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -13,6 +13,7 @@ function numVal(v) {
 
 export default memo(function Step5Diesel({ data, updateData }) {
   const [scanningIdx, setScanningIdx] = useState(null)
+  const [collapsedCats, setCollapsedCats] = useState({})
 
   // Initialize diesel_stock if not exists (via useEffect, not during render)
   useEffect(() => {
@@ -310,7 +311,7 @@ export default memo(function Step5Diesel({ data, updateData }) {
         )}
       </div>
 
-      {/* Equipment Cards — grouped by type */}
+      {/* Equipment — collapsible category groups (alphabetical, collapsed by default) */}
       {(() => {
         const groups = {}
         data.diesel.forEach((entry, idx) => {
@@ -318,9 +319,19 @@ export default memo(function Step5Diesel({ data, updateData }) {
           if (!groups[key]) groups[key] = []
           groups[key].push({ entry, idx })
         })
-        return Object.entries(groups).map(([type, items]) => (
-          <div key={type} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.6, margin: '2px 2px 0' }}>{type}</div>
+        return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).map(([type, items]) => {
+          const catCollapsed = collapsedCats[type] ?? true
+          return (
+          <div key={type} style={{ background: '#fefae0', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden' }}>
+            <button type="button" aria-expanded={!catCollapsed} onClick={() => setCollapsedCats(prev => ({ ...prev, [type]: !(prev[type] ?? true) }))} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '14px 16px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                <span style={{ fontWeight: 800, fontSize: 14, color: '#2c2c2c' }}>{type}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#8a8d7a' }}>&middot; {items.length}</span>
+              </div>
+              {catCollapsed ? <ChevronDown size={18} color="#2d6a4f" /> : <ChevronUp size={18} color="#2d6a4f" />}
+            </button>
+            {!catCollapsed && (
+              <div style={{ borderTop: '1px solid #f0ebe0', padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {items.map(({ entry, idx }) => (
         <div key={entry.id} style={{
           background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', overflow: 'hidden'
@@ -384,8 +395,11 @@ export default memo(function Step5Diesel({ data, updateData }) {
           )}
         </div>
             ))}
+              </div>
+            )}
           </div>
-        ))
+          )
+        })
       })()}
     </div>
   )
