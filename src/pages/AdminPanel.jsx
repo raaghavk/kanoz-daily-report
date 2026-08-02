@@ -57,6 +57,8 @@ export default function AdminPanel() {
   const [pelletRecipesStructured, setPelletRecipesStructured] = useState({})
   const [pelletModal, setPelletModal] = useState(null)
   const [savingPellet, setSavingPellet] = useState(false)
+  const [equipModal, setEquipModal] = useState(null)
+  const [savingEquip, setSavingEquip] = useState(false)
   const [addingPlant, setAddingPlant] = useState(false)
   const [newPlantName, setNewPlantName] = useState('')
 
@@ -217,6 +219,31 @@ export default function AdminPanel() {
     if (error) { showToast('Failed to delete type: ' + error.message, 'error'); return }
     showToast('Type deleted', 'success')
     loadTypeOptions()
+  }
+
+  async function saveEquip() {
+    if (!equipModal) return
+    if (!equipModal.name.trim()) { showToast('Name is required', 'error'); return }
+    const stock = parseFloat(equipModal.stock)
+    const hp = parseFloat(equipModal.motorHp)
+    setSavingEquip(true)
+    try {
+      const { error } = await supabase.from('equipment').update({
+        name: equipModal.name.trim(),
+        equipment_type: (equipModal.type || '').trim() || null,
+        owner: (equipModal.owner || '').trim() || null,
+        company: (equipModal.company || '').trim() || null,
+        identifier: (equipModal.identifier || '').trim() || null,
+        fuel_type: (equipModal.fuel || '').trim() || null,
+        opening_stock_litres: Number.isNaN(stock) ? null : stock,
+        rating: (equipModal.rating || '').trim() || null,
+        motor_hp: Number.isNaN(hp) ? null : hp,
+      }).eq('id', equipModal.id)
+      if (error) throw error
+      showToast('Equipment saved', 'success')
+      setEquipModal(null)
+      loadAllData()
+    } catch { showToast('Failed to save equipment', 'error') } finally { setSavingEquip(false) }
   }
 
   async function savePellet() {
@@ -895,7 +922,6 @@ export default function AdminPanel() {
                                 if (item.fuel_type) parts.push(item.fuel_type)
                                 if (item.rating) parts.push(item.rating)
                                 if (item.motor_hp != null) parts.push(`${item.motor_hp} HP`)
-                                if (Number(item.opening_stock_litres) > 0) parts.push(`Open ${Number(item.opening_stock_litres)} L`)
                                 if (!parts.length) return null
                                 return <span style={{ fontSize: 11, color: '#8a8d7a' }}>{parts.join(' · ')}</span>
                               })()}
@@ -921,6 +947,11 @@ export default function AdminPanel() {
                                 {`Open ${Number(item.opening_stock_kg || 0)} kg`}
                               </span>
                             )}
+                            {section.key === 'equipment' && Number(item.opening_stock_litres) > 0 && (
+                              <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a', background: '#fefae0', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+                                {`Open ${Number(item.opening_stock_litres)} L`}
+                              </span>
+                            )}
                             {section.key === 'pellet_types' && item.grade && (
                               <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 6, padding: '2px 8px', whiteSpace: 'nowrap', background: item.grade === 'High GCV' ? '#2d6a4f' : '#fef3c7', color: item.grade === 'High GCV' ? '#fff' : '#b45309' }}>
                                 {item.grade}
@@ -938,6 +969,8 @@ export default function AdminPanel() {
                               onClick={() => {
                                 if (section.key === 'pellet_types') {
                                   setPelletModal({ id: item.id, name: item.name || '', gcv: item.gcv_kcal_kg ?? '', opening: item.opening_stock_mt ?? '', recipe: (Array.isArray(item.recipe) && item.recipe.length) ? item.recipe.map(r => ({ ...r })) : (pelletRecipesStructured[(item.name || '').trim().toLowerCase()] || []).map(r => ({ ...r })) })
+                                } else if (section.key === 'equipment') {
+                                  setEquipModal({ id: item.id, name: item.name || '', type: item.equipment_type || '', owner: item.owner || '', company: item.company || '', identifier: item.identifier || '', fuel: item.fuel_type || '', stock: item.opening_stock_litres ?? '', rating: item.rating || '', motorHp: item.motor_hp ?? '' })
                                 } else {
                                   setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '', identifier: item.identifier ?? '', owner: item.owner ?? '', company: item.company ?? '' })
                                 }
@@ -1313,6 +1346,71 @@ export default function AdminPanel() {
           </div>
         )
       })()}
+
+      {equipModal && (
+        <div onClick={() => !savingEquip && setEquipModal(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, maxHeight: '88vh', overflowY: 'auto', background: '#fefae0', borderRadius: 16, padding: '18px 18px 22px', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: '#1b4332' }}>Edit Equipment</div>
+              <button onClick={() => setEquipModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8a8d7a' }}><X size={20} /></button>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Name</div>
+              <input value={equipModal.name} onChange={e => setEquipModal(m => ({ ...m, name: e.target.value }))} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Type</div>
+                <select value={equipModal.type} onChange={e => setEquipModal(m => ({ ...m, type: e.target.value }))} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }}>
+                  <option value="">Type…</option>
+                  {(typeOptions.equipment || []).filter(o => o.is_active !== false || o.name === equipModal.type).map(o => <option key={o.id} value={o.name}>{o.name}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Vehicle / Generator no</div>
+                <input value={equipModal.identifier} onChange={e => setEquipModal(m => ({ ...m, identifier: e.target.value }))} placeholder="optional" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Owner</div>
+                <input value={equipModal.owner} onChange={e => setEquipModal(m => ({ ...m, owner: e.target.value }))} placeholder="optional" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Company / make</div>
+                <input value={equipModal.company} onChange={e => setEquipModal(m => ({ ...m, company: e.target.value }))} placeholder="optional" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Fuel</div>
+                <select value={equipModal.fuel} onChange={e => setEquipModal(m => ({ ...m, fuel: e.target.value }))} style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }}>
+                  <option value="">Fuel…</option>
+                  {FUEL_TYPES.map(fu => <option key={fu} value={fu}>{fu}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Opening diesel (L)</div>
+                <input type="number" inputMode="decimal" value={equipModal.stock} onChange={e => setEquipModal(m => ({ ...m, stock: e.target.value }))} placeholder="as of stock opening date" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Rating (e.g. 125 kVA)</div>
+                <input value={equipModal.rating} onChange={e => setEquipModal(m => ({ ...m, rating: e.target.value }))} placeholder="optional" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', marginBottom: 5 }}>Motor HP</div>
+                <input type="number" inputMode="decimal" value={equipModal.motorHp} onChange={e => setEquipModal(m => ({ ...m, motorHp: e.target.value }))} placeholder="optional" style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setEquipModal(null)} style={{ flex: 1, padding: '12px 0', background: '#fff', color: '#595c4a', borderRadius: 11, border: '1.5px solid #e5ddd0', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={saveEquip} disabled={savingEquip} style={{ flex: 1, padding: '12px 0', background: savingEquip ? '#c3d2c9' : '#2d6a4f', color: '#fff', borderRadius: 11, border: 'none', fontSize: 14, fontWeight: 700, cursor: savingEquip ? 'default' : 'pointer' }}>{savingEquip ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   )
