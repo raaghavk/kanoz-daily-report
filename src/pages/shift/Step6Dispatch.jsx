@@ -70,9 +70,12 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
       }))
       setDispatches(processedDispatches)
 
-      // Store dispatch totals by pellet type for Step 7 auto-calculation
+      // Store dispatch totals by pellet type for Step 7 auto-calculation.
+      // Use the SAME time-windowed `filtered` list as the display, so a dispatch
+      // on a date shared by two shifts (day + night) is counted for exactly one
+      // shift and never double-reduces pellet stock.
       const dispatchByPellet = {}
-      ;(dispatchData || []).forEach(d => {
+      ;(filtered || []).forEach(d => {
         (d.dispatch_pellets || []).forEach(dp => {
           const name = dp.pellet_type_name || ''
           dispatchByPellet[name] = (dispatchByPellet[name] || 0) + (parseFloat(dp.quantity_mt) || 0)
