@@ -337,14 +337,14 @@ export async function exportPurchasePDF(purchase, createdByName) {
   ])
 
   y = kpiRow(doc, y, [
-    { label: 'QUANTITY',      main: qty.toLocaleString('en-IN'),      unit: 'kg' },
+    { label: 'QUANTITY',      main: ((purchase.quantity_kg||0)/1000).toFixed(2),      unit: 'MT' },
     { label: 'TOTAL AMOUNT',  main: 'Rs.' + totalAmt.toLocaleString('en-IN'), unit: '' },
     { label: 'AVG COST / KG', main: 'Rs.' + avgRate,                 unit: '' },
   ])
 
   y = secHead(doc, y, 'WEIGHT & QUALITY')
   y = detailRows(doc, y, [
-    ['Quantity',       qty.toLocaleString('en-IN') + ' kg'],
+    ['Quantity',       qty.toLocaleString('en-IN') + ' kg · ' + ((purchase.quantity_kg||0)/1000).toFixed(2) + ' MT'],
     ['Moisture',       (purchase.moisture_percent != null ? purchase.moisture_percent : 0) + '%'],
     ['Deduction',      (purchase.deduction_kg || 0) + ' kg'],
   ])
@@ -483,12 +483,13 @@ export async function exportShiftReportPDF(report, data) {
 
   const tblY = blockY + 12
 
+  const toMT = (x) => ((Number(x) || 0) / 1000).toFixed(2)
   const rmRows = (data.rawMaterials || []).map(r => [
     r.raw_material_types?.name || '—',
-    String(r.opening_kg   || 0),
-    String(r.purchased_kg || 0),
-    String(r.quantity_kg  || 0),
-    String(r.closing_kg   || 0),
+    toMT(r.opening_kg),
+    toMT(r.purchased_kg),
+    toMT(r.quantity_kg),
+    toMT(r.closing_kg),
   ])
   const rmEndY = stdTable(doc, tblY,
     ['MATERIAL', 'OPEN', 'PURCH', 'USED', 'CLOSE'],
@@ -497,7 +498,7 @@ export async function exportShiftReportPDF(report, data) {
     { sx: lX, aligns: ['left','right','right','right','right'], noData: 'No data' }
   )
   doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); setC(doc, LIGHT)
-  doc.text('All quantities in kg', lX, rmEndY + 1)
+  doc.text('All quantities in MT', lX, rmEndY + 1)
 
   const psRows = (data.pelletStock || []).map(p => [
     p.pellet_types?.name || '—',

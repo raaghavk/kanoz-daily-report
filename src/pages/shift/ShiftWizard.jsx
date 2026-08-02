@@ -319,7 +319,7 @@ export default function ShiftWizard() {
         const activeMachines = (machinesRes.data || []).map(m => ({
           id: m.id, name: m.name, machine_type: m.machine_type ?? null, did_not_run: true, from_time: '', to_time: '', breakdown_hrs: 0, production_hours: 0, remarks: '',
         }))
-        const activeRawMaterials = (materialsRes.data || []).map(m => ({
+        const activeRawMaterials = (materialsRes.data || []).slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(m => ({
           id: m.id, name: m.name, gcv_kcal_kg: m.gcv_kcal_kg ?? null, opening_stock_kg: m.opening_stock_kg ?? 0, opening: 0, purchased: 0, used: 0, closing: 0
         }))
         const activePellets = (pelletTypesRes.data || []).map(p => ({

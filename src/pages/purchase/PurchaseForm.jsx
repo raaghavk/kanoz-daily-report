@@ -5,6 +5,7 @@ import { Loader2, Plus, Sparkles } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { kgToMtStr } from '../../lib/units'
 import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
@@ -810,7 +811,7 @@ export default function PurchaseForm() {
               value={formData.quantity_kg}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', background: '#fefae0', opacity: 0.6, cursor: 'not-allowed', boxSizing: 'border-box' }}
             />
-            <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 4 }}>Auto-calculated</div>
+            <div style={{ fontSize: 10, color: '#b5b8a8', marginTop: 4 }}>Auto-calculated · {kgToMtStr(formData.quantity_kg)} MT</div>
           </div>
         </div>
 

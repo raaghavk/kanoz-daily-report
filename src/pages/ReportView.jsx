@@ -216,10 +216,10 @@ export default function ReportView() {
       if (mixesRes.error) console.error('Failed to load mixes:', mixesRes.error)
 
       setMachineProduction(machRes.data || [])
-      setRawMaterials(matRes.data || [])
+      setRawMaterials((matRes.data || []).slice().sort((a,b)=>(a.raw_material_types?.name||'').localeCompare(b.raw_material_types?.name||'')))
       setDispatches(dispatchRes.data || [])
-      setEquipmentDiesel(dieselRes.data || [])
-      setPelletStock(stockRes.data || [])
+      setEquipmentDiesel((dieselRes.data || []).slice().sort((a,b)=>((a.equipment_type||'zzz').localeCompare(b.equipment_type||'zzz'))||((a.equipment_name||'').localeCompare(b.equipment_name||''))))
+      setPelletStock((stockRes.data || []).slice().sort((a,b)=>(a.pellet_types?.name||'').localeCompare(b.pellet_types?.name||'')))
       setIssues(issuesRes.data || [])
       setMixes(mixesRes.data || [])
     } catch (err) {
@@ -502,7 +502,14 @@ export default function ReportView() {
                     : (parseFloat(e.opening_litres) || 0) + (parseFloat(e.added_litres) || 0) - (parseFloat(e.closing_litres) || 0)
                   return (
                   <tr key={e.id} style={{ borderTop: '1px solid #e5ddd0' }}>
-                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{e.equipment_name || 'N/A'}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>
+                      <div>{e.equipment_name || 'N/A'}</div>
+                      {(e.equipment_type || e.owner || e.company) && (
+                        <div style={{ fontSize: 9, color: '#a0a396', marginTop: 2 }}>
+                          {[e.equipment_type, e.owner || e.company].filter(Boolean).join(' · ')}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.opening_litres || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{e.added_litres || 0}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2d6a4f', fontSize: 11 }}>{used.toFixed(1)}</td>

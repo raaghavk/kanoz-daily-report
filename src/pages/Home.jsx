@@ -5,6 +5,7 @@ import usePullToRefresh from '../hooks/usePullToRefresh'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { kgToMtStr } from '../lib/units'
 import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
 import { ChevronRight, AlertTriangle, Wrench, CheckSquare, Circle, Boxes, UserCheck } from 'lucide-react'
@@ -499,7 +500,7 @@ export default function Home() {
                     <div style={{ fontSize: 16, fontWeight: 800, color: '#595c4a', marginTop: 2 }}>
                       ₹{Math.round(yesterday.purchaseAmt).toLocaleString('en-IN')}
                       <span style={{ fontSize: 11, fontWeight: 500, color: '#8a8d7a', marginLeft: 6 }}>
-                        ({yesterday.purchaseCount} entries, {yesterday.purchaseKg >= 1000 ? `${(yesterday.purchaseKg / 1000).toFixed(1)} MT` : `${Math.round(yesterday.purchaseKg)} kg`})
+                        ({yesterday.purchaseCount} entries, {kgToMtStr(yesterday.purchaseKg)} MT)
                       </span>
                     </div>
                   </div>

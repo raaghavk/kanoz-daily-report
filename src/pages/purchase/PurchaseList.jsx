@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { getLocalDate } from '../../lib/dateUtils'
+import { kgToMtStr } from '../../lib/units'
 
 export default function PurchaseList() {
   const navigate = useNavigate()
@@ -325,7 +326,7 @@ export default function PurchaseList() {
                               {purchase.suppliers?.name || 'Unknown'}
                             </div>
                             <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
-                              {purchase.raw_material_types?.name || 'N/A'} · {Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg
+                              {purchase.raw_material_types?.name || 'N/A'} · {Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg ({kgToMtStr(purchase.quantity_kg)} MT)
                             </div>
                           </div>
                           {/* Amount + Status */}

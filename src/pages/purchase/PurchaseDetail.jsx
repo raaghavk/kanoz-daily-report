@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { useAuth } from '../../context/AuthContext'
 import { can } from '../../lib/permissions'
+import { kgToMtStr } from '../../lib/units'
 import PageHeader from '../../components/PageHeader'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Loader2, Edit3, X, CheckCircle, Download, Trash2 } from 'lucide-react'
@@ -173,7 +174,7 @@ export default function PurchaseDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>Final Qty</div>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg</div>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg <span style={{ fontSize: 12, fontWeight: 600, color: '#8a8d7a' }}>· {kgToMtStr(purchase.quantity_kg)} MT</span></div>
             </div>
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>RM Rate</div>
@@ -231,7 +232,7 @@ export default function PurchaseDetail() {
             </div>
             <div>
               <div style={labelStyle}>Final Quantity</div>
-              <div style={valueStyle}>{purchase.quantity_kg ? `${Math.round(purchase.quantity_kg).toLocaleString('en-IN')} kg` : 'N/A'}</div>
+              <div style={valueStyle}>{purchase.quantity_kg ? `${Math.round(purchase.quantity_kg).toLocaleString('en-IN')} kg · ${kgToMtStr(purchase.quantity_kg)} MT` : 'N/A'}</div>
             </div>
           </div>
         </div>
