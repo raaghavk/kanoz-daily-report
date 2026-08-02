@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { kgToMtStr } from '../lib/units'
 import { showToast } from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
@@ -441,10 +442,10 @@ export default function ReportView() {
                 rawMaterials.map(m => (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.raw_material_types?.name || 'N/A'}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.opening_kg || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.purchased_kg || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{m.quantity_kg || 0}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{m.closing_kg || 0}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{kgToMtStr(m.opening_kg)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{kgToMtStr(m.purchased_kg)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{kgToMtStr(m.quantity_kg)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{kgToMtStr(m.closing_kg)}</td>
                   </tr>
                 ))
               ) : (
@@ -474,7 +475,7 @@ export default function ReportView() {
               ))}
             </tbody>
           </table>
-          <div style={{ padding: '6px 12px', fontSize: 9, color: '#b5b8a8', borderTop: '1px solid #f0ebe0' }}>All quantities in kg</div>
+          <div style={{ padding: '6px 12px', fontSize: 9, color: '#b5b8a8', borderTop: '1px solid #f0ebe0' }}>All quantities in MT</div>
         </div>
       </div>
 

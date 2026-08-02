@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader'
 import { Plus, Edit3, Check, X, ChevronDown, ChevronUp, Archive, RotateCcw, Trash2 } from 'lucide-react'
 import ProcessRoutes from './settings/ProcessRoutes'
 import { gradeForGcv } from '../lib/pelletGrading'
+import { kgToMt, kgToMtStr, mtToKg } from '../lib/units'
 
 // Default type options seeded per org on first load when none exist.
 const DEFAULT_MACHINE_TYPES = ['Log Eater', 'Hammer Mill', 'Pellet Machine', 'Mixer', 'Screener', 'Other']
@@ -438,8 +439,8 @@ export default function AdminPanel() {
     if (sectionKey === 'raw_material_types') {
       const g = parseFloat(newItemType)
       payload.gcv_kcal_kg = Number.isNaN(g) ? null : g
-      const stock = parseFloat(newItemStock)
-      payload.opening_stock_kg = Number.isNaN(stock) ? 0 : stock
+      const stockMt = parseFloat(newItemStock)
+      payload.opening_stock_kg = Number.isNaN(stockMt) ? 0 : mtToKg(stockMt)
       payload.source = newItemSource || 'purchased'
     }
     const { error } = await supabase.from(section.table).insert(payload)
@@ -470,8 +471,8 @@ export default function AdminPanel() {
     if (sectionKey === 'raw_material_types') {
       const g = parseFloat(editingItem?.gcv)
       payload.gcv_kcal_kg = Number.isNaN(g) ? null : g
-      const stock = parseFloat(editingItem?.stock)
-      payload.opening_stock_kg = Number.isNaN(stock) ? 0 : stock
+      const stockMt = parseFloat(editingItem?.stock)
+      payload.opening_stock_kg = Number.isNaN(stockMt) ? 0 : mtToKg(stockMt)
       payload.source = editingItem?.source || 'purchased'
     }
     if (sectionKey === 'machines') {
@@ -762,7 +763,7 @@ export default function AdminPanel() {
                               <input
                                 type="number"
                                 inputMode="decimal"
-                                placeholder="Opening kg"
+                                placeholder="Opening MT"
                                 value={editingItem.stock}
                                 onChange={e => setEditingItem({ ...editingItem, stock: e.target.value })}
                                 title="Opening stock (kg)"
@@ -944,7 +945,7 @@ export default function AdminPanel() {
                             )}
                             {section.key === 'raw_material_types' && (
                               <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a', background: '#fefae0', padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap' }}>
-                                {`Open ${Number(item.opening_stock_kg || 0)} kg`}
+                                {`Open ${kgToMtStr(item.opening_stock_kg)} MT`}
                               </span>
                             )}
                             {section.key === 'equipment' && Number(item.opening_stock_litres) > 0 && (
@@ -972,7 +973,7 @@ export default function AdminPanel() {
                                 } else if (section.key === 'equipment') {
                                   setEquipModal({ id: item.id, name: item.name || '', type: item.equipment_type || '', owner: item.owner || '', company: item.company || '', identifier: item.identifier || '', fuel: item.fuel_type || '', stock: item.opening_stock_litres ?? '', rating: item.rating || '', motorHp: item.motor_hp ?? '' })
                                 } else {
-                                  setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '', identifier: item.identifier ?? '', owner: item.owner ?? '', company: item.company ?? '' })
+                                  setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? (item.opening_stock_litres ?? '') : (item.opening_stock_kg != null ? kgToMt(item.opening_stock_kg) : '')), source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '', identifier: item.identifier ?? '', owner: item.owner ?? '', company: item.company ?? '' })
                                 }
                               }}
                               style={{ padding: '4px 8px', background: '#fefae0', borderRadius: 6, border: '1px solid #e5ddd0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -1143,7 +1144,7 @@ export default function AdminPanel() {
                               <input
                                 type="number"
                                 inputMode="decimal"
-                                placeholder="Opening stock (kg)"
+                                placeholder="Opening stock (MT)"
                                 value={newItemStock}
                                 onChange={e => setNewItemStock(e.target.value)}
                                 title="Opening stock (kg)"
