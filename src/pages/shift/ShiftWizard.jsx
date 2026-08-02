@@ -326,7 +326,7 @@ export default function ShiftWizard() {
           id: p.id, name: p.name, opening_stock_mt: p.opening_stock_mt ?? 0, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0
         }))
         const activeDiesel = (equipmentRes.data || []).map(eq => ({
-          id: eq.id, equipment_name: eq.name, equipment_type: eq.equipment_type ?? null, opening_stock_litres: eq.opening_stock_litres ?? 0, opening: 0, added: 0, used: 0, closing: 0, hours: 0, avg_per_hr: 0, collapsed: true,
+          id: eq.id, equipment_name: eq.name, equipment_type: eq.equipment_type ?? null, owner: eq.owner ?? null, company: eq.company ?? null, opening_stock_litres: eq.opening_stock_litres ?? 0, opening: 0, added: 0, used: 0, closing: 0, hours: 0, avg_per_hr: 0, collapsed: true,
         }))
 
         if (editId) {

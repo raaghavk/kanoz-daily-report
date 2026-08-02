@@ -343,7 +343,10 @@ export default memo(function Step5Diesel({ data, updateData }) {
             borderBottom: entry.collapsed ? 'none' : '1.5px solid #e5ddd0'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <h4 style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', margin: 0 }}>{entry.equipment_name}</h4>
+              <div>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', margin: 0 }}>{entry.equipment_name}</h4>
+                {(entry.owner || entry.company) && <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>{[entry.owner, entry.company].filter(Boolean).join(' · ')}</div>}
+              </div>
             </div>
             <button onClick={() => toggleCollapse(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#595c4a', padding: 0 }}>
               <ChevronDown size={20} style={{ transform: entry.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />

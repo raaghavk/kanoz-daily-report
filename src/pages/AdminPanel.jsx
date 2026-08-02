@@ -45,6 +45,8 @@ export default function AdminPanel() {
   const [newItemFuel, setNewItemFuel] = useState('')
   const [newItemRating, setNewItemRating] = useState('')
   const [newItemIdentifier, setNewItemIdentifier] = useState('')
+  const [newItemOwner, setNewItemOwner] = useState('')
+  const [newItemCompany, setNewItemCompany] = useState('')
   // Managed machine/equipment type dropdowns (machine_type_options), keyed by kind
   const [typeOptions, setTypeOptions] = useState({ machine: [], equipment: [] })
   // Inline "type manager" (list + add + deactivate) UI state
@@ -66,6 +68,7 @@ export default function AdminPanel() {
 
   // Per-plant GCV grade threshold (High GCV vs Low GCV cutoff)
   const [thresholdDraft, setThresholdDraft] = useState('')
+  const [editThreshold, setEditThreshold] = useState(false)
   const [savingThreshold, setSavingThreshold] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -98,6 +101,7 @@ export default function AdminPanel() {
       showToast('Failed to save threshold: ' + error.message, 'error')
       return
     }
+    setEditThreshold(false)
     showToast('GCV grade threshold saved', 'success')
     setPlants(prev => prev.map(p => p.id === selectedPlantId ? { ...p, gcv_grade_threshold: val } : p))
   }
@@ -398,6 +402,8 @@ export default function AdminPanel() {
       payload.fuel_type = newItemFuel.trim() || null
       payload.rating = newItemRating.trim() || null
       payload.identifier = newItemIdentifier.trim() || null
+      payload.owner = newItemOwner.trim() || null
+      payload.company = newItemCompany.trim() || null
       payload.motor_hp = Number.isNaN(hp) ? null : hp
       payload.opening_stock_litres = Number.isNaN(litres) ? 0 : litres
     }
@@ -425,6 +431,8 @@ export default function AdminPanel() {
     setNewItemFuel('')
     setNewItemRating('')
     setNewItemIdentifier('')
+    setNewItemOwner('')
+    setNewItemCompany('')
     setAddingTo(null)
     loadAllData()
   }
@@ -453,6 +461,8 @@ export default function AdminPanel() {
       payload.fuel_type = (editingItem?.fuel || '').trim() || null
       payload.rating = (editingItem?.rating || '').trim() || null
       payload.identifier = (editingItem?.identifier || '').trim() || null
+      payload.owner = (editingItem?.owner || '').trim() || null
+      payload.company = (editingItem?.company || '').trim() || null
       payload.motor_hp = Number.isNaN(hp) ? null : hp
       payload.opening_stock_litres = Number.isNaN(litres) ? 0 : litres
     }
@@ -787,6 +797,22 @@ export default function AdminPanel() {
                                   title="Vehicle number / Generator number (optional)"
                                   style={{ width: 96, padding: '6px 7px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
                                 />
+                                <input
+                                  type="text"
+                                  placeholder="Owner"
+                                  value={editingItem.owner}
+                                  onChange={e => setEditingItem({ ...editingItem, owner: e.target.value })}
+                                  title="Owner name (optional)"
+                                  style={{ width: 84, padding: '6px 7px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+                                />
+                                <input
+                                  type="text"
+                                  placeholder="Company"
+                                  value={editingItem.company}
+                                  onChange={e => setEditingItem({ ...editingItem, company: e.target.value })}
+                                  title="Company / make (optional)"
+                                  style={{ width: 90, padding: '6px 7px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+                                />
                                 <select
                                   value={editingItem.type}
                                   onChange={e => setEditingItem({ ...editingItem, type: e.target.value })}
@@ -810,10 +836,10 @@ export default function AdminPanel() {
                                 <input
                                   type="number"
                                   inputMode="decimal"
-                                  placeholder="L on hand"
+                                  placeholder="Opening (L)"
                                   value={editingItem.stock}
                                   onChange={e => setEditingItem({ ...editingItem, stock: e.target.value })}
-                                  title="Opening Stock (litres) — fuel on hand"
+                                  title="Opening stock (litres) — as of the stock opening date"
                                   style={{ width: 70, padding: '6px 8px', borderRadius: 8, border: '1.5px solid #2d6a4f', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                                 />
                                 <input
@@ -863,11 +889,13 @@ export default function AdminPanel() {
                               {section.key === 'equipment' && (() => {
                                 const parts = []
                                 if (item.identifier) parts.push(item.identifier)
+                                if (item.owner) parts.push('Owner: ' + item.owner)
+                                if (item.company) parts.push(item.company)
                                 if (item.equipment_type) parts.push(item.equipment_type)
                                 if (item.fuel_type) parts.push(item.fuel_type)
                                 if (item.rating) parts.push(item.rating)
                                 if (item.motor_hp != null) parts.push(`${item.motor_hp} HP`)
-                                if (Number(item.opening_stock_litres) > 0) parts.push(`${Number(item.opening_stock_litres)} L on hand`)
+                                if (Number(item.opening_stock_litres) > 0) parts.push(`Open ${Number(item.opening_stock_litres)} L`)
                                 if (!parts.length) return null
                                 return <span style={{ fontSize: 11, color: '#8a8d7a' }}>{parts.join(' · ')}</span>
                               })()}
@@ -911,7 +939,7 @@ export default function AdminPanel() {
                                 if (section.key === 'pellet_types') {
                                   setPelletModal({ id: item.id, name: item.name || '', gcv: item.gcv_kcal_kg ?? '', opening: item.opening_stock_mt ?? '', recipe: (Array.isArray(item.recipe) && item.recipe.length) ? item.recipe.map(r => ({ ...r })) : (pelletRecipesStructured[(item.name || '').trim().toLowerCase()] || []).map(r => ({ ...r })) })
                                 } else {
-                                  setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '', identifier: item.identifier ?? '' })
+                                  setEditingItem({ section: section.key, id: item.id, name: item.name, gcv: item.gcv_kcal_kg ?? '', stock: (section.key === 'equipment' ? item.opening_stock_litres : item.opening_stock_kg) ?? '', source: item.source ?? 'purchased', type: (item.machine_type ?? item.equipment_type ?? ''), capacity: item.capacity_mt_per_hour ?? '', motorHp: item.motor_hp ?? '', fuel: item.fuel_type ?? '', rating: item.rating ?? '', identifier: item.identifier ?? '', owner: item.owner ?? '', company: item.company ?? '' })
                                 }
                               }}
                               style={{ padding: '4px 8px', background: '#fefae0', borderRadius: 6, border: '1px solid #e5ddd0', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -1003,6 +1031,22 @@ export default function AdminPanel() {
                               title="Vehicle number / Generator number"
                               style={{ flex: '1 1 45%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', minWidth: 0 }}
                             />
+                            <input
+                              type="text"
+                              placeholder="Owner (optional)"
+                              value={newItemOwner}
+                              onChange={e => setNewItemOwner(e.target.value)}
+                              title="Owner name"
+                              style={{ flex: '1 1 45%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', minWidth: 0 }}
+                            />
+                            <input
+                              type="text"
+                              placeholder="Company / make (optional)"
+                              value={newItemCompany}
+                              onChange={e => setNewItemCompany(e.target.value)}
+                              title="Company / manufacturer"
+                              style={{ flex: '1 1 45%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', minWidth: 0 }}
+                            />
                             <select
                               value={newItemType}
                               onChange={e => setNewItemType(e.target.value)}
@@ -1029,7 +1073,7 @@ export default function AdminPanel() {
                               placeholder="Opening Stock (litres)"
                               value={newItemStock}
                               onChange={e => setNewItemStock(e.target.value)}
-                              title="Opening Stock (litres) — fuel on hand"
+                              title="Opening stock (litres) — as of the stock opening date"
                               style={{ flex: '1 1 45%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', boxSizing: 'border-box', minWidth: 0 }}
                             />
                             <input
@@ -1110,29 +1154,27 @@ export default function AdminPanel() {
           <ProcessRoutes plantId={selectedPlantId} orgId={plant?.org_id} />
         )}
 
-        {/* GCV grade threshold (per plant) */}
-        <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>GCV Grade Threshold</div>
-          <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Mixes at or above this GCV are graded High GCV</div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={thresholdDraft}
-              onChange={e => setThresholdDraft(e.target.value)}
-              placeholder="3200"
-              style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', minWidth: 0, boxSizing: 'border-box' }}
-            />
-            <span style={{ fontSize: 12, color: '#8a8d7a', whiteSpace: 'nowrap' }}>kcal/kg</span>
-            <button
-              onClick={saveThreshold}
-              disabled={savingThreshold}
-              style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingThreshold ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingThreshold ? 0.6 : 1 }}
-            >
-              {savingThreshold ? 'Saving...' : 'Save'}
-            </button>
+        {/* GCV grade threshold — compact chip + Edit (matches Stock Opening Date) */}
+        {!editThreshold ? (
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '13px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c' }}>GCV grade threshold</div>
+              <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 2 }}>{thresholdDraft || 3200} kcal/kg · mixes at or above are High GCV</div>
+            </div>
+            <button onClick={() => setEditThreshold(true)} style={{ padding: '7px 14px', background: '#fff', color: '#2d6a4f', borderRadius: 9, border: '1.5px solid #b8d4c4', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Edit</button>
           </div>
-        </div>
+        ) : (
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: '14px 16px' }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#2c2c2c', marginBottom: 2 }}>GCV Grade Threshold</div>
+            <div style={{ fontSize: 12, color: '#8a8d7a', marginBottom: 10 }}>Mixes at or above this GCV are graded High GCV</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input type="number" inputMode="decimal" value={thresholdDraft} onChange={e => setThresholdDraft(e.target.value)} placeholder="3200" style={{ flex: 1, padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', minWidth: 120, boxSizing: 'border-box' }} />
+              <span style={{ fontSize: 12, color: '#8a8d7a', whiteSpace: 'nowrap' }}>kcal/kg</span>
+              <button onClick={saveThreshold} disabled={savingThreshold} style={{ padding: '10px 16px', background: '#2d6a4f', color: 'white', borderRadius: 10, border: 'none', cursor: savingThreshold ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600, opacity: savingThreshold ? 0.6 : 1 }}>{savingThreshold ? 'Saving...' : 'Save'}</button>
+              <button onClick={() => setEditThreshold(false)} style={{ padding: '10px 14px', background: '#fefae0', color: '#595c4a', borderRadius: 10, border: '1px solid #e5ddd0', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+            </div>
+          </div>
+        )}
 
         {/* Stock Opening (as-of) date — locked after first set to avoid accidental edits */}
         {(() => {
