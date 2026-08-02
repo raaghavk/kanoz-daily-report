@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { kgToMtStr } from '../../lib/units'
 import PageHeader from '../../components/PageHeader'
 import { Package, Boxes, FlaskConical, Loader2, AlertCircle, Plus, Info } from 'lucide-react'
 
@@ -311,7 +312,7 @@ export default function StockHome() {
                                 <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>{m.name}</div>
                               </div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: '#1b4332', flexShrink: 0, marginLeft: 12 }}>
-                                {fmtKg(m.kg)} <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>{m.unit}</span>
+                                {kgToMtStr(m.kg)} <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>MT</span>
                               </div>
                             </div>
                           ))}

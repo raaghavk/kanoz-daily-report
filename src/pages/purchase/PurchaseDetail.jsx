@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
+import { useAuth } from '../../context/AuthContext'
+import { can } from '../../lib/permissions'
 import PageHeader from '../../components/PageHeader'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Loader2, Edit3, X, CheckCircle, Download, Trash2 } from 'lucide-react'
@@ -10,6 +12,7 @@ import { Loader2, Edit3, X, CheckCircle, Download, Trash2 } from 'lucide-react'
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { employee } = useAuth()
   const queryClient = useQueryClient()
   const [showPhoto, setShowPhoto] = useState(false)
   const [markingPaid, setMarkingPaid] = useState(false)
@@ -150,7 +153,7 @@ export default function PurchaseDetail() {
               }}>
                 <CheckCircle size={12} /> Paid
               </div>
-            ) : (
+            ) : can(employee?.role, 'mark_purchase_paid') ? (
               <button
                 onClick={markAsPaid}
                 disabled={markingPaid}
@@ -163,6 +166,8 @@ export default function PurchaseDetail() {
               >
                 {markingPaid ? 'Updating...' : 'Pending — Tap to mark Paid'}
               </button>
+            ) : (
+              <div style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'rgba(255,255,255,0.2)', color: 'white' }}>Pending</div>
             )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>

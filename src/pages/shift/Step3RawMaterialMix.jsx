@@ -6,6 +6,7 @@ import { showToast } from '../../components/Toast'
 import { Plus, Trash2, X, Edit2, Lock, ShoppingCart } from 'lucide-react'
 import { deriveMixPellet, gradeForGcv } from '../../lib/pelletGrading'
 import { computeProcessingDeltas } from './StepProcessing'
+import { kgToMtStr } from '../../lib/units'
 
 const C = {
   green: '#2d6a4f',
@@ -356,11 +357,11 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
               return (
               <div key={rm.id} style={{ display: 'grid', gridTemplateColumns: '1.4fr repeat(5, 1fr)', padding: '10px 12px', borderTop: idx > 0 ? `1px solid ${C.border}` : 'none', alignItems: 'center' }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{rm.name}</span>
-                <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{fmtKg(rm.opening)}</span>
-                <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{fmtKg(rm.purchased)}</span>
-                <span style={{ fontSize: 12, color: made > 0 ? C.green : '#c9cbb8', fontWeight: made > 0 ? 700 : 400, textAlign: 'right' }}>{fmtKg(made)}</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, textAlign: 'right' }}>{fmtKg(usedTotal)}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: closing < 0 ? '#c0392b' : C.green, textAlign: 'right' }}>{fmtKg(closing)}</span>
+                <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{kgToMtStr(rm.opening)}</span>
+                <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{kgToMtStr(rm.purchased)}</span>
+                <span style={{ fontSize: 12, color: made > 0 ? C.green : '#c9cbb8', fontWeight: made > 0 ? 700 : 400, textAlign: 'right' }}>{kgToMtStr(made)}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: C.text, textAlign: 'right' }}>{kgToMtStr(usedTotal)}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: closing < 0 ? '#c0392b' : C.green, textAlign: 'right' }}>{kgToMtStr(closing)}</span>
               </div>
               )
             })
@@ -467,7 +468,7 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
                     ].map((cell, i) => (
                       <div key={cell.label} style={{ padding: '10px 8px', borderLeft: i > 0 ? `1px solid ${C.border}` : 'none', textAlign: 'center' }}>
                         <div style={{ fontSize: 9, fontWeight: 600, color: C.dim, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>{cell.label}</div>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: cell.color }}>{fmtKg(cell.value)} kg</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: cell.color }}>{kgToMtStr(cell.value)} MT</div>
                       </div>
                     ))}
                   </div>

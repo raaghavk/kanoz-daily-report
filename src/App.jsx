@@ -124,7 +124,7 @@ export default function App() {
         <Route path="purchase/new" element={<PermissionGuard action="create_purchase"><PurchaseForm /></PermissionGuard>} />
         <Route path="purchase/:id" element={<PermissionGuard action="view_purchases"><PurchaseDetail /></PermissionGuard>} />
         <Route path="purchase/:id/edit" element={<PermissionGuard action="create_purchase"><PurchaseForm /></PermissionGuard>} />
-        <Route path="dispatch" element={<PermissionGuard action="create_dispatch"><DispatchForm /></PermissionGuard>} />
+        <Route path="dispatch" element={<PermissionGuard action="view_dispatches"><DispatchForm /></PermissionGuard>} />
         <Route path="dispatch/:id" element={<PermissionGuard action="view_dispatches"><DispatchDetail /></PermissionGuard>} />
         <Route path="suppliers" element={<SupplierList />} />
         <Route path="suppliers/:id" element={<SupplierDetail />} />

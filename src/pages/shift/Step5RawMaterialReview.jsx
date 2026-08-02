@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { kgToMt, kgToMtStr, mtToKg } from '../../lib/units';
 
 const C = {
   green: '#2d6a4f',
@@ -16,7 +17,7 @@ function Step5RawMaterialReview({ data, updateData }) {
 
   const updateUsed = (idx, value) => {
     const updated = [...rawMaterials];
-    const numValue = parseFloat(value) || 0;
+    const numValue = mtToKg(parseFloat(value) || 0);
     const rm = updated[idx];
     const opening = parseFloat(rm.opening) || 0;
     const purchased = parseFloat(rm.purchased) || 0;
@@ -31,7 +32,7 @@ function Step5RawMaterialReview({ data, updateData }) {
 
   const updateMixUsed = (idx, value) => {
     const updated = [...mixes];
-    const numValue = parseFloat(value) || 0;
+    const numValue = mtToKg(parseFloat(value) || 0);
     updated[idx] = { ...updated[idx], used_kg: numValue };
     updateData('mixes', updated);
   };
@@ -92,13 +93,13 @@ function Step5RawMaterialReview({ data, updateData }) {
                   }}
                 >
                   <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{rm.name || `Material ${idx + 1}`}</span>
-                  <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{opening.toFixed(0)}</span>
-                  <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{purchased.toFixed(0)}</span>
+                  <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{kgToMtStr(opening)}</span>
+                  <span style={{ fontSize: 12, color: C.muted, textAlign: 'right' }}>{kgToMtStr(purchased)}</span>
                   {/* Editable Used */}
                   <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <input
                       type="number"
-                      value={used}
+                      value={kgToMt(used) || ''}
                       onChange={(e) => updateUsed(idx, e.target.value)}
                       step="0.01"
                       style={{
@@ -117,7 +118,7 @@ function Step5RawMaterialReview({ data, updateData }) {
                       }}
                     />
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: C.green, textAlign: 'right' }}>{closing.toFixed(0)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: C.green, textAlign: 'right' }}>{kgToMtStr(closing)}</span>
                 </div>
               );
             })
@@ -185,7 +186,7 @@ function Step5RawMaterialReview({ data, updateData }) {
                               }}
                             />
                           ) : (
-                            <div style={{ fontSize: 13, fontWeight: 700, color: cell.color }}>{cell.value.toFixed(0)} kg</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: cell.color }}>{kgToMtStr(cell.value)} MT</div>
                           )}
                         </div>
                       ))
@@ -197,7 +198,7 @@ function Step5RawMaterialReview({ data, updateData }) {
                     <div style={{ padding: '7px 14px', borderTop: `1px solid ${C.border}`, background: '#faf9f4' }}>
                       <div style={{ fontSize: 11, color: C.dim, lineHeight: 1.6 }}>
                         {mix.ingredients.map((ing, i) => (
-                          <span key={i}>{i > 0 ? ' · ' : ''}<strong>{ing.name}</strong> {ing.quantity_kg}kg</span>
+                          <span key={i}>{i > 0 ? ' · ' : ''}<strong>{ing.name}</strong> {kgToMtStr(ing.quantity_kg)}MT</span>
                         ))}
                       </div>
                     </div>

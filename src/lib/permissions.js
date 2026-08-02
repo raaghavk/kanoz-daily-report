@@ -15,6 +15,7 @@ const PERMISSIONS = {
     assign_tasks: true,
     view_finance: true,
     view_dashboard: true,
+    mark_purchase_paid: true,
   },
   plant_manager: {
     create_report: true,
@@ -70,6 +71,7 @@ const PERMISSIONS = {
     view_spare_parts: true,
     create_spare_parts: false,
     export: true,
+    mark_purchase_paid: true,
     manage_users: false,
     plant_settings: false,
     switch_plant: false,
@@ -111,6 +113,7 @@ export const PERMISSION_CATALOG = [
   { key: 'mark_attendance_others', label: 'Mark attendance for others' },
   { key: 'view_dashboard', label: 'Admin dashboard' },
   { key: 'view_finance', label: 'Finance' },
+  { key: 'mark_purchase_paid', label: 'Mark purchases as paid' },
 ]
 
 export const ROLE_OPTIONS = [
