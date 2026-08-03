@@ -41,3 +41,67 @@ export function getValidationErrors(reportData) {
 
   return errors
 }
+
+
+/**
+ * Non-blocking warnings: values that are suspicious but physically possible.
+ * These are surfaced to the user but do NOT prevent submission.
+ * Returns array of {step, message}.
+ */
+export function getValidationWarnings(reportData) {
+  const warnings = []
+  const num = v => parseFloat(v) || 0
+
+  // Shift length in hours (used to sanity-check machine run hours)
+  let shiftHours = null
+  try {
+    const sd = reportData.shift_start_date
+    const ed = reportData.shift_end_date || reportData.shift_start_date
+    if (sd && reportData.start_time && reportData.end_time) {
+      const st = new Date(`${sd}T${(reportData.start_time || '').substring(0,5)}:00`)
+      const en = new Date(`${ed}T${(reportData.end_time || '').substring(0,5)}:00`)
+      const h = (en - st) / 3600000
+      if (h > 0 && h < 48) shiftHours = h
+    }
+  } catch { /* ignore */ }
+
+  // Step 1: power meter end reading should not be below the start reading
+  if (num(reportData.end_power_reading) < num(reportData.start_power_reading)) {
+    warnings.push({ step: 1, message: 'End power reading is lower than the start reading — please double-check.' })
+  }
+
+  // Step 2: machine run hours greater than the shift length
+  if (shiftHours != null) {
+    for (const m of (reportData.machines || [])) {
+      const hrs = num(m.total_hours) || num(m.production_hours)
+      if (hrs > shiftHours + 0.5) {
+        warnings.push({ step: 2, message: `${m.name || 'A machine'} shows ${hrs}h run time, more than the ${shiftHours.toFixed(1)}h shift.` })
+      }
+    }
+  }
+
+  // Step 3: raw material closing stock went negative (used more than available)
+  for (const rm of (reportData.rawMaterials || [])) {
+    if (num(rm.closing) < -0.5) {
+      warnings.push({ step: 3, message: `${rm.name || 'A raw material'} closing stock is negative (${(num(rm.closing)/1000).toFixed(2)} MT) — used more than available.` })
+    }
+  }
+
+  // Step 5: diesel used more than opening + added (closing negative)
+  for (const eq of (reportData.diesel || [])) {
+    const closing = num(eq.opening) + num(eq.added) - num(eq.used)
+    if (closing < -0.01) {
+      warnings.push({ step: 5, message: `${eq.equipment_name || 'Equipment'} diesel closing is negative (${closing.toFixed(1)} L) — used more than available.` })
+    }
+  }
+
+  // Step 7: pellet closing stock went negative
+  for (const p of (reportData.pelletStock || [])) {
+    const closing = num(p.opening) + num(p.production) - num(p.dispatch) - num(p.wastage)
+    if (closing < -0.01) {
+      warnings.push({ step: 7, message: `${p.name || 'A pellet'} closing stock is negative (${closing.toFixed(2)} MT) — dispatched/wasted more than available.` })
+    }
+  }
+
+  return warnings
+}

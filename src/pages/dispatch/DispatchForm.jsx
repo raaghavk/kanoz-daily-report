@@ -374,15 +374,24 @@ export default function DispatchForm() {
     if (!form.katta_parchi_photo) { showToast('Weight bridge photo is required', 'error'); return }
     if (form.pellets.some(p => !p.pellet_type_id || !p.quantity_mt)) { showToast('Fill all pellet entries', 'error'); return }
 
-    // Pellet stock validation — prevent dispatching more than available closing stock
+    // Every pellet quantity must be positive.
     for (const p of form.pellets) {
-      if (!p.pellet_type_id || !p.quantity_mt) continue
-      const available = latestPelletStock[p.pellet_type_id]
-      if (available !== undefined && parseFloat(p.quantity_mt) > available) {
-        const typeName = pelletTypes.find(pt => pt.id === p.pellet_type_id)?.name || 'Pellet'
-        showToast(`${typeName}: only ${available.toFixed(2)} MT available in closing stock`, 'error')
-        return
+      if (p.pellet_type_id && !(parseFloat(p.quantity_mt) > 0)) {
+        showToast('Pellet quantity must be greater than 0', 'error'); return
       }
+    }
+    // Warn (allow override) if a dispatch exceeds the recorded closing stock.
+    {
+      const over = []
+      for (const p of form.pellets) {
+        if (!p.pellet_type_id || !p.quantity_mt) continue
+        const available = latestPelletStock[p.pellet_type_id]
+        if (available !== undefined && parseFloat(p.quantity_mt) > available) {
+          const typeName = pelletTypes.find(pt => pt.id === p.pellet_type_id)?.name || 'Pellet'
+          over.push(`${typeName}: ${parseFloat(p.quantity_mt).toFixed(2)} MT dispatched vs ${available.toFixed(2)} MT in stock`)
+        }
+      }
+      if (over.length && !window.confirm(`This dispatch is more than the recorded stock:\n\n${over.join('\n')}\n\nSave anyway?`)) { return }
     }
     if (!form.invoice_number.trim()) { showToast('Invoice number is required', 'error'); return }
     if (!form.loading_time) { showToast('Loading time is required', 'error'); return }
@@ -391,6 +400,19 @@ export default function DispatchForm() {
     const loadingDT = new Date(`${form.loading_date || today}T${form.loading_time}`)
     const dispatchDT = new Date(`${form.dispatch_date || today}T${form.dispatch_time}`)
     if (!(dispatchDT > loadingDT)) { showToast('Dispatch date & time must be later than the loading date & time', 'error'); return }
+    // Reject a duplicate dispatch: the parchi (serial) number is unique per load.
+    if (form.serial_no?.trim()) {
+      const { data: dupDisp } = await supabase.from('vehicle_dispatches')
+        .select('id, truck_number, date')
+        .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
+        .eq('serial_no', form.serial_no.trim())
+        .limit(1)
+      if (dupDisp && dupDisp.length) {
+        showToast(`Parchi No ${form.serial_no.trim()} is already entered (truck ${dupDisp[0].truck_number || '?'} on ${dupDisp[0].date}). Looks like a duplicate.`, 'error')
+        return
+      }
+    }
     try {
       setSubmitting(true)
 

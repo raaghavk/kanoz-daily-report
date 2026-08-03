@@ -98,7 +98,7 @@ export default function FinancePage() {
     if (!window.confirm(`Remove "${row.category}" cost of ${inr(row.amount)}?`)) return
     setDeletingId(row.id)
     try {
-      const { error } = await supabase.from('finance_costs').update({ is_deleted: true }).eq('id', row.id)
+      const { error } = await supabase.from('finance_costs').update({ is_deleted: true, deleted_by: employee?.id || null, deleted_at: new Date().toISOString() }).eq('id', row.id)
       if (error) throw error
       setRows(prev => prev.filter(r => r.id !== row.id))
     } catch { showToast('Failed to remove', 'error') } finally { setDeletingId(null) }

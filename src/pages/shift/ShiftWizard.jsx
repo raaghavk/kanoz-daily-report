@@ -10,7 +10,7 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
-import { getValidationErrors } from './validation'
+import { getValidationErrors, getValidationWarnings } from './validation'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
 import Step3RawMaterialMix from './Step3RawMaterialMix'
@@ -1226,6 +1226,15 @@ export default function ShiftWizard() {
   ])
   const stepsWithErrors = useMemo(() => [...new Set(allErrors.map(e => e.step))], [allErrors])
   const currentWarnings = useMemo(() => allErrors.filter(e => e.step === step), [allErrors, step])
+  // Non-blocking advisory warnings (negative stock, over-hours, etc.) — shown but do NOT gate submit.
+  const allSoftWarnings = useMemo(() => {
+    try { return getValidationWarnings(reportData) } catch { return [] }
+  }, [ // eslint-disable-line react-hooks/exhaustive-deps
+    reportData.machines, reportData.rawMaterials, reportData.pelletStock, reportData.diesel,
+    reportData.start_power_reading, reportData.end_power_reading,
+    reportData.shift_start_date, reportData.shift_end_date, reportData.start_time, reportData.end_time,
+  ])
+  const currentSoftWarnings = useMemo(() => allSoftWarnings.filter(w => w.step === step), [allSoftWarnings, step])
 
   if (loadingData) {
     return (
@@ -1285,6 +1294,15 @@ export default function ShiftWizard() {
               <AlertTriangle size={16} color="#d4a373" style={{ flexShrink: 0, marginTop: 1 }} />
               <div style={{ fontSize: 12, color: '#92400E' }}>
                 {currentWarnings.map((w, i) => <div key={i}>{w.message}</div>)}
+              </div>
+            </div>
+          )}
+          {/* Advisory (non-blocking) warnings — you can still submit */}
+          {currentSoftWarnings.length > 0 && (
+            <div style={{ background: '#eef2f7', border: '1.5px solid #9db8d2', borderRadius: 12, padding: 12, marginBottom: 12, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <AlertTriangle size={16} color="#5b7ba3" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ fontSize: 12, color: '#33506f' }}>
+                {currentSoftWarnings.map((w, i) => <div key={i}>{w.message}</div>)}
               </div>
             </div>
           )}

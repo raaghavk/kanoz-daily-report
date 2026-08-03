@@ -410,6 +410,19 @@ export default function PurchaseForm() {
         return
       }
 
+      // Value sanity — block clearly-invalid numbers/dates.
+      {
+        const net = parseFloat(formData.net_weight)
+        const moist = parseFloat(formData.moisture_percentage)
+        const rate = parseFloat(formData.rate_per_kg)
+        if (!(net > 0)) { showToast('Net weight must be greater than 0', 'error'); return }
+        if (formData.moisture_percentage !== '' && (moist < 0 || moist > 100)) { showToast('Moisture % must be between 0 and 100', 'error'); return }
+        if (formData.rate_per_kg !== '' && !(rate > 0)) { showToast('Rate per kg must be greater than 0', 'error'); return }
+        if (formData.date && formData.date > getLocalDate()) { showToast('Purchase date cannot be in the future', 'error'); return }
+        // Warn (allow) on an unusually large load — a truck rarely exceeds ~60 MT.
+        if (net > 60000 && !window.confirm(`Net weight is ${Math.round(net).toLocaleString('en-IN')} kg (${(net/1000).toFixed(1)} MT) — that's unusually large. Save anyway?`)) { return }
+      }
+
       setSaving(true)
 
       // Check if this purchase is for a past shift

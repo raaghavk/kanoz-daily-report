@@ -73,7 +73,7 @@ export default function DeleteRequests() {
       const table = tableMap[request.entity_type]
       const { error: deleteError } = await supabase
         .from(table)
-        .update({ is_deleted: true })
+        .update({ is_deleted: true, deleted_by: employee.id, deleted_at: new Date().toISOString() })
         .eq('id', request.entity_id)
 
       if (deleteError) throw deleteError

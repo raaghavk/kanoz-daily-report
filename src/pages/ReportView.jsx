@@ -36,7 +36,7 @@ export default function ReportView() {
       setDeleting(true)
       // Soft delete — keeps data integrity and audit trail.
       // Child tables remain intact (accessible via shift_report_id if needed).
-      const { error } = await supabase.from('shift_reports').update({ is_deleted: true }).eq('id', id)
+      const { error } = await supabase.from('shift_reports').update({ is_deleted: true, deleted_by: employee?.id || null, deleted_at: new Date().toISOString() }).eq('id', id)
       if (error) throw error
       showToast('Report deleted', 'success')
       navigate('/reports')
