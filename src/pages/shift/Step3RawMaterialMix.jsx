@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from 'react'
+import { memo, useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getLocalDate } from '../../lib/dateUtils'
 import { supabase } from '../../lib/supabase'
@@ -129,7 +129,7 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
     navigate('/purchase/new', { state: { returnToShift: true, returnToStep: 3 } })
   }
 
-  const [purchasesLoaded, setPurchasesLoaded] = useState(false)
+  const loadedWindowRef = useRef(null)
   const [slideOpen, setSlideOpen] = useState(false)
   const [editingMix, setEditingMix] = useState(null)
   const [preparingMix, setPreparingMix] = useState(null)
@@ -138,33 +138,38 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
   const mixes = data.mixes || []
   const gcvThreshold = plant?.gcv_grade_threshold ?? 3200
 
-  // Auto-load purchased quantities (same logic as old Step4RawMaterial)
+  // Auto-load purchased quantities. Reloads whenever the shift window (dates or
+  // times) changes — a new report mounts with a default date, so we must recompute
+  // once the user picks the real shift date, otherwise that day's purchases never
+  // appear. Keyed by the window so it runs once per distinct window, not on every render.
   useEffect(() => {
-    if (!plant?.id || !data.shift_start_date || purchasesLoaded) return
+    if (!plant?.id || !data.shift_start_date) return
+    const winKey = `${data.shift_start_date}|${data.shift_end_date || ''}|${data.start_time || ''}|${data.end_time || ''}`
+    if (loadedWindowRef.current === winKey) return
+    let cancelled = false
     async function loadPurchases() {
       try {
         const { data: purchases } = await supabase
           .from('raw_material_purchases')
-          .select('raw_material_type_id, quantity_kg, purchase_time')
+          .select('raw_material_type_id, quantity_kg, purchase_time, date')
           .eq('plant_id', plant.id)
           .eq('is_deleted', false)
           .gte('date', data.shift_start_date)
           .lte('date', data.shift_end_date || data.shift_start_date)
+        if (cancelled) return
+        loadedWindowRef.current = winKey
 
-        if (!purchases?.length) { setPurchasesLoaded(true); return }
-
-        let filtered = purchases
+        let filtered = purchases || []
         if (data.start_time && data.end_time && data.shift_start_date) {
           const norm = t => t ? t.substring(0, 5) : t
           const shiftStart = new Date(`${data.shift_start_date}T${norm(data.start_time)}:00`)
           const shiftEnd = new Date(`${data.shift_end_date || data.shift_start_date}T${norm(data.end_time)}:00`)
-          filtered = purchases.filter(p => {
+          filtered = filtered.filter(p => {
             if (!p.purchase_time) return true
-            // Use the purchase's OWN date (not the shift start date) so overnight
-            // purchases logged after midnight land in the right shift. Include the
-            // start boundary, exclude the end, so a purchase exactly on the 8pm/8am
-            // handover belongs to exactly one shift (never both).
-            const pDt = new Date(`${p.date}T${p.purchase_time}`)
+            // Use the purchase's OWN date so overnight purchases land in the right
+            // shift; start-inclusive / end-exclusive so a purchase exactly on the
+            // 8pm/8am handover counts for exactly one shift (never both).
+            const pDt = new Date(`${p.date || data.shift_start_date}T${p.purchase_time}`)
             return pDt >= shiftStart && pDt < shiftEnd
           })
         }
@@ -183,15 +188,14 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
           const d = procDeltas[rm.id] || { produced: 0, procUsed: 0 }
           return { ...rm, purchased, produced: d.produced, closing: (rm.opening || 0) + purchased + d.produced - used - d.procUsed }
         })
-        updateData('rawMaterials', updated)
-        setPurchasesLoaded(true)
+        if (!cancelled) updateData('rawMaterials', updated)
       } catch (err) {
         console.error('Error loading purchases:', err)
-        setPurchasesLoaded(true)
       }
     }
     loadPurchases()
-  }, [plant?.id, data.shift_start_date]) // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { cancelled = true }
+  }, [plant?.id, data.shift_start_date, data.shift_end_date, data.start_time, data.end_time]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // This-shift RM consumption for a mix. Carried-over mixes keep their recipe
   // in `ingredients`, but raw material is only consumed for batches prepared
