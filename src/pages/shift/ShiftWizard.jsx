@@ -1220,7 +1220,8 @@ export default function ShiftWizard() {
     }
   }, [ // eslint-disable-line react-hooks/exhaustive-deps
     reportData.date, reportData.shift, reportData.start_time, reportData.end_time,
-    reportData.machines, reportData.production, reportData.rawMaterials
+    reportData.machines, reportData.production, reportData.rawMaterials,
+    reportData.remarks, reportData.mixes
   ])
   const stepsWithErrors = useMemo(() => [...new Set(allErrors.map(e => e.step))], [allErrors])
   const currentWarnings = useMemo(() => allErrors.filter(e => e.step === step), [allErrors, step])

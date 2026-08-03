@@ -7,17 +7,20 @@ export default memo(function Step1Header({ data, updateData, duplicateReportId }
   const navigate = useNavigate()
   function handleShiftChange(shift) {
     updateData('shift', shift)
+    // Keep the start date the user already picked; switching Day<->Night only
+    // changes the times (and rolls the end date to the next day for a night shift).
+    const startDate = data.shift_start_date || data.date
     if (shift === 'A') {
       updateData('start_time', '08:00')
       updateData('end_time', '20:00')
-      updateData('shift_start_date', data.date)
-      updateData('shift_end_date', data.date)
+      updateData('shift_start_date', startDate)
+      updateData('shift_end_date', startDate)
     } else {
       updateData('start_time', '20:00')
       updateData('end_time', '08:00')
-      updateData('shift_start_date', data.date)
-      // Next day for end date
-      const next = new Date(data.date)
+      updateData('shift_start_date', startDate)
+      // Night shift ends the next morning
+      const next = new Date(startDate)
       next.setDate(next.getDate() + 1)
       updateData('shift_end_date', getLocalDate(next))
     }
