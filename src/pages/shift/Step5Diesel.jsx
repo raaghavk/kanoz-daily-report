@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react'
+import { memo, useEffect, useState, useRef } from 'react'
 import { ChevronDown, ChevronUp, Plus, X, Camera, Sparkles } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
 import { supabase } from '../../lib/supabase'
@@ -11,7 +11,7 @@ function numVal(v) {
   return isNaN(n) ? '' : n
 }
 
-export default memo(function Step5Diesel({ data, updateData }) {
+export default memo(function Step5Diesel({ data, updateData, plant }) {
   const [scanningIdx, setScanningIdx] = useState(null)
   const [collapsedCats, setCollapsedCats] = useState({})
 
@@ -23,6 +23,61 @@ export default memo(function Step5Diesel({ data, updateData }) {
       updateData('diesel_stock', { ...data.diesel_stock, purchases: [] })
     }
   }, [data.diesel_stock, updateData])
+
+  // Later reports: each equipment's opening = its CLOSING in the shift immediately
+  // before this one (matched by equipment name). Finds the latest non-deleted report
+  // starting strictly before this shift's start, so it's correct in-order, out-of-order,
+  // and on edit. No earlier report => first report: leave openings (seeded from the
+  // equipment's settings tank opening elsewhere). Recomputes when the shift window changes.
+  const prevDieselWindowRef = useRef(null)
+  useEffect(() => {
+    if (!plant?.id || !data.shift_start_date || !(data.diesel || []).length) return
+    const winKey = `${data.shift_start_date}|${data.start_time || ''}`
+    if (prevDieselWindowRef.current === winKey) return
+    let cancelled = false
+    ;(async () => {
+      const thisStart = new Date(`${data.shift_start_date}T${(data.start_time || '00:00').substring(0, 5)}:00`)
+      const { data: reps } = await supabase
+        .from('shift_reports')
+        .select('id, shift_start_date, start_time')
+        .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
+        .lte('shift_start_date', data.shift_start_date)
+        .order('shift_start_date', { ascending: false })
+        .order('start_time', { ascending: false })
+      if (cancelled) return
+      const prev = (reps || []).find(r => {
+        const rs = new Date(`${r.shift_start_date}T${(r.start_time || '00:00:00').substring(0, 8)}`)
+        return rs < thisStart
+      })
+      if (!prev) { prevDieselWindowRef.current = winKey; return } // first report
+      const { data: prevLog } = await supabase
+        .from('equipment_diesel_log')
+        .select('equipment_name, closing_litres')
+        .eq('shift_report_id', prev.id)
+      if (cancelled) return
+      prevDieselWindowRef.current = winKey
+      const norm = (x) => (x || '').toString().trim().toLowerCase()
+      const closeByName = {}
+      for (const d of (prevLog || [])) closeByName[norm(d.equipment_name)] = parseFloat(d.closing_litres) || 0
+      let changed = false
+      const diesel = (data.diesel || []).map(eq => {
+        const key = norm(eq.equipment_name)
+        if (!(key in closeByName)) return eq
+        const nextOpen = closeByName[key]
+        if ((parseFloat(eq.opening) || 0) === nextOpen) return eq
+        changed = true
+        // Preserve what the user entered for `used`; closing follows from the chain.
+        // An untouched row (used 0) becomes closing = opening (0 consumed), never
+        // "all used".
+        const added = parseFloat(eq.added) || 0
+        const used = parseFloat(eq.used) || 0
+        return { ...eq, opening: nextOpen, closing: nextOpen + added - used }
+      })
+      if (!cancelled && changed) updateData('diesel', diesel)
+    })()
+    return () => { cancelled = true }
+  }, [plant?.id, data.shift_start_date, data.start_time, (data.diesel || []).length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function scanDieselReceipt(idx, receiptUrl) {
     if (!receiptUrl) return

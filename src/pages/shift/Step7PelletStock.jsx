@@ -84,6 +84,55 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
     return () => { cancelled = true }
   }, [plant?.id, (data.pelletStock || []).length]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Later reports: opening = the CLOSING of the shift immediately before this one.
+  // Find the latest non-deleted report whose start is strictly before this shift's
+  // start (that excludes the report being edited, and works even if reports were
+  // entered out of order). Recomputes whenever the shift window changes. No earlier
+  // report => first report, handled by the settings effect above.
+  const prevPelletWindowRef = useRef(null)
+  useEffect(() => {
+    if (!plant?.id || !data.shift_start_date || !(data.pelletStock || []).length) return
+    const winKey = `${data.shift_start_date}|${data.start_time || ''}`
+    if (prevPelletWindowRef.current === winKey) return
+    let cancelled = false
+    ;(async () => {
+      const thisStart = new Date(`${data.shift_start_date}T${(data.start_time || '00:00').substring(0, 5)}:00`)
+      const { data: reps } = await supabase
+        .from('shift_reports')
+        .select('id, shift_start_date, start_time')
+        .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
+        .lte('shift_start_date', data.shift_start_date)
+        .order('shift_start_date', { ascending: false })
+        .order('start_time', { ascending: false })
+      if (cancelled) return
+      const prev = (reps || []).find(r => {
+        const rs = new Date(`${r.shift_start_date}T${(r.start_time || '00:00:00').substring(0, 8)}`)
+        return rs < thisStart
+      })
+      if (!prev) { prevPelletWindowRef.current = winKey; return } // first report
+      const { data: prevStock } = await supabase
+        .from('pellet_stock')
+        .select('pellet_type_id, closing_mt')
+        .eq('shift_report_id', prev.id)
+      if (cancelled) return
+      prevPelletWindowRef.current = winKey
+      const closeById = {}
+      for (const p of (prevStock || [])) closeById[p.pellet_type_id] = parseFloat(p.closing_mt) || 0
+      let changed = false
+      const stock = (data.pelletStock || []).map(ps => {
+        const nextOpen = closeById[ps.id] || 0
+        if ((parseFloat(ps.opening) || 0) !== nextOpen) {
+          changed = true
+          return { ...ps, opening: nextOpen, closing: nextOpen + (ps.production || 0) - (ps.dispatch || 0) - (ps.wastage || 0) }
+        }
+        return ps
+      })
+      if (!cancelled && changed) updateData('pelletStock', stock)
+    })()
+    return () => { cancelled = true }
+  }, [plant?.id, data.shift_start_date, data.start_time, (data.pelletStock || []).length]) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     if (!plant?.id) return
     const mixes = data.mixes || []
