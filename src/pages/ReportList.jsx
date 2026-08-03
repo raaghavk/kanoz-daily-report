@@ -112,9 +112,17 @@ export default function ReportList() {
   function groupReportsByDate(data) {
     const grouped = {}
     data.forEach(report => {
-      const date = report.shift_end_date || report.shift_start_date || report.date || ''
+      // Group by shift START date, so a night shift (e.g. 20 Jul 20:00 -> 21 Jul 08:00)
+      // sits under the day it began, together with that day's Shift A.
+      const date = report.shift_start_date || report.date || report.shift_end_date || ''
       if (!grouped[date]) grouped[date] = []
       grouped[date].push(report)
+    })
+    // Within each day, order by start time ascending (Shift A day, then Shift B night).
+    Object.keys(grouped).forEach(k => {
+      grouped[k].sort((a, b) =>
+        (a.start_time || '').localeCompare(b.start_time || '') ||
+        (a.shift || '').localeCompare(b.shift || ''))
     })
     setGroupedReports(grouped)
 
