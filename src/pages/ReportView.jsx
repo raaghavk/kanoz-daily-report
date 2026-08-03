@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { kgToMtStr } from '../lib/units'
+import { kgToMtStr, equipCode } from '../lib/units'
 import { showToast } from '../components/Toast'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
@@ -201,7 +201,7 @@ export default function ReportView() {
         supabase.from('machine_production').select('*, machines(name)').eq('shift_report_id', id),
         supabase.from('raw_material_usage').select('*, raw_material_types(name)').eq('shift_report_id', id),
         supabase.from('vehicle_dispatches').select('*, dispatch_pellets(*, pellet_types(name)), customers(name)').eq('shift_report_id', id).eq('is_deleted', false),
-        supabase.from('equipment_diesel_log').select('*').eq('shift_report_id', id),
+        supabase.from('equipment_diesel_log').select('*, equipment:equipment_id(name, equipment_type, owner, company, identifier)').eq('shift_report_id', id),
         supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', id),
         supabase.from('issues').select('*').eq('shift_report_id', id),
         supabase.from('shift_mixes').select('*').eq('shift_report_id', id),
@@ -218,7 +218,7 @@ export default function ReportView() {
       setMachineProduction(machRes.data || [])
       setRawMaterials((matRes.data || []).slice().sort((a,b)=>(a.raw_material_types?.name||'').localeCompare(b.raw_material_types?.name||'')))
       setDispatches(dispatchRes.data || [])
-      setEquipmentDiesel((dieselRes.data || []).slice().sort((a,b)=>((a.equipment_type||'zzz').localeCompare(b.equipment_type||'zzz'))||((a.equipment_name||'').localeCompare(b.equipment_name||''))))
+      setEquipmentDiesel((dieselRes.data || []).slice().sort((a,b)=>(((a.equipment?.equipment_type||a.equipment_type||'zzz').localeCompare(b.equipment?.equipment_type||b.equipment_type||'zzz'))||((a.equipment?.name||a.equipment_name||'').localeCompare(b.equipment?.name||b.equipment_name||'')))))
       setPelletStock((stockRes.data || []).slice().sort((a,b)=>(a.pellet_types?.name||'').localeCompare(b.pellet_types?.name||'')))
       setIssues(issuesRes.data || [])
       setMixes(mixesRes.data || [])
@@ -508,10 +508,10 @@ export default function ReportView() {
                   return (
                   <tr key={e.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>
-                      <div>{e.equipment_name || 'N/A'}</div>
-                      {(e.equipment_type || e.owner || e.company) && (
+                      <div>{(e.equipment?.name || e.equipment_name || 'N/A')}{equipCode(e.equipment?.identifier) ? ` · ${equipCode(e.equipment?.identifier)}` : ''}</div>
+                      {((e.equipment?.equipment_type) || (e.equipment?.owner) || (e.equipment?.company)) && (
                         <div style={{ fontSize: 9, color: '#a0a396', marginTop: 2 }}>
-                          {[e.equipment_type, e.owner || e.company].filter(Boolean).join(' · ')}
+                          {[e.equipment?.equipment_type, e.equipment?.owner || e.equipment?.company].filter(Boolean).join(' · ')}
                         </div>
                       )}
                     </td>

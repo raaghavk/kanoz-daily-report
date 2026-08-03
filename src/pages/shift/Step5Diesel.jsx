@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Plus, X, Camera, Sparkles } from 'lucide-react'
 import PhotoUpload from '../../components/PhotoUpload'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
+import { equipCode } from '../../lib/units'
 
 // Helper: format number for display, strip leading zeros, allow empty
 function numVal(v) {
@@ -53,18 +54,24 @@ export default memo(function Step5Diesel({ data, updateData, plant }) {
       if (!prev) { prevDieselWindowRef.current = winKey; return } // first report
       const { data: prevLog } = await supabase
         .from('equipment_diesel_log')
-        .select('equipment_name, closing_litres')
+        .select('equipment_id, equipment_name, closing_litres')
         .eq('shift_report_id', prev.id)
       if (cancelled) return
       prevDieselWindowRef.current = winKey
       const norm = (x) => (x || '').toString().trim().toLowerCase()
-      const closeByName = {}
-      for (const d of (prevLog || [])) closeByName[norm(d.equipment_name)] = parseFloat(d.closing_litres) || 0
+      const closeById = {}, closeByName = {}
+      for (const d of (prevLog || [])) {
+        const c = parseFloat(d.closing_litres) || 0
+        if (d.equipment_id) closeById[d.equipment_id] = c
+        else closeByName[norm(d.equipment_name)] = c
+      }
       let changed = false
       const diesel = (data.diesel || []).map(eq => {
-        const key = norm(eq.equipment_name)
-        if (!(key in closeByName)) return eq
-        const nextOpen = closeByName[key]
+        // Prefer a stable equipment_id match; fall back to name for older rows.
+        const hasId = eq.id != null && eq.id in closeById
+        const nameKey = norm(eq.equipment_name)
+        if (!hasId && !(nameKey in closeByName)) return eq
+        const nextOpen = hasId ? closeById[eq.id] : closeByName[nameKey]
         if ((parseFloat(eq.opening) || 0) === nextOpen) return eq
         changed = true
         // Preserve what the user entered for `used`; closing follows from the chain.
@@ -399,7 +406,7 @@ export default memo(function Step5Diesel({ data, updateData, plant }) {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div>
-                <h4 style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', margin: 0 }}>{entry.equipment_name}</h4>
+                <h4 style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', margin: 0 }}>{entry.equipment_name}{equipCode(entry.identifier) ? ` · ${equipCode(entry.identifier)}` : ''}</h4>
                 {(entry.owner || entry.company) && <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>{[entry.owner, entry.company].filter(Boolean).join(' · ')}</div>}
               </div>
             </div>

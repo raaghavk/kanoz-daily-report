@@ -326,7 +326,7 @@ export default function ShiftWizard() {
           id: p.id, name: p.name, opening_stock_mt: p.opening_stock_mt ?? 0, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0
         }))
         const activeDiesel = (equipmentRes.data || []).map(eq => ({
-          id: eq.id, equipment_name: eq.name, equipment_type: eq.equipment_type ?? null, owner: eq.owner ?? null, company: eq.company ?? null, opening_stock_litres: eq.opening_stock_litres ?? 0, opening: 0, added: 0, used: 0, closing: 0, hours: 0, avg_per_hr: 0, collapsed: true,
+          id: eq.id, equipment_name: eq.name, equipment_type: eq.equipment_type ?? null, owner: eq.owner ?? null, company: eq.company ?? null, identifier: eq.identifier ?? null, opening_stock_litres: eq.opening_stock_litres ?? 0, opening: 0, added: 0, used: 0, closing: 0, hours: 0, avg_per_hr: 0, collapsed: true,
         }))
 
         if (editId) {
@@ -479,7 +479,7 @@ export default function ShiftWizard() {
           // as-of tank snapshot) and balance the closing, matching the carry-forward
           // path. Rows the user actually filled are left exactly as saved.
           freshReportData.diesel = activeDiesel.map(eq => {
-            const dieselData = (diesel.data || []).find(d => d.equipment_name === eq.equipment_name)
+            const dieselData = (diesel.data || []).find(d => (d.equipment_id && eq.id && d.equipment_id === eq.id) || (!d.equipment_id && d.equipment_name === eq.equipment_name))
             const sOpen  = dieselData ? parseFloat(dieselData.opening_litres) || 0 : 0
             const sAdded = dieselData ? parseFloat(dieselData.added_litres) || 0 : 0
             const sClose = dieselData ? parseFloat(dieselData.closing_litres) || 0 : 0
@@ -704,7 +704,7 @@ export default function ShiftWizard() {
 
           // Carry forward diesel log
           freshReportData.diesel = activeDiesel.map(eq => {
-            const prev = prevDieselLog.find(d => d.equipment_name === eq.equipment_name)
+            const prev = prevDieselLog.find(d => (d.equipment_id && eq.id && d.equipment_id === eq.id) || (!d.equipment_id && d.equipment_name === eq.equipment_name))
             const opening = prev ? (parseFloat(prev.closing_litres) || 0) : (parseFloat(eq.opening_stock_litres) || 0)
             return { ...eq, opening, closing: opening }
           })
@@ -1002,6 +1002,7 @@ export default function ShiftWizard() {
             const closeL = openL + addedL - usedL
             return {
               shift_report_id: report.id,
+              equipment_id: d.id || null,
               equipment_name: sanitizeText(d.equipment_name, 100),
               opening_litres: openL,
               added_litres:   addedL,

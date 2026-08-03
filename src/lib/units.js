@@ -23,3 +23,11 @@ export function bothUnits(kg) {
   const k = Number(kg) || 0
   return `${kgToMtStr(k)} MT (${Math.round(k).toLocaleString('en-IN')} kg)`
 }
+
+// Short human code for an equipment/vehicle from the last 4 alphanumerics of its
+// identifier (vehicle/generator number), e.g. "UP45AT9028" -> "9028". Helps tell
+// apart machines that share a name. Returns '' when no identifier is given.
+export function equipCode(identifier) {
+  const s = (identifier || '').toString().replace(/[^A-Za-z0-9]/g, '')
+  return s.length >= 4 ? s.slice(-4) : s
+}
