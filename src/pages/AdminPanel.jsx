@@ -222,9 +222,36 @@ export default function AdminPanel() {
     loadTypeOptions()
   }
 
+  // When another active equipment in this plant already has the same name, require a
+  // distinguishing detail (vehicle/gen number, owner, or company) so look-alikes like two
+  // "Loader" machines can be told apart, and block an exact duplicate. Not all equipment
+  // has a vehicle number, so any one of the three details is enough.
+  async function equipDisambiguationError({ name, identifier, owner, company, excludeId }) {
+    const nm = (name || '').trim()
+    if (!nm) return null
+    let q = supabase.from('equipment')
+      .select('id, name, identifier, owner, company')
+      .eq('plant_id', selectedPlantId)
+      .eq('is_active', true)
+    if (excludeId) q = q.neq('id', excludeId)
+    const { data: rows } = await q
+    const norm = v => (v || '').trim().toLowerCase()
+    const sameName = (rows || []).filter(e => norm(e.name) === norm(nm))
+    if (!sameName.length) return null
+    const hasDetail = (identifier || '').trim() || (owner || '').trim() || (company || '').trim()
+    if (!hasDetail) return `Another "${nm}" already exists. Add a vehicle/gen number, owner, or company so they can be told apart.`
+    const exact = sameName.some(e => norm(e.identifier) === norm(identifier) && norm(e.owner) === norm(owner) && norm(e.company) === norm(company))
+    if (exact) return `An identical "${nm}" (same number, owner and company) already exists.`
+    return null
+  }
+
   async function saveEquip() {
     if (!equipModal) return
     if (!equipModal.name.trim()) { showToast('Name is required', 'error'); return }
+    {
+      const disErr = await equipDisambiguationError({ name: equipModal.name, identifier: equipModal.identifier, owner: equipModal.owner, company: equipModal.company, excludeId: equipModal.id })
+      if (disErr) { showToast(disErr, 'error'); return }
+    }
     const stock = parseFloat(equipModal.stock)
     const hp = parseFloat(equipModal.motorHp)
     setSavingEquip(true)
@@ -443,6 +470,10 @@ export default function AdminPanel() {
       payload.opening_stock_kg = Number.isNaN(stockMt) ? 0 : mtToKg(stockMt)
       payload.source = newItemSource || 'purchased'
     }
+    if (sectionKey === 'equipment') {
+      const disErr = await equipDisambiguationError({ name: newItemName, identifier: newItemIdentifier, owner: newItemOwner, company: newItemCompany })
+      if (disErr) { showToast(disErr, 'error'); setBusy(false); return }
+    }
     const { error } = await supabase.from(section.table).insert(payload)
     setBusy(false)
     if (error) {
@@ -493,6 +524,10 @@ export default function AdminPanel() {
       payload.company = (editingItem?.company || '').trim() || null
       payload.motor_hp = Number.isNaN(hp) ? null : hp
       payload.opening_stock_litres = Number.isNaN(litres) ? 0 : litres
+    }
+    if (sectionKey === 'equipment') {
+      const disErr = await equipDisambiguationError({ name: newName, identifier: editingItem?.identifier, owner: editingItem?.owner, company: editingItem?.company, excludeId: id })
+      if (disErr) { showToast(disErr, 'error'); return }
     }
     const { error } = await supabase.from(section.table).update(payload).eq('id', id)
     if (error) {

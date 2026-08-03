@@ -385,6 +385,22 @@ export default function PurchaseForm() {
         showToast('Serial No / Parchi No is required', 'error')
         return
       }
+      // Reject a duplicate: the serial (parchi) number uniquely identifies a purchase,
+      // so if one already exists for this plant, warn and stop (excluding this record on edit).
+      {
+        const serial = formData.serial_no.trim()
+        let dupQ = supabase.from('raw_material_purchases')
+          .select('id, date, supplier_name')
+          .eq('plant_id', plant?.id)
+          .eq('is_deleted', false)
+          .eq('serial_no', serial)
+        if (id) dupQ = dupQ.neq('id', id)
+        const { data: dup } = await dupQ.limit(1)
+        if (dup && dup.length) {
+          showToast(`Serial No ${serial} is already entered (${dup[0].supplier_name || 'purchase'} on ${dup[0].date}). This looks like a duplicate.`, 'error')
+          return
+        }
+      }
       if (!formData.supplier_id || !formData.raw_material_type_id || !formData.net_weight) {
         showToast('Please fill in all required fields', 'error')
         return
