@@ -292,6 +292,11 @@ export default function ReportView() {
     return { ...p, live_dispatch_mt: dispatchVal, live_closing_mt: closing }
   })
 
+  // Hide fully-empty rows (all quantities zero) from the report display.
+  const nz = (...vals) => vals.some(v => (parseFloat(v) || 0) !== 0)
+  const visibleRawMaterials = rawMaterials.filter(m => nz(m.opening_kg, m.purchased_kg, m.quantity_kg, m.closing_kg))
+  const visiblePelletStock = pelletStockWithLiveDispatch.filter(p => nz(p.opening_mt, p.production_mt, p.live_dispatch_mt, p.wastage_mt, p.live_closing_mt))
+
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       {/* Sticky Header */}
@@ -438,8 +443,8 @@ export default function ReportView() {
               </tr>
             </thead>
             <tbody>
-              {rawMaterials.length > 0 ? (
-                rawMaterials.map(m => (
+              {visibleRawMaterials.length > 0 ? (
+                visibleRawMaterials.map(m => (
                   <tr key={m.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{m.raw_material_types?.name || 'N/A'}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{kgToMtStr(m.opening_kg)}</td>
@@ -583,8 +588,8 @@ export default function ReportView() {
               </tr>
             </thead>
             <tbody>
-              {pelletStockWithLiveDispatch.length > 0 ? (
-                pelletStockWithLiveDispatch.map(p => (
+              {visiblePelletStock.length > 0 ? (
+                visiblePelletStock.map(p => (
                   <tr key={p.id} style={{ borderTop: '1px solid #e5ddd0' }}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, color: '#2c2c2c', fontSize: 11 }}>{p.pellet_types?.name || 'N/A'}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.opening_mt || 0).toFixed(1)}</td>

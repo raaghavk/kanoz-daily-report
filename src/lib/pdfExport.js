@@ -484,7 +484,8 @@ export async function exportShiftReportPDF(report, data) {
   const tblY = blockY + 12
 
   const toMT = (x) => ((Number(x) || 0) / 1000).toFixed(2)
-  const rmRows = (data.rawMaterials || []).map(r => [
+  const nzRow = (...vals) => vals.some(v => (parseFloat(v) || 0) !== 0)
+  const rmRows = (data.rawMaterials || []).filter(r => nzRow(r.opening_kg, r.purchased_kg, r.quantity_kg, r.closing_kg)).map(r => [
     r.raw_material_types?.name || '—',
     toMT(r.opening_kg),
     toMT(r.purchased_kg),
@@ -500,7 +501,7 @@ export async function exportShiftReportPDF(report, data) {
   doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); setC(doc, LIGHT)
   doc.text('All quantities in MT', lX, rmEndY + 1)
 
-  const psRows = (data.pelletStock || []).map(p => [
+  const psRows = (data.pelletStock || []).filter(p => nzRow(p.opening_mt, p.production_mt, p.dispatch_mt, p.wastage_mt, p.closing_mt)).map(p => [
     p.pellet_types?.name || '—',
     String(p.opening_mt    || 0),
     String(p.production_mt || 0),
