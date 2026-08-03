@@ -51,32 +51,38 @@ export default memo(function Step5Diesel({ data, updateData, plant }) {
         const rs = new Date(`${r.shift_start_date}T${(r.start_time || '00:00:00').substring(0, 8)}`)
         return rs < thisStart
       })
-      if (!prev) { prevDieselWindowRef.current = winKey; return } // first report
-      const { data: prevLog } = await supabase
-        .from('equipment_diesel_log')
-        .select('equipment_id, equipment_name, closing_litres')
-        .eq('shift_report_id', prev.id)
-      if (cancelled) return
       prevDieselWindowRef.current = winKey
       const norm = (x) => (x || '').toString().trim().toLowerCase()
       const closeById = {}, closeByName = {}
-      for (const d of (prevLog || [])) {
-        const c = parseFloat(d.closing_litres) || 0
-        if (d.equipment_id) closeById[d.equipment_id] = c
-        else closeByName[norm(d.equipment_name)] = c
+      if (prev) {
+        const { data: prevLog } = await supabase
+          .from('equipment_diesel_log')
+          .select('equipment_id, equipment_name, closing_litres')
+          .eq('shift_report_id', prev.id)
+        if (cancelled) return
+        for (const d of (prevLog || [])) {
+          const c = parseFloat(d.closing_litres) || 0
+          if (d.equipment_id) closeById[d.equipment_id] = c
+          else closeByName[norm(d.equipment_name)] = c
+        }
       }
       let changed = false
       const diesel = (data.diesel || []).map(eq => {
-        // Prefer a stable equipment_id match; fall back to name for older rows.
         const hasId = eq.id != null && eq.id in closeById
         const nameKey = norm(eq.equipment_name)
-        if (!hasId && !(nameKey in closeByName)) return eq
-        const nextOpen = hasId ? closeById[eq.id] : closeByName[nameKey]
+        let nextOpen
+        if (prev) {
+          // Prefer a stable equipment_id match; fall back to name for older rows.
+          if (!hasId && !(nameKey in closeByName)) return eq
+          nextOpen = hasId ? closeById[eq.id] : closeByName[nameKey]
+        } else {
+          // No earlier report — the earliest report seeds opening from the settings tank stock.
+          nextOpen = parseFloat(eq.opening_stock_litres) || 0
+        }
         if ((parseFloat(eq.opening) || 0) === nextOpen) return eq
         changed = true
         // Preserve what the user entered for `used`; closing follows from the chain.
-        // An untouched row (used 0) becomes closing = opening (0 consumed), never
-        // "all used".
+        // An untouched row (used 0) becomes closing = opening (0 consumed), never "all used".
         const added = parseFloat(eq.added) || 0
         const used = parseFloat(eq.used) || 0
         return { ...eq, opening: nextOpen, closing: nextOpen + added - used }

@@ -186,6 +186,7 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
         // If there is no earlier report, this is the first report: leave opening as-is
         // (the first-report effect seeds it from the settings opening stock).
         let prevClosings = null
+        let openingBeforeByType = null
         {
           const thisStart = new Date(`${data.shift_start_date}T${(data.start_time || '00:00').substring(0,5)}:00`)
           const { data: reps } = await supabase
@@ -209,6 +210,21 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
             if (cancelled) return
             prevClosings = {}
             for (const u of (usage || [])) prevClosings[u.raw_material_type_id] = parseFloat(u.closing_kg) || 0
+          } else {
+            // No earlier report — this is the chain's FIRST report (even if later
+            // reports already exist, e.g. a back-dated start). Seed opening from the
+            // settings opening stock plus any purchases dated before this shift
+            // (on/after the stock-opening date), which are already part of that stock.
+            const stockAsOf = plant?.stock_opening_date || null
+            let bq = supabase.from('raw_material_purchases')
+              .select('raw_material_type_id, quantity_kg, date')
+              .eq('plant_id', plant.id).eq('is_deleted', false)
+              .lt('date', data.shift_start_date)
+            if (stockAsOf) bq = bq.gte('date', stockAsOf)
+            const { data: before } = await bq
+            if (cancelled) return
+            openingBeforeByType = {}
+            for (const p of (before || [])) openingBeforeByType[p.raw_material_type_id] = (openingBeforeByType[p.raw_material_type_id] || 0) + (parseFloat(p.quantity_kg) || 0)
           }
         }
 
@@ -219,7 +235,9 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
           const purchased = Math.round(purchasedByType[rm.id] || 0)
           const used = rm.used || 0
           const d = procDeltas[rm.id] || { produced: 0, procUsed: 0 }
-          const opening = prevClosings ? (prevClosings[rm.id] || 0) : (rm.opening || 0)
+          const opening = prevClosings
+            ? (prevClosings[rm.id] || 0)
+            : ((parseFloat(rm.opening_stock_kg) || 0) + ((openingBeforeByType && openingBeforeByType[rm.id]) || 0))
           return { ...rm, opening, purchased, produced: d.produced, closing: opening + purchased + d.produced - used - d.procUsed }
         })
         if (!cancelled) updateData('rawMaterials', updated)

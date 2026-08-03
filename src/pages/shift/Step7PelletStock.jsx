@@ -110,18 +110,23 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
         const rs = new Date(`${r.shift_start_date}T${(r.start_time || '00:00:00').substring(0, 8)}`)
         return rs < thisStart
       })
-      if (!prev) { prevPelletWindowRef.current = winKey; return } // first report
-      const { data: prevStock } = await supabase
-        .from('pellet_stock')
-        .select('pellet_type_id, closing_mt')
-        .eq('shift_report_id', prev.id)
-      if (cancelled) return
       prevPelletWindowRef.current = winKey
       const closeById = {}
-      for (const p of (prevStock || [])) closeById[p.pellet_type_id] = parseFloat(p.closing_mt) || 0
+      let seedFromSettings = false
+      if (prev) {
+        const { data: prevStock } = await supabase
+          .from('pellet_stock')
+          .select('pellet_type_id, closing_mt')
+          .eq('shift_report_id', prev.id)
+        if (cancelled) return
+        for (const p of (prevStock || [])) closeById[p.pellet_type_id] = parseFloat(p.closing_mt) || 0
+      } else {
+        // No earlier report — the earliest report seeds opening from settings stock.
+        seedFromSettings = true
+      }
       let changed = false
       const stock = (data.pelletStock || []).map(ps => {
-        const nextOpen = closeById[ps.id] || 0
+        const nextOpen = seedFromSettings ? (parseFloat(ps.opening_stock_mt) || 0) : (closeById[ps.id] || 0)
         if ((parseFloat(ps.opening) || 0) !== nextOpen) {
           changed = true
           return { ...ps, opening: nextOpen, closing: nextOpen + (ps.production || 0) - (ps.dispatch || 0) - (ps.wastage || 0) }
