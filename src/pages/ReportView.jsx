@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { kgToMtStr, equipCode } from '../lib/units'
 import { showToast } from '../components/Toast'
+import { resyncShiftReport } from '../lib/resyncReport'
 import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
 import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, FileText, RefreshCw, X } from 'lucide-react'
@@ -54,18 +55,16 @@ export default function ReportView() {
     if (!report) return
     setSyncingReport(true)
     try {
-      // Build shift time window
-      // Normalize time: DB returns HH:MM:SS, we need HH:MM to avoid invalid dates like HH:MM:SS:00
       const normalizeTime = (t) => t ? t.substring(0, 5) : t
       const shiftStartDate = report.shift_start_date || report.date
       const shiftEndDate = report.shift_end_date || report.date
       const startTime = normalizeTime(report.start_time) || '06:00'
       const endTime = normalizeTime(report.end_time) || '18:00'
-      const shiftStart = `${shiftStartDate}T${startTime}:00`
-      const shiftEnd = `${shiftEndDate}T${endTime}:00`
+      const shiftStartDt = new Date(`${shiftStartDate}T${startTime}:00`)
+      const shiftEndDt = new Date(`${shiftEndDate}T${endTime}:00`)
 
-      // 1. Re-link dispatches: find dispatches in shift time window for this plant
-      // dispatch_datetime doesn't exist — filter by date range then check time in JS
+      // Re-link dispatches that fall inside this shift's time window to this report,
+      // so newly-added dispatches show up (and ones moved out of the window drop off).
       const { data: candidateDispatches, error: dispErr } = await supabase
         .from('vehicle_dispatches')
         .select('id, date, dispatch_date, dispatch_time')
@@ -73,95 +72,28 @@ export default function ReportView() {
         .eq('is_deleted', false)
         .gte('date', shiftStartDate)
         .lte('date', shiftEndDate)
-
       if (dispErr) throw dispErr
-
-      // Filter to those within the exact shift time window
-      const shiftStartDt = new Date(shiftStart)
-      const shiftEndDt   = new Date(shiftEnd)
-      const matchingIds  = (candidateDispatches || []).filter(d => {
+      const matchingIds = (candidateDispatches || []).filter(d => {
         const dDate = d.dispatch_date || d.date
         const dTime = d.dispatch_time || '00:00:00'
         const dt = new Date(`${dDate}T${dTime}`)
-        return dt >= shiftStartDt && dt <= shiftEndDt
+        return dt >= shiftStartDt && dt < shiftEndDt
       }).map(d => d.id)
-
-      // Unlink old dispatches from this report
-      await supabase
-        .from('vehicle_dispatches')
-        .update({ shift_report_id: null })
-        .eq('shift_report_id', id)
-
-      // Link matching dispatches to this report
+      await supabase.from('vehicle_dispatches').update({ shift_report_id: null }).eq('shift_report_id', id)
       if (matchingIds.length > 0) {
-        await supabase
-          .from('vehicle_dispatches')
-          .update({ shift_report_id: id })
-          .in('id', matchingIds)
+        await supabase.from('vehicle_dispatches').update({ shift_report_id: id }).in('id', matchingIds)
       }
 
-      // 2. Update raw material purchased amounts from live purchases
-      const { data: rmUsageRows, error: rmErr } = await supabase
-        .from('raw_material_usage')
-        .select('id, raw_material_type_id')
-        .eq('shift_report_id', id)
+      // Recompute every derived number the wizard would: raw-material purchased/opening/closing
+      // (with processing folded in), pellet dispatch/opening, and diesel opening — all carried
+      // from the previous shift and windowed to this shift. Hand-entered values are preserved.
+      await resyncShiftReport(id)
 
-      if (rmErr) throw rmErr
-
-      if (rmUsageRows && rmUsageRows.length > 0) {
-        // Get purchases in the shift window by date range, then filter by time client-side
-        const { data: purchases } = await supabase
-          .from('raw_material_purchases')
-          .select('raw_material_type_id, quantity_kg, purchase_time')
-          .eq('plant_id', report.plant_id)
-          .eq('is_deleted', false)
-          .gte('date', shiftStartDate)
-          .lte('date', shiftEndDate)
-
-        // Sum purchases by material type, optionally filtered by purchase_time
-        const shiftStartDtRm = new Date(shiftStart)
-        const shiftEndDtRm   = new Date(shiftEnd)
-        const purchasedByType = {}
-        if (purchases) {
-          for (const p of purchases) {
-            // If purchase_time exists, check it falls within the shift window
-            if (p.purchase_time) {
-              const pDt = new Date(`${shiftStartDate}T${p.purchase_time}`)
-              if (pDt < shiftStartDtRm || pDt > shiftEndDtRm) continue
-            }
-            const typeId = p.raw_material_type_id
-            purchasedByType[typeId] = (purchasedByType[typeId] || 0) + (parseFloat(p.quantity_kg) || 0)
-          }
-        }
-
-        // Update each raw_material_usage row with fresh purchased_kg and recalculate closing
-        for (const row of rmUsageRows) {
-          const newPurchased = purchasedByType[row.raw_material_type_id] || 0
-          // Fetch current row to recalculate closing
-          const { data: currentRow } = await supabase
-            .from('raw_material_usage')
-            .select('opening_kg, quantity_kg')
-            .eq('id', row.id)
-            .single()
-
-          if (currentRow) {
-            const opening = parseFloat(currentRow.opening_kg) || 0
-            const used = parseFloat(currentRow.quantity_kg) || 0
-            const newClosing = opening + newPurchased - used
-            await supabase
-              .from('raw_material_usage')
-              .update({ purchased_kg: newPurchased, closing_kg: newClosing })
-              .eq('id', row.id)
-          }
-        }
-      }
-
-      showToast('Report synced successfully!', 'success')
-      // Refresh the view
+      showToast('Report updated', 'success')
       await fetchReport()
     } catch (err) {
       console.error('Sync error:', err)
-      showToast('Failed to sync report', 'error')
+      showToast('Failed to update report', 'error')
     } finally {
       setSyncingReport(false)
     }
@@ -707,7 +639,7 @@ export default function ReportView() {
             cursor: syncingReport ? 'not-allowed' : 'pointer', opacity: syncingReport ? 0.6 : 1,
           }}
         >
-          <RefreshCw size={14} style={syncingReport ? { animation: 'spin 1s linear infinite' } : {}} /> {syncingReport ? 'Syncing...' : 'Sync'}
+          <RefreshCw size={14} style={syncingReport ? { animation: 'spin 1s linear infinite' } : {}} /> {syncingReport ? 'Updating...' : 'Update'}
         </button>
         <button
           onClick={deleteReport}
