@@ -179,6 +179,39 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
           purchasedByType[p.raw_material_type_id] = (purchasedByType[p.raw_material_type_id] || 0) + (parseFloat(p.quantity_kg) || 0)
         })
 
+        // Opening = closing of the shift immediately BEFORE this one (the previous
+        // shift's carry-out). Find the latest non-deleted report whose start is
+        // strictly before this shift's start — that automatically excludes the report
+        // being edited (same start) and works even if reports were entered out of order.
+        // If there is no earlier report, this is the first report: leave opening as-is
+        // (the first-report effect seeds it from the settings opening stock).
+        let prevClosings = null
+        {
+          const thisStart = new Date(`${data.shift_start_date}T${(data.start_time || '00:00').substring(0,5)}:00`)
+          const { data: reps } = await supabase
+            .from('shift_reports')
+            .select('id, shift_start_date, start_time')
+            .eq('plant_id', plant.id)
+            .eq('is_deleted', false)
+            .lte('shift_start_date', data.shift_start_date)
+            .order('shift_start_date', { ascending: false })
+            .order('start_time', { ascending: false })
+          if (cancelled) return
+          const prev = (reps || []).find(r => {
+            const rs = new Date(`${r.shift_start_date}T${(r.start_time || '00:00:00').substring(0,8)}`)
+            return rs < thisStart
+          })
+          if (prev) {
+            const { data: usage } = await supabase
+              .from('raw_material_usage')
+              .select('raw_material_type_id, closing_kg')
+              .eq('shift_report_id', prev.id)
+            if (cancelled) return
+            prevClosings = {}
+            for (const u of (usage || [])) prevClosings[u.raw_material_type_id] = parseFloat(u.closing_kg) || 0
+          }
+        }
+
         // Update rawMaterials — preserve existing used (from mixes), and fold
         // in-house processing (produced + processing input) into closing.
         const procDeltas = computeProcessingDeltas(data.processing, data.rawMaterials)
@@ -186,7 +219,8 @@ export default memo(function Step3RawMaterialMix({ data, updateData, plant, save
           const purchased = Math.round(purchasedByType[rm.id] || 0)
           const used = rm.used || 0
           const d = procDeltas[rm.id] || { produced: 0, procUsed: 0 }
-          return { ...rm, purchased, produced: d.produced, closing: (rm.opening || 0) + purchased + d.produced - used - d.procUsed }
+          const opening = prevClosings ? (prevClosings[rm.id] || 0) : (rm.opening || 0)
+          return { ...rm, opening, purchased, produced: d.produced, closing: opening + purchased + d.produced - used - d.procUsed }
         })
         if (!cancelled) updateData('rawMaterials', updated)
       } catch (err) {

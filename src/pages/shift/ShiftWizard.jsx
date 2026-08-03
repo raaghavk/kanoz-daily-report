@@ -682,11 +682,16 @@ export default function ShiftWizard() {
           // Carry forward raw materials (closing stock -> opening stock).
           // First-ever shift (no previous): fall back to the opening_stock_kg
           // configured in plant settings (pre-app stock on hand), plus any ledger purchases.
+          // Sane initial values; Step 3 recomputes opening (from the previous
+          // shift's closing) and purchased (time-windowed to this shift) once the
+          // user confirms the shift date, so we don't roll future purchases into
+          // opening here. `openingAdd`/`purchasedAdd` only seed the first report.
           freshReportData.rawMaterials = activeRawMaterials.map(m => {
             const prev = prevRawMaterials.find(r => r.raw_material_type_id === m.id)
-            const base = prev ? (parseFloat(prev.closing_kg) || 0) : (parseFloat(m.opening_stock_kg) || 0)
-            const opening = base + (openingAdd[m.id] || 0)
-            const purchased = purchasedAdd[m.id] || 0
+            const opening = prev
+              ? (parseFloat(prev.closing_kg) || 0)
+              : (parseFloat(m.opening_stock_kg) || 0) + (openingAdd[m.id] || 0)
+            const purchased = prev ? 0 : (purchasedAdd[m.id] || 0)
             return { ...m, opening, purchased, closing: opening + purchased }
           })
 
