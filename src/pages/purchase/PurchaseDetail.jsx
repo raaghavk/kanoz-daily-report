@@ -16,7 +16,7 @@ export default function PurchaseDetail() {
   const { employee } = useAuth()
   const queryClient = useQueryClient()
   const [showPhoto, setShowPhoto] = useState(false)
-  const [markingPaid, setMarkingPaid] = useState(false)
+  const [markingLeg, setMarkingLeg] = useState(null)
   const [createdByName, setCreatedByName] = useState(null)
 
   const { data: purchase, isLoading, isError } = useQuery({
@@ -94,29 +94,47 @@ export default function PurchaseDetail() {
     (parseFloat((purchase.transport_expense || purchase.transport_charges || 0)) || 0) +
     (parseFloat((purchase.other_expense || 0)) || 0)
 
-  async function markAsPaid() {
-    if (markingPaid) return
-    if (purchase.payment_status === 'Paid') return
+  // Two independent payment legs: the raw-material supplier (paid when RM cost > 0)
+  // and the transporter/vehicle owner (paid when transport cost > 0). Marking a leg
+  // also recomputes the overall payment_status = every applicable leg is paid.
+  async function markLegPaid(leg) {
+    if (markingLeg) return
     try {
-      setMarkingPaid(true)
-      const { error } = await supabase
-        .from('raw_material_purchases')
-        .update({ payment_status: 'Paid' })
-        .eq('id', id)
+      setMarkingLeg(leg)
+      const nowIso = new Date().toISOString()
+      const rmApp = (parseFloat(purchase.total_rm_amount) || 0) > 0
+      const trApp = (parseFloat(purchase.transport_expense || purchase.transport_charges || 0) || 0) > 0
+      const rmPaidNext = leg === 'rm' ? true : purchase.rm_payment_status === 'Paid'
+      const trPaidNext = leg === 'transport' ? true : purchase.transport_payment_status === 'Paid'
+      const patch = {
+        payment_status: ((!rmApp || rmPaidNext) && (!trApp || trPaidNext)) ? 'Paid' : 'Pending',
+      }
+      if (leg === 'rm') { patch.rm_payment_status = 'Paid'; patch.rm_paid_by = employee?.id || null; patch.rm_paid_at = nowIso }
+      else { patch.transport_payment_status = 'Paid'; patch.transport_paid_by = employee?.id || null; patch.transport_paid_at = nowIso }
+      const { error } = await supabase.from('raw_material_purchases').update(patch).eq('id', id)
       if (error) throw error
       queryClient.invalidateQueries({ queryKey: ['purchase', id] })
       queryClient.invalidateQueries({ queryKey: ['purchases'] })
-      showToast('Marked as Paid', 'success')
+      showToast(leg === 'rm' ? 'Raw material payment marked Paid' : 'Transport payment marked Paid', 'success')
     } catch (err) {
       console.error('Error marking paid:', err)
       showToast('Failed to update status', 'error')
     } finally {
-      setMarkingPaid(false)
+      setMarkingLeg(null)
     }
   }
 
   const labelStyle = { fontSize: 11, color: '#8a8d7a', fontWeight: 600 }
   const valueStyle = { fontSize: 14, fontWeight: 600, color: '#2c2c2c', marginTop: 2 }
+  const rmCost = parseFloat(purchase.total_rm_amount) || 0
+  const transportCost = parseFloat(purchase.transport_expense || purchase.transport_charges || 0) || 0
+  const rmApplicable = rmCost > 0
+  const transportApplicable = transportCost > 0
+  const rmPaid = purchase.rm_payment_status === 'Paid'
+  const transportPaid = purchase.transport_payment_status === 'Paid'
+  const overallPaid = (!rmApplicable || rmPaid) && (!transportApplicable || transportPaid)
+  const transportPayee = purchase.transporters?.name || (purchase.tractor_owner && purchase.tractor_owner !== 'Company Owned' && purchase.tractor_owner !== 'Other owner' ? purchase.tractor_owner : 'Transporter')
+  const canPay = can(employee?.role, 'mark_purchase_paid')
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
@@ -146,30 +164,9 @@ export default function PurchaseDetail() {
               <div style={{ fontSize: 12, opacity: 0.7 }}>Total Amount</div>
               <div style={{ fontSize: 28, fontWeight: 800 }}>{formatCurrency(purchase.total_amount)}</div>
             </div>
-            {purchase.payment_status === 'Paid' ? (
-              <div style={{
-                padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                background: 'rgba(255,255,255,0.2)', color: 'white',
-                display: 'flex', alignItems: 'center', gap: 4,
-              }}>
-                <CheckCircle size={12} /> Paid
-              </div>
-            ) : can(employee?.role, 'mark_purchase_paid') ? (
-              <button
-                onClick={markAsPaid}
-                disabled={markingPaid}
-                style={{
-                  padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                  background: '#DC2626', color: 'white', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  opacity: markingPaid ? 0.6 : 1,
-                }}
-              >
-                {markingPaid ? 'Updating...' : 'Pending — Tap to mark Paid'}
-              </button>
-            ) : (
-              <div style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'rgba(255,255,255,0.2)', color: 'white' }}>Pending</div>
-            )}
+            <div style={{ padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: 'rgba(255,255,255,0.2)', color: 'white', display: 'flex', alignItems: 'center', gap: 4 }}>
+              {overallPaid ? (<><CheckCircle size={12} /> Paid</>) : 'Pending'}
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <div>
@@ -186,6 +183,43 @@ export default function PurchaseDetail() {
             </div>
           </div>
         </div>
+
+        {/* Payments — split into raw-material supplier and transporter legs */}
+        {(rmApplicable || transportApplicable) && (
+          <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Payments</div>
+            {rmApplicable && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderTop: '1px solid #f0ebe0' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Raw Material</div>
+                  <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>{purchase.suppliers?.name || 'Supplier'} · {formatCurrency(rmCost)}</div>
+                </div>
+                {rmPaid ? (
+                  <div style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#e8f0ec', color: '#2d6a4f', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={12} /> Paid</div>
+                ) : canPay ? (
+                  <button onClick={() => markLegPaid('rm')} disabled={markingLeg === 'rm'} style={{ padding: '7px 14px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#DC2626', color: '#fff', border: 'none', cursor: 'pointer', opacity: markingLeg === 'rm' ? 0.6 : 1 }}>{markingLeg === 'rm' ? 'Updating...' : 'Mark Paid'}</button>
+                ) : (
+                  <div style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fdecec', color: '#b91c1c' }}>Pending</div>
+                )}
+              </div>
+            )}
+            {transportApplicable && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderTop: '1px solid #f0ebe0' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Transport</div>
+                  <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 2 }}>{transportPayee} · {formatCurrency(transportCost)}</div>
+                </div>
+                {transportPaid ? (
+                  <div style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#e8f0ec', color: '#2d6a4f', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={12} /> Paid</div>
+                ) : canPay ? (
+                  <button onClick={() => markLegPaid('transport')} disabled={markingLeg === 'transport'} style={{ padding: '7px 14px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#DC2626', color: '#fff', border: 'none', cursor: 'pointer', opacity: markingLeg === 'transport' ? 0.6 : 1 }}>{markingLeg === 'transport' ? 'Updating...' : 'Mark Paid'}</button>
+                ) : (
+                  <div style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: '#fdecec', color: '#b91c1c' }}>Pending</div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Basic Info */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
@@ -214,10 +248,6 @@ export default function PurchaseDetail() {
             <div>
               <div style={labelStyle}>Serial / Parchi No</div>
               <div style={valueStyle}>{purchase.serial_no || 'N/A'}</div>
-            </div>
-            <div>
-              <div style={labelStyle}>Vehicle Owner</div>
-              <div style={valueStyle}>{purchase.tractor_owner || 'N/A'}</div>
             </div>
             {(purchase.transporters?.name) && (
               <div>
