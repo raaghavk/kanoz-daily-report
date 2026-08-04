@@ -39,6 +39,7 @@ export default function PurchaseForm() {
     raw_material_type_id: '',
     vehicle_number: '',
     vehicle_type: 'company',
+    vehicle_owner: '',
     transporter_id: '',
     net_weight: '',
     moisture_percentage: '',
@@ -154,6 +155,7 @@ export default function PurchaseForm() {
       raw_material_type_id: purchaseData.raw_material_type_id || '',
       vehicle_number: purchaseData.vehicle_number || '',
       vehicle_type: (purchaseData.transporter_id || purchaseData.tractor_owner === 'Other owner') ? 'other' : 'company',
+      vehicle_owner: (purchaseData.tractor_owner && purchaseData.tractor_owner !== 'Company Owned' && purchaseData.tractor_owner !== 'Other owner') ? purchaseData.tractor_owner : '',
       transporter_id: purchaseData.transporter_id || '',
       net_weight: purchaseData.net_weight ?? '',
       moisture_percentage: purchaseData.moisture_percent ?? '',
@@ -461,7 +463,7 @@ export default function PurchaseForm() {
         raw_material_type_id: formData.raw_material_type_id,
         raw_material_type: rmTypeName,
         vehicle_number: sanitizeText(formData.vehicle_number, 20) || null,
-        tractor_owner: formData.vehicle_type === 'company' ? 'Company Owned' : 'Other owner',
+        tractor_owner: formData.vehicle_type === 'company' ? 'Company Owned' : (formData.vehicle_owner?.trim() || 'Other owner'),
         transporter_id: formData.vehicle_type === 'other' ? (formData.transporter_id || null) : null,
         net_weight: sanitizeNumber(formData.net_weight),
         moisture_percent: sanitizeNumber(formData.moisture_percentage) || 0,
@@ -789,6 +791,12 @@ export default function PurchaseForm() {
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Number</label>
               <input type="text" placeholder="e.g., HR-01-AB-1234" value={formData.vehicle_number} onChange={e => handleFieldChange('vehicle_number', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
             </>
+          )}
+          {formData.vehicle_type === 'other' && (
+            <div style={{ marginTop: 12 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>Vehicle Owner Name</label>
+              <input type="text" placeholder="e.g., Ravinder Singh" value={formData.vehicle_owner} onChange={e => handleFieldChange('vehicle_owner', e.target.value)} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
+            </div>
           )}
         </div>
 
