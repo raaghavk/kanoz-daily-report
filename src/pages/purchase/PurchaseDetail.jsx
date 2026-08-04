@@ -24,7 +24,7 @@ export default function PurchaseDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('raw_material_purchases')
-        .select(`*, suppliers(id, name, mobile), raw_material_types(id, name)`)
+        .select(`*, suppliers(id, name, mobile), raw_material_types(id, name), transporters(id, name)`)
         .eq('id', id)
         .eq('is_deleted', false)
         .single()
@@ -211,6 +211,20 @@ export default function PurchaseDetail() {
               <div style={labelStyle}>Vehicle</div>
               <div style={valueStyle}>{purchase.vehicle_number || 'N/A'}</div>
             </div>
+            <div>
+              <div style={labelStyle}>Serial / Parchi No</div>
+              <div style={valueStyle}>{purchase.serial_no || 'N/A'}</div>
+            </div>
+            <div>
+              <div style={labelStyle}>Vehicle Owner</div>
+              <div style={valueStyle}>{purchase.tractor_owner || 'N/A'}</div>
+            </div>
+            {(purchase.transporters?.name) && (
+              <div>
+                <div style={labelStyle}>Transporter</div>
+                <div style={valueStyle}>{purchase.transporters.name}</div>
+              </div>
+            )}
           </div>
         </div>
 

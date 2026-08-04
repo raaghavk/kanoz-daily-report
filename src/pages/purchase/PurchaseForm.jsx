@@ -153,7 +153,7 @@ export default function PurchaseForm() {
       supplier_id: purchaseData.supplier_id || '',
       raw_material_type_id: purchaseData.raw_material_type_id || '',
       vehicle_number: purchaseData.vehicle_number || '',
-      vehicle_type: 'company',
+      vehicle_type: (purchaseData.transporter_id || purchaseData.tractor_owner === 'Other owner') ? 'other' : 'company',
       transporter_id: purchaseData.transporter_id || '',
       net_weight: purchaseData.net_weight ?? '',
       moisture_percentage: purchaseData.moisture_percent ?? '',
@@ -539,7 +539,7 @@ export default function PurchaseForm() {
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle={returnToShift ? 'Add purchase, then back to shift' : 'Raw Material Purchase Entry'} {...(returnToShift ? { onBack: () => navigate('/shift/new', { state: { returnToStep } }) } : { backTo: '/purchase' })} />
+        <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle={returnToShift ? 'Add purchase, then back to shift' : 'Raw Material Purchase Entry'} {...(returnToShift ? { onBack: () => navigate('/shift/new', { state: { returnToStep } }) } : (id ? { onBack: () => navigate(`/purchase/${id}`) } : { backTo: '/purchase' }))} />
       </div>
 
       <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -722,6 +722,9 @@ export default function PurchaseForm() {
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
                 >
                   <option value="">Select vehicle...</option>
+                  {formData.vehicle_number && !companyVehicles.some(v => v.number === formData.vehicle_number) && (
+                    <option value={formData.vehicle_number}>{formData.vehicle_number}</option>
+                  )}
                   {companyVehicles.map(v => (
                     <option key={v.id} value={v.number}>{v.number}</option>
                   ))}
