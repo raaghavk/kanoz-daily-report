@@ -323,7 +323,7 @@ export default function ShiftWizard() {
           id: m.id, name: m.name, gcv_kcal_kg: m.gcv_kcal_kg ?? null, opening_stock_kg: m.opening_stock_kg ?? 0, opening: 0, purchased: 0, used: 0, closing: 0
         }))
         const activePellets = (pelletTypesRes.data || []).map(p => ({
-          id: p.id, name: p.name, opening_stock_mt: p.opening_stock_mt ?? 0, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0
+          id: p.id, name: p.name, opening_stock_mt: p.opening_stock_mt ?? 0, opening: 0, production: 0, dispatch: 0, wastage: 0, adjustment: 0, adjustment_note: '', closing: 0
         }))
         const activeDiesel = (equipmentRes.data || []).map(eq => ({
           id: eq.id, equipment_name: eq.name, equipment_type: eq.equipment_type ?? null, owner: eq.owner ?? null, company: eq.company ?? null, identifier: eq.identifier ?? null, opening_stock_litres: eq.opening_stock_litres ?? 0, opening: 0, added: 0, used: 0, closing: 0, hours: 0, avg_per_hr: 0, collapsed: true,
@@ -453,6 +453,8 @@ export default function ShiftWizard() {
               production: psData ? parseFloat(psData.production_mt) || 0 : 0,
               dispatch: psData ? parseFloat(psData.dispatch_mt) || 0 : 0,
               wastage: psData ? parseFloat(psData.wastage_mt) || 0 : 0,
+              adjustment: psData ? parseFloat(psData.adjustment_mt) || 0 : 0,
+              adjustment_note: psData ? (psData.adjustment_note || '') : '',
               closing: psData ? parseFloat(psData.closing_mt) || 0 : 0,
             }
           })
@@ -1029,6 +1031,8 @@ export default function ShiftWizard() {
             production_mt: sanitizeNumber(ps.production),
             dispatch_mt: sanitizeNumber(ps.dispatch),
             wastage_mt: sanitizeNumber(ps.wastage),
+            adjustment_mt: sanitizeNumber(ps.adjustment),
+            adjustment_note: sanitizeText(ps.adjustment_note, 200) || null,
           }))
         if (stockRows.length) {
           const { error: psInsErr } = await supabase.from('pellet_stock').insert(stockRows)

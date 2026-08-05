@@ -185,7 +185,7 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
         if (!pt) { failed++; continue }
         const exists = (data.pelletStock || []).some(ps => ps.id === pt.id || pelletTypeMatches(g.name, ps.name))
         if (!exists) {
-          newRows.push({ id: pt.id, name: pt.name, opening: 0, production: 0, dispatch: 0, wastage: 0, closing: 0 })
+          newRows.push({ id: pt.id, name: pt.name, opening: 0, production: 0, dispatch: 0, wastage: 0, adjustment: 0, adjustment_note: '', closing: 0 })
         }
       }
       if (!cancelled && newRows.length > 0) {
@@ -220,7 +220,7 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
         ...ps,
         production: prodTotal,
         dispatch: dispTotal,
-        closing: (ps.opening || 0) + prodTotal - dispTotal - (ps.wastage || 0),
+        closing: (ps.opening || 0) + prodTotal - dispTotal - (ps.wastage || 0) + (parseFloat(ps.adjustment) || 0),
       }
     })
 
@@ -234,10 +234,15 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
     }
   }, [data.production, data.dispatchTotals, data.pelletStock, data.mixes]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  function updateStockNote(idx, value) {
+    const stock = [...data.pelletStock]
+    stock[idx] = { ...stock[idx], adjustment_note: value }
+    updateData('pelletStock', stock)
+  }
   function updateStock(idx, field, value) {
     const stock = [...data.pelletStock]
     stock[idx] = { ...stock[idx], [field]: parseFloat(value) || 0 }
-    stock[idx].closing = stock[idx].opening + stock[idx].production - stock[idx].dispatch - stock[idx].wastage
+    stock[idx].closing = stock[idx].opening + stock[idx].production - stock[idx].dispatch - stock[idx].wastage + (parseFloat(stock[idx].adjustment) || 0)
     updateData('pelletStock', stock)
   }
 
@@ -257,6 +262,7 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
               <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#2c2c2c', textTransform: 'uppercase', borderBottom: '1px solid #e5ddd0' }}>Prod</th>
               <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#2c2c2c', textTransform: 'uppercase', borderBottom: '1px solid #e5ddd0' }}>Disp</th>
               <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#2c2c2c', textTransform: 'uppercase', borderBottom: '1px solid #e5ddd0' }}>Waste</th>
+              <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#2c2c2c', textTransform: 'uppercase', borderBottom: '1px solid #e5ddd0' }}>Adjust</th>
               <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: 11, fontWeight: 700, color: '#2d6a4f', textTransform: 'uppercase', borderBottom: '1px solid #e5ddd0' }}>Close</th>
             </tr>
           </thead>
@@ -283,18 +289,45 @@ export default memo(function Step7PelletStock({ data, updateData, plant }) {
                     style={{ width: '100%', maxWidth: 70, padding: '6px 8px', borderRadius: 4, border: '1px solid #e5ddd0', textAlign: 'center', fontSize: 12, outline: 'none', background: '#ffffff' }}
                   />
                 </td>
+                <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={ps.adjustment || ''}
+                    onChange={e => updateStock(idx, 'adjustment', e.target.value)}
+                    placeholder="0"
+                    title="Correction (+/-): recount fix, or returned pellets added back"
+                    style={{ width: '100%', maxWidth: 70, padding: '6px 8px', borderRadius: 4, border: '1px solid #e5ddd0', textAlign: 'center', fontSize: 12, outline: 'none', background: '#ffffff' }}
+                  />
+                </td>
                 <td style={{ padding: '12px 16px', textAlign: 'center', fontSize: 12, color: '#2d6a4f', fontWeight: 700, background: '#e8f0ec' }}>
                   {(ps.closing || 0).toFixed(1)}
                 </td>
               </tr>
-            ))}
+            )).flatMap((row, idx) => {
+              const ps = data.pelletStock[idx]
+              const extra = (parseFloat(ps.adjustment) || 0) !== 0 ? (
+                <tr key={`${ps.id}-note`} style={{ borderBottom: '1px solid #e5ddd0', background: '#fbfaf4' }}>
+                  <td colSpan={6} style={{ padding: '0 16px 10px' }}>
+                    <input
+                      type="text"
+                      value={ps.adjustment_note || ''}
+                      onChange={e => updateStockNote(idx, e.target.value)}
+                      placeholder={`Reason for ${ps.name || 'this'} adjustment (e.g. physical recount, returned truck)`}
+                      style={{ width: '100%', padding: '6px 8px', borderRadius: 4, border: '1px solid #e5ddd0', fontSize: 11, outline: 'none', background: '#ffffff' }}
+                    />
+                  </td>
+                </tr>
+              ) : null
+              return extra ? [row, extra] : [row]
+            })}
           </tbody>
         </table>
       </div>
 
       {/* Info Box */}
       <div style={{ background: '#e8f0ec', borderRadius: 8, padding: '8px 10px', fontSize: 11, color: '#2d6a4f', lineHeight: 1.6 }}>
-        <b>Prod auto-fills from Step 4. Dispatch auto-fills from Step 6.</b> Close = Open + Prod - Disp - Waste
+        <b>Prod auto-fills from Step 4. Dispatch auto-fills from Step 6.</b> Close = Open + Prod - Disp - Waste + Adjust. Use Adjust (+/-) for a recount correction or to add returned pellets back.
       </div>
 
       {/* Summary Card */}

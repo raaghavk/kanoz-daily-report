@@ -220,14 +220,14 @@ export default function ReportView() {
     const liveDispatch = Object.entries(liveDispatchByPellet).reduce((sum, [key, val]) =>
       pelletTypeMatches(key, typeName) ? sum + val : sum, 0)
     const dispatchVal = liveDispatch > 0 ? liveDispatch : (parseFloat(p.dispatch_mt) || 0)
-    const closing = (parseFloat(p.opening_mt) || 0) + (parseFloat(p.production_mt) || 0) - dispatchVal - (parseFloat(p.wastage_mt) || 0)
+    const closing = (parseFloat(p.opening_mt) || 0) + (parseFloat(p.production_mt) || 0) - dispatchVal - (parseFloat(p.wastage_mt) || 0) + (parseFloat(p.adjustment_mt) || 0)
     return { ...p, live_dispatch_mt: dispatchVal, live_closing_mt: closing }
   })
 
   // Hide fully-empty rows (all quantities zero) from the report display.
   const nz = (...vals) => vals.some(v => (parseFloat(v) || 0) !== 0)
   const visibleRawMaterials = rawMaterials.filter(m => nz(m.opening_kg, m.purchased_kg, m.quantity_kg, m.closing_kg))
-  const visiblePelletStock = pelletStockWithLiveDispatch.filter(p => nz(p.opening_mt, p.production_mt, p.live_dispatch_mt, p.wastage_mt, p.live_closing_mt))
+  const visiblePelletStock = pelletStockWithLiveDispatch.filter(p => nz(p.opening_mt, p.production_mt, p.live_dispatch_mt, p.wastage_mt, p.adjustment_mt, p.live_closing_mt))
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
@@ -516,6 +516,7 @@ export default function ReportView() {
                 <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Production</th>
                 <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Dispatch</th>
                 <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Wastage</th>
+                <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Adjust</th>
                 <th style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#fff', fontSize: 11 }}>Closing</th>
               </tr>
             </thead>
@@ -527,7 +528,7 @@ export default function ReportView() {
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.opening_mt || 0).toFixed(1)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.production_mt || 0).toFixed(1)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.live_dispatch_mt.toFixed(1)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.wastage_mt || 0).toFixed(1)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: (parseFloat(p.adjustment_mt)||0) !== 0 ? '#b45309' : '#595c4a', fontSize: 11 }} title={p.adjustment_note || ''}>{(parseFloat(p.adjustment_mt)||0) === 0 ? '—' : ((parseFloat(p.adjustment_mt)>0?'+':'') + parseFloat(p.adjustment_mt).toFixed(1))}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{p.live_closing_mt.toFixed(1)}</td>
                   </tr>
                 ))

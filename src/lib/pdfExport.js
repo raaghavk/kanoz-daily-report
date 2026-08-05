@@ -501,19 +501,21 @@ export async function exportShiftReportPDF(report, data) {
   doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); setC(doc, LIGHT)
   doc.text('All quantities in MT', lX, rmEndY + 1)
 
-  const psRows = (data.pelletStock || []).filter(p => nzRow(p.opening_mt, p.production_mt, p.dispatch_mt, p.wastage_mt, p.closing_mt)).map(p => [
+  const adjStr = (v) => { const n = parseFloat(v) || 0; return n === 0 ? '—' : (n > 0 ? '+' : '') + n }
+  const psRows = (data.pelletStock || []).filter(p => nzRow(p.opening_mt, p.production_mt, p.dispatch_mt, p.wastage_mt, p.adjustment_mt, p.closing_mt)).map(p => [
     p.pellet_types?.name || '—',
     String(p.opening_mt    || 0),
     String(p.production_mt || 0),
     String(p.dispatch_mt   || 0),
     String(p.wastage_mt    || 0),
+    adjStr(p.adjustment_mt),
     String(p.closing_mt    || 0),
   ])
   const psEndY = stdTable(doc, tblY,
-    ['TYPE', 'OPEN', 'PRD', 'DISP', 'WASTE', 'CLOSE'],
-    [28, 12, 12, 12, 12, 12],
+    ['TYPE', 'OPEN', 'PRD', 'DISP', 'WASTE', 'ADJ', 'CLOSE'],
+    [26, 11, 11, 11, 11, 11, 12],
     psRows.length ? psRows : null,
-    { sx: rX, aligns: ['left','right','right','right','right','right'], noData: 'No data' }
+    { sx: rX, aligns: ['left','right','right','right','right','right','right'], noData: 'No data' }
   )
   doc.setFont('helvetica', 'italic'); doc.setFontSize(6.5); setC(doc, LIGHT)
   doc.text('All quantities in MT', rX, psEndY + 1)

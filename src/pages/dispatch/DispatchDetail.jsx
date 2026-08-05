@@ -6,11 +6,12 @@ import { useAuth } from '../../context/AuthContext'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Phone, MessageSquare, Truck, Clock, Timer, Edit3, Save, X, Download, Plus } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
+import { getLocalDate } from '../../lib/dateUtils'
 
 export default function DispatchDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { plant } = useAuth()
+  const { plant, employee } = useAuth()
   const [dispatch, setDispatch] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
@@ -20,6 +21,33 @@ export default function DispatchDetail() {
   const [customers, setCustomers] = useState([])
   const [pelletTypes, setPelletTypes] = useState([])
   const [createdByName, setCreatedByName] = useState(null)
+  const [showReturnForm, setShowReturnForm] = useState(false)
+  const [returnDate, setReturnDate] = useState(getLocalDate())
+  const [returnReason, setReturnReason] = useState('')
+  const [returning, setReturning] = useState(false)
+
+  async function markReturned() {
+    if (!returnDate) { showToast('Please enter the return date', 'error'); return }
+    try {
+      setReturning(true)
+      const { error } = await supabase.from('vehicle_dispatches').update({
+        is_returned: true,
+        return_date: returnDate,
+        return_reason: returnReason.trim() || null,
+        returned_by: employee?.id || null,
+        returned_at: new Date().toISOString(),
+      }).eq('id', id)
+      if (error) throw error
+      setDispatch(prev => ({ ...prev, is_returned: true, return_date: returnDate, return_reason: returnReason.trim() || null }))
+      setShowReturnForm(false)
+      showToast('Marked as returned — now add these pellets back as an Adjustment on that day\'s shift report.', 'success')
+    } catch (err) {
+      console.error('mark returned error:', err)
+      showToast('Failed to mark as returned', 'error')
+    } finally {
+      setReturning(false)
+    }
+  }
 
   const fetchDispatch = useCallback(async () => {
     try {
@@ -458,6 +486,31 @@ export default function DispatchDetail() {
             {createdByName ? 'Created by ' + createdByName : 'Created'}{dispatch.created_at ? ' on ' + new Date(dispatch.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
           </div>
         )}
+
+        {/* Return status / action */}
+        {dispatch.is_returned ? (
+          <div style={{ background: '#fff7ed', border: '1.5px solid #f59e0b', borderRadius: 12, padding: '12px 14px' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#92400e' }}>Returned on {formatShortDate(dispatch.return_date)}</div>
+            {dispatch.return_reason && <div style={{ fontSize: 12, color: '#92400e', marginTop: 2 }}>{dispatch.return_reason}</div>}
+            <div style={{ fontSize: 11, color: '#a1740b', marginTop: 6 }}>Recorded as returned (not a completed sale). Add these pellets back as a stock Adjustment on the {formatShortDate(dispatch.return_date)} shift report.</div>
+          </div>
+        ) : !editing ? (
+          showReturnForm ? (
+            <div style={{ background: '#fff', border: '1.5px solid #e5ddd0', borderRadius: 12, padding: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c', marginBottom: 8 }}>Mark truck as returned</div>
+              <label style={{ display: 'block', fontSize: 11, color: '#8a8d7a', marginBottom: 4 }}>Return date</label>
+              <input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 13, marginBottom: 8, boxSizing: 'border-box' }} />
+              <label style={{ display: 'block', fontSize: 11, color: '#8a8d7a', marginBottom: 4 }}>Reason</label>
+              <input type="text" value={returnReason} onChange={e => setReturnReason(e.target.value)} placeholder="e.g. customer rejected load" style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid #e5ddd0', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }} />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setShowReturnForm(false)} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1.5px solid #e5ddd0', background: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+                <button onClick={markReturned} disabled={returning} style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: 'none', background: '#d4a373', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: returning ? 0.6 : 1 }}>{returning ? 'Saving...' : 'Confirm Return'}</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowReturnForm(true)} style={{ width: '100%', padding: '12px 0', borderRadius: 12, border: '1.5px solid #d4a373', background: '#fff', color: '#b45309', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>↩ Mark Truck as Returned</button>
+          )
+        ) : null}
 
         {/* PDF + Request Delete row */}
         <div style={{ display: 'flex', gap: 10 }}>
