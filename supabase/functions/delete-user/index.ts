@@ -116,15 +116,26 @@ serve(async (req) => {
       }
     }
 
-    // Delete the employee row
+    // Try to hard-delete the employee row. If it's blocked by references (they created
+    // shift reports / purchases / dispatches, etc.), fall back to DEACTIVATING them —
+    // their login is already revoked above, and their history/attribution is preserved.
     const { error: deleteEmpError } = await adminClient
       .from('employees')
       .delete()
       .eq('id', employee_id)
 
     if (deleteEmpError) {
-      return new Response(JSON.stringify({ error: 'Failed to delete employee: ' + deleteEmpError.message }), {
-        status: 500,
+      const { error: deactivateError } = await adminClient
+        .from('employees')
+        .update({ is_active: false, auth_user_id: null, updated_at: new Date().toISOString() })
+        .eq('id', employee_id)
+      if (deactivateError) {
+        return new Response(JSON.stringify({ error: 'Could not remove user: ' + deactivateError.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ success: true, deactivated: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }

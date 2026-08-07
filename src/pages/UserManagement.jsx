@@ -197,7 +197,7 @@ export default function UserManagement() {
       })
       if (error) throw new Error(error.message)
       if (data?.error) throw new Error(data.error)
-      showToast(`${showDelete.name} permanently deleted`)
+      showToast(data?.deactivated ? `${showDelete.name} had records — login revoked and account deactivated (history kept)` : `${showDelete.name} deleted`)
       setShowDelete(null)
       loadData()
     } catch (err) {

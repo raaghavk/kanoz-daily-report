@@ -243,41 +243,45 @@ export default function DispatchForm() {
     enabled: !!form.transporter_id,
   })
 
+  // Stock available for THIS dispatch = pellet closing as of the dispatch's own date
+  // (the most recent shift on/before that date), not the globally-latest report — so a
+  // back-dated dispatch is checked against the stock that actually existed that day.
+  const asOfDate = form.dispatch_date || form.loading_date || today
   const { data: latestPelletStock = {} } = useQuery({
-    queryKey: ['latestPelletStock', plant?.id],
+    queryKey: ['pelletStockAsOf', plant?.id, asOfDate],
     queryFn: async () => {
-      const { data: latestReport } = await supabase
+      const { data: asOfReport } = await supabase
         .from('shift_reports')
-        .select('id, date')
+        .select('id, date, shift_start_date')
         .eq('plant_id', plant.id)
         .eq('is_deleted', false)
-        .order('date', { ascending: false })
-        .order('shift', { ascending: false })
+        .lte('shift_start_date', asOfDate)
+        .order('shift_start_date', { ascending: false })
+        .order('start_time', { ascending: false })
         .limit(1)
         .maybeSingle()
-      if (!latestReport) return {}
+      if (!asOfReport) return {}
       const { data: stocks } = await supabase
         .from('pellet_stock')
         .select('pellet_type_id, closing_mt')
-        .eq('shift_report_id', latestReport.id)
+        .eq('shift_report_id', asOfReport.id)
       const stockMap = {}
       for (const s of (stocks || [])) {
         stockMap[s.pellet_type_id] = parseFloat(s.closing_mt) || 0
       }
 
-      // Closing stock only reflects dispatches recorded in that shift report —
-      // subtract dispatches made since the snapshot so the same stock can't be
-      // dispatched twice. Dispatches linked to the report itself are already
-      // in its closing figures, so skip those.
-      if (latestReport.date) {
+      // Subtract dispatches made after that report's date and up to the dispatch date
+      // that aren't already in its closing, so the same stock can't be dispatched twice.
+      if (asOfReport.date) {
         const { data: sinceDispatches } = await supabase
           .from('vehicle_dispatches')
           .select('id, date, shift_report_id, dispatch_pellets(pellet_type_id, quantity_mt)')
           .eq('plant_id', plant.id)
           .or('is_deleted.is.null,is_deleted.eq.false')
-          .gte('date', latestReport.date)
+          .gt('date', asOfReport.date)
+          .lte('date', asOfDate)
         for (const d of (sinceDispatches || [])) {
-          if (d.shift_report_id === latestReport.id) continue
+          if (d.shift_report_id === asOfReport.id) continue
           for (const p of (d.dispatch_pellets || [])) {
             if (stockMap[p.pellet_type_id] !== undefined) {
               stockMap[p.pellet_type_id] -= parseFloat(p.quantity_mt) || 0
