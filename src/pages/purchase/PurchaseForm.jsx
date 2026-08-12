@@ -417,7 +417,7 @@ export default function PurchaseForm() {
         const rate = parseFloat(formData.rate_per_kg)
         if (!(net > 0)) { showToast('Net weight must be greater than 0', 'error'); return }
         if (formData.moisture_percentage !== '' && (moist < 0 || moist > 100)) { showToast('Moisture % must be between 0 and 100', 'error'); return }
-        if (formData.rate_per_kg !== '' && !(rate > 0)) { showToast('Rate per kg must be greater than 0', 'error'); return }
+        if (formData.rate_per_kg !== '' && !(rate >= 0)) { showToast('Rate per kg cannot be negative', 'error'); return }
         if (formData.date && formData.date > getLocalDate()) { showToast('Purchase date cannot be in the future', 'error'); return }
         // Warn (allow) on an unusually large load — a truck rarely exceeds ~60 MT.
         if (net > 60000 && !window.confirm(`Net weight is ${Math.round(net).toLocaleString('en-IN')} kg (${(net/1000).toFixed(1)} MT) — that's unusually large. Save anyway?`)) { return }
