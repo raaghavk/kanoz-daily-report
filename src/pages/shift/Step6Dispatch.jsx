@@ -137,7 +137,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
             <button
               onClick={() => {
                 if (saveWizardState) saveWizardState()
-                navigate('/dispatch', { state: { returnToShift: true, showForm: true } })
+                navigate('/dispatch', { state: { returnToShift: true, showForm: true, reportDate: data.shift_start_date || data.date } })
               }}
               style={{
                 width: '100%', padding: '12px 0',
@@ -249,7 +249,7 @@ export default memo(function Step6Dispatch({ updateData, plant, saveWizardState,
             <button
               onClick={() => {
                 if (saveWizardState) saveWizardState()
-                navigate('/dispatch', { state: { returnToShift: true, showForm: true } })
+                navigate('/dispatch', { state: { returnToShift: true, showForm: true, reportDate: data.shift_start_date || data.date } })
               }}
               style={{
                 width: '100%', padding: '12px 0',

@@ -257,9 +257,24 @@ export default function ShiftWizard() {
   useEffect(() => {
     if (!plant?.id || !initDone) return
 
-    // Skip initialization if we successfully restored a draft from local storage
+    // Skip initialization if we successfully restored a draft from local storage —
+    // but only trust it if it actually contains real reference data. A draft
+    // saved before the initial fetch ever completed (e.g. a network hiccup, or
+    // the user's account/plant not resolving yet at save time) can silently
+    // persist as a permanently-empty snapshot: every later open would restore
+    // that same empty machines/raw-materials/pellet-stock state forever, with
+    // no visible error, since restoring normally skips the fresh fetch below.
     if (restoredFromStorage && !editId) {
-      setLoadingData(false)
+      const hasReferenceData = (reportData.machines?.length > 0)
+        || (reportData.rawMaterials?.length > 0)
+        || (reportData.pelletStock?.length > 0)
+      if (hasReferenceData) {
+        setLoadingData(false)
+        return
+      }
+      // Broken/incomplete draft — discard it and fall through to a fresh load.
+      localStorage.removeItem(WIZARD_STORAGE_KEY)
+      setRestoredFromStorage(false)
       return
     }
 

@@ -93,23 +93,31 @@ export default function DispatchForm() {
   }
 
   // Restore an unsaved dispatch draft on mount (create-only form, so always for new entries).
-  // Skip if we arrived via a voice prefill (prefill takes precedence).
+  // Skip if we arrived via a voice prefill (prefill takes precedence). If there's no draft
+  // to restore, fall back to seeding loading/dispatch date from the shift report we came
+  // from (backdated-shift "Add New Dispatch" support), so stock-available figures are
+  // computed as of that report's date instead of today.
   useEffect(() => {
     if (location.state?.prefill) return
+    const reportDate = location.state?.reportDate
     try {
       const saved = localStorage.getItem(DISPATCH_DRAFT_KEY)
-      if (!saved) return
-      const parsed = JSON.parse(saved)
-      const { form: savedForm, savedAt } = parsed || {}
-      if (!savedForm) return
-      if (savedAt && Date.now() - savedAt > DISPATCH_DRAFT_MAX_AGE) {
-        localStorage.removeItem(DISPATCH_DRAFT_KEY)
-        return
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        const { form: savedForm, savedAt } = parsed || {}
+        const expired = savedAt && Date.now() - savedAt > DISPATCH_DRAFT_MAX_AGE
+        if (savedForm && !expired) {
+          setForm(prev => ({ ...prev, ...savedForm }))
+          setRestoredDraft(true)
+          return
+        }
+        if (expired) localStorage.removeItem(DISPATCH_DRAFT_KEY)
       }
-      setForm(prev => ({ ...prev, ...savedForm }))
-      setRestoredDraft(true)
     } catch (e) {
       try { localStorage.removeItem(DISPATCH_DRAFT_KEY) } catch (_) { /* ignore */ }
+    }
+    if (reportDate) {
+      setForm(prev => ({ ...prev, loading_date: reportDate, dispatch_date: reportDate }))
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
