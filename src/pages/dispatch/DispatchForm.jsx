@@ -565,7 +565,7 @@ export default function DispatchForm() {
       }
       const updates = {}
       if (result.data?.vehicle_number) updates.truck_number = result.data.vehicle_number
-      if (result.data?.serial_no) updates.serial_no = result.data.serial_no
+      if (result.data?.serial_no) updates.invoice_number = result.data.serial_no
       if (result.data?.date) {
         const parsed = new Date(result.data.date)
         if (!isNaN(parsed.getTime())) {
