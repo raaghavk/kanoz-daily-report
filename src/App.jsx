@@ -48,11 +48,8 @@ const TasksPage = lazy(() => import('./pages/tasks/TasksPage'))
 const AttendancePage = lazy(() => import('./pages/attendance/AttendancePage'))
 const SettingsPage = lazy(() => import('./pages/Settings'))
 const RolesPage = lazy(() => import('./pages/RolesPage'))
-const AdminDesktop = lazy(() => import('./pages/admin/AdminDesktop'))
 const StockHome = lazy(() => import('./pages/stock/StockHome'))
-const PlotsPage = lazy(() => import('./pages/stock/PlotsPage'))
 const StockTransferPage = lazy(() => import('./pages/stock/StockTransferPage'))
-const TallyPage = lazy(() => import('./pages/finance/TallyPage'))
 
 function LoadingFallback() {
   return (
@@ -154,9 +151,7 @@ export default function App() {
         <Route path="assets/:id/log" element={<PermissionGuard action="create_spare_parts"><LogEvent /></PermissionGuard>} />
         <Route path="a/:code" element={<PermissionGuard action="view_spare_parts"><AssetByCode /></PermissionGuard>} />
         <Route path="stock" element={<StockHome />} />
-        <Route path="plots" element={<PermissionGuard action="plant_settings"><PlotsPage /></PermissionGuard>} />
         <Route path="stock/transfer" element={<PermissionGuard action="create_purchase"><StockTransferPage /></PermissionGuard>} />
-        <Route path="tally" element={<TallyPage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="attendance" element={<AttendancePage />} />
         <Route path="settings" element={<SettingsPage />} />
@@ -166,14 +161,9 @@ export default function App() {
         <Route path="delete-requests" element={<PermissionGuard action="manage_users"><DeleteRequests /></PermissionGuard>} />
       </Route>
       <Route path="/dashboard" element={<ProtectedRoute><PermissionGuard action="view_dashboard"><AdminDashboard /></PermissionGuard></ProtectedRoute>} />
-      <Route
-        path="/admin/desktop"
-        element={
-          <ProtectedRoute>
-            <PermissionGuard action="plant_settings"><AdminDesktop /></PermissionGuard>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/admin/desktop" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/plots" element={<Navigate to="/admin" replace />} />
+      <Route path="/tally" element={<Navigate to="/finance" replace />} />
       <Route
         path="/shift/new"
         element={

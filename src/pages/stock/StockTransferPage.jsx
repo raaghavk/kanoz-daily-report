@@ -115,7 +115,7 @@ export default function StockTransferPage() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Stock transfer" subtitle="Move raw material between plots of this factory" onBack={() => navigate('/plots')} />
+      <PageHeader title="Stock transfer" subtitle="Move raw material between plots of this factory" onBack={() => navigate('/stock')} />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Loader2 size={28} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} /></div>

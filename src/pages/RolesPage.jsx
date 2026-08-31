@@ -34,6 +34,7 @@ function RoleModal({ initial, onClose, onSave, saving }) {
     return set
   })
   const [trackAttendance, setTrackAttendance] = useState(initial?.track_attendance !== false)
+  const [receiveTasks, setReceiveTasks] = useState(initial?.receive_tasks !== false)
 
   function toggle(key) {
     setChecked(prev => {
@@ -54,6 +55,7 @@ function RoleModal({ initial, onClose, onSave, saving }) {
       description: description.trim() || null,
       permissions: PERMISSION_CATALOG.filter(p => checked.has(p.key)).map(p => p.key),
       track_attendance: trackAttendance,
+      receive_tasks: receiveTasks,
     })
   }
 
@@ -83,12 +85,21 @@ function RoleModal({ initial, onClose, onSave, saving }) {
           />
           <button
             onClick={() => setTrackAttendance(v => !v)}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${trackAttendance ? GREEN : BORDER}`, background: trackAttendance ? '#f0f5f1' : '#fff', cursor: 'pointer', textAlign: 'left', width: '100%', marginBottom: 16 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${trackAttendance ? GREEN : BORDER}`, background: trackAttendance ? '#f0f5f1' : '#fff', cursor: 'pointer', textAlign: 'left', width: '100%', marginBottom: 10 }}
           >
             <span style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${trackAttendance ? GREEN : BORDER}`, background: trackAttendance ? GREEN : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               {trackAttendance && <Check size={14} color="#fff" />}
             </span>
             <span style={{ fontSize: 13.5, color: TEXT, fontWeight: 500 }}>Track attendance for this role<br/><span style={{ fontSize: 11, color: MUTED, fontWeight: 400 }}>Turn off so people with this role are not marked (e.g. Admin/owner).</span></span>
+          </button>
+          <button
+            onClick={() => setReceiveTasks(v => !v)}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `1.5px solid ${receiveTasks ? GREEN : BORDER}`, background: receiveTasks ? '#f0f5f1' : '#fff', cursor: 'pointer', textAlign: 'left', width: '100%', marginBottom: 16 }}
+          >
+            <span style={{ width: 20, height: 20, borderRadius: 6, border: `1.5px solid ${receiveTasks ? GREEN : BORDER}`, background: receiveTasks ? GREEN : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {receiveTasks && <Check size={14} color="#fff" />}
+            </span>
+            <span style={{ fontSize: 13.5, color: TEXT, fontWeight: 500 }}>Can be assigned tasks<br/><span style={{ fontSize: 11, color: MUTED, fontWeight: 400 }}>Turn off so this role never appears in the assign-task picker (e.g. Admin).</span></span>
           </button>
           <label style={{ fontSize: 12, fontWeight: 600, color: MUTED, display: 'block', marginBottom: 10 }}>Permissions</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -163,14 +174,14 @@ export default function RolesPage() {
       if (modal?.mode === 'edit' && modal.role) {
         const { error } = await supabase
           .from('roles')
-          .update({ name: payload.name, description: payload.description, permissions: payload.permissions, track_attendance: payload.track_attendance })
+          .update({ name: payload.name, description: payload.description, permissions: payload.permissions, track_attendance: payload.track_attendance, receive_tasks: payload.receive_tasks })
           .eq('id', modal.role.id)
         if (error) throw error
         showToast('Role updated')
       } else {
         const { error } = await supabase
           .from('roles')
-          .insert({ org_id: orgId, name: payload.name, description: payload.description, permissions: payload.permissions, is_default: false, track_attendance: payload.track_attendance })
+          .insert({ org_id: orgId, name: payload.name, description: payload.description, permissions: payload.permissions, is_default: false, track_attendance: payload.track_attendance, receive_tasks: payload.receive_tasks })
         if (error) throw error
         showToast('Role created')
       }

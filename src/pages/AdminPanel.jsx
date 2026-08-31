@@ -6,6 +6,7 @@ import { showToast } from '../components/Toast'
 import PageHeader from '../components/PageHeader'
 import { Plus, Edit3, Check, X, ChevronDown, ChevronUp, Archive, RotateCcw, Trash2 } from 'lucide-react'
 import ProcessRoutes from './settings/ProcessRoutes'
+import PlantPlots from './settings/PlantPlots'
 import { gradeForGcv } from '../lib/pelletGrading'
 import { kgToMt, kgToMtStr, mtToKg } from '../lib/units'
 
@@ -1221,6 +1222,11 @@ export default function AdminPanel() {
         {/* Process Routes (assembly lines) — plant-scoped */}
         {!loading && selectedPlantId && (
           <ProcessRoutes plantId={selectedPlantId} orgId={plant?.org_id} />
+        )}
+
+        {/* Land plots for this plant */}
+        {!loading && selectedPlantId && (
+          <PlantPlots plantId={selectedPlantId} />
         )}
 
         {/* GCV grade threshold — compact chip + Edit (matches Stock Opening Date) */}
