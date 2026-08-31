@@ -251,7 +251,7 @@ export default function SettingsPage() {
           { path: '/admin/desktop', emoji: '🖥️', label: 'Desktop Ops', show: can(role, 'plant_settings') },
           { path: '/finance', emoji: '💰', label: 'Finance', show: can(role, 'view_finance') },
           { path: '/plots', emoji: '🗺️', label: 'Land plots', show: can(role, 'plant_settings') },
-          { path: '/tally', emoji: '📒', label: 'Tally export', show: can(role, 'view_finance') || can(role, 'export') },
+          { path: '/tally', emoji: '📒', label: 'Tally sync (Sheets)', show: can(role, 'view_finance') || can(role, 'export') },
         ].filter(i => i.show)
         if (!dirItems.length) return null
         return (
