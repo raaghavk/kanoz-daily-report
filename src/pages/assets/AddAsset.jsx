@@ -70,13 +70,13 @@ export default function AddAsset() {
       const qr = await QRCode.toDataURL(url, { width: 240, margin: 1, color: { dark: '#1b4332', light: '#ffffff' } })
       setResult({ id: asset.id, code, qr, url, type })
       showToast('Asset saved', 'success')
-    } catch (e) { showToast('Failed to save asset', 'error') } finally { setSaving(false) }
+    } catch { showToast('Failed to save asset', 'error') } finally { setSaving(false) }
   }
 
   function printTag() {
     const w = window.open('', '_blank')
     if (!w) return
-    w.document.write(`<html><head><title>${result.code}</title></head><body style="font-family:sans-serif;text-align:center;padding:24px"><img src="${result.qr}" style="width:240px;height:240px"/><div style="font-size:22px;font-weight:800;margin-top:8px;color:#1b4332">${result.code}</div><div style="font-size:12px;color:#666">${result.url}</div><script>window.onload=function(){window.print()}<\/script></body></html>`)
+    w.document.write(`<html><head><title>${result.code}</title></head><body style="font-family:sans-serif;text-align:center;padding:24px"><img src="${result.qr}" style="width:240px;height:240px"/><div style="font-size:22px;font-weight:800;margin-top:8px;color:#1b4332">${result.code}</div><div style="font-size:12px;color:#666">${result.url}</div><script>window.onload=function(){window.print()}</script></body></html>`)
     w.document.close()
   }
 

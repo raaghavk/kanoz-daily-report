@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -21,7 +20,6 @@ function monthStart() {
 
 export default function TallyPage() {
   const { plant, employee } = useAuth()
-  const navigate = useNavigate()
   const [fromDate, setFromDate] = useState(monthStart())
   const [toDate, setToDate] = useState(getLocalDate())
   const [settings, setSettings] = useState({

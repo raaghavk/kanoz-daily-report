@@ -14,7 +14,6 @@ export default function StockTransferPage() {
   const navigate = useNavigate()
   const [plots, setPlots] = useState([])
   const [materials, setMaterials] = useState([])
-  const [purchases, setPurchases] = useState([])
   const [transfers, setTransfers] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -37,7 +36,6 @@ export default function StockTransferPage() {
       if (plotsRes.error) throw plotsRes.error
       setPlots(plotsRes.data || [])
       setMaterials(matRes.data || [])
-      setPurchases(purRes.data || [])
       setTransfers(trRes.data || [])
 
       const shiftIds = (usageRes.data || []).map(r => r.id)

@@ -20,18 +20,17 @@ export default function ScanAsset() {
     const qr = new Html5Qrcode('asset-scanner')
     qrRef.current = qr
     const config = { fps: 10, qrbox: { width: 230, height: 230 } }
+    const onScan = async (text) => {
+      const code = extractCode(text)
+      if (!code) return
+      try { if (startedRef.current && qrRef.current) { await qrRef.current.stop(); startedRef.current = false } } catch { /* already stopped */ }
+      navigate('/a/' + code)
+    }
     qr.start({ facingMode: 'environment' }, config, onScan, () => {})
       .then(() => { startedRef.current = true })
       .catch(() => setErr('Could not open the camera. Allow camera access, or type the code below.'))
-    return () => { try { if (startedRef.current) qr.stop().then(() => qr.clear()).catch(() => {}) } catch { /* */ } }
-  }, []) // eslint-disable-line
-
-  async function onScan(text) {
-    const code = extractCode(text)
-    if (!code) return
-    try { if (startedRef.current && qrRef.current) { await qrRef.current.stop(); startedRef.current = false } } catch { /* */ }
-    navigate('/a/' + code)
-  }
+    return () => { try { if (startedRef.current) qr.stop().then(() => qr.clear()).catch(() => {}) } catch { /* already stopped */ } }
+  }, [navigate])
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>

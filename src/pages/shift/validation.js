@@ -1,4 +1,4 @@
-import { computeProcessingDeltas } from './StepProcessing'
+import { computeProcessingDeltas } from '../../lib/processingDeltas'
 
 /**
  * Validate shift report data before submission.

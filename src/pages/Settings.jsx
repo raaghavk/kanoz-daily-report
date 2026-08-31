@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
-import { showToast } from '../components/Toast'
 
 function MiniToggle({ on, onToggle, disabled }) {
   return (

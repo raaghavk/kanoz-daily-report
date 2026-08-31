@@ -1,5 +1,5 @@
 import { sanitizeNumber, sanitizeText } from './sanitize'
-import { computeProcessingDeltas } from '../pages/shift/StepProcessing'
+import { computeProcessingDeltas } from './processingDeltas'
 
 export function buildShiftChildrenPayload(reportData, plant) {
   const derivePelletType = (machineId) => {

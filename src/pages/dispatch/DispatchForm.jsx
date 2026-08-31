@@ -88,7 +88,7 @@ export default function DispatchForm() {
   const [restoredDraft, setRestoredDraft] = useState(false)
 
   function clearDispatchDraft() {
-    try { localStorage.removeItem(DISPATCH_DRAFT_KEY) } catch (e) { /* ignore */ }
+    try { localStorage.removeItem(DISPATCH_DRAFT_KEY) } catch { /* ignore */ }
     setRestoredDraft(false)
   }
 
@@ -113,8 +113,8 @@ export default function DispatchForm() {
         }
         if (expired) localStorage.removeItem(DISPATCH_DRAFT_KEY)
       }
-    } catch (e) {
-      try { localStorage.removeItem(DISPATCH_DRAFT_KEY) } catch (_) { /* ignore */ }
+    } catch {
+      try { localStorage.removeItem(DISPATCH_DRAFT_KEY) } catch { /* ignore */ }
     }
     if (reportDate) {
       setForm(prev => ({ ...prev, loading_date: reportDate, dispatch_date: reportDate }))
@@ -125,7 +125,7 @@ export default function DispatchForm() {
   useEffect(() => {
     try {
       localStorage.setItem(DISPATCH_DRAFT_KEY, JSON.stringify({ form, savedAt: Date.now() }))
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
   }, [form])
 
   // Date filter logic
@@ -579,7 +579,7 @@ export default function DispatchForm() {
       }
       setForm(prev => ({ ...prev, ...updates }))
       showToast('Fields auto-filled from photo', 'success')
-    } catch (err) {
+    } catch {
       showToast('Could not extract data from photo', 'error')
     } finally {
       setScanning(false)

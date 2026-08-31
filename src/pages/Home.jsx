@@ -43,7 +43,7 @@ export default function Home() {
         else if (code <= 82) { icon = '🌧️'; desc = 'Showers' }
         else { icon = '⛈️'; desc = 'Storm' }
         setWeather({ temp, icon, desc, rainToday, precip: precip.toFixed(1) })
-      } catch {}
+      } catch { /* weather fetch failed */ }
     })()
   }, [plant?.location_lat, plant?.location_lng])
 

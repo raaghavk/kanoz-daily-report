@@ -64,7 +64,7 @@ export default function VoiceEntryModal({ onClose }) {
   useEffect(() => {
     return () => {
       if (recognitionRef.current) {
-        try { recognitionRef.current.stop() } catch {}
+        try { recognitionRef.current.stop() } catch { /* already stopped */ }
       }
     }
   }, [])

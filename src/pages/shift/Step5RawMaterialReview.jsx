@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { kgToMt, kgToMtStr, mtToKg } from '../../lib/units';
-import { computeProcessingDeltas } from './StepProcessing';
+import { computeProcessingDeltas } from '../../lib/processingDeltas'
 
 const C = {
   green: '#2d6a4f',

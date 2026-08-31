@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { can, ROLE_OPTIONS, setDynamicRoles } from '../permissions'
 
 describe('can(role, action)', () => {

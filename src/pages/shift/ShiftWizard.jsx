@@ -23,7 +23,8 @@ import Step6Dispatch from './Step6Dispatch'
 import Step7PelletStock from './Step7PelletStock'
 import Step8Issues from './Step8Issues'
 import Step9Submit from './Step9Submit'
-import StepProcessing, { computeProcessingDeltas } from './StepProcessing'
+import StepProcessing from './StepProcessing'
+import { computeProcessingDeltas } from '../../lib/processingDeltas'
 
 const STEPS = [
   { num: 1, title: 'Report Header', component: Step1Header },
@@ -405,7 +406,7 @@ export default function ShiftWizard() {
               : []
             let machineHours = {}
             if (pr.machine_hours && typeof pr.machine_hours === 'object') machineHours = { ...pr.machine_hours }
-            else if (typeof pr.machine_hours === 'string') { try { machineHours = JSON.parse(pr.machine_hours) || {} } catch (e) { machineHours = {} } }
+            else if (typeof pr.machine_hours === 'string') { try { machineHours = JSON.parse(pr.machine_hours) || {} } catch { machineHours = {} } }
             const inId = (route && route.input_material_type_id) || (activeRawMaterials.find(rm => rm.name === pr.input_material) || {}).id || null
             const outId = (route && route.output_material_type_id) || (activeRawMaterials.find(rm => rm.name === pr.output_material) || {}).id || null
             return {

@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
-import Modal from '../../components/Modal'
 import { Search, Plus, Phone, MessageSquare, Loader2, AlertCircle } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import { vehicleSummary } from '../../lib/vehicleTypes'
@@ -17,8 +16,6 @@ export default function TransporterList() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
-  const [formData, setFormData] = useState({ name: '', phone: '', address: '', category: '', vehicle_number: '', driver_name: '', driver_phone: '' })
-  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     if (plant?.org_id) fetchTransporters()
