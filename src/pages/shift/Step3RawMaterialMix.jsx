@@ -5,7 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { Plus, Trash2, X, Edit2, Lock, ShoppingCart } from 'lucide-react'
 import { deriveMixPellet, gradeForGcv } from '../../lib/pelletGrading'
-import { computeProcessingDeltas } from './StepProcessing'
+import { computeProcessingDeltas } from '../../lib/processingDeltas'
 import { kgToMtStr } from '../../lib/units'
 
 const C = {
@@ -16,12 +16,6 @@ const C = {
   bg: '#fefae0',
   border: '#e5ddd0',
   card: '#fff',
-}
-
-// Trim floating-point noise: show up to 2 decimals, no trailing zeros (99.88399999 -> "99.88", 100 -> "100").
-function fmtKg(n) {
-  const v = Math.round((Number(n) || 0) * 100) / 100
-  return String(v)
 }
 
 function formatGcv(gcv) {

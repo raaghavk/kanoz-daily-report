@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { jsonResponse, requireCaller } from '../_shared/callerAuth.ts'
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -26,6 +27,9 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
+    const caller = await requireCaller(req)
+    if (caller instanceof Response) return caller
+
     const { transcript, context } = await req.json() as {
       transcript?: string;
       context?: VoiceContext;

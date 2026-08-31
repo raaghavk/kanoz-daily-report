@@ -10,6 +10,8 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
+import { canonicalReportDate, isDispatchInShiftWindow } from '../../lib/shiftReportDate'
+import { buildShiftChildrenPayload } from '../../lib/shiftSavePayload'
 import { getValidationErrors, getValidationWarnings } from './validation'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
@@ -21,7 +23,8 @@ import Step6Dispatch from './Step6Dispatch'
 import Step7PelletStock from './Step7PelletStock'
 import Step8Issues from './Step8Issues'
 import Step9Submit from './Step9Submit'
-import StepProcessing, { computeProcessingDeltas } from './StepProcessing'
+import StepProcessing from './StepProcessing'
+import { computeProcessingDeltas } from '../../lib/processingDeltas'
 
 const STEPS = [
   { num: 1, title: 'Report Header', component: Step1Header },
@@ -169,8 +172,12 @@ export default function ShiftWizard() {
           const savedDate = savedData.shift_start_date || savedData.date
           const isDifferentDay = savedDate && savedDate !== today
 
-          // If returning from dispatch creation (returnToStep), always restore immediately
+          // If returning from dispatch creation (returnToStep), restore immediately
+          // but warn when the draft is from a different calendar day.
           if (returnToStep) {
+            if (isDifferentDay) {
+              showToast('Restored a draft from a different day — check the shift date before submitting.', 'error')
+            }
             setReportData({ ...savedData, processing: savedData.processing || [] })
             setStep(returnToStep)
             if (savedId) setReportId(savedId)
@@ -350,6 +357,7 @@ export default function ShiftWizard() {
             .from('shift_reports')
             .select('*')
             .eq('id', editId)
+            .eq('is_deleted', false)
             .single()
 
           if (reportErr) throw reportErr
@@ -398,7 +406,7 @@ export default function ShiftWizard() {
               : []
             let machineHours = {}
             if (pr.machine_hours && typeof pr.machine_hours === 'object') machineHours = { ...pr.machine_hours }
-            else if (typeof pr.machine_hours === 'string') { try { machineHours = JSON.parse(pr.machine_hours) || {} } catch (e) { machineHours = {} } }
+            else if (typeof pr.machine_hours === 'string') { try { machineHours = JSON.parse(pr.machine_hours) || {} } catch { machineHours = {} } }
             const inId = (route && route.input_material_type_id) || (activeRawMaterials.find(rm => rm.name === pr.input_material) || {}).id || null
             const outId = (route && route.output_material_type_id) || (activeRawMaterials.find(rm => rm.name === pr.output_material) || {}).id || null
             return {
@@ -600,11 +608,12 @@ export default function ShiftWizard() {
           // Fetch previous shift report for carry-forward values
           const { data: prevReport } = await supabase
             .from('shift_reports')
-            .select('id, date')
+            .select('id, date, shift_start_date, start_time')
             .eq('plant_id', plant.id)
             .eq('is_deleted', false)
+            .order('shift_start_date', { ascending: false, nullsFirst: false })
+            .order('start_time', { ascending: false, nullsFirst: false })
             .order('date', { ascending: false })
-            .order('shift', { ascending: false })
             .limit(1)
             .maybeSingle()
 
@@ -757,7 +766,7 @@ export default function ShiftWizard() {
 
   // Live duplicate shift report detector for Step 1
   useEffect(() => {
-    if (editId || !plant?.id || !reportData.date || !reportData.shift) {
+    if (editId || !plant?.id || !canonicalReportDate(reportData) || !reportData.shift) {
       setDuplicateReportId(null)
       return
     }
@@ -768,7 +777,7 @@ export default function ShiftWizard() {
           .from('shift_reports')
           .select('id')
           .eq('plant_id', plant.id)
-          .eq('date', reportData.date)
+          .eq('date', canonicalReportDate(reportData))
           .eq('shift', reportData.shift)
           .eq('is_deleted', false)
           .maybeSingle()
@@ -781,7 +790,7 @@ export default function ShiftWizard() {
       }
     })()
     return () => { cancelled = true }
-  }, [reportData.date, reportData.shift, plant?.id, editId])
+  }, [reportData.date, reportData.shift, reportData.shift_start_date, reportData.shift_end_date, plant?.id, editId])
 
   // Validation is handled by the extracted getValidationErrors(reportData) function
 
@@ -797,7 +806,7 @@ export default function ShiftWizard() {
       // Create or update the shift report
       const reportPayload = {
         plant_id: plant.id,
-        date: reportData.shift_end_date || reportData.shift_start_date || reportData.date,
+        date: canonicalReportDate(reportData),
         shift: reportData.shift,
         start_time: reportData.start_time,
         end_time: reportData.end_time,
@@ -822,293 +831,12 @@ export default function ShiftWizard() {
         setReportId(report.id)
       }
 
-      // Helper: derive pellet_type_name for a machine from its mix usages.
-      // Uses each mix's derived pellet name (falls back to mix.type). If a
-      // machine ran mixes with different names, the mix contributing the most
-      // kg wins — no hardcoded fallback names.
-      function derivePelletType(machineId) {
-        const mixName = m => m?.derived_pellet_name || m?.type || null
-        const machineEntries = reportData.production.filter(p => p.machine_id === machineId)
-        const kgByName = {}
-        machineEntries.forEach(p => {
-          (p.mix_usages || []).forEach(u => {
-            const name = mixName((reportData.mixes || []).find(m => m.local_id === u.mix_local_id))
-            if (!name) return
-            kgByName[name] = (kgByName[name] || 0) + sanitizeNumber(u.quantity_kg)
-          })
-        })
-        const names = Object.keys(kgByName)
-        if (names.length === 0) {
-          // Fall back: use first mix name in this shift (avoids null when mix_usages not set)
-          return mixName((reportData.mixes || []).find(m => mixName(m)))
-        }
-        return names.reduce((a, b) => (kgByName[b] > kgByName[a] ? b : a))
-      }
-
-      // Save machine production
-      if (reportData.machines.length) {
-        const { error: mDelErr } = await supabase.from('machine_production').delete().eq('shift_report_id', report.id)
-        if (mDelErr) throw mDelErr
-        
-        const machineRows = reportData.machines
-          .filter(m => m.did_not_run || sanitizeNumber(m.production_hours) > 0 || sanitizeNumber(m.total_hours) > 0 || m.from_time || m.to_time)
-          .map(m => ({
-            shift_report_id: report.id,
-            machine_id: m.id,
-            did_not_run: m.did_not_run || false,
-            hours_run: sanitizeNumber(m.production_hours) || sanitizeNumber(m.total_hours),
-            from_time: m.from_time || null,
-            to_time: m.to_time || null,
-            total_hours: sanitizeNumber(m.total_hours) || null,
-            breakdown_hours: sanitizeNumber(m.breakdown_hrs) || 0,
-            remarks: sanitizeText(m.remarks, 500),
-            production_mt: reportData.production
-              .filter(p => p.machine_id === m.id)
-              .reduce((sum, p) => sum + sanitizeNumber(p.quantity), 0),
-            pellet_type_name: derivePelletType(m.id),
-          }))
-        if (machineRows.length) {
-          const { error: mInsErr } = await supabase.from('machine_production').insert(machineRows)
-          if (mInsErr) throw mInsErr
-        }
-      }
-
-      // Save mixes (shift_mixes + compositions + machine_usage)
-      // shift_mix_compositions and shift_mix_machine_usage cascade-delete via FK when shift_mixes is deleted
-      const { error: muDelErr } = await supabase.from('shift_mix_machine_usage').delete().eq('shift_report_id', report.id)
-      if (muDelErr) throw muDelErr
-      const { error: mxDelErr } = await supabase.from('shift_mixes').delete().eq('shift_report_id', report.id)
-      if (mxDelErr) throw mxDelErr
-
-      if ((reportData.mixes || []).length > 0) {
-        for (const mix of reportData.mixes) {
-          // Compute used_kg from production mix_usages
-          const computedUsedKg = (reportData.production || []).reduce((sum, p) =>
-            sum + (p.mix_usages || []).filter(u => u.mix_local_id === mix.local_id).reduce((s, u) => s + sanitizeNumber(u.quantity_kg), 0), 0)
-          // Prefer manually overridden used_kg (set in Step 5) over computed
-          const usedKg = (mix.used_kg !== undefined && mix.used_kg !== null) ? sanitizeNumber(mix.used_kg) : computedUsedKg
-          const closingKg = (sanitizeNumber(mix.opening_kg) + sanitizeNumber(mix.prepared_kg)) - usedKg
-
-          const { data: savedMix, error: mixErr } = await supabase.from('shift_mixes').insert({
-            shift_report_id: report.id,
-            plant_id: plant.id,
-            org_id: plant.org_id,
-            name: sanitizeText(mix.name, 100),
-            type: sanitizeText(mix.type, 50),
-            opening_kg: sanitizeNumber(mix.opening_kg),
-            prepared_kg: sanitizeNumber(mix.prepared_kg),
-            used_kg: usedKg,
-            closing_kg: closingKg,
-            derived_pellet_name: sanitizeText(mix.derived_pellet_name || mix.type, 100) || null,
-            derived_gcv: mix.derived_gcv != null ? sanitizeNumber(mix.derived_gcv) : null,
-            derived_grade: sanitizeText(mix.derived_grade, 20) || null,
-          }).select().single()
-          if (mixErr) throw mixErr
-
-          // Save compositions
-          if (mix.ingredients?.length > 0) {
-            const compRows = mix.ingredients
-              .filter(ing => ing.raw_material_type_id && sanitizeNumber(ing.quantity_kg) > 0)
-              .map(ing => ({
-                mix_id: savedMix.id,
-                raw_material_type_id: ing.raw_material_type_id,
-                raw_material_name: sanitizeText(ing.name, 100),
-                quantity_kg: sanitizeNumber(ing.quantity_kg),
-              }))
-            if (compRows.length > 0) {
-              const { error: compErr } = await supabase.from('shift_mix_compositions').insert(compRows)
-              if (compErr) throw compErr
-            }
-          }
-
-          // Save machine usages for this mix
-          const machineUsageRows = []
-          ;(reportData.production || []).forEach(p => {
-            ;(p.mix_usages || []).filter(u => u.mix_local_id === mix.local_id && sanitizeNumber(u.quantity_kg) > 0).forEach(u => {
-              machineUsageRows.push({
-                mix_id: savedMix.id,
-                shift_report_id: report.id,
-                machine_id: p.machine_id,
-                quantity_kg: sanitizeNumber(u.quantity_kg),
-              })
-            })
-          })
-          if (machineUsageRows.length > 0) {
-            const { error: usageErr } = await supabase.from('shift_mix_machine_usage').insert(machineUsageRows)
-            if (usageErr) throw usageErr
-          }
-        }
-      }
-
-      // Save raw material usage (with opening/closing for carry-forward).
-      // Fold in-house processing: quantity_kg = mix used + processing input;
-      // closing = opening + purchased + produced - mix used - processing input.
-      const procDeltasSave = computeProcessingDeltas(reportData.processing, reportData.rawMaterials)
-      if (reportData.rawMaterials.length) {
-        const { error: rmDelErr } = await supabase.from('raw_material_usage').delete().eq('shift_report_id', report.id)
-        if (rmDelErr) throw rmDelErr
-        const rmRows = reportData.rawMaterials
-          .map(rm => {
-            const d = procDeltasSave[rm.id] || { produced: 0, procUsed: 0 }
-            const opening = sanitizeNumber(rm.opening)
-            const purchased = sanitizeNumber(rm.purchased)
-            const mixUsed = sanitizeNumber(rm.used)
-            const totalUsed = mixUsed + (d.procUsed || 0)
-            const closing = opening + purchased + (d.produced || 0) - totalUsed
-            return {
-              shift_report_id: report.id,
-              raw_material_type_id: rm.id,
-              quantity_kg: totalUsed,
-              opening_kg: opening,
-              purchased_kg: purchased,
-              closing_kg: closing,
-            }
-          })
-        if (rmRows.length) {
-          const { error: rmInsErr } = await supabase.from('raw_material_usage').insert(rmRows)
-          if (rmInsErr) throw rmInsErr
-        }
-      }
-
-      // Save in-house processing runs
-      {
-        const { error: prDelErr } = await supabase.from('processing_runs').delete().eq('shift_report_id', report.id)
-        if (prDelErr) throw prDelErr
-        const procRows = (reportData.processing || [])
-          .filter(r => sanitizeNumber(r.input_kg) > 0 || sanitizeNumber(r.output_kg) > 0)
-          .map(r => {
-            const inKg = sanitizeNumber(r.input_kg)
-            const outKg = sanitizeNumber(r.output_kg)
-            // Sanitize per-machine hours into a clean { machine_id: number } jsonb.
-            const machineHours = {}
-            Object.entries(r.machine_hours || {}).forEach(([mid, hrs]) => {
-              if (!mid) return
-              const n = sanitizeNumber(hrs)
-              if (n > 0) machineHours[mid] = n
-            })
-            return {
-              shift_report_id: report.id,
-              plant_id: plant.id,
-              org_id: plant.org_id,
-              route_id: r.route_id || null,
-              input_material: sanitizeText(r.input_material, 100),
-              input_kg: inKg,
-              output_material: sanitizeText(r.output_material, 100),
-              output_kg: outKg,
-              yield_pct: inKg > 0 ? Math.round((outKg / inKg) * 10000) / 100 : null,
-              machine_hours: machineHours,
-              note: sanitizeText(r.note, 500) || null,
-            }
-          })
-        if (procRows.length) {
-          const { error: prInsErr } = await supabase.from('processing_runs').insert(procRows)
-          if (prInsErr) throw prInsErr
-        }
-      }
-
-      // Save equipment diesel log
-      if (reportData.diesel && reportData.diesel.length) {
-        const { error: dDelErr } = await supabase.from('equipment_diesel_log').delete().eq('shift_report_id', report.id)
-        if (dDelErr) throw dDelErr
-        const dieselRows = reportData.diesel
-          .map(d => {
-            const openL  = sanitizeNumber(d.opening)
-            const addedL = sanitizeNumber(d.added)
-            const usedL  = sanitizeNumber(d.used)
-            // Always recompute closing at save time — never trust potentially stale form state
-            const closeL = openL + addedL - usedL
-            return {
-              shift_report_id: report.id,
-              equipment_id: d.id || null,
-              equipment_name: sanitizeText(d.equipment_name, 100),
-              opening_litres: openL,
-              added_litres:   addedL,
-              used_litres:    usedL,
-              closing_litres: closeL,
-              hours_worked:   sanitizeNumber(d.hours),
-            }
-          })
-        if (dieselRows.length) {
-          const { error: dInsErr } = await supabase.from('equipment_diesel_log').insert(dieselRows)
-          if (dInsErr) throw dInsErr
-        }
-      }
-
-      // Save pellet stock (all entries — closing_mt is GENERATED, don't insert it)
-      if (reportData.pelletStock && reportData.pelletStock.length) {
-        const { error: psDelErr } = await supabase.from('pellet_stock').delete().eq('shift_report_id', report.id)
-        if (psDelErr) throw psDelErr
-        const stockRows = reportData.pelletStock
-          .map(ps => ({
-            shift_report_id: report.id,
-            pellet_type_id: ps.id,
-            opening_mt: sanitizeNumber(ps.opening),
-            production_mt: sanitizeNumber(ps.production),
-            dispatch_mt: sanitizeNumber(ps.dispatch),
-            wastage_mt: sanitizeNumber(ps.wastage),
-            adjustment_mt: sanitizeNumber(ps.adjustment),
-            adjustment_note: sanitizeText(ps.adjustment_note, 200) || null,
-          }))
-        if (stockRows.length) {
-          const { error: psInsErr } = await supabase.from('pellet_stock').insert(stockRows)
-          if (psInsErr) throw psInsErr
-        }
-      }
-
-      // Save issues
-      if (reportData.issues.length) {
-        const { error: isDelErr } = await supabase.from('issues').delete().eq('shift_report_id', report.id)
-        if (isDelErr) throw isDelErr
-        const issueRows = reportData.issues.map(i => ({
-          shift_report_id: report.id,
-          issue_type: sanitizeText(i.type, 50),
-          description: sanitizeText(i.description, 1000),
-          severity: sanitizeText(i.severity, 20),
-          photo_url: i.photo_url,
-        }))
-        const { error: isInsErr } = await supabase.from('issues').insert(issueRows)
-        if (isInsErr) throw isInsErr
-      }
-
-      // Save diesel stock (overall tank) + diesel purchases
-      const { error: dpDelErr } = await supabase.from('diesel_purchases').delete().eq('shift_report_id', report.id)
-      if (dpDelErr) throw dpDelErr
-      const { error: dsDelErr } = await supabase.from('diesel_stock').delete().eq('shift_report_id', report.id)
-      if (dsDelErr) throw dsDelErr
-      const totalAddedToEquipment = (reportData.diesel || []).reduce((sum, eq) => sum + sanitizeNumber(eq.added), 0)
-      const ds = reportData.diesel_stock || {}
-      const purchases = ds.purchases || []
-      const totalPurchased = purchases.reduce((sum, p) => sum + sanitizeNumber(p.litres), 0)
-      const totalCost = purchases.reduce((sum, p) => {
-        return sum + (sanitizeNumber(p.litres) * sanitizeNumber(p.cost_per_litre))
-      }, 0)
-      const dsOpening = sanitizeNumber(ds.opening)
-      const { error: dsInsErr } = await supabase.from('diesel_stock').insert({
-        shift_report_id: report.id,
-        opening_litres: dsOpening,
-        purchased_litres: totalPurchased,
-        purchase_cost: totalCost,
-        used_litres: totalAddedToEquipment,
-        closing_litres: dsOpening + totalPurchased - totalAddedToEquipment,
+      const childPayload = buildShiftChildrenPayload(reportData, plant)
+      const { error: childErr } = await supabase.rpc('replace_shift_report_children', {
+        p_report_id: report.id,
+        p_payload: childPayload,
       })
-      if (dsInsErr) throw dsInsErr
-      // Save individual purchase entries
-      if (purchases.length > 0) {
-        const purchaseRows = purchases
-          .filter(p => sanitizeNumber(p.litres) > 0)
-          .map(p => ({
-            shift_report_id: report.id,
-            litres: sanitizeNumber(p.litres),
-            cost_per_litre: sanitizeNumber(p.cost_per_litre),
-            total_cost: sanitizeNumber(p.litres) * sanitizeNumber(p.cost_per_litre),
-            receipt_url: p.receipt_url || null,
-            purchase_time: p.purchase_time || null,
-          }))
-        if (purchaseRows.length > 0) {
-          const { error: dpInsErr } = await supabase.from('diesel_purchases').insert(purchaseRows)
-          if (dpInsErr) throw dpInsErr
-        }
-      }
+      if (childErr) throw childErr
 
       // Link dispatches within this shift's time window to this shift report
       try {
@@ -1132,14 +860,7 @@ export default function ShiftWizard() {
           .lte('date', reportData.shift_end_date)
 
         if (candidateDispatches?.length) {
-          const shiftStartDt = new Date(shiftStart)
-          const shiftEndDt = new Date(shiftEnd)
-          const toLink = candidateDispatches.filter(d => {
-            const dDate = d.dispatch_date || d.date
-            const dTime = d.dispatch_time || '00:00:00'
-            const dt = new Date(`${dDate}T${dTime}`)
-            return dt >= shiftStartDt && dt <= shiftEndDt
-          }).map(d => d.id)
+          const toLink = candidateDispatches.filter(d => isDispatchInShiftWindow(d, shiftStart, shiftEnd)).map(d => d.id)
 
           if (toLink.length > 0) {
             await supabase.from('vehicle_dispatches')
@@ -1213,7 +934,7 @@ export default function ShiftWizard() {
             .from('shift_reports')
             .select('id')
             .eq('plant_id', plant.id)
-            .eq('date', reportData.date)
+            .eq('date', canonicalReportDate(reportData))
             .eq('shift', reportData.shift)
             .maybeSingle()
           if (existing?.id) {
@@ -1240,8 +961,9 @@ export default function ShiftWizard() {
     }
   }, [ // eslint-disable-line react-hooks/exhaustive-deps
     reportData.date, reportData.shift, reportData.start_time, reportData.end_time,
+    reportData.shift_start_date, reportData.shift_end_date,
     reportData.machines, reportData.production, reportData.rawMaterials,
-    reportData.remarks, reportData.mixes
+    reportData.remarks, reportData.mixes, reportData.processing,
   ])
   const stepsWithErrors = useMemo(() => [...new Set(allErrors.map(e => e.step))], [allErrors])
   const currentWarnings = useMemo(() => allErrors.filter(e => e.step === step), [allErrors, step])
@@ -1252,6 +974,7 @@ export default function ShiftWizard() {
     reportData.machines, reportData.rawMaterials, reportData.pelletStock, reportData.diesel,
     reportData.start_power_reading, reportData.end_power_reading,
     reportData.shift_start_date, reportData.shift_end_date, reportData.start_time, reportData.end_time,
+    reportData.processing,
   ])
   const currentSoftWarnings = useMemo(() => allSoftWarnings.filter(w => w.step === step), [allSoftWarnings, step])
 

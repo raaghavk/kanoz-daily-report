@@ -1,24 +1,29 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { corsHeaders, jsonResponse, requireCaller } from '../_shared/callerAuth.ts'
 
-// extract-receipt v8 — switched from OpenAI (paid) to Google Gemini (free tier).
-// ALREADY DEPLOYED to the live project on 2026-07-03. This copy is for the repo:
-// commit to supabase/functions/extract-receipt/index.ts
-// Requires secret: GEMINI_API_KEY (free at https://aistudio.google.com/apikey)
-// Optional secret: GEMINI_MODEL (defaults to gemini-2.5-flash)
+// extract-receipt — OCR via Gemini. Requires JWT and only fetches images from our Storage bucket.
 
 type DocumentType = 'katta_parchi' | 'diesel_receipt';
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-client-info, apikey',
-};
+const CORS = corsHeaders;
 
 function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...CORS },
-  });
+  return jsonResponse(body, status);
+}
+
+function isAllowedImageUrl(imageUrl: string): boolean {
+  let parsed: URL
+  try { parsed = new URL(imageUrl) } catch { return false }
+  if (parsed.protocol !== 'https:') return false
+  const host = parsed.hostname.toLowerCase()
+  if (host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')) return false
+  if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.|169\.254\.)/.test(host)) return false
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+  let allowedHost = ''
+  try { allowedHost = new URL(supabaseUrl).hostname.toLowerCase() } catch { /* ignore */ }
+  if (allowedHost && host === allowedHost) return true
+  if (host.endsWith('.supabase.co') && parsed.pathname.includes('/storage/v1/object/')) return true
+  return false
 }
 
 function getPromptForType(type: DocumentType): string {
@@ -126,11 +131,17 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ success: false, error: 'Method not allowed' }, 405);
 
   try {
+    const caller = await requireCaller(req)
+    if (caller instanceof Response) return caller
+
     const { imageUrl, type } = await req.json() as { imageUrl?: string; type?: DocumentType };
 
     if (!imageUrl || !type) return json({ success: false, error: 'Missing imageUrl or type' }, 400);
     if (type !== 'katta_parchi' && type !== 'diesel_receipt') {
       return json({ success: false, error: 'Invalid type. Must be katta_parchi or diesel_receipt' }, 400);
+    }
+    if (!isAllowedImageUrl(imageUrl)) {
+      return json({ success: false, error: 'imageUrl must be a HTTPS object in this project\'s Storage' }, 400);
     }
 
     const apiKey = Deno.env.get('GEMINI_API_KEY');

@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { kgToMt, kgToMtStr, mtToKg } from '../../lib/units';
+import { computeProcessingDeltas } from '../../lib/processingDeltas'
 
 const C = {
   green: '#2d6a4f',
@@ -14,6 +15,7 @@ const C = {
 function Step5RawMaterialReview({ data, updateData }) {
   const rawMaterials = data.rawMaterials || [];
   const mixes = data.mixes || [];
+  const procDeltas = computeProcessingDeltas(data.processing, rawMaterials);
 
   const updateUsed = (idx, value) => {
     const updated = [...rawMaterials];
@@ -21,11 +23,12 @@ function Step5RawMaterialReview({ data, updateData }) {
     const rm = updated[idx];
     const opening = parseFloat(rm.opening) || 0;
     const purchased = parseFloat(rm.purchased) || 0;
+    const d = procDeltas[rm.id] || { produced: 0, procUsed: 0 }
     updated[idx] = {
       ...rm,
       used_override_kg: numValue,
       used: numValue,
-      closing: opening + purchased - numValue,
+      closing: opening + purchased + (d.produced || 0) - numValue - (d.procUsed || 0),
     };
     updateData('rawMaterials', updated);
   };
@@ -79,7 +82,8 @@ function Step5RawMaterialReview({ data, updateData }) {
               const opening = parseFloat(rm.opening) || 0;
               const purchased = parseFloat(rm.purchased) || 0;
               const used = parseFloat(rm.used_override_kg ?? rm.used) || 0;
-              const closing = opening + purchased - used;
+              const d = procDeltas[rm.id] || { produced: 0, procUsed: 0 }
+              const closing = opening + purchased + (d.produced || 0) - used - (d.procUsed || 0);
 
               return (
                 <div

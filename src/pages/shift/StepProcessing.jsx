@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { Plus, Trash2, Factory, AlertCircle, ArrowRight } from 'lucide-react'
+import { newProcessingRunId } from '../../lib/processingDeltas'
 
 const C = {
   cream: '#fefae0',
@@ -9,37 +10,6 @@ const C = {
   muted: '#8a8d7a',
   text: '#2c2c2c',
   card: '#fff',
-}
-
-// Compute per-material stock deltas from processing runs.
-//  - output material gains `produced` kg
-//  - input material is consumed -> added to `used`
-// Matching is done by material id when the run stores one, else by name.
-// A run now carries route-derived fields (input_material_id/name +
-// output_material_id/name), but the delta logic is unchanged so chaining via
-// intermediate materials falls out automatically: one route's output material
-// gains `produced`, another route consuming it as input gains `procUsed`.
-// Exported so ShiftWizard / Step3 can keep rawMaterials in sync.
-export function computeProcessingDeltas(processing, rawMaterials) {
-  const producedById = {}
-  const usedById = {}
-  const producedByName = {}
-  const usedByName = {}
-  ;(processing || []).forEach(run => {
-    const inKg = parseFloat(run.input_kg) || 0
-    const outKg = parseFloat(run.output_kg) || 0
-    if (run.input_material_id) usedById[run.input_material_id] = (usedById[run.input_material_id] || 0) + inKg
-    else if (run.input_material) usedByName[run.input_material] = (usedByName[run.input_material] || 0) + inKg
-    if (run.output_material_id) producedById[run.output_material_id] = (producedById[run.output_material_id] || 0) + outKg
-    else if (run.output_material) producedByName[run.output_material] = (producedByName[run.output_material] || 0) + outKg
-  })
-  const perMaterial = {}
-  ;(rawMaterials || []).forEach(rm => {
-    const produced = (producedById[rm.id] || 0) + (producedByName[rm.name] || 0)
-    const procUsed = (usedById[rm.id] || 0) + (usedByName[rm.name] || 0)
-    perMaterial[rm.id] = { produced, procUsed }
-  })
-  return perMaterial
 }
 
 // Ordered stages for a route (each { seq, machine_id, machine_name }).
@@ -78,7 +48,7 @@ export default memo(function StepProcessing({ data, updateData, routes }) {
   function runFromRoute(route) {
     const stages = routeStages(route)
     return {
-      local_id: 'proc_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+      local_id: newProcessingRunId(),
       route_id: route.id,
       route_name: route.name,
       input_material: route.input_material_name || '',

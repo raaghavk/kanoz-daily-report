@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { getLocalDate } from '../../lib/dateUtils'
+import { getLocalDateDaysAgo } from '../../lib/dateUtils'
 import { ExternalLink } from 'lucide-react'
 
 const RANGES = [
@@ -18,13 +18,12 @@ export default function ReportsTable() {
   const { plant } = useAuth()
   const [rangeIdx, setRangeIdx] = useState(1)
 
-  const fromDate = RANGES[rangeIdx].days
-    ? getLocalDate(new Date(Date.now() - (RANGES[rangeIdx].days - 1) * 86400000))
-    : null
-
   const { data: reports = [], isLoading } = useQuery({
     queryKey: ['adminReports', plant?.id, rangeIdx],
     queryFn: async () => {
+      const fromDate = RANGES[rangeIdx].days != null
+        ? getLocalDateDaysAgo(RANGES[rangeIdx].days - 1)
+        : null
       let q = supabase
         .from('shift_reports')
         .select('id, date, shift, pellet_production_mt, start_time, end_time, remarks, employees!supervisor_id(name)')

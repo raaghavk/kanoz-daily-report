@@ -7,6 +7,7 @@ import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import { MapPin, Phone, Edit2, Loader2, AlertCircle, Calendar } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
+import { VEHICLE_TYPES } from '../../lib/vehicleTypes'
 
 export default function TransporterDetail() {
   const { id: transporterId } = useParams()
@@ -319,12 +320,13 @@ export default function TransporterDetail() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>Type</label>
-                  <input type="text" list="vtypes" placeholder="Tractor" value={newVehicle.vehicle_type}
+                  <select
+                    value={VEHICLE_TYPES.includes(newVehicle.vehicle_type) ? newVehicle.vehicle_type : (newVehicle.vehicle_type ? 'Other' : 'Tractor')}
                     onChange={e => setNewVehicle(p => ({ ...p, vehicle_type: e.target.value }))}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
-                  <datalist id="vtypes">
-                    <option value="Tractor" /><option value="Truck" /><option value="Pickup" /><option value="Mini Truck" /><option value="Three Wheeler" />
-                  </datalist>
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
+                  >
+                    {VEHICLE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
               </div>
               <input type="text" placeholder="Driver name" value={newVehicle.driver_name}

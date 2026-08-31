@@ -43,7 +43,7 @@ export default function AssetDetail() {
   }
   function printQr() {
     const w = window.open('', '_blank'); if (!w) return
-    w.document.write(`<html><head><title>${asset.code}</title></head><body style="font-family:sans-serif;text-align:center;padding:24px"><img src="${qr.data}" style="width:240px;height:240px"/><div style="font-size:22px;font-weight:800;margin-top:8px;color:#1b4332">${asset.code}</div><div style="font-size:12px;color:#666">${qr.url}</div><script>window.onload=function(){window.print()}<\/script></body></html>`)
+    w.document.write(`<html><head><title>${asset.code}</title></head><body style="font-family:sans-serif;text-align:center;padding:24px"><img src="${qr.data}" style="width:240px;height:240px"/><div style="font-size:22px;font-weight:800;margin-top:8px;color:#1b4332">${asset.code}</div><div style="font-size:12px;color:#666">${qr.url}</div><script>window.onload=function(){window.print()}</script></body></html>`)
     w.document.close()
   }
 

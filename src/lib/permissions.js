@@ -89,7 +89,7 @@ export function setDynamicRoles(map) {
 }
 
 export function can(role, action) {
-  if (DYNAMIC_ROLES && Array.isArray(DYNAMIC_ROLES[role])) {
+  if (DYNAMIC_ROLES && Array.isArray(DYNAMIC_ROLES[role]) && DYNAMIC_ROLES[role].length > 0) {
     return DYNAMIC_ROLES[role].includes(action)
   }
   return !!PERMISSIONS[role]?.[action]

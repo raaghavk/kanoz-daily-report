@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
-import { getLocalDate } from '../../lib/dateUtils'
+import { getLocalDate, getLocalDateDaysAgo, localDateOffset } from '../../lib/dateUtils'
 import { TrendingUp, Package, Truck, AlertTriangle } from 'lucide-react'
 
 function BarChart({ data, color }) {
@@ -52,8 +52,8 @@ export default function Overview() {
   const { plant } = useAuth()
 
   const today = getLocalDate()
-  const thirtyDaysAgo = getLocalDate(new Date(Date.now() - 29 * 24 * 60 * 60 * 1000))
-  const fourteenDaysAgo = getLocalDate(new Date(Date.now() - 13 * 24 * 60 * 60 * 1000))
+  const thirtyDaysAgo = getLocalDateDaysAgo(29)
+  const fourteenDaysAgo = getLocalDateDaysAgo(13)
 
   // Shift reports last 30 days
   const { data: reportsData } = useQuery({
@@ -129,7 +129,7 @@ export default function Overview() {
     const labels = []
     const map = {}
     for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+      const d = localDateOffset(-i)
       const key = getLocalDate(d)
       const label = `${d.getDate()}/${d.getMonth() + 1}`
       labels.push({ key, label })

@@ -20,7 +20,6 @@ export default function ProcessRoutes({ plantId, orgId }) {
 
   async function loadAll() {
     if (!plantId) return
-    setLoading(true)
     const [routesRes, matRes, machRes] = await Promise.all([
       supabase.from('process_routes').select('*').eq('plant_id', plantId).order('created_at'),
       supabase.from('raw_material_types').select('id, name, is_active').eq('plant_id', plantId).order('name'),
@@ -46,7 +45,9 @@ export default function ProcessRoutes({ plantId, orgId }) {
     setLoading(false)
   }
 
-  useEffect(() => { loadAll() }, [plantId]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    void loadAll() // eslint-disable-line react-hooks/set-state-in-effect -- network fetch; setState runs after await
+  }, [plantId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function startAdd() {
     setForm({ name: '', inputId: '', outputId: '', yield: '', stages: [] })

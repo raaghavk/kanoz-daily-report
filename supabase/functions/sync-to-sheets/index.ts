@@ -1,10 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders, jsonResponse, requireCaller } from '../_shared/callerAuth.ts'
 
 /**
  * Sync a shift report to Google Sheets.
@@ -24,6 +20,9 @@ serve(async (req) => {
   }
 
   try {
+    const caller = await requireCaller(req)
+    if (caller instanceof Response) return caller
+
     const { report_id } = await req.json()
     if (!report_id) {
       return new Response(JSON.stringify({ error: 'report_id is required' }), {
@@ -40,14 +39,12 @@ serve(async (req) => {
       })
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = caller.admin
 
     // Fetch the full report with all child data
     const { data: report, error: reportErr } = await supabase
       .from('shift_reports')
-      .select('*, plants(name, google_sheet_id), employees(name)')
+      .select('*, plants(name, google_sheet_id, org_id), employees(name)')
       .eq('id', report_id)
       .single()
 
@@ -56,6 +53,10 @@ serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
+    }
+
+    if (report.plants?.org_id && report.plants.org_id !== caller.employee.org_id) {
+      return jsonResponse({ error: 'Forbidden' }, 403)
     }
 
     const sheetId = report.plants?.google_sheet_id

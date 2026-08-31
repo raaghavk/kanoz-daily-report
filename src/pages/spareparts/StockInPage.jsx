@@ -77,7 +77,6 @@ function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
   async function handleAdd() {
     if (submitting) return
     if (!formData.name.trim()) { showToast('Part name is required', 'error'); return }
-    if (!formData.part_number.trim()) { showToast('Part number is required', 'error'); return }
     if (!formData.brand) { showToast('Brand / Manufacturer is required', 'error'); return }
     if (formData.brand === 'Other' && !formData.brand_other.trim()) { showToast('Please specify the brand', 'error'); return }
     if (!formData.category) { showToast('Category is required', 'error'); return }
@@ -88,7 +87,7 @@ function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
     try {
       setSubmitting(true)
       const { data, error } = await supabase.from('spare_parts').insert([{
-        org_id: orgId, name: formData.name.trim(), part_number: formData.part_number.trim(),
+        org_id: orgId, name: formData.name.trim(), part_number: formData.part_number.trim() || null,
         brand: finalBrand, category: finalCategory, unit: formData.unit,
         notes: formData.notes.trim() || null, is_active: true,
       }]).select()
@@ -108,7 +107,7 @@ function AddPartModal({ isOpen, onClose, onPartAdded, orgId }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div><label style={lbl}>Part Name {req}</label>
           <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g., Bearing 6205" style={inp} /></div>
-        <div><label style={lbl}>Part Number / Code {req}</label>
+        <div><label style={lbl}>Part Number / Code <span style={{ fontWeight: 500, color: '#8a8d7a' }}>(optional)</span></label>
           <input type="text" value={formData.part_number} onChange={e => setFormData({ ...formData, part_number: e.target.value })} placeholder="e.g., SKF-6205" style={inp} /></div>
         <div><label style={lbl}>Brand / Manufacturer {req}</label>
           <select value={formData.brand} onChange={e => setFormData({ ...formData, brand: e.target.value, brand_other: '' })} style={{ ...inp, color: formData.brand ? '#2c2c2c' : '#8a8d7a' }}>

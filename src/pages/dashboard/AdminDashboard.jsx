@@ -207,7 +207,7 @@ function Dispatch({ d }) {
   </>
 }
 
-function Finance({ d, assets, spares, realisation, setR }) {
+function Finance({ d, assets, realisation, setR }) {
   const repair = assets?.lifetimeRepair || 0
   const totalCost = d.rmSpend + d.spareSpend
   const revenue = realisation * d.dispatched

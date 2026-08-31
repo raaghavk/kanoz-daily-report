@@ -1,16 +1,5 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-// ai-query: natural-language analytics over the plant's live data.
-// The AI writes ONE read-only SELECT (schema below), we sandbox-validate it,
-// execute via the SELECT-only execute_readonly_query RPC, then the AI
-// summarizes the rows. verify_jwt on. Single-org deployment: every project is
-// one organization, so all data belongs to the caller's org.
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders, jsonResponse, requireCaller, requirePlantAccess } from '../_shared/callerAuth.ts'
 const GEMINI_MODEL = 'gemini-2.5-flash'
 
 // Curated schema the AI may query (analytical tables + key columns).
@@ -44,7 +33,7 @@ function validateSql(sql: string): string | null {
   if (!(lower.startsWith('select') || lower.startsWith('with'))) return 'Query must be a SELECT.'
   // Block writes / DDL / statement stacking.
   if (/;.*\S/.test(sql)) return 'Only a single statement is allowed.'
-  if (/\b(insert|update|delete|drop|alter|truncate|create|grant|revoke|comment|copy|call|do|merge|vacuum)\b/.test(lower)) return 'Only read-only SELECT queries are allowed.'
+  if (/\b(insert|update|delete|drop|alter|truncate|create|grant|revoke|comment|copy|call|do|merge|vacuum|union|into|copy)\b/.test(lower)) return 'Only read-only SELECT queries are allowed.'
   if (lower.includes('pg_') || lower.includes('information_schema') || lower.includes('auth.') || lower.includes('storage.')) return 'System tables are not queryable.'
   return null
 }
@@ -62,16 +51,20 @@ async function gemini(apiKey: string, prompt: string, json = false): Promise<str
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
+    const caller = await requireCaller(req)
+    if (caller instanceof Response) return caller
+
     const { question, plantId } = await req.json() as { question?: string; plantId?: string }
-    if (!question || !plantId) return new Response(JSON.stringify({ error: 'Missing question or plantId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    if (!question || !plantId) return jsonResponse({ error: 'Missing question or plantId' }, 400)
+
+    const plant = await requirePlantAccess(caller.admin, caller.employee, plantId)
+    if (plant instanceof Response) return plant
 
     const apiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!apiKey) return new Response(JSON.stringify({ answer: 'AI is not configured.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    if (!apiKey) return jsonResponse({ answer: 'AI is not configured.' })
 
-    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
-    const { data: plantRow } = await admin.from('plants').select('org_id, name').eq('id', plantId).maybeSingle()
-    const orgId = plantRow?.org_id
-    if (!orgId) return new Response(JSON.stringify({ answer: 'Plant not found.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    const admin = caller.admin
+    const orgId = plant.org_id
 
     // Step 1: AI writes a SELECT.
     const today = new Date().toISOString().split('T')[0]
@@ -97,13 +90,13 @@ USER QUESTION: "${question}"`
 
     const invalid = validateSql(sql)
     if (invalid) {
-      return new Response(JSON.stringify({ answer: `I couldn't build a safe query for that. (${invalid})`, sql }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ answer: `I couldn't build a safe query for that. (${invalid})` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     // Step 2: execute via SELECT-only RPC (service role).
     const { data: rows, error: qErr } = await admin.rpc('execute_readonly_query', { query_text: sql })
     if (qErr) {
-      return new Response(JSON.stringify({ answer: `That query didn't run. Try rephrasing. (${qErr.message.slice(0, 120)})`, sql }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ answer: `That query didn't run. Try rephrasing. (${qErr.message.slice(0, 120)})` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const rowArr = Array.isArray(rows) ? rows : []
@@ -113,7 +106,7 @@ USER QUESTION: "${question}"`
     const answerPrompt = `You are a helpful data assistant for the Kanoz biomass pellet plant. The user asked: "${question}"\n\nThe query returned this JSON data:\n${JSON.stringify(trimmed)}\n\nAnswer the user's question directly and concisely from this data. Use Indian number formatting (lakh/crore) for large amounts and ₹ for money. IMPORTANT: raw material and pellet quantities are stored in kg but should be presented to the user in metric tonnes (MT) — divide kg by 1000 and show 2 decimals with the label MT (e.g. 2000 kg → 2.00 MT). Diesel stays in litres; prices stay ₹/kg. If the data is empty, say there's no matching data yet. If the note is 'unanswerable', say you can't answer that from the available data. Reply in the user's language (Hindi/Hinglish if they used it, else English). Under 180 words. Do not invent numbers not in the data.`
     const answer = await gemini(apiKey, answerPrompt)
 
-    return new Response(JSON.stringify({ answer: answer || 'No answer produced.', sql, rowCount: rowArr.length }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ answer: answer || 'No answer produced.', rowCount: rowArr.length }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (err) {
     console.error('ai-query error:', err)
     return new Response(JSON.stringify({ answer: 'Something went wrong answering that. Please try again.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

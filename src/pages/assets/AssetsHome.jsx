@@ -28,11 +28,6 @@ export default function AssetsHome() {
   const store = active.filter(a => a.status === 'in_store').length
   const atRepair = active.filter(a => a.status === 'in_repair')
 
-  function findByCode() {
-    const c = window.prompt('Enter or scan asset code (e.g. MTR-0427)')
-    if (c && c.trim()) navigate('/a/' + c.trim().toUpperCase())
-  }
-
   const stat = (n, label, to, color, border, bg) => (
     <button onClick={() => navigate(to)} style={{ textAlign: 'left', cursor: 'pointer', background: bg || '#fff', borderRadius: 14, border: `1.5px solid ${border || '#e5ddd0'}`, padding: '12px 14px' }}>
       <div style={{ fontSize: 22, fontWeight: 800, color: color || '#2c2c2c' }}>{n}</div>

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Shield, Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -125,7 +124,6 @@ function RoleModal({ initial, onClose, onSave, saving }) {
 
 export default function RolesPage() {
   const { employee } = useAuth()
-  const nav = useNavigate()
   const [roles, setRoles] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null) // { mode: 'add' | 'edit', role }

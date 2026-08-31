@@ -68,7 +68,7 @@ serve(async (req) => {
         .from('roles')
         .select('permissions')
         .eq('org_id', callerEmployee.org_id)
-        .eq('key', callerEmployee.role)
+        .or(`key.eq.${callerEmployee.role},name.eq.${callerEmployee.role}`)
         .maybeSingle()
       const perms = Array.isArray(roleRow?.permissions) ? roleRow.permissions : []
       callerAllowed = perms.includes('manage_users')
@@ -95,6 +95,7 @@ serve(async (req) => {
       .from('employees')
       .select('id, auth_user_id, name, mobile')
       .eq('id', employee_id)
+      .eq('org_id', callerEmployee.org_id)
       .single()
 
     if (empError || !targetEmployee) {

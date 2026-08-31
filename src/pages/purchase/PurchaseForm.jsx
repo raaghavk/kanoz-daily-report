@@ -55,6 +55,7 @@ export default function PurchaseForm() {
     katta_parchi_photo: null,
     payment_status: 'Pending',
     remarks: '',
+    plot_id: '',
   })
 
   const [supplierForm, setSupplierForm] = useState({
@@ -117,6 +118,16 @@ export default function PurchaseForm() {
     staleTime: 0,
   })
 
+  const { data: storagePlots = [] } = useQuery({
+    queryKey: ['storagePlots', plant?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('storage_plots').select('*').eq('plant_id', plant.id).eq('is_active', true).order('is_primary', { ascending: false })
+      if (error) throw error
+      return data || []
+    },
+    enabled: !!plant?.id,
+  })
+
   const { data: selectedTransporterVehicles = [] } = useQuery({
     queryKey: ['transporter-vehicles-purchase', formData.transporter_id],
     queryFn: async () => {
@@ -170,6 +181,7 @@ export default function PurchaseForm() {
       katta_parchi_photo: purchaseData.katta_parchi_url || purchaseData.katta_parchi_photo || null,
       payment_status: purchaseData.payment_status || 'Pending',
       remarks: purchaseData.remarks || '',
+      plot_id: purchaseData.plot_id || '',
     })
   }, [purchaseData])
 
@@ -476,6 +488,7 @@ export default function PurchaseForm() {
         katta_parchi_url: formData.katta_parchi_photo,
         payment_status: formData.payment_status,
         remarks: sanitizeText(remarksText, 500) || null,
+        plot_id: formData.plot_id || storagePlots.find(p => p.is_primary)?.id || null,
       }
 
       if (id) {
@@ -606,6 +619,26 @@ export default function PurchaseForm() {
             </div>
           </div>
         </div>
+
+        {storagePlots.length > 0 && (
+          <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
+              Unload at plot
+            </label>
+            <select
+              value={formData.plot_id || storagePlots.find(p => p.is_primary)?.id || ''}
+              onChange={e => handleFieldChange('plot_id', e.target.value)}
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', background: '#fefae0' }}
+            >
+              {storagePlots.map(p => (
+                <option key={p.id} value={p.id}>{p.name}{p.is_primary ? ' (factory)' : ''}</option>
+              ))}
+            </select>
+            <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 6 }}>
+              Choose the land parcel where this material was dumped. Transfer to the factory later from Stock.
+            </div>
+          </div>
+        )}
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>

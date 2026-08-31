@@ -15,3 +15,17 @@ export function getLocalTime(date) {
   const d = date || new Date()
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
+
+/** Local calendar date `days` before today, as YYYY-MM-DD. */
+export function getLocalDateDaysAgo(days) {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  return getLocalDate(d)
+}
+
+/** Local Date at today's calendar date plus `days` (negative = past). */
+export function localDateOffset(days) {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d
+}

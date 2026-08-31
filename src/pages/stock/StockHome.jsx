@@ -263,6 +263,15 @@ export default function StockHome() {
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => navigate('/stock/transfer')} style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+            Transfer between plots
+          </button>
+          <button onClick={() => navigate('/plots')} style={{ flex: 1, padding: '10px 0', background: '#fff', color: '#2d6a4f', border: '1.5px solid #2d6a4f', borderRadius: 12, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+            Manage plots
+          </button>
+        </div>
+
         {isLoading && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
             <Loader2 size={28} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
