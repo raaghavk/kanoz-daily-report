@@ -128,7 +128,7 @@ export default function IssuePartPage() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Record Usage" subtitle="Record parts used" onBack={() => navigate(-1)} />
+      <PageHeader title="Record Usage" subtitle="Record parts used" />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 

@@ -44,7 +44,7 @@ export default function AssetsHome() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Assets" subtitle={`${plant?.name || 'Plant'} · Equipment lifecycle tracking`} onBack={() => navigate('/settings')} />
+      <PageHeader title="Assets" subtitle={`${plant?.name || 'Plant'} · Equipment lifecycle tracking`} />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 14 }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Loader2 size={28} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} /></div>

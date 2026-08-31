@@ -400,7 +400,7 @@ export default function StockInPage() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Stock In" subtitle="Record parts received" onBack={() => navigate(-1)} />
+      <PageHeader title="Stock In" subtitle="Record parts received" backTo="/spare-parts" />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 

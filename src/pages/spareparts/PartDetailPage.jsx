@@ -124,7 +124,7 @@ export default function PartDetailPage() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title={part.name} subtitle={part.category || 'Spare Part'} onBack={() => navigate('/spare-parts/parts')} />
+      <PageHeader title={part.name} subtitle={part.category || 'Spare Part'} />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 

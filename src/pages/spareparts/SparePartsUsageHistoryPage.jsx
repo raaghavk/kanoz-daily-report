@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../../components/PageHeader'
 import { Loader2, Download } from 'lucide-react'
 export default function SparePartsUsageHistoryPage() {
   const { plant } = useAuth()
-  const navigate = useNavigate()
-  const [records, setRecords] = useState([])
+    const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [filterMonth, setFilterMonth] = useState(() => {
     const now = new Date()
@@ -74,7 +72,7 @@ export default function SparePartsUsageHistoryPage() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Usage History" subtitle={`${plant?.name} · Parts Used`} onBack={() => navigate('/spare-parts')} />
+      <PageHeader title="Usage History" subtitle={`${plant?.name} · Parts Used`} />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 

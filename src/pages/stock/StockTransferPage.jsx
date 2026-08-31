@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -11,8 +10,7 @@ import { Loader2 } from 'lucide-react'
 
 export default function StockTransferPage() {
   const { plant, employee } = useAuth()
-  const navigate = useNavigate()
-  const [plots, setPlots] = useState([])
+    const [plots, setPlots] = useState([])
   const [materials, setMaterials] = useState([])
   const [transfers, setTransfers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -115,7 +113,7 @@ export default function StockTransferPage() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Stock transfer" subtitle="Move raw material between plots of this factory" onBack={() => navigate('/stock')} />
+      <PageHeader title="Stock transfer" subtitle="Move raw material between plots of this factory" backTo="/stock" />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Loader2 size={28} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} /></div>

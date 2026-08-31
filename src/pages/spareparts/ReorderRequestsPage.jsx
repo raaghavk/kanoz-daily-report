@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -15,8 +14,7 @@ const STATUS_COLORS = {
 
 export default function ReorderRequestsPage() {
   const { plant, employee } = useAuth()
-  const navigate = useNavigate()
-  const [requests, setRequests] = useState([])
+    const [requests, setRequests] = useState([])
   const [parts, setParts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
@@ -100,7 +98,7 @@ export default function ReorderRequestsPage() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Reorder Requests" subtitle={`${plant?.name} · Parts to reorder`} onBack={() => navigate('/spare-parts')} />
+      <PageHeader title="Reorder Requests" subtitle={`${plant?.name} · Parts to reorder`} />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 

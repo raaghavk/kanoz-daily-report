@@ -82,7 +82,7 @@ export default function AddAsset() {
 
   if (result) return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Asset saved" subtitle={result.code} onBack={() => navigate('/assets')} />
+      <PageHeader title="Asset saved" subtitle={result.code} />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 16, padding: 16, textAlign: 'center' }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: '#15803d' }}>✅ Asset saved · purchase logged</div>
@@ -103,7 +103,7 @@ export default function AddAsset() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Add New Asset" subtitle="Register, then print its QR tag" onBack={() => navigate('/assets')} />
+      <PageHeader title="Add New Asset" subtitle="Register, then print its QR tag" />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={sec}>IDENTITY</div>
         <div><div style={lbl}>Asset type *</div><select style={inp} value={f.type} onChange={e => setF({ ...f, type: e.target.value })}>{ASSET_TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select>{f.type === 'Other' && <input style={{ ...inp, marginTop: 8 }} placeholder="Custom asset type" value={f.type_other || ''} onChange={e => setF({ ...f, type_other: e.target.value })} />}</div>

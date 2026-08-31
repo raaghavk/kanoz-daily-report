@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { can } from '../../lib/permissions'
@@ -27,8 +26,7 @@ const labelStyle = {
 
 export default function TasksPage() {
   const { plant, employee } = useAuth()
-  const navigate = useNavigate()
-  const role = employee?.role
+    const role = employee?.role
   const canAssign = can(role, 'assign_tasks')
   const isAdmin = role === 'admin'
 
@@ -219,7 +217,7 @@ export default function TasksPage() {
       <PageHeader
         title="Tasks"
         subtitle={filterPlant === 'all' ? 'All Plants · Assigned work' : `${plant?.name} · Assigned work`}
-        onBack={() => navigate('/')}
+        backTo="/"
       />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 12 }}>

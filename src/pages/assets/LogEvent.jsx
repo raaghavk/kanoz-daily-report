@@ -85,7 +85,7 @@ export default function LogEvent() {
 
   if (done) return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Saved" onBack={() => navigate('/assets/' + id)} />
+      <PageHeader title="Saved" backTo={'/assets/' + id} />
       <div style={{ textAlign: 'center', padding: '60px 20px' }}>
         <CheckCircle size={56} style={{ color: '#15803d', margin: '0 auto 10px' }} />
         <div style={{ fontSize: 18, fontWeight: 800 }}>Event logged</div>
@@ -97,7 +97,7 @@ export default function LogEvent() {
 
   if (!type) return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="What happened?" subtitle={`${asset.code} · ${asset.name}`} onBack={() => navigate('/assets/' + id)} />
+      <PageHeader title="What happened?" subtitle={`${asset.code} · ${asset.name}`} backTo={'/assets/' + id} />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {MENU.map(o => (
           <button key={o.t} onClick={() => pick(o.t)} style={{ display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', padding: 16, borderRadius: 14, border: '2px solid #e5ddd0', background: '#fff', cursor: 'pointer' }}>

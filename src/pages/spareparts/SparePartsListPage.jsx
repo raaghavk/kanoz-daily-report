@@ -105,7 +105,7 @@ export default function SparePartsListPage() {
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title="Spare Parts" subtitle="Parts catalogue & stock levels" onBack={() => navigate('/spare-parts')} />
+        <PageHeader title="Spare Parts" subtitle="Parts catalogue & stock levels" />
         <div style={{ padding: '12px 20px 0' }}>
           <div style={{ position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8a8d7a' }} />

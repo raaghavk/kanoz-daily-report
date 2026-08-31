@@ -1,6 +1,18 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 
+/** True when React Router has a previous in-app entry we can pop to. */
+function canGoBackInApp() {
+  const idx = window.history.state?.idx
+  if (typeof idx === 'number') return idx > 0
+  return window.history.length > 1
+}
+
+/**
+ * Back goes to wherever the user came from (history), not a hardcoded screen.
+ * `backTo` is only used when there is no in-app history (cold open / deep link).
+ * `onBack` overrides for in-page steps (e.g. wizard confirm, form step).
+ */
 export default function PageHeader({ title, subtitle, backTo, onBack, rightAction }) {
   const navigate = useNavigate()
 
@@ -9,13 +21,11 @@ export default function PageHeader({ title, subtitle, backTo, onBack, rightActio
       onBack()
       return
     }
-    // Prefer history when the user navigated here in-app; fall back to backTo.
-    if (typeof window !== 'undefined' && window.history.length > 1) {
+    if (canGoBackInApp()) {
       navigate(-1)
       return
     }
-    if (backTo) navigate(backTo)
-    else navigate('/')
+    navigate(backTo || '/')
   }
 
   return (

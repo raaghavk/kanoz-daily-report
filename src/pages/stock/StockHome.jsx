@@ -259,7 +259,7 @@ export default function StockHome() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Stock & Recipes" subtitle={`${plant?.name || 'Plant'} · Current material, pellets & mixes`} onBack={() => navigate('/')} />
+      <PageHeader title="Stock & Recipes" subtitle={`${plant?.name || 'Plant'} · Current material, pellets & mixes`} backTo="/" />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 20 }}>
 

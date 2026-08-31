@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../../components/PageHeader'
@@ -8,8 +7,7 @@ import { Loader2 } from 'lucide-react'
 
 export default function AssetSuppliers() {
   const { plant, employee } = useAuth()
-  const navigate = useNavigate()
-  const [rows, setRows] = useState([])
+    const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const showCost = COST_ROLES.includes(employee?.role)
 
@@ -33,7 +31,7 @@ export default function AssetSuppliers() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Suppliers & Repair Shops" subtitle="Shared with Spare Parts" onBack={() => navigate('/assets')} />
+      <PageHeader title="Suppliers & Repair Shops" subtitle="Shared with Spare Parts" />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ fontSize: 12, color: '#8a8d7a' }}>The same list as Spare Parts → Suppliers. Repair history is counted from asset repairs.</div>
         {loading ? (

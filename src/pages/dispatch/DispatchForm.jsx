@@ -593,12 +593,13 @@ export default function DispatchForm() {
         <PageHeader
           title="Vehicle Dispatch"
           subtitle={returnToShift ? "Add dispatches, then go back to shift report" : "Manage all dispatches"}
+          backTo="/"
           onBack={
             returnToShift
               ? () => navigate('/shift/new', { state: { returnToStep: 7 } })
               : showForm
                 ? () => setShowForm(false)
-                : () => navigate('/')
+                : null
           }
         />
 
