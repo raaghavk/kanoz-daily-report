@@ -7,6 +7,7 @@ import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import { Search, Plus, Phone, MessageSquare, Loader2, AlertCircle } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
+import { vehicleSummary } from '../../lib/vehicleTypes'
 
 export default function TransporterList() {
   const { plant } = useAuth()
@@ -35,7 +36,12 @@ export default function TransporterList() {
   async function fetchTransporters() {
     try {
       setLoading(true)
-      const { data, error } = await supabase.from('transporters').select('*').eq('org_id', plant.org_id).eq('is_active', true).order('name')
+      const { data, error } = await supabase
+        .from('transporters')
+        .select('*, transporter_vehicles(id, vehicle_number, vehicle_type, is_active)')
+        .eq('org_id', plant.org_id)
+        .eq('is_active', true)
+        .order('name')
       if (error) throw error
       setTransporters(data || [])
     } catch (err) {
@@ -94,11 +100,15 @@ export default function TransporterList() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {transporter.name}
                   </div>
-                  {(transporter.category || transporter.vehicle_number) && (
-                    <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
-                      {[transporter.category, transporter.vehicle_number].filter(Boolean).join(' · ')}
-                    </div>
-                  )}
+                  {(() => {
+                    const summary = vehicleSummary(transporter.transporter_vehicles)
+                      || [transporter.category, transporter.vehicle_number].filter(Boolean).join(' · ')
+                    return summary ? (
+                      <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
+                        {summary}
+                      </div>
+                    ) : null
+                  })()}
                   {transporter.phone && (
                     <a href={`tel:${transporter.phone}`} onClick={e => e.stopPropagation()} style={{ fontSize: 12, color: '#2d6a4f', textDecoration: 'none', display: 'block', marginTop: 1 }}>
                       📞 {transporter.phone.replace('+91', '')}

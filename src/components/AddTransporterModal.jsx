@@ -2,8 +2,7 @@ import { useState } from 'react'
 import Modal from './Modal'
 import { supabase } from '../lib/supabase'
 import { showToast } from './Toast'
-
-const VEHICLE_TYPES = ['Tractor', 'Truck', 'Hywa', 'Pickup', 'Trolley', 'Other']
+import { VEHICLE_TYPES, normalizePhone } from '../lib/vehicleTypes'
 
 const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, color: '#2c2c2c', outline: 'none', boxSizing: 'border-box' }
 const labelStyle = { display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }
@@ -25,7 +24,18 @@ export default function AddTransporterModal({ isOpen, onClose, orgId, onAdded })
     if (submitting) return
     setSubmitting(true)
     try {
-      const phone = '+91' + form.phone.replace(/^\+91/, '').trim()
+      const phone = normalizePhone(form.phone)
+      const { data: existing } = await supabase
+        .from('transporters')
+        .select('id, name')
+        .eq('org_id', orgId)
+        .eq('phone', phone)
+        .eq('is_active', true)
+        .maybeSingle()
+      if (existing) {
+        showToast(`A transporter with this phone already exists (${existing.name}). Open that record and add a vehicle there.`, 'error')
+        return
+      }
       const payload = {
         org_id: orgId,
         name: form.name.trim(),

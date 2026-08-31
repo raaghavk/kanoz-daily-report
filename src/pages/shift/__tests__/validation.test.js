@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getValidationErrors } from '../validation'
+import { getValidationErrors, getValidationWarnings } from '../validation'
 
 function makeValidReport() {
   return {
@@ -122,5 +122,25 @@ describe('getValidationErrors', () => {
     const steps = [...new Set(errors.map(e => e.step))]
     expect(steps).toContain(1)
     expect(steps).toContain(9)
+  })
+})
+
+describe('getValidationWarnings', () => {
+  it('includes pellet adjustments in closing', () => {
+    const report = {
+      date: '2025-01-15', shift_start_date: '2025-01-15', shift_end_date: '2025-01-15',
+      start_time: '08:00', end_time: '20:00',
+      pelletStock: [{ name: 'A Grade', opening: 2, production: 0, dispatch: 2, wastage: 0, adjustment: 0.2 }],
+    }
+    expect(getValidationWarnings(report).find(w => w.step === 7)).toBeUndefined()
+  })
+
+  it('warns when pellet closing is still negative after adjustment', () => {
+    const report = {
+      date: '2025-01-15', shift_start_date: '2025-01-15', shift_end_date: '2025-01-15',
+      start_time: '08:00', end_time: '20:00',
+      pelletStock: [{ name: 'A Grade', opening: 1, production: 0, dispatch: 3, wastage: 0, adjustment: 0.2 }],
+    }
+    expect(getValidationWarnings(report).some(w => w.step === 7)).toBe(true)
   })
 })

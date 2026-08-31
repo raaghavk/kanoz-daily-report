@@ -1,14 +1,5 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-// v6: fix transporter_vehicles query (table has no org_id column) - now scoped by
-// transporter_id. Adds DIRECTORY context so assistant answers "who is X", vehicle lookups.
-// Deploy path in repo: supabase/functions/plant-chat/index.ts
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { corsHeaders, jsonResponse, requireCaller, requirePlantAccess } from '../_shared/callerAuth.ts'
 const GEMINI_MODEL = 'gemini-2.5-flash'
 
 function isWeatherQuery(q: string): boolean {
@@ -35,8 +26,14 @@ async function fetchWeather(lat: number, lon: number): Promise<string> {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
+    const caller = await requireCaller(req)
+    if (caller instanceof Response) return caller
+
     const { question, plantId, location } = await req.json() as { question?: string; plantId?: string; location?: { lat: number; lon: number } }
-    if (!question || !plantId) return new Response(JSON.stringify({ error: 'Missing question or plantId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    if (!question || !plantId) return jsonResponse({ error: 'Missing question or plantId' }, 400)
+
+    const plant = await requirePlantAccess(caller.admin, caller.employee, plantId)
+    if (plant instanceof Response) return plant
 
     let weatherContext = ''
     if (isWeatherQuery(question) && location?.lat && location?.lon) weatherContext = '\n\n## Current Weather & Forecast\n' + await fetchWeather(location.lat, location.lon)
@@ -45,9 +42,8 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
     if (!GEMINI_API_KEY) return new Response(JSON.stringify({ answer: 'AI is not configured. Please set GEMINI_API_KEY.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
-    const { data: plantRow } = await supabase.from('plants').select('org_id, name').eq('id', plantId).maybeSingle()
-    const orgId = plantRow?.org_id
+    const supabase = caller.admin
+    const orgId = plant.org_id
 
     const today = new Date(); const thirtyDaysAgo = new Date(today); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     const fromDate = thirtyDaysAgo.toISOString().split('T')[0]; const todayStr = today.toISOString().split('T')[0]

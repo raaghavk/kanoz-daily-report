@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { can, ROLE_OPTIONS } from '../permissions'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { can, ROLE_OPTIONS, setDynamicRoles } from '../permissions'
 
 describe('can(role, action)', () => {
   const ALL_ACTIONS = [
@@ -75,6 +75,23 @@ describe('can(role, action)', () => {
   it('returns false for null/undefined role', () => {
     expect(can(null, 'create_report')).toBe(false)
     expect(can(undefined, 'create_report')).toBe(false)
+  })
+})
+
+describe('dynamic roles', () => {
+  beforeEach(() => setDynamicRoles(null))
+  afterEach(() => setDynamicRoles(null))
+
+  it('falls back to the built-in matrix when a custom role has an empty permission list', () => {
+    setDynamicRoles({ admin: [] })
+    expect(can('admin', 'create_report')).toBe(true)
+    expect(can('admin', 'manage_users')).toBe(true)
+  })
+
+  it('uses the custom list when it has at least one permission', () => {
+    setDynamicRoles({ supervisor: ['view_reports'] })
+    expect(can('supervisor', 'view_reports')).toBe(true)
+    expect(can('supervisor', 'create_report')).toBe(false)
   })
 })
 

@@ -15,6 +15,7 @@ export default memo(function Step1Header({ data, updateData, duplicateReportId }
       updateData('end_time', '20:00')
       updateData('shift_start_date', startDate)
       updateData('shift_end_date', startDate)
+      updateData('date', startDate)
     } else {
       updateData('start_time', '20:00')
       updateData('end_time', '08:00')
@@ -22,7 +23,9 @@ export default memo(function Step1Header({ data, updateData, duplicateReportId }
       // Night shift ends the next morning
       const next = new Date(startDate)
       next.setDate(next.getDate() + 1)
-      updateData('shift_end_date', getLocalDate(next))
+      const endDate = getLocalDate(next)
+      updateData('shift_end_date', endDate)
+      updateData('date', endDate)
     }
   }
 
@@ -115,9 +118,12 @@ export default memo(function Step1Header({ data, updateData, duplicateReportId }
                   if (data.shift === 'B') {
                     const next = new Date(e.target.value)
                     next.setDate(next.getDate() + 1)
-                    updateData('shift_end_date', getLocalDate(next))
+                    const endDate = getLocalDate(next)
+                    updateData('shift_end_date', endDate)
+                    updateData('date', endDate)
                   } else {
                     updateData('shift_end_date', e.target.value)
+                    updateData('date', e.target.value)
                   }
                 }}
                 style={{ ...editableInputWithIconStyle, cursor: 'pointer' }}
@@ -152,7 +158,10 @@ export default memo(function Step1Header({ data, updateData, duplicateReportId }
               <input
                 type="date"
                 value={data.shift_end_date || data.date}
-                onChange={e => updateData('shift_end_date', e.target.value)}
+                onChange={e => {
+                  updateData('shift_end_date', e.target.value)
+                  updateData('date', e.target.value)
+                }}
                 style={{ ...editableInputWithIconStyle, cursor: 'pointer' }}
               />
             </div>

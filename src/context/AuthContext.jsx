@@ -110,6 +110,7 @@ export function AuthProvider({ children }) {
         .from('plants')
         .select('*')
         .eq('id', newPlantId)
+        .eq('org_id', employee.org_id)
         .single()
       if (error) throw error
       if (newPlant) {

@@ -1,21 +1,24 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const PLANT_ID = 'b0000000-0000-0000-0000-000000000001'
+import { corsHeaders, jsonResponse, requireCaller, requirePlantAccess } from '../_shared/callerAuth.ts'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
+    const caller = await requireCaller(req)
+    if (caller instanceof Response) return caller
+
+    let plantId = caller.employee.plant_id
+    try {
+      const body = await req.json() as { plantId?: string }
+      if (body?.plantId) plantId = body.plantId
+    } catch { /* GET or empty body: use caller's plant */ }
+
+    const plant = await requirePlantAccess(caller.admin, caller.employee, plantId)
+    if (plant instanceof Response) return plant
+
+    const supabase = caller.admin
+    const PLANT_ID = plant.id
 
     // ── Purchases ──
     const { data: purchases, error: pErr } = await supabase

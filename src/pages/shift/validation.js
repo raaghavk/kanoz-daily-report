@@ -1,11 +1,14 @@
+import { computeProcessingDeltas } from './StepProcessing'
+
 /**
  * Validate shift report data before submission.
  * Returns array of {step, message} for incomplete required fields.
  */
 export function getValidationErrors(reportData) {
   const errors = []
-  // Step 1: Header
-  if (!reportData.date) errors.push({ step: 1, message: 'Date is required' })
+  // Step 1: Header — unique-index date is shift end date
+  const reportDate = reportData.shift_end_date || reportData.shift_start_date || reportData.date
+  if (!reportDate) errors.push({ step: 1, message: 'Date is required' })
   if (!reportData.shift) errors.push({ step: 1, message: 'Shift is required' })
   if (!reportData.start_time) errors.push({ step: 1, message: 'Start time is required' })
   if (!reportData.end_time) errors.push({ step: 1, message: 'End time is required' })
@@ -81,9 +84,12 @@ export function getValidationWarnings(reportData) {
   }
 
   // Step 3: raw material closing stock went negative (used more than available)
+  const procDeltas = computeProcessingDeltas(reportData.processing, reportData.rawMaterials)
   for (const rm of (reportData.rawMaterials || [])) {
-    if (num(rm.closing) < -0.5) {
-      warnings.push({ step: 3, message: `${rm.name || 'A raw material'} closing stock is negative (${(num(rm.closing)/1000).toFixed(2)} MT) — used more than available.` })
+    const d = procDeltas[rm.id] || { produced: 0, procUsed: 0 }
+    const closing = num(rm.opening) + num(rm.purchased) + num(d.produced) - num(rm.used) - num(d.procUsed)
+    if (closing < -0.5) {
+      warnings.push({ step: 3, message: `${rm.name || 'A raw material'} closing stock is negative (${(closing/1000).toFixed(2)} MT) — used more than available.` })
     }
   }
 
@@ -97,7 +103,7 @@ export function getValidationWarnings(reportData) {
 
   // Step 7: pellet closing stock went negative
   for (const p of (reportData.pelletStock || [])) {
-    const closing = num(p.opening) + num(p.production) - num(p.dispatch) - num(p.wastage)
+    const closing = num(p.opening) + num(p.production) - num(p.dispatch) - num(p.wastage) + num(p.adjustment)
     if (closing < -0.01) {
       warnings.push({ step: 7, message: `${p.name || 'A pellet'} closing stock is negative (${closing.toFixed(2)} MT) — dispatched/wasted more than available.` })
     }
