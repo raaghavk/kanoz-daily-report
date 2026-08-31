@@ -93,24 +93,38 @@ export default function TasksPage() {
       const { data, error } = await query
       if (error) throw error
 
-      // Non-assigners only see tasks assigned to them
-      if (!canAssign) {
-        setTasks((data || []).filter(t => t.assigned_to_employee_id === employee?.id))
-      } else {
+      // Admin: all tasks in scope. Others: only assigned to me OR assigned by me.
+      if (isAdmin) {
         setTasks(data || [])
+      } else {
+        const me = employee?.id
+        setTasks((data || []).filter(t =>
+          t.assigned_to_employee_id === me || t.assigned_by_employee_id === me
+        ))
       }
     } catch { showToast('Failed to load tasks', 'error') } finally { setLoading(false) }
   }
 
   async function loadEmployees(plantId) {
     try {
-      const { data } = await supabase
-        .from('employees')
-        .select('id, name, role')
-        .eq('plant_id', plantId)
-        .eq('is_active', true)
-        .order('name')
-      setEmployees((data || []).filter(e => e.id !== employee?.id))
+      const [{ data: emps }, { data: roles }] = await Promise.all([
+        supabase.from('employees').select('id, name, role').eq('plant_id', plantId).eq('is_active', true).order('name'),
+        supabase.from('roles').select('key, name, receive_tasks').eq('org_id', plant.org_id),
+      ])
+      const blocked = new Set()
+      for (const r of roles || []) {
+        if (r.receive_tasks === false) {
+          if (r.key) blocked.add(r.key)
+          if (r.name) blocked.add(r.name)
+        }
+      }
+      // Built-in admin never receives tasks unless a custom role overrides with receive_tasks true
+      const adminRole = (roles || []).find(r => (r.key || '').toLowerCase() === 'admin' || (r.name || '').toLowerCase() === 'admin')
+      if (!adminRole || adminRole.receive_tasks === false) blocked.add('admin')
+
+      setEmployees((emps || []).filter(e =>
+        e.id !== employee?.id && !blocked.has(e.role)
+      ))
     } catch { /* silent */ }
   }
 

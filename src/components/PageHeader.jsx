@@ -7,11 +7,15 @@ export default function PageHeader({ title, subtitle, backTo, onBack, rightActio
   function handleBack() {
     if (onBack) {
       onBack()
-    } else if (backTo) {
-      navigate(backTo)
-    } else {
-      navigate(-1)
+      return
     }
+    // Prefer history when the user navigated here in-app; fall back to backTo.
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      navigate(-1)
+      return
+    }
+    if (backTo) navigate(backTo)
+    else navigate('/')
   }
 
   return (

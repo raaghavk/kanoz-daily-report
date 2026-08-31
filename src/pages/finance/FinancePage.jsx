@@ -138,10 +138,6 @@ export default function FinancePage() {
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       <PageHeader title="Finance" subtitle={plant?.name || 'Plant'} backTo="/" />
       <div style={{ padding: '16px 20px 40px' }}>
-        <button onClick={() => navigate('/tally')} style={{ width: '100%', marginBottom: 16, padding: '12px 0', background: '#1b4332', color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-          Tally vouchers — review & export XML
-        </button>
-
         {/* Summary */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
           <div style={{ ...card, flex: 1, padding: '14px 12px' }}>
