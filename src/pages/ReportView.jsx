@@ -236,7 +236,6 @@ export default function ReportView() {
         <PageHeader
           title="Shift Report"
           subtitle={`Shift ${report.shift} · ${startDateLabel}${showBothDates ? ` – ${endDateLabel}` : ''}`}
-          onBack={() => navigate(-1)}
           rightAction={
             can(employee?.role, 'create_report') ? (
               <button

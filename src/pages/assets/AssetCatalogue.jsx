@@ -34,7 +34,7 @@ export default function AssetCatalogue() {
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title="Asset Catalogue" subtitle="Tap an asset for its full history" onBack={() => navigate('/assets')} />
+        <PageHeader title="Asset Catalogue" subtitle="Tap an asset for its full history" />
         <div style={{ padding: '12px 20px 0', background: '#fefae0' }}>
           <div style={{ position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8a8d7a' }} />

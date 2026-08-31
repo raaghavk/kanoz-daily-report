@@ -1020,7 +1020,8 @@ export default function ShiftWizard() {
           // The "Previous" button below the content is what steps back one page.
           if (window.confirm('Stop editing? Any unsaved changes will be lost.')) {
             localStorage.removeItem(WIZARD_STORAGE_KEY)
-            navigate('/')
+            if (typeof window.history.state?.idx === 'number' && window.history.state.idx > 0) navigate(-1)
+            else navigate('/')
           }
         }}
       />

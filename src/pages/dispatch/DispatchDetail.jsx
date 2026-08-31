@@ -216,7 +216,7 @@ export default function DispatchDetail() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flexShrink: 0 }}>
-          <PageHeader title="Dispatch Details" subtitle="Loading..." onBack={() => navigate(-1)} />
+          <PageHeader title="Dispatch Details" subtitle="Loading..." />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ color: '#595c4a', fontSize: 13 }}>Loading dispatch...</div>
@@ -229,7 +229,7 @@ export default function DispatchDetail() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div style={{ flexShrink: 0 }}>
-          <PageHeader title="Dispatch Details" subtitle="Not found" onBack={() => navigate(-1)} />
+          <PageHeader title="Dispatch Details" subtitle="Not found" />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ color: '#595c4a', fontSize: 13 }}>Dispatch not found</div>
@@ -249,7 +249,6 @@ export default function DispatchDetail() {
         <PageHeader
           title="Dispatch Details"
           subtitle={`Truck ${dispatch.truck_number}`}
-          onBack={() => navigate(-1)}
           rightAction={
             editing ? (
               <div style={{ display: 'flex', gap: 6 }}>

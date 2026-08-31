@@ -67,7 +67,7 @@ export default function SparePartsHome() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Spare Parts" subtitle={`${plant?.name || 'Plant'} · Inventory & maintenance tracking`} onBack={() => navigate('/settings')} />
+      <PageHeader title="Spare Parts" subtitle={`${plant?.name || 'Plant'} · Inventory & maintenance tracking`} />
 
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
 

@@ -97,7 +97,7 @@ export default function AssetDetail() {
   }
 
   if (loading) return <div style={{ height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#fefae0' }}><Loader2 size={28} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} /></div>
-  if (!asset) return <div style={{ minHeight: '100%', background: '#fefae0' }}><PageHeader title="Not found" onBack={() => navigate('/assets')} /><p style={{ padding: 24, color: '#595c4a' }}>Asset not found.</p></div>
+  if (!asset) return <div style={{ minHeight: '100%', background: '#fefae0' }}><PageHeader title="Not found" /><p style={{ padding: 24, color: '#595c4a' }}>Asset not found.</p></div>
 
   const st = STATUS[asset.status] || STATUS.in_store
   const sum = summarise(events)
@@ -109,7 +109,7 @@ export default function AssetDetail() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title={asset.code} subtitle={asset.name} onBack={() => navigate('/assets/catalogue')} />
+      <PageHeader title={asset.code} subtitle={asset.name} />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

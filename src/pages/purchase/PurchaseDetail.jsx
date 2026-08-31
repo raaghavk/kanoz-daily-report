@@ -54,7 +54,7 @@ export default function PurchaseDetail() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
         <div style={{ flexShrink: 0 }}>
-          <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
+          <PageHeader title="Purchase Detail" />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
@@ -67,7 +67,7 @@ export default function PurchaseDetail() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
         <div style={{ flexShrink: 0 }}>
-          <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
+          <PageHeader title="Purchase Detail" />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: 20, textAlign: 'center', color: '#d32f2f' }}>Failed to load purchase. Please go back and try again.</div>
       </div>
@@ -78,7 +78,7 @@ export default function PurchaseDetail() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
         <div style={{ flexShrink: 0 }}>
-          <PageHeader title="Purchase Detail" onBack={() => navigate(-1)} />
+          <PageHeader title="Purchase Detail" />
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: 20, textAlign: 'center', color: '#595c4a' }}>Purchase not found</div>
       </div>
@@ -143,7 +143,6 @@ export default function PurchaseDetail() {
         <PageHeader
           title={purchase.suppliers?.name || 'Purchase Detail'}
           subtitle={formatDate(purchase.date)}
-          onBack={() => navigate(-1)}
           rightAction={
             <button
               onClick={() => navigate(`/purchase/${id}/edit`)}

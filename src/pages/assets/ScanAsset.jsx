@@ -34,7 +34,7 @@ export default function ScanAsset() {
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
-      <PageHeader title="Scan a tag" subtitle="Point the camera at the QR tag" onBack={() => navigate('/assets')} />
+      <PageHeader title="Scan a tag" subtitle="Point the camera at the QR tag" />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div id="asset-scanner" style={{ width: '100%', borderRadius: 16, overflow: 'hidden', background: '#000', minHeight: 240 }} />
         {err && <div style={{ background: '#fff', border: '1.5px solid #fde68a', borderRadius: 12, padding: 12, fontSize: 12, color: '#b45309' }}>{err}</div>}

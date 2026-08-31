@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
@@ -12,8 +11,7 @@ const CATEGORIES = ['Bearings & Belts', 'Electrical', 'General Hardware', 'Hydra
 
 export default function SparePartsSuppliersPage() {
   const { plant } = useAuth()
-  const navigate = useNavigate()
-  const [suppliers, setSuppliers] = useState([])
+    const [suppliers, setSuppliers] = useState([])
   const [filtered, setFiltered] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -101,7 +99,7 @@ export default function SparePartsSuppliersPage() {
   return (
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title="Parts Suppliers" subtitle="Spare parts & equipment vendors" onBack={() => navigate('/spare-parts')} />
+        <PageHeader title="Parts Suppliers" subtitle="Spare parts & equipment vendors" />
         <div style={{ padding: '12px 20px 0' }}>
           <div style={{ position: 'relative' }}>
             <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8a8d7a' }} />

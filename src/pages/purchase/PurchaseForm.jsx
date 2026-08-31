@@ -552,7 +552,7 @@ export default function PurchaseForm() {
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-        <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle={returnToShift ? 'Add purchase, then back to shift' : 'Raw Material Purchase Entry'} {...(returnToShift ? { onBack: () => navigate('/shift/new', { state: { returnToStep } }) } : (id ? { onBack: () => navigate(`/purchase/${id}`) } : { backTo: '/purchase' }))} />
+        <PageHeader title={id ? 'Edit Purchase' : 'New Purchase'} subtitle={returnToShift ? 'Add purchase, then back to shift' : 'Raw Material Purchase Entry'} {...(returnToShift ? { onBack: () => navigate('/shift/new', { state: { returnToStep } }) } : { backTo: id ? `/purchase/${id}` : '/purchase' })} />
       </div>
 
       <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 24 }}>
