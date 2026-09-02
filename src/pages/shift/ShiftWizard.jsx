@@ -838,6 +838,12 @@ export default function ShiftWizard() {
       })
       if (childErr) throw childErr
 
+      // Cascade corrected pellet stock openings to all subsequent shifts
+      // (non-blocking — a failure here doesn't roll back the saved report)
+      supabase.rpc('resync_pellet_stock_chain', { p_from_report_id: report.id }).catch(e => {
+        console.warn('resync_pellet_stock_chain failed (non-critical):', e)
+      })
+
       // Link dispatches within this shift's time window to this shift report
       try {
         const normalizeTime = (t) => t ? t.substring(0, 5) : t
@@ -927,7 +933,7 @@ export default function ShiftWizard() {
       navigate('/')
     } catch (err) {
       console.error('Save error:', err)
-      if (!reportId && err?.code === '23505' && String(err?.message || '').includes('shift_reports_plant_id_date_shift_key')) {
+      if (!reportId && err?.code === '23505' && (String(err?.message || '').includes('shift_reports_plant_date_shift_active_idx') || String(err?.message || '').includes('shift_reports_plant_id_date_shift_key'))) {
         showToast('A shift report for this plant/date/shift already exists. Opening it in edit mode.', 'error')
         try {
           const { data: existing } = await supabase
