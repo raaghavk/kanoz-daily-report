@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Phone, MessageSquare, Truck, Clock, Timer, Edit3, Save, X, Download, Plus } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
+import RecordNav from '../../components/RecordNav'
+import { useAdjacentRecord } from '../../hooks/useAdjacentRecord'
 import { getLocalDate } from '../../lib/dateUtils'
 
 export default function DispatchDetail() {
@@ -25,6 +27,17 @@ export default function DispatchDetail() {
   const [returnDate, setReturnDate] = useState(getLocalDate())
   const [returnReason, setReturnReason] = useState('')
   const [returning, setReturning] = useState(false)
+
+  const plantId = dispatch?.plant_id || plant?.id
+  const adj = useAdjacentRecord({
+    table: 'vehicle_dispatches',
+    plantId,
+    currentId: id,
+    orderBy: [
+      { column: 'date', ascending: false },
+      { column: 'created_at', ascending: false },
+    ],
+  })
 
   async function markReturned() {
     if (!returnDate) { showToast('Please enter the return date', 'error'); return }
@@ -250,20 +263,31 @@ export default function DispatchDetail() {
           title="Dispatch Details"
           subtitle={`Truck ${dispatch.truck_number}`}
           rightAction={
-            editing ? (
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => setEditing(false)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                  <X size={14} /> Cancel
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {!editing && (
+                <RecordNav
+                  newerId={adj.newerId}
+                  olderId={adj.olderId}
+                  basePath="/dispatch"
+                  position={adj.position}
+                  total={adj.total}
+                />
+              )}
+              {editing ? (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => setEditing(false)} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                    <X size={14} /> Cancel
+                  </button>
+                  <button onClick={saveEdit} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+                    <Save size={14} /> {saving ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              ) : (
+                <button onClick={startEdit} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                  <Edit3 size={14} /> Edit
                 </button>
-                <button onClick={saveEdit} disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 10px', background: 'rgba(255,255,255,0.25)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
-                  <Save size={14} /> {saving ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            ) : (
-              <button onClick={startEdit} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-                <Edit3 size={14} /> Edit
-              </button>
-            )
+              )}
+            </div>
           }
         />
       </div>

@@ -7,13 +7,15 @@ import { useAuth } from '../../context/AuthContext'
 import { can } from '../../lib/permissions'
 import { kgToMtStr } from '../../lib/units'
 import PageHeader from '../../components/PageHeader'
+import RecordNav from '../../components/RecordNav'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
+import { useAdjacentRecord } from '../../hooks/useAdjacentRecord'
 import { Loader2, Edit3, X, CheckCircle, Download, Trash2 } from 'lucide-react'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { employee } = useAuth()
+  const { employee, plant } = useAuth()
   const queryClient = useQueryClient()
   const [showPhoto, setShowPhoto] = useState(false)
   const [markingLeg, setMarkingLeg] = useState(null)
@@ -32,6 +34,17 @@ export default function PurchaseDetail() {
       return data
     },
     enabled: !!id,
+  })
+
+  const plantId = purchase?.plant_id || plant?.id
+  const adj = useAdjacentRecord({
+    table: 'raw_material_purchases',
+    plantId,
+    currentId: id,
+    orderBy: [
+      { column: 'date', ascending: false },
+      { column: 'created_at', ascending: false },
+    ],
   })
 
   useEffect(() => {
@@ -144,12 +157,21 @@ export default function PurchaseDetail() {
           title={purchase.suppliers?.name || 'Purchase Detail'}
           subtitle={formatDate(purchase.date)}
           rightAction={
-            <button
-              onClick={() => navigate(`/purchase/${id}/edit`)}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-            >
-              <Edit3 size={14} /> Edit
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <RecordNav
+                newerId={adj.newerId}
+                olderId={adj.olderId}
+                basePath="/purchase"
+                position={adj.position}
+                total={adj.total}
+              />
+              <button
+                onClick={() => navigate(`/purchase/${id}/edit`)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              >
+                <Edit3 size={14} /> Edit
+              </button>
+            </div>
           }
         />
       </div>
