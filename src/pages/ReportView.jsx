@@ -8,11 +8,13 @@ import { useAuth } from '../context/AuthContext'
 import { can } from '../lib/permissions'
 import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, FileText, RefreshCw, X } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
+import RecordNav from '../components/RecordNav'
+import { useAdjacentRecord } from '../hooks/useAdjacentRecord'
 
 export default function ReportView() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { employee } = useAuth()
+  const { employee, plant } = useAuth()
   const [report, setReport] = useState(null)
   const [deleting, setDeleting] = useState(false)
   const [machineProduction, setMachineProduction] = useState([])
@@ -24,6 +26,17 @@ export default function ReportView() {
   const [mixes, setMixes] = useState([])
   const [loading, setLoading] = useState(true)
   const [lightboxUrl, setLightboxUrl] = useState(null)
+
+  const plantId = report?.plant_id || plant?.id
+  const adj = useAdjacentRecord({
+    table: 'shift_reports',
+    plantId,
+    currentId: id,
+    orderBy: [
+      { column: 'date', ascending: false },
+      { column: 'shift', ascending: false },
+    ],
+  })
 
   useEffect(() => {
     if (id) {
@@ -237,14 +250,23 @@ export default function ReportView() {
           title="Shift Report"
           subtitle={`Shift ${report.shift} · ${startDateLabel}${showBothDates ? ` – ${endDateLabel}` : ''}`}
           rightAction={
-            can(employee?.role, 'create_report') ? (
-              <button
-                onClick={() => navigate(`/shift/edit/${id}`)}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
-              >
-                <Edit3 size={14} /> Edit
-              </button>
-            ) : null
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <RecordNav
+                newerId={adj.newerId}
+                olderId={adj.olderId}
+                basePath="/reports"
+                position={adj.position}
+                total={adj.total}
+              />
+              {can(employee?.role, 'create_report') ? (
+                <button
+                  onClick={() => navigate(`/shift/edit/${id}`)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  <Edit3 size={14} /> Edit
+                </button>
+              ) : null}
+            </div>
           }
         />
       </div>
