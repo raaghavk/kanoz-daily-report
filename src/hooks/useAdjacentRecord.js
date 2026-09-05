@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { adjacentFromIds } from '../lib/adjacentRecord'
 
 /**
  * Load sibling record ids for plant-scoped prev/next navigation.
- * `orderBy` must match the list screen sort (newest-first recommended).
+ * Pass orderBy matching the desired timeline (newest-first or chronological).
  *
- * Returns:
- *  - newerId: previous index in a desc-sorted list (more recent)
- *  - olderId: next index (older)
- *  - position / total for "3 of 40" labels
+ * Direction is inferred from the first orderBy.ascending flag:
+ *  - false → newest-first indexing (newer = lower index)
+ *  - true  → chronological indexing (older = lower index, oldest = position 1)
  */
 export function useAdjacentRecord({ table, plantId, currentId, orderBy = [{ column: 'date', ascending: false }] }) {
   const [state, setState] = useState({
@@ -33,18 +33,17 @@ export function useAdjacentRecord({ table, plantId, currentId, orderBy = [{ colu
           .eq('plant_id', plantId)
           .eq('is_deleted', false)
         for (const o of orderBy) {
-          q = q.order(o.column, { ascending: !!o.ascending })
+          const opts = { ascending: !!o.ascending }
+          if (o.nullsFirst !== undefined) opts.nullsFirst = o.nullsFirst
+          q = q.order(o.column, opts)
         }
         const { data, error } = await q
         if (error) throw error
         if (cancelled) return
         const ids = (data || []).map(r => r.id)
-        const idx = ids.indexOf(currentId)
+        const ascending = !!(orderBy[0]?.ascending)
         setState({
-          newerId: idx > 0 ? ids[idx - 1] : null,
-          olderId: idx >= 0 && idx < ids.length - 1 ? ids[idx + 1] : null,
-          position: idx >= 0 ? idx + 1 : null,
-          total: ids.length,
+          ...adjacentFromIds(ids, currentId, ascending),
           loading: false,
         })
       } catch {
