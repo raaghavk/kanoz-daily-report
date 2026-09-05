@@ -32,9 +32,11 @@ export default function ReportView() {
     table: 'shift_reports',
     plantId,
     currentId: id,
+    // True shift timeline (matches stock carry-forward), oldest→newest so position 1 = earliest
     orderBy: [
-      { column: 'date', ascending: false },
-      { column: 'shift', ascending: false },
+      { column: 'shift_start_date', ascending: true, nullsFirst: false },
+      { column: 'start_time', ascending: true, nullsFirst: false },
+      { column: 'date', ascending: true },
     ],
   })
 
