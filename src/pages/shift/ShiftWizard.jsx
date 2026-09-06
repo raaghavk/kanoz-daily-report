@@ -587,6 +587,7 @@ export default function ShiftWizard() {
               description: i.description,
               severity: i.severity,
               photo_url: i.photo_url,
+              machine_id: i.machine_id || null,
             }))
           }
 
