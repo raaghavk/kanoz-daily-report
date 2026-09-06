@@ -493,6 +493,8 @@ export default function ShiftWizard() {
                 production: parseFloat(ps.production_mt) || 0,
                 dispatch: parseFloat(ps.dispatch_mt) || 0,
                 wastage: parseFloat(ps.wastage_mt) || 0,
+                adjustment: parseFloat(ps.adjustment_mt) || 0,
+                adjustment_note: ps.adjustment_note || '',
                 closing: parseFloat(ps.closing_mt) || 0,
               })
             }
