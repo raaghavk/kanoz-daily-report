@@ -24,11 +24,18 @@ export default function StockTransferPage() {
     if (!plant?.id) return
     setLoading(true)
     try {
+      let purchaseQuery = supabase
+        .from('raw_material_purchases')
+        .select('plot_id, raw_material_type_id, raw_material_type, quantity_kg')
+        .eq('plant_id', plant.id)
+        .eq('is_deleted', false)
+      if (plant.stock_opening_date) purchaseQuery = purchaseQuery.gte('date', plant.stock_opening_date)
+
       const [plotsRes, matRes, purRes, trRes, usageRes] = await Promise.all([
         supabase.from('storage_plots').select('*').eq('plant_id', plant.id).eq('is_active', true).order('is_primary', { ascending: false }),
         supabase.from('raw_material_types').select('id, name, opening_stock_kg').eq('plant_id', plant.id).eq('is_active', true),
-        supabase.from('raw_material_purchases').select('plot_id, raw_material_type_id, raw_material_type, quantity_kg').eq('plant_id', plant.id).eq('is_deleted', false),
-        supabase.from('stock_transfers').select('*').eq('plant_id', plant.id).eq('is_deleted', false).order('transfer_date', { ascending: false }).limit(50),
+        purchaseQuery,
+        supabase.from('stock_transfers').select('*').eq('plant_id', plant.id).eq('is_deleted', false).order('transfer_date', { ascending: false }),
         supabase.from('shift_reports').select('id').eq('plant_id', plant.id).eq('is_deleted', false),
       ])
       if (plotsRes.error) throw plotsRes.error
