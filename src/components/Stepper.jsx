@@ -1,11 +1,13 @@
 import { Check } from 'lucide-react'
+import { SHIFT_STEP_COUNT, SHIFT_STEP_TITLES } from '../lib/shiftWizardSteps'
 
-const STEP_TITLES = [
-  'Report Header', 'Machine Timings', 'Production', 'Raw Material',
-  'Equipment & Diesel', 'Dispatch Summary', 'Pellet Stock', 'Issues', 'Submit'
-]
-
-export default function Stepper({ currentStep, totalSteps = 9, onStepClick, stepsWithErrors = [] }) {
+export default function Stepper({
+  currentStep,
+  totalSteps = SHIFT_STEP_COUNT,
+  stepTitles = SHIFT_STEP_TITLES,
+  onStepClick,
+  stepsWithErrors = [],
+}) {
   function handleKeyDown(e) {
     if (e.key === 'ArrowRight' && currentStep < totalSteps) {
       onStepClick?.(currentStep + 1)
@@ -41,7 +43,7 @@ export default function Stepper({ currentStep, totalSteps = 9, onStepClick, step
             <button
               role="tab"
               aria-selected={isCurrent}
-              aria-label={`Step ${step}: ${STEP_TITLES[i] || ''}`}
+              aria-label={`Step ${step}: ${stepTitles[i] || ''}`}
               tabIndex={isCurrent ? 0 : -1}
               onClick={() => onStepClick?.(step)}
               style={{

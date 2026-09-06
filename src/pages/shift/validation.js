@@ -1,4 +1,5 @@
 import { computeProcessingDeltas } from '../../lib/processingDeltas'
+import { SHIFT_STEP } from '../../lib/shiftWizardSteps'
 
 /**
  * Validate shift report data before submission.
@@ -19,17 +20,17 @@ export function getValidationErrors(reportData) {
   const allMachinesIdle = machines.length > 0 && !hasAnyMachineTiming
   const remarksProvided = (reportData.remarks || '').trim().length > 0
 
-  // If all machines are idle, require a reason in remarks (Step 9)
+  // If all machines are idle, require a reason in remarks (Submit step)
   if (allMachinesIdle && !remarksProvided) {
-    errors.push({ step: 9, message: 'No machines running — provide a reason in the Remarks field' })
+    errors.push({ step: SHIFT_STEP.SUBMIT, message: 'No machines running — provide a reason in the Remarks field' })
   }
 
-  // Step 4: Production validation — skip if all machines idle (no-production shift)
+  // Production validation — skip if all machines idle (no-production shift)
   const production = (reportData.production || []).filter(Boolean)
   const mixes = reportData.mixes || []
   const hasProduction = production.length > 0 && production.some(p => parseFloat(p.quantity) > 0)
   if (!hasProduction && !allMachinesIdle) {
-    errors.push({ step: 4, message: 'Add at least one production entry' })
+    errors.push({ step: SHIFT_STEP.PRODUCTION, message: 'Add at least one production entry' })
   } else if (hasProduction && mixes.length > 0) {
     // Only require mix usage if mixes were defined for this shift
     const hasMixUsageForProducedEntry = production.some(p => {
@@ -38,7 +39,7 @@ export function getValidationErrors(reportData) {
       return (p.mix_usages || []).some(mu => (parseFloat(mu.quantity_kg) || 0) > 0)
     })
     if (!hasMixUsageForProducedEntry) {
-      errors.push({ step: 4, message: 'Add mix usage for at least one production entry' })
+      errors.push({ step: SHIFT_STEP.PRODUCTION, message: 'Add mix usage for at least one production entry' })
     }
   }
 
@@ -89,23 +90,23 @@ export function getValidationWarnings(reportData) {
     const d = procDeltas[rm.id] || { produced: 0, procUsed: 0 }
     const closing = num(rm.opening) + num(rm.purchased) + num(d.produced) - num(rm.used) - num(d.procUsed)
     if (closing < -0.5) {
-      warnings.push({ step: 3, message: `${rm.name || 'A raw material'} closing stock is negative (${(closing/1000).toFixed(2)} MT) — used more than available.` })
+      warnings.push({ step: SHIFT_STEP.RAW_MATERIAL, message: `${rm.name || 'A raw material'} closing stock is negative (${(closing/1000).toFixed(2)} MT) — used more than available.` })
     }
   }
 
-  // Step 5: diesel used more than opening + added (closing negative)
+  // Diesel used more than opening + added (closing negative)
   for (const eq of (reportData.diesel || [])) {
     const closing = num(eq.opening) + num(eq.added) - num(eq.used)
     if (closing < -0.01) {
-      warnings.push({ step: 5, message: `${eq.equipment_name || 'Equipment'} diesel closing is negative (${closing.toFixed(1)} L) — used more than available.` })
+      warnings.push({ step: SHIFT_STEP.DIESEL, message: `${eq.equipment_name || 'Equipment'} diesel closing is negative (${closing.toFixed(1)} L) — used more than available.` })
     }
   }
 
-  // Step 7: pellet closing stock went negative
+  // Pellet closing stock went negative
   for (const p of (reportData.pelletStock || [])) {
     const closing = num(p.opening) + num(p.production) - num(p.dispatch) - num(p.wastage) + num(p.adjustment)
     if (closing < -0.01) {
-      warnings.push({ step: 7, message: `${p.name || 'A pellet'} closing stock is negative (${closing.toFixed(2)} MT) — dispatched/wasted more than available.` })
+      warnings.push({ step: SHIFT_STEP.PELLET, message: `${p.name || 'A pellet'} closing stock is negative (${closing.toFixed(2)} MT) — dispatched/wasted more than available.` })
     }
   }
 

@@ -46,11 +46,11 @@ describe('getValidationErrors', () => {
     expect(errors).toContainEqual({ step: 1, message: 'End time is required' })
   })
 
-  it('requires a remarks reason (step 9) when no machine has timing', () => {
+  it('requires a remarks reason (submit step) when no machine has timing', () => {
     const report = makeValidReport()
     report.machines = [{ from_time: '', to_time: '' }]
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 9, message: 'No machines running — provide a reason in the Remarks field' })
+    expect(errors).toContainEqual({ step: 11, message: 'No machines running — provide a reason in the Remarks field' })
   })
 
   it('does NOT require a remarks reason when idle machines have a remark', () => {
@@ -58,7 +58,7 @@ describe('getValidationErrors', () => {
     report.machines = [{ from_time: '', to_time: '' }]
     report.remarks = 'Power cut all shift'
     const errors = getValidationErrors(report)
-    expect(errors.find(e => e.step === 9)).toBeUndefined()
+    expect(errors.find(e => e.step === 11)).toBeUndefined()
   })
 
   it('does NOT return step 2 error when machines array is empty', () => {
@@ -68,26 +68,26 @@ describe('getValidationErrors', () => {
     expect(errors.find(e => e.step === 2)).toBeUndefined()
   })
 
-  it('returns step 4 error when no production entry has quantity > 0', () => {
+  it('returns production-step error when no production entry has quantity > 0', () => {
     const report = makeValidReport()
     report.production = [{ quantity: '0' }]
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 4, message: 'Add at least one production entry' })
+    expect(errors).toContainEqual({ step: 5, message: 'Add at least one production entry' })
   })
 
-  it('returns step 4 error when production is empty', () => {
+  it('returns production-step error when production is empty', () => {
     const report = makeValidReport()
     report.production = []
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 4, message: 'Add at least one production entry' })
+    expect(errors).toContainEqual({ step: 5, message: 'Add at least one production entry' })
   })
 
-  it('returns step 4 error when production quantity exists but no mix usage is entered', () => {
+  it('returns production-step error when production quantity exists but no mix usage is entered', () => {
     const report = makeValidReport()
     report.production = [{ quantity: '8', mix_usages: [] }]
     report.mixes = [{ local_id: 'm1', type: 'Mustard Husk Pellet' }]
     const errors = getValidationErrors(report)
-    expect(errors).toContainEqual({ step: 4, message: 'Add mix usage for at least one production entry' })
+    expect(errors).toContainEqual({ step: 5, message: 'Add mix usage for at least one production entry' })
   })
 
   it('does NOT require mix usage when no mixes were defined for the shift', () => {
@@ -121,7 +121,7 @@ describe('getValidationErrors', () => {
     const errors = getValidationErrors(report)
     const steps = [...new Set(errors.map(e => e.step))]
     expect(steps).toContain(1)
-    expect(steps).toContain(9)
+    expect(steps).toContain(11)
   })
 })
 
@@ -132,7 +132,7 @@ describe('getValidationWarnings', () => {
       start_time: '08:00', end_time: '20:00',
       pelletStock: [{ name: 'A Grade', opening: 2, production: 0, dispatch: 2, wastage: 0, adjustment: 0.2 }],
     }
-    expect(getValidationWarnings(report).find(w => w.step === 7)).toBeUndefined()
+    expect(getValidationWarnings(report).find(w => w.step === 9)).toBeUndefined()
   })
 
   it('warns when pellet closing is still negative after adjustment', () => {
@@ -141,6 +141,6 @@ describe('getValidationWarnings', () => {
       start_time: '08:00', end_time: '20:00',
       pelletStock: [{ name: 'A Grade', opening: 1, production: 0, dispatch: 3, wastage: 0, adjustment: 0.2 }],
     }
-    expect(getValidationWarnings(report).some(w => w.step === 7)).toBe(true)
+    expect(getValidationWarnings(report).some(w => w.step === 9)).toBe(true)
   })
 })
