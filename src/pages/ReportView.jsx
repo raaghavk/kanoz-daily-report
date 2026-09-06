@@ -10,6 +10,7 @@ import { Calendar, Clock, AlertTriangle, Eye, Trash2, Edit3, FileText, RefreshCw
 import PageHeader from '../components/PageHeader'
 import RecordNav from '../components/RecordNav'
 import { useAdjacentRecord } from '../hooks/useAdjacentRecord'
+import { effectiveDispatchMt, formatAdjustmentMt } from '../lib/reportPelletStock'
 
 export default function ReportView() {
   const { id } = useParams()
@@ -20,6 +21,7 @@ export default function ReportView() {
   const [machineProduction, setMachineProduction] = useState([])
   const [rawMaterials, setRawMaterials] = useState([])
   const [dispatches, setDispatches] = useState([])
+  const [dispatchesLiveOk, setDispatchesLiveOk] = useState(false)
   const [equipmentDiesel, setEquipmentDiesel] = useState([])
   const [pelletStock, setPelletStock] = useState([])
   const [issues, setIssues] = useState([])
@@ -165,6 +167,7 @@ export default function ReportView() {
       setMachineProduction(machRes.data || [])
       setRawMaterials((matRes.data || []).slice().sort((a,b)=>(a.raw_material_types?.name||'').localeCompare(b.raw_material_types?.name||'')))
       setDispatches(dispatchRes.data || [])
+      setDispatchesLiveOk(!dispatchRes.error)
       setEquipmentDiesel((dieselRes.data || []).slice().sort((a,b)=>(((a.equipment?.equipment_type||a.equipment_type||'zzz').localeCompare(b.equipment?.equipment_type||b.equipment_type||'zzz'))||((a.equipment?.name||a.equipment_name||'').localeCompare(b.equipment?.name||b.equipment_name||'')))))
       setPelletStock((stockRes.data || []).slice().sort((a,b)=>(a.pellet_types?.name||'').localeCompare(b.pellet_types?.name||'')))
       setIssues(issuesRes.data || [])
@@ -234,7 +237,7 @@ export default function ReportView() {
     const typeName = p.pellet_types?.name || ''
     const liveDispatch = Object.entries(liveDispatchByPellet).reduce((sum, [key, val]) =>
       pelletTypeMatches(key, typeName) ? sum + val : sum, 0)
-    const dispatchVal = liveDispatch > 0 ? liveDispatch : (parseFloat(p.dispatch_mt) || 0)
+    const dispatchVal = effectiveDispatchMt(liveDispatch, p.dispatch_mt, dispatchesLiveOk)
     const closing = (parseFloat(p.opening_mt) || 0) + (parseFloat(p.production_mt) || 0) - dispatchVal - (parseFloat(p.wastage_mt) || 0) + (parseFloat(p.adjustment_mt) || 0)
     return { ...p, live_dispatch_mt: dispatchVal, live_closing_mt: closing }
   })
@@ -551,13 +554,14 @@ export default function ReportView() {
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.opening_mt || 0).toFixed(1)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.production_mt || 0).toFixed(1)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{p.live_dispatch_mt.toFixed(1)}</td>
-                    <td style={{ padding: '10px 12px', textAlign: 'right', color: (parseFloat(p.adjustment_mt)||0) !== 0 ? '#b45309' : '#595c4a', fontSize: 11 }} title={p.adjustment_note || ''}>{(parseFloat(p.adjustment_mt)||0) === 0 ? '—' : ((parseFloat(p.adjustment_mt)>0?'+':'') + parseFloat(p.adjustment_mt).toFixed(1))}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: '#595c4a', fontSize: 11 }}>{parseFloat(p.wastage_mt || 0).toFixed(1)}</td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', color: (parseFloat(p.adjustment_mt)||0) !== 0 ? '#b45309' : '#595c4a', fontSize: 11 }} title={p.adjustment_note || ''}>{formatAdjustmentMt(p.adjustment_mt)}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, color: '#2c2c2c', fontSize: 11 }}>{p.live_closing_mt.toFixed(1)}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
+                  <td colSpan="7" style={{ padding: '16px 12px', textAlign: 'center', color: '#b5b8a8', fontSize: 11 }}>No data</td>
                 </tr>
               )}
             </tbody>
