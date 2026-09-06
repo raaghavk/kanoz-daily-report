@@ -12,6 +12,7 @@ import PhotoUpload from '../../components/PhotoUpload'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import AddTransporterModal from '../../components/AddTransporterModal'
 import { getLocalDate } from '../../lib/dateUtils'
+import { normalizePurchaseSerial, isPurchaseSerialUniqueViolation } from '../../lib/purchaseSerial'
 
 export default function PurchaseForm() {
   const navigate = useNavigate()
@@ -200,7 +201,7 @@ export default function PurchaseForm() {
       updated.vehicle_number = prefill.vehicle_number
       updated.vehicle_type = prefill.vehicle_type || 'other'
     }
-    if (prefill.serial_no) updated.serial_no = String(prefill.serial_no)
+    if (prefill.serial_no) updated.serial_no = normalizePurchaseSerial(prefill.serial_no) || String(prefill.serial_no)
     updateCalculatedFields(updated)
     setFormData(updated)
   }, [location.state?.prefill, rawMaterials.length, suppliers.length]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -237,7 +238,7 @@ export default function PurchaseForm() {
           if (result.data?.vehicle_number) updated.vehicle_number = result.data.vehicle_number
           if (result.data?.net_weight) updated.net_weight = result.data.net_weight
           if (result.data?.time) updated.purchase_time = result.data.time
-          if (result.data?.serial_no) updated.serial_no = String(result.data.serial_no)
+          if (result.data?.serial_no) updated.serial_no = normalizePurchaseSerial(result.data.serial_no) || String(result.data.serial_no)
           if (result.data?.date) {
             const parsed = new Date(result.data.date)
             if (!isNaN(parsed.getTime())) updated.date = result.data.date
@@ -395,23 +396,22 @@ export default function PurchaseForm() {
   async function savePurchase() {
     if (saving) return
     try {
-      if (!formData.serial_no?.trim()) {
+      const serial = normalizePurchaseSerial(formData.serial_no)
+      if (!serial) {
         showToast('Serial No / Parchi No is required', 'error')
         return
       }
-      // Reject a duplicate: the serial (parchi) number uniquely identifies a purchase,
-      // so if one already exists for this plant, warn and stop (excluding this record on edit).
+      // Unique per plant on the canonical serial (leading zeros stripped for digit-only values).
       {
-        const serial = formData.serial_no.trim()
-        let dupQ = supabase.from('raw_material_purchases')
-          .select('id, date, supplier_name')
+        const { data: existing } = await supabase.from('raw_material_purchases')
+          .select('id, date, supplier_name, serial_no')
           .eq('plant_id', plant?.id)
           .eq('is_deleted', false)
-          .eq('serial_no', serial)
-        if (id) dupQ = dupQ.neq('id', id)
-        const { data: dup } = await dupQ.limit(1)
-        if (dup && dup.length) {
-          showToast(`Serial No ${serial} is already entered (${dup[0].supplier_name || 'purchase'} on ${dup[0].date}). This looks like a duplicate.`, 'error')
+        const dup = (existing || []).find(row =>
+          row.id !== id && normalizePurchaseSerial(row.serial_no) === serial
+        )
+        if (dup) {
+          showToast(`Serial No ${serial} is already entered (${dup.supplier_name || 'purchase'} on ${dup.date}). This looks like a duplicate.`, 'error')
           return
         }
       }
@@ -469,7 +469,7 @@ export default function PurchaseForm() {
         created_by: employee?.id,
         date: formData.date,
         purchase_time: formData.purchase_time || null,
-        serial_no: sanitizeText(formData.serial_no, 50) || null,
+        serial_no: sanitizeText(serial, 50) || null,
         supplier_id: formData.supplier_id,
         supplier_name: supplierName,
         raw_material_type_id: formData.raw_material_type_id,
@@ -499,14 +499,26 @@ export default function PurchaseForm() {
           .update(purchaseData)
           .eq('id', id)
 
-        if (error) throw error
+        if (error) {
+          if (isPurchaseSerialUniqueViolation(error)) {
+            showToast(`Serial No ${serial} is already entered for this plant. This looks like a duplicate.`, 'error')
+            return
+          }
+          throw error
+        }
         showToast('Purchase updated successfully', 'success')
       } else {
         const { error } = await supabase
           .from('raw_material_purchases')
           .insert([purchaseData])
 
-        if (error) throw error
+        if (error) {
+          if (isPurchaseSerialUniqueViolation(error)) {
+            showToast(`Serial No ${serial} is already entered for this plant. This looks like a duplicate.`, 'error')
+            return
+          }
+          throw error
+        }
         showToast('Purchase saved successfully', 'success')
         // Notify on new purchase
         const rmName = rawMaterials.find(m => m.id === formData.raw_material_type_id)?.name || 'RM'
@@ -526,7 +538,11 @@ export default function PurchaseForm() {
       navigate(id ? `/purchase/${id}` : '/purchase')
     } catch (err) {
       console.error('Error saving purchase:', err)
-      showToast('Failed to save purchase', 'error')
+      if (isPurchaseSerialUniqueViolation(err)) {
+        showToast(`Serial No ${normalizePurchaseSerial(formData.serial_no) || formData.serial_no} is already entered for this plant.`, 'error')
+      } else {
+        showToast('Failed to save purchase', 'error')
+      }
     } finally {
       setSaving(false)
     }
@@ -651,8 +667,15 @@ export default function PurchaseForm() {
             placeholder="e.g., 8501"
             value={formData.serial_no}
             onChange={e => handleFieldChange('serial_no', e.target.value)}
+            onBlur={() => {
+              const canonical = normalizePurchaseSerial(formData.serial_no)
+              if (canonical && canonical !== formData.serial_no) handleFieldChange('serial_no', canonical)
+            }}
             style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
           />
+          <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 6 }}>
+            Unique per plant. Leading zeros on number-only parchis are ignored (025194 = 25194).
+          </div>
         </div>
 
         <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
