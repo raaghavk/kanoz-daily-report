@@ -255,10 +255,10 @@ export default function SupplierDetail() {
               </div>
             )}
 
-            {supplier.gcv_value && (
+            {supplier.sample_gcv && (
               <div>
                 <p style={{ fontSize: 10, fontWeight: 600, color: '#b5b8a8', textTransform: 'uppercase', marginBottom: 4 }}>GCV Value</p>
-                <p style={{ fontSize: 13, color: '#2c2c2c' }}>{supplier.gcv_value}</p>
+                <p style={{ fontSize: 13, color: '#2c2c2c' }}>{supplier.sample_gcv}</p>
               </div>
             )}
 
