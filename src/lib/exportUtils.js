@@ -126,7 +126,7 @@ export function exportDetailedReportToCSV({
 
   // Pellet stock
   lines.push('PELLET STOCK')
-  lines.push(buildCSVRow(['Type', 'Opening', 'Production', 'Dispatch', 'Wastage', 'Closing']))
+  lines.push(buildCSVRow(['Type', 'Opening', 'Production', 'Dispatch', 'Wastage', 'Adjust', 'Closing']))
   pelletStock.forEach(p => {
     lines.push(buildCSVRow([
       p.pellet_types?.name || 'N/A',
@@ -134,6 +134,7 @@ export function exportDetailedReportToCSV({
       p.production_mt || 0,
       p.dispatch_mt || 0,
       p.wastage_mt || 0,
+      p.adjustment_mt || 0,
       p.closing_mt || 0,
     ]))
   })
