@@ -200,6 +200,7 @@ export default function AttendancePage() {
         plant_id: plant.id,
         employee_id: employee.id,
         work_date: today,
+        status: 'present',
         check_in_at: new Date().toISOString(),
         check_in_lat: coords?.lat ?? null,
         check_in_lng: coords?.lng ?? null,
