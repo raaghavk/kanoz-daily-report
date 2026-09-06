@@ -204,6 +204,12 @@ export default function DispatchDetail() {
 
       // Update existing pellet rows; insert newly-added rows (those without a db id).
       const nameFor = (p) => pelletTypes.find(pt => pt.id === p.pellet_type_id)?.name || p.pellet_type_name || null
+      const remainingIds = new Set(editPellets.filter(p => p.id).map(p => p.id))
+      const removedIds = (dispatch.dispatch_pellets || []).map(p => p.id).filter(id => id && !remainingIds.has(id))
+      if (removedIds.length) {
+        const { error: delErr } = await supabase.from('dispatch_pellets').delete().in('id', removedIds)
+        if (delErr) throw delErr
+      }
       const ops = editPellets
         .filter(p => (Number(p.quantity_mt) > 0) || p.id)
         .map(p => p.id
