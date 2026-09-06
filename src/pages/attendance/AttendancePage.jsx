@@ -5,6 +5,7 @@ import { can } from '../../lib/permissions'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { getLocalDate } from '../../lib/dateUtils'
+import { CHECK_IN_GEOFENCE_RADIUS_M, gpsErrorMessage, prepareSelfCheckIn } from '../../lib/geofence'
 import { Loader2, LogIn, LogOut, MapPin, CheckCircle2, Circle, Clock, CalendarDays, UserPlus, X, ChevronDown, ChevronUp, Trash2, UserCheck } from 'lucide-react'
 
 const GREEN = '#2d6a4f'
@@ -37,14 +38,21 @@ function combineDateTime(dateStr, timeStr) {
   return d.toISOString()
 }
 
-// Try to grab GPS coords; resolves to {lat,lng} or null (never rejects)
-function getCoords() {
-  return new Promise((resolve) => {
-    if (!navigator.geolocation) return resolve(null)
+// GPS: required=true rejects with a user-facing error; otherwise resolves null on failure.
+function getCoords({ required = false } = {}) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      if (required) reject(new Error('This device does not support GPS. Check-in requires location.'))
+      else resolve(null)
+      return
+    }
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+      (err) => {
+        if (required) reject(new Error(gpsErrorMessage(err)))
+        else resolve(null)
+      },
+      { enableHighAccuracy: true, timeout: required ? 12000 : 8000, maximumAge: required ? 15000 : 60000 }
     )
   })
 }
@@ -194,24 +202,33 @@ export default function AttendancePage() {
     if (saving || !employee?.id || !plant?.id) return
     setSaving(true)
     try {
-      const coords = await getCoords()
+      const [{ data: plantLoc, error: plantErr }, coords] = await Promise.all([
+        supabase.from('plants').select('location_lat, location_lng').eq('id', plant.id).maybeSingle(),
+        getCoords({ required: true }),
+      ])
+      if (plantErr) throw new Error('Could not load plant location. Try again.')
+      const gated = prepareSelfCheckIn({
+        plantLat: plantLoc?.location_lat,
+        plantLng: plantLoc?.location_lng,
+        coords,
+      })
       const payload = {
         org_id: plant.org_id,
         plant_id: plant.id,
         employee_id: employee.id,
         work_date: today,
-        status: 'present',
+        status: gated.status,
         check_in_at: new Date().toISOString(),
-        check_in_lat: coords?.lat ?? null,
-        check_in_lng: coords?.lng ?? null,
+        check_in_lat: gated.check_in_lat,
+        check_in_lng: gated.check_in_lng,
       }
       const { error } = await supabase
         .from('attendance')
         .upsert(payload, { onConflict: 'employee_id,work_date' })
       if (error) throw error
-      showToast(coords ? 'Checked in with location' : 'Checked in', 'success')
+      showToast(`Checked in · ${Math.round(gated.distanceM)} m from plant`, 'success')
       await Promise.all([loadMine(), loadRoster()])
-    } catch { showToast('Check-in failed', 'error') } finally { setSaving(false) }
+    } catch (err) { showToast(err?.message || 'Check-in failed', 'error') } finally { setSaving(false) }
   }
 
   async function handleCheckOut() {
@@ -574,7 +591,7 @@ export default function AttendancePage() {
                 </button>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 10, fontSize: 11, color: MUTED }}>
-                <MapPin size={12} /> Location captured if you allow it — optional.
+                <MapPin size={12} /> Must be within {CHECK_IN_GEOFENCE_RADIUS_M} m of the plant. Location is required.
               </div>
             </>
           )}
