@@ -206,9 +206,11 @@ export default function PurchaseForm() {
   }, [location.state?.prefill, rawMaterials.length, suppliers.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleFieldChange(field, value) {
-    const updated = { ...formData, [field]: value }
-    updateCalculatedFields(updated)
-    setFormData(updated)
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value }
+      updateCalculatedFields(updated)
+      return updated
+    })
   }
 
   async function scanKattaParchi(directUrl) {
