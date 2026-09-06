@@ -6,7 +6,7 @@ describe('Stepper', () => {
   it('renders correct number of step buttons', () => {
     render(<Stepper currentStep={1} onStepClick={() => {}} />)
     const tabs = screen.getAllByRole('tab')
-    expect(tabs).toHaveLength(9)
+    expect(tabs).toHaveLength(11)
   })
 
   it('renders custom totalSteps', () => {

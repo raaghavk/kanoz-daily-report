@@ -25,19 +25,20 @@ import Step8Issues from './Step8Issues'
 import Step9Submit from './Step9Submit'
 import StepProcessing from './StepProcessing'
 import { computeProcessingDeltas } from '../../lib/processingDeltas'
+import { SHIFT_STEP_TITLES } from '../../lib/shiftWizardSteps'
 
 const STEPS = [
-  { num: 1, title: 'Report Header', component: Step1Header },
-  { num: 2, title: 'Machine Timings', component: Step2Machines },
-  { num: 3, title: 'Raw Material & Mix', component: Step3RawMaterialMix },
-  { num: 4, title: 'In-House Processing', component: StepProcessing },
-  { num: 5, title: 'Production', component: Step4Production },
-  { num: 6, title: 'RM & Mix Review', component: Step5RawMaterialReview },
-  { num: 7, title: 'Equipment & Diesel', component: Step5Diesel },
-  { num: 8, title: 'Dispatch Summary', component: Step6Dispatch },
-  { num: 9, title: 'Pellet Stock', component: Step7PelletStock },
-  { num: 10, title: 'Issues', component: Step8Issues },
-  { num: 11, title: 'Submit', component: Step9Submit },
+  { num: 1, title: SHIFT_STEP_TITLES[0], component: Step1Header },
+  { num: 2, title: SHIFT_STEP_TITLES[1], component: Step2Machines },
+  { num: 3, title: SHIFT_STEP_TITLES[2], component: Step3RawMaterialMix },
+  { num: 4, title: SHIFT_STEP_TITLES[3], component: StepProcessing },
+  { num: 5, title: SHIFT_STEP_TITLES[4], component: Step4Production },
+  { num: 6, title: SHIFT_STEP_TITLES[5], component: Step5RawMaterialReview },
+  { num: 7, title: SHIFT_STEP_TITLES[6], component: Step5Diesel },
+  { num: 8, title: SHIFT_STEP_TITLES[7], component: Step6Dispatch },
+  { num: 9, title: SHIFT_STEP_TITLES[8], component: Step7PelletStock },
+  { num: 10, title: SHIFT_STEP_TITLES[9], component: Step8Issues },
+  { num: 11, title: SHIFT_STEP_TITLES[10], component: Step9Submit },
 ]
 
 const WIZARD_STORAGE_KEY = 'kanoz_shift_wizard_state'
@@ -1032,7 +1033,7 @@ export default function ShiftWizard() {
         }}
       />
 
-      <Stepper currentStep={step} onStepClick={setStep} stepsWithErrors={stepsWithErrors} />
+      <Stepper currentStep={step} totalSteps={STEPS.length} onStepClick={setStep} stepsWithErrors={stepsWithErrors} />
 
       {/* Step Content */}
       <div style={{ flex: 1, overflowY: 'auto' }}>

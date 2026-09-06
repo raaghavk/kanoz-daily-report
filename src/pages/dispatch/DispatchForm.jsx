@@ -11,6 +11,7 @@ import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import AddTransporterModal from '../../components/AddTransporterModal'
 import { getLocalDate } from '../../lib/dateUtils'
+import { SHIFT_STEP } from '../../lib/shiftWizardSteps'
 
 const DISPATCH_DRAFT_KEY = 'kanoz_dispatch_draft'
 const DISPATCH_DRAFT_MAX_AGE = 6 * 60 * 60 * 1000 // 6 hours
@@ -538,7 +539,7 @@ export default function DispatchForm() {
         queryClient.invalidateQueries({ queryKey: ['latestPelletStock'] })
         // If we came from the shift wizard, go straight back instead of showing list
         if (returnToShift) {
-          navigate('/shift/new', { state: { returnToStep: 7 } })
+          navigate('/shift/new', { state: { returnToStep: SHIFT_STEP.DISPATCH } })
         } else {
           setShowForm(false)
         }
@@ -596,7 +597,7 @@ export default function DispatchForm() {
           backTo="/"
           onBack={
             returnToShift
-              ? () => navigate('/shift/new', { state: { returnToStep: 7 } })
+              ? () => navigate('/shift/new', { state: { returnToStep: SHIFT_STEP.DISPATCH } })
               : showForm
                 ? () => setShowForm(false)
                 : null
@@ -608,7 +609,7 @@ export default function DispatchForm() {
           <div style={{ margin: '12px 20px 0', background: '#e8f0ec', border: '1.5px solid #2d6a4f', borderRadius: 14, padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: 12, color: '#2d6a4f', fontWeight: 600 }}>You came from the Shift Report wizard.</div>
             <button
-              onClick={() => navigate('/shift/new', { state: { returnToStep: 7 } })}
+              onClick={() => navigate('/shift/new', { state: { returnToStep: SHIFT_STEP.DISPATCH } })}
               style={{ padding: '6px 12px', background: '#2d6a4f', color: 'white', border: 'none', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
             >
               Back to Shift
