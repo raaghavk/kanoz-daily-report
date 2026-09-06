@@ -27,7 +27,7 @@ export default function SupplierList() {
       address: '',
       raw_material_type: '',
       rate_offered: '',
-      gcv_value: '',
+      sample_gcv: '',
       remarks: '',
       location_lat: null,
       location_lng: null,
@@ -120,7 +120,7 @@ export default function SupplierList() {
           address: formData.address,
           raw_material_type: formData.raw_material_type,
           rate_offered: parseFloat(formData.rate_offered) || null,
-          gcv_value: parseFloat(formData.gcv_value) || null,
+          sample_gcv: parseFloat(formData.sample_gcv) || null,
           remarks: formData.remarks,
           location_lat: formData.location_lat || null,
           location_lng: formData.location_lng || null,
@@ -139,7 +139,7 @@ export default function SupplierList() {
         address: '',
         raw_material_type: '',
         rate_offered: '',
-        gcv_value: '',
+        sample_gcv: '',
         remarks: '',
         location_lat: null,
         location_lng: null,
@@ -317,7 +317,7 @@ export default function SupplierList() {
       {/* Add Supplier Modal */}
       <Modal isOpen={showAddModal} onClose={() => {
         sessionStorage.removeItem('supplier_form_draft')
-        setFormData({ name: '', mobile: '', address: '', raw_material_type: '', rate_offered: '', gcv_value: '', remarks: '', location_lat: null, location_lng: null })
+        setFormData({ name: '', mobile: '', address: '', raw_material_type: '', rate_offered: '', sample_gcv: '', remarks: '', location_lat: null, location_lng: null })
         setShowAddModal(false)
       }} title="Add New Supplier">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -411,8 +411,8 @@ export default function SupplierList() {
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>GCV Value</label>
             <input
               type="number"
-              value={formData.gcv_value}
-              onChange={e => setFormData({ ...formData, gcv_value: e.target.value })}
+              value={formData.sample_gcv}
+              onChange={e => setFormData({ ...formData, sample_gcv: e.target.value })}
               placeholder="0"
               step="0.01"
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}
@@ -434,7 +434,7 @@ export default function SupplierList() {
             <button
               onClick={() => {
                 sessionStorage.removeItem('supplier_form_draft')
-                setFormData({ name: '', mobile: '', address: '', raw_material_type: '', rate_offered: '', gcv_value: '', remarks: '', location_lat: null, location_lng: null })
+                setFormData({ name: '', mobile: '', address: '', raw_material_type: '', rate_offered: '', sample_gcv: '', remarks: '', location_lat: null, location_lng: null })
                 setShowAddModal(false)
               }}
               style={{ flex: 1, padding: '10px 0', background: '#f3f4f6', color: '#2c2c2c', borderRadius: 8, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
