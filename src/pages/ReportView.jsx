@@ -152,7 +152,7 @@ export default function ReportView() {
         supabase.from('vehicle_dispatches').select('*, dispatch_pellets(*, pellet_types(name)), customers(name)').eq('shift_report_id', id).eq('is_deleted', false),
         supabase.from('equipment_diesel_log').select('*, equipment:equipment_id(name, equipment_type, owner, company, identifier)').eq('shift_report_id', id),
         supabase.from('pellet_stock').select('*, pellet_types(name)').eq('shift_report_id', id),
-        supabase.from('issues').select('*').eq('shift_report_id', id),
+        supabase.from('issues').select('*, machines(name)').eq('shift_report_id', id),
         supabase.from('shift_mixes').select('*').eq('shift_report_id', id),
       ])
 
@@ -596,6 +596,9 @@ export default function ReportView() {
                       </span>
                     </div>
                     <p style={{ fontSize: 12, color: '#595c4a', marginTop: 4 }}>{issue.description}</p>
+                    {issue.machines?.name && (
+                      <p style={{ fontSize: 11, color: '#8a8d7a', marginTop: 4 }}>Machine: {issue.machines.name}</p>
+                    )}
                     {issue.photo_url && (
                       <div style={{ marginTop: 8 }}>
                         <img

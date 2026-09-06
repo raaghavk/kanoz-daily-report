@@ -138,6 +138,7 @@ export function buildShiftChildrenPayload(reportData, plant) {
     description: sanitizeText(i.description, 1000),
     severity: sanitizeText(i.severity, 20),
     photo_url: i.photo_url,
+    machine_id: i.machine_id || null,
   }))
 
   const ds = reportData.diesel_stock || {}
