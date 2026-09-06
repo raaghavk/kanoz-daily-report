@@ -24,7 +24,7 @@ export default function SparePartsPurchaseHistoryPage() {
 
       const { data, error } = await supabase
         .from('spare_parts_purchases')
-        .select('id, purchase_date, quantity, rate_per_unit, total_amount, gst_percent, invoice_number, warranty_months, warranty_expiry_date, no_warranty, part_id, supplier_id, purchased_by, spare_parts(name, unit, brand, category), spare_parts_suppliers(name)')
+        .select('id, purchase_date, quantity, rate_per_unit, total_amount, gst_percent, bill_number, warranty_months, warranty_expiry_date, part_id, supplier_id, purchased_by, spare_parts(name, unit, brand, category), spare_parts_suppliers(name)')
         .eq('plant_id', plant.id)
         .gte('purchase_date', from)
         .lte('purchase_date', to)
@@ -32,7 +32,10 @@ export default function SparePartsPurchaseHistoryPage() {
 
       if (error) throw error
       setRecords(data || [])
-    } catch { /* silent */ } finally { setLoading(false) }
+    } catch (err) {
+      console.error(err)
+      setRecords([])
+    } finally { setLoading(false) }
   }
 
   function exportCSV() {
@@ -48,8 +51,8 @@ export default function SparePartsPurchaseHistoryPage() {
       r.gst_percent,
       r.total_amount,
       r.spare_parts_suppliers?.name || '',
-      r.invoice_number || '',
-      r.no_warranty ? 'No Warranty' : r.warranty_months ? `${r.warranty_months} months` : '',
+      r.bill_number || '',
+      r.warranty_months ? `${r.warranty_months} months` : (r.warranty_expiry_date ? `until ${r.warranty_expiry_date}` : 'No Warranty'),
       r.purchased_by || '',
     ])
     const csv = [headers, ...rows].map(row => row.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
