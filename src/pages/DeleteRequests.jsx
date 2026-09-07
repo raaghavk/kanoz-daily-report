@@ -6,6 +6,7 @@ import { can } from '../lib/permissions'
 import { showToast } from '../components/Toast'
 import PageHeader from '../components/PageHeader'
 import { CheckCircle, XCircle, Clock } from 'lucide-react'
+import { DELETE_TABLE_MAP, alreadyDeletedLabel, deactivateFields } from '../lib/deleteRequests'
 
 const ENTITY_BADGES = {
   purchase: { bg: '#2d6a4f', label: 'Purchase' },
@@ -15,13 +16,7 @@ const ENTITY_BADGES = {
   spare_part: { bg: '#fce7f3', color: '#9d174d', label: 'Spare Part' },
 }
 
-const TABLE_MAP = {
-  purchase: 'raw_material_purchases',
-  dispatch: 'vehicle_dispatches',
-  shift_report: 'shift_reports',
-  asset: 'assets',
-  spare_part: 'spare_part_items',
-}
+const TABLE_MAP = DELETE_TABLE_MAP
 
 const DETAIL_PATH = {
   purchase: id => `/purchase/${id}`,
@@ -56,7 +51,7 @@ async function enrichRequests(rows) {
           `${mt} MT`,
           p.total_amount != null ? `₹${Math.round(Number(p.total_amount)).toLocaleString('en-IN')}` : null,
           p.vehicle_number,
-          p.is_deleted ? 'Already deleted' : null,
+          alreadyDeletedLabel('purchase', p),
         ].filter(Boolean),
       }
     }
@@ -76,7 +71,7 @@ async function enrichRequests(rows) {
           d.truck_number ? `Truck ${d.truck_number}` : null,
           qty ? `${qty} MT` : null,
           d.invoice_no ? `Inv ${d.invoice_no}` : null,
-          d.is_deleted ? 'Already deleted' : null,
+          alreadyDeletedLabel('dispatch', d),
         ].filter(Boolean),
       }
     }
@@ -93,28 +88,28 @@ async function enrichRequests(rows) {
         lines: [
           s.date,
           s.pellet_production_mt != null ? `${s.pellet_production_mt} MT produced` : null,
-          s.is_deleted ? 'Already deleted' : null,
+          alreadyDeletedLabel('shift_report', s),
         ].filter(Boolean),
       }
     }
   }
 
   if (byType.asset?.length) {
-    const { data } = await supabase.from('assets').select('id, code, name, status, is_deleted').in('id', byType.asset)
+    const { data } = await supabase.from('assets').select('id, code, name, status, is_active, deleted_at').in('id', byType.asset)
     for (const a of data || []) {
       summaries[`asset:${a.id}`] = {
         title: a.name || a.code || 'Asset',
-        lines: [a.code, a.status, a.is_deleted ? 'Already deleted' : null].filter(Boolean),
+        lines: [a.code, a.status, alreadyDeletedLabel('asset', a)].filter(Boolean),
       }
     }
   }
 
   if (byType.spare_part?.length) {
-    const { data } = await supabase.from('spare_part_items').select('id, name, part_number, is_deleted').in('id', byType.spare_part)
+    const { data } = await supabase.from('spare_parts').select('id, name, part_number, is_active').in('id', byType.spare_part)
     for (const s of data || []) {
       summaries[`spare_part:${s.id}`] = {
         title: s.name || 'Spare part',
-        lines: [s.part_number, s.is_deleted ? 'Already deleted' : null].filter(Boolean),
+        lines: [s.part_number, alreadyDeletedLabel('spare_part', s)].filter(Boolean),
       }
     }
   }
@@ -176,7 +171,10 @@ export default function DeleteRequests() {
       if (table) {
         const { error: deleteError } = await supabase
           .from(table)
-          .update({ is_deleted: true, deleted_by: employee.id, deleted_at: new Date().toISOString() })
+          .update(deactivateFields(request.entity_type, {
+            employeeId: employee.id,
+            deletedAt: new Date().toISOString(),
+          }))
           .eq('id', request.entity_id)
         if (deleteError) throw deleteError
       }
