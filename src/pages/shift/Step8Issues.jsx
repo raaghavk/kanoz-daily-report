@@ -62,7 +62,7 @@ export default memo(function Step8Issues({ data, updateData }) {
             <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>DESCRIPTION</label>
             <textarea value={issue.description} onChange={e => updateIssue(idx, 'description', e.target.value)} placeholder="Describe the issue..." rows={2} style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', resize: 'none' }} />
           </div>
-          <PhotoUpload label="Photo Evidence" onChange={file => updateIssue(idx, 'photo_url', file)} />
+          <PhotoUpload label="Photo Evidence" value={issue.photo_url} onChange={url => updateIssue(idx, 'photo_url', url)} />
         </div>
       ))}
 
