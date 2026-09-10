@@ -12,6 +12,7 @@ import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import AddTransporterModal from '../../components/AddTransporterModal'
 import { getLocalDate } from '../../lib/dateUtils'
 import { SHIFT_STEP } from '../../lib/shiftWizardSteps'
+import { kattaParchiToDispatchUpdates } from '../../lib/dispatchOcr'
 
 const DISPATCH_DRAFT_KEY = 'kanoz_dispatch_draft'
 const DISPATCH_DRAFT_MAX_AGE = 6 * 60 * 60 * 1000 // 6 hours
@@ -564,20 +565,7 @@ export default function DispatchForm() {
         showToast('Could not extract data from photo', 'error')
         return
       }
-      const updates = {}
-      if (result.data?.vehicle_number) updates.truck_number = result.data.vehicle_number
-      if (result.data?.serial_no) updates.invoice_number = result.data.serial_no
-      if (result.data?.date) {
-        const parsed = new Date(result.data.date)
-        if (!isNaN(parsed.getTime())) {
-          updates.dispatch_date = result.data.date
-          updates.loading_date = result.data.date
-        }
-      }
-      if (result.data?.time) {
-        updates.dispatch_time = result.data.time
-        updates.loading_time = result.data.time
-      }
+      const updates = kattaParchiToDispatchUpdates(result.data)
       setForm(prev => ({ ...prev, ...updates }))
       showToast('Fields auto-filled from photo', 'success')
     } catch {
