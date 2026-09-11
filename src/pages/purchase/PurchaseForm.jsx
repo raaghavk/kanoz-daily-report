@@ -13,6 +13,7 @@ import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import AddTransporterModal from '../../components/AddTransporterModal'
 import { getLocalDate } from '../../lib/dateUtils'
 import { normalizePurchaseSerial, isPurchaseSerialUniqueViolation } from '../../lib/purchaseSerial'
+import { cascadeResyncFrom, earlierCascadePoint } from '../../lib/cascadeResync'
 
 export default function PurchaseForm() {
   const navigate = useNavigate()
@@ -463,7 +464,14 @@ export default function PurchaseForm() {
       const rmTypeName = rawMaterials.find(m => m.id === formData.raw_material_type_id)?.name || ''
       const supplierName = suppliers.find(s => s.id === formData.supplier_id)?.name || ''
 
-      const purchaseData = {
+      // On edit, cascade from the earlier of old vs new datetime so moving a purchase
+      // backward still repairs every affected shift. Capture before the write payload
+      // shadows the loaded purchaseData from the query.
+      const priorCascadePoint = id && purchaseData
+        ? { date: purchaseData.date, time: purchaseData.purchase_time }
+        : null
+
+      const purchasePayload = {
         plant_id: plant?.id,
         employee_id: employee?.id,
         created_by: employee?.id,
@@ -496,7 +504,7 @@ export default function PurchaseForm() {
       if (id) {
         const { error } = await supabase
           .from('raw_material_purchases')
-          .update(purchaseData)
+          .update(purchasePayload)
           .eq('id', id)
 
         if (error) {
@@ -506,11 +514,10 @@ export default function PurchaseForm() {
           }
           throw error
         }
-        showToast('Purchase updated successfully', 'success')
       } else {
         const { error } = await supabase
           .from('raw_material_purchases')
-          .insert([purchaseData])
+          .insert([purchasePayload])
 
         if (error) {
           if (isPurchaseSerialUniqueViolation(error)) {
@@ -519,7 +526,6 @@ export default function PurchaseForm() {
           }
           throw error
         }
-        showToast('Purchase saved successfully', 'success')
         // Notify on new purchase
         const rmName = rawMaterials.find(m => m.id === formData.raw_material_type_id)?.name || 'RM'
         const supName = suppliers.find(s => s.id === formData.supplier_id)?.name || 'Supplier'
@@ -531,6 +537,35 @@ export default function PurchaseForm() {
             plant: plant?.name || '',
           })
         }).catch(() => {})
+      }
+
+      // Cascade stock through all later shift reports (any month).
+      const cascadePoint = earlierCascadePoint(
+        priorCascadePoint,
+        { date: formData.date, time: formData.purchase_time },
+      )
+      let cascadeCount = 0
+      try {
+        if (cascadePoint?.date && plant?.id) {
+          const result = await cascadeResyncFrom(plant.id, cascadePoint.date, cascadePoint.time)
+          cascadeCount = result.count || 0
+        }
+      } catch (cascadeErr) {
+        console.error('Cascade resync failed:', cascadeErr)
+        showToast(
+          id
+            ? 'Purchase updated, but stock cascade failed — open affected reports and tap Update'
+            : 'Purchase saved, but stock cascade failed — open affected reports and tap Update',
+          'error',
+        )
+      }
+      if (cascadeCount > 0) {
+        showToast(
+          `${id ? 'Purchase updated' : 'Purchase saved'} · updated ${cascadeCount} later shift report${cascadeCount === 1 ? '' : 's'}`,
+          'success',
+        )
+      } else {
+        showToast(id ? 'Purchase updated successfully' : 'Purchase saved successfully', 'success')
       }
 
       if (id) queryClient.invalidateQueries({ queryKey: ['purchase', id] })
