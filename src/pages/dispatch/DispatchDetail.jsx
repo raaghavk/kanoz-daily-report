@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
+import { cascadeResyncFrom, earlierCascadePoint } from '../../lib/cascadeResync'
 import { useAuth } from '../../context/AuthContext'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { Phone, MessageSquare, Truck, Clock, Timer, Edit3, Save, X, Download, Plus } from 'lucide-react'
@@ -220,7 +221,26 @@ export default function DispatchDetail() {
       const pelletErr = pelletResults.find(r => r.error)
       if (pelletErr) throw pelletErr.error
 
-      showToast('Dispatch updated', 'success')
+      // Cascade from earlier of old vs new dispatch datetime.
+      const point = earlierCascadePoint(
+        { date: dispatch.dispatch_date || dispatch.date, time: dispatch.dispatch_time },
+        { date: editForm.dispatch_date || editForm.date, time: editForm.dispatch_time },
+      )
+      let cascadeCount = 0
+      try {
+        if (point?.date && (dispatch.plant_id || plant?.id)) {
+          const result = await cascadeResyncFrom(dispatch.plant_id || plant.id, point.date, point.time)
+          cascadeCount = result.count || 0
+        }
+      } catch (cascadeErr) {
+        console.error('Cascade resync failed:', cascadeErr)
+        showToast('Dispatch updated, but stock cascade failed — open affected reports and tap Update', 'error')
+      }
+      if (cascadeCount > 0) {
+        showToast(`Dispatch updated · updated ${cascadeCount} later shift report${cascadeCount === 1 ? '' : 's'}`, 'success')
+      } else {
+        showToast('Dispatch updated', 'success')
+      }
       setEditing(false)
       fetchDispatch()
     } catch (err) {

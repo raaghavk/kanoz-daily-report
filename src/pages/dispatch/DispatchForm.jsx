@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
+import { cascadeResyncFrom } from '../../lib/cascadeResync'
 import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
 import { Truck, Phone, Plus, X, ChevronDown, ChevronRight, Loader2, Sparkles } from 'lucide-react'
@@ -502,7 +503,21 @@ export default function DispatchForm() {
 
         if (pelletError) throw pelletError
 
-        showToast('Dispatch saved successfully', 'success')
+        try {
+          const { count } = await cascadeResyncFrom(
+            plant.id,
+            form.dispatch_date || today,
+            form.dispatch_time || null,
+          )
+          if (count > 0) {
+            showToast(`Dispatch saved · updated ${count} later shift report${count === 1 ? '' : 's'}`, 'success')
+          } else {
+            showToast('Dispatch saved successfully', 'success')
+          }
+        } catch (cascadeErr) {
+          console.error('Cascade resync failed:', cascadeErr)
+          showToast('Dispatch saved, but stock cascade failed — open affected reports and tap Update', 'error')
+        }
 
         // Send push notification to admins (non-blocking)
         const totalQty = form.pellets.reduce((sum, p) => sum + (parseFloat(p.quantity_mt) || 0), 0)

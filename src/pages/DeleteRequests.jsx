@@ -7,6 +7,7 @@ import { showToast } from '../components/Toast'
 import PageHeader from '../components/PageHeader'
 import { CheckCircle, XCircle, Clock } from 'lucide-react'
 import { DELETE_TABLE_MAP, alreadyDeletedLabel, deactivateFields } from '../lib/deleteRequests'
+import { cascadeResyncFrom } from '../lib/cascadeResync'
 
 const ENTITY_BADGES = {
   purchase: { bg: '#2d6a4f', label: 'Purchase' },
@@ -168,6 +169,23 @@ export default function DeleteRequests() {
       if (updateError) throw updateError
 
       const table = TABLE_MAP[request.entity_type]
+      let cascadeMeta = null
+      if (table && (request.entity_type === 'purchase' || request.entity_type === 'dispatch')) {
+        // Read date/time before soft-delete so we can cascade stock afterward.
+        const selectCols = request.entity_type === 'purchase'
+          ? 'date, purchase_time, plant_id'
+          : 'dispatch_date, dispatch_time, date, plant_id'
+        const { data: row } = await supabase
+          .from(table)
+          .select(selectCols)
+          .eq('id', request.entity_id)
+          .maybeSingle()
+        if (row) {
+          cascadeMeta = request.entity_type === 'purchase'
+            ? { plantId: row.plant_id || plant?.id, date: row.date, time: row.purchase_time }
+            : { plantId: row.plant_id || plant?.id, date: row.dispatch_date || row.date, time: row.dispatch_time }
+        }
+      }
       if (table) {
         const { error: deleteError } = await supabase
           .from(table)
@@ -178,7 +196,21 @@ export default function DeleteRequests() {
           .eq('id', request.entity_id)
         if (deleteError) throw deleteError
       }
-      showToast('Request approved', 'success')
+      let cascadeCount = 0
+      if (cascadeMeta?.plantId && cascadeMeta?.date) {
+        try {
+          const result = await cascadeResyncFrom(cascadeMeta.plantId, cascadeMeta.date, cascadeMeta.time)
+          cascadeCount = result.count || 0
+        } catch (cascadeErr) {
+          console.error('Cascade resync after delete failed:', cascadeErr)
+          showToast('Deleted, but stock cascade failed — open affected reports and tap Update', 'error')
+        }
+      }
+      if (cascadeCount > 0) {
+        showToast(`Request approved · updated ${cascadeCount} later shift report${cascadeCount === 1 ? '' : 's'}`, 'success')
+      } else {
+        showToast('Request approved', 'success')
+      }
       await fetchRequests()
     } catch (err) {
       console.error(err)
