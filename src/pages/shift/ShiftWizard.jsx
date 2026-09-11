@@ -12,6 +12,7 @@ import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
 import { canonicalReportDate, isDispatchInShiftWindow } from '../../lib/shiftReportDate'
 import { buildShiftChildrenPayload } from '../../lib/shiftSavePayload'
+import { cascadeResyncFrom } from '../../lib/cascadeResync'
 import { getValidationErrors, getValidationWarnings } from './validation'
 import Step1Header from './Step1Header'
 import Step2Machines from './Step2Machines'
@@ -842,12 +843,6 @@ export default function ShiftWizard() {
       })
       if (childErr) throw childErr
 
-      // Cascade corrected pellet stock openings to all subsequent shifts
-      // (non-blocking — a failure here doesn't roll back the saved report)
-      supabase.rpc('resync_pellet_stock_chain', { p_from_report_id: report.id }).catch(e => {
-        console.warn('resync_pellet_stock_chain failed (non-critical):', e)
-      })
-
       // Link dispatches within this shift's time window to this shift report
       try {
         const normalizeTime = (t) => t ? t.substring(0, 5) : t
@@ -882,6 +877,21 @@ export default function ShiftWizard() {
         console.error('Dispatch linking error:', dispatchErr)
         // Non-critical — don't fail the whole save
       }
+
+      // Cascade stock openings to this shift and all later ones (any month).
+      // Non-blocking — save already succeeded; supabase.rpc builders are not
+      // Promises with .catch, so we await inside an async IIFE instead.
+      void (async () => {
+        try {
+          await cascadeResyncFrom(
+            plant.id,
+            reportData.shift_start_date || reportData.date,
+            reportData.start_time,
+          )
+        } catch (e) {
+          console.warn('cascadeResyncFrom failed (non-critical):', e)
+        }
+      })()
 
       localStorage.removeItem(WIZARD_STORAGE_KEY)
       showToast(editId ? 'Report updated!' : 'Report submitted!', 'success')
