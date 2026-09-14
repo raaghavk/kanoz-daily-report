@@ -916,7 +916,7 @@ export default function ShiftWizard() {
             shift: reportData.shift,
             supervisor: employee?.name,
             plant: plant?.name,
-            report_id: reportId,
+            report_id: report.id,
           })
         }
         // Issue reported — fire once for the most severe issue
@@ -931,7 +931,7 @@ export default function ShiftWizard() {
             severity: top.severity,
             count: issues.length,
             plant: plant?.name || '',
-            report_id: reportId,
+            report_id: report.id,
           })
         }
       }).catch(() => {})
