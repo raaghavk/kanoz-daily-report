@@ -10,7 +10,7 @@ import { kgToMtStr } from '../lib/units'
 import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
 import { ChevronRight, AlertTriangle, Wrench, CheckSquare, Circle, Boxes, UserCheck } from 'lucide-react'
-import VoiceFAB from '../components/VoiceFAB'
+import DemoMark from '../components/DemoMark'
 
 export default function Home() {
   const { employee, plant } = useAuth()
@@ -231,7 +231,11 @@ export default function Home() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               overflow: 'hidden',
             }}>
-              <img src="/kanoz-logo.png" alt="Kanoz" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+              {isDemoMode() ? (
+                <DemoMark size={28} />
+              ) : (
+                <img src="/kanoz-logo.png" alt="Kanoz" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+              )}
             </div>
             <div>
               <div style={{ color: 'white', fontWeight: 700, fontSize: 18 }}>Welcome, {employee?.name?.split(' ')[0] || 'User'}</div>

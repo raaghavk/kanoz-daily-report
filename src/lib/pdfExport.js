@@ -1,4 +1,9 @@
-// pdfExport.js — Kanoz Biomass · Template-matched PDF reports
+// pdfExport.js — Demo Bio Pellets · Template-matched PDF reports
+import { isDemoMode, DEMO_APP_NAME } from './demo/mode.js'
+
+function pdfSiteLabel() {
+  return isDemoMode() ? DEMO_APP_NAME : 'app.kanoz.in'
+}
 
 let jsPDFLoaded = null
 async function loadJsPDF() {
@@ -297,7 +302,7 @@ export async function exportDispatchPDF(dispatch, createdByName) {
     ? new Date(dispatch.created_at).toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })
     : dateStr
   const createdStr = 'Created by ' + (createdByName || 'Unknown') + ' · ' + dateStr + ' at ' + (createdAt.split(', ')[1] || createdAt)
-  const genStr     = 'app.kanoz.in · Generated ' + fmtNow()
+  const genStr     = pdfSiteLabel() + ' · Generated ' + fmtNow()
   const totalPages = doc.getNumberOfPages()
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i)
@@ -380,7 +385,7 @@ export async function exportPurchasePDF(purchase, createdByName) {
     ? new Date(purchase.created_at).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
     : timeStr
   const createdStr = 'Created by ' + (createdByName || 'Unknown') + ' · ' + dateStr + ' at ' + createdTime
-  const genStr     = 'app.kanoz.in · Generated ' + fmtNow()
+  const genStr     = pdfSiteLabel() + ' · Generated ' + fmtNow()
   const totalPages = doc.getNumberOfPages()
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i)
@@ -649,7 +654,7 @@ export async function exportShiftReportPDF(report, data) {
   }
 
   // ── Per-page footer ───────────────────────────────────────────────────────
-  const reportUrl  = 'app.kanoz.in/reports/' + report.id
+  const reportUrl  = pdfSiteLabel() + '/reports/' + report.id
   const genStr     = 'Generated ' + fmtNow()
   const totalPages = doc.getNumberOfPages()
   for (let i = 1; i <= totalPages; i++) {

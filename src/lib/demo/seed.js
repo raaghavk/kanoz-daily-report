@@ -81,7 +81,7 @@ export function createDemoSeed(now = new Date()) {
   const organizations = [{
     id: IDS.org,
     name: DEMO_ORG_NAME,
-    slug: 'acme-biomass-demo',
+    slug: 'shree-demo-biopellets',
     logo_url: null,
     created_at: isoDaysAgo(120),
     updated_at: isoDaysAgo(1),
@@ -92,8 +92,8 @@ export function createDemoSeed(now = new Date()) {
     org_id: IDS.org,
     name: DEMO_PLANT_NAME,
     code: 'RIV-01',
-    address: '100 Demo Riverside Way, Sample County',
-    state: 'Demo State',
+    address: 'Plot 14, Industrial Area, Bargadwa, Gorakhpur, Uttar Pradesh 273007',
+    state: 'Uttar Pradesh',
     is_active: true,
     financial_year_start: `${now.getFullYear()}-04-01`,
     stock_opening_date: openingDate,
@@ -112,49 +112,49 @@ export function createDemoSeed(now = new Date()) {
   const employees = [
     {
       id: IDS.empJordan, org_id: IDS.org, plant_id: IDS.plant,
-      name: 'Jordan Admin', mobile: '+1-555-0100', role: 'admin', is_active: true,
+      name: 'Rohan Sharma', mobile: '+91 98765 01001', role: 'admin', is_active: true,
       auth_user_id: IDS.authJordan, email: DEMO_EMAIL,
       worker_type: 'staff', created_at: isoDaysAgo(100), updated_at: isoDaysAgo(1),
     },
     {
       id: IDS.empSam, org_id: IDS.org, plant_id: IDS.plant,
-      name: 'Sam Supervisor', mobile: '+1-555-0101', role: 'supervisor', is_active: true,
-      auth_user_id: null, email: 'sam.supervisor@acme-biomass.example',
+      name: 'Sandeep Yadav', mobile: '+91 98765 01002', role: 'supervisor', is_active: true,
+      auth_user_id: null, email: 'sandeep.yadav@shree-biopellets.example',
       worker_type: 'staff', created_at: isoDaysAgo(90), updated_at: isoDaysAgo(2),
     },
     {
       id: IDS.empAlex, org_id: IDS.org, plant_id: IDS.plant,
-      name: 'Alex Operator', mobile: '+1-555-0102', role: 'supervisor', is_active: true,
-      auth_user_id: null, email: 'alex.operator@acme-biomass.example',
+      name: 'Amit Verma', mobile: '+91 98765 01003', role: 'supervisor', is_active: true,
+      auth_user_id: null, email: 'amit.verma@shree-biopellets.example',
       worker_type: 'staff', created_at: isoDaysAgo(80), updated_at: isoDaysAgo(3),
     },
     {
       id: IDS.empRiley, org_id: IDS.org, plant_id: IDS.plant,
-      name: 'Riley Manager', mobile: '+1-555-0103', role: 'plant_manager', is_active: true,
-      auth_user_id: null, email: 'riley.manager@acme-biomass.example',
+      name: 'Priya Singh', mobile: '+91 98765 01004', role: 'plant_manager', is_active: true,
+      auth_user_id: null, email: 'priya.singh@shree-biopellets.example',
       worker_type: 'staff', created_at: isoDaysAgo(70), updated_at: isoDaysAgo(4),
     },
     {
       id: IDS.empCasey, org_id: IDS.org, plant_id: IDS.plant,
-      name: 'Casey Purchase', mobile: '+1-555-0104', role: 'purchase_manager', is_active: true,
-      auth_user_id: null, email: 'casey.purchase@acme-biomass.example',
+      name: 'Ankit Tiwari', mobile: '+91 98765 01005', role: 'purchase_manager', is_active: true,
+      auth_user_id: null, email: 'ankit.tiwari@shree-biopellets.example',
       worker_type: 'staff', created_at: isoDaysAgo(65), updated_at: isoDaysAgo(4),
     },
     {
       id: IDS.empMorgan, org_id: IDS.org, plant_id: IDS.plant,
-      name: 'Morgan Accounts', mobile: '+1-555-0105', role: 'accountant', is_active: true,
-      auth_user_id: null, email: 'morgan.accounts@acme-biomass.example',
+      name: 'Neha Gupta', mobile: '+91 98765 01006', role: 'accountant', is_active: true,
+      auth_user_id: null, email: 'neha.gupta@shree-biopellets.example',
       worker_type: 'staff', created_at: isoDaysAgo(60), updated_at: isoDaysAgo(5),
     },
     {
       id: IDS.empLee, org_id: IDS.org, plant_id: IDS.plant,
-      name: 'Lee Driver', mobile: '+1-555-0106', role: 'supervisor', is_active: true,
+      name: 'Raju', mobile: '+91 98765 01007', role: 'supervisor', is_active: true,
       auth_user_id: null, email: null, worker_type: 'driver', labour_daily_wage: 900,
       created_at: isoDaysAgo(40), updated_at: isoDaysAgo(1),
     },
     {
       id: IDS.empPat, org_id: IDS.org, plant_id: IDS.plant,
-      name: 'Pat Labour', mobile: '+1-555-0107', role: 'supervisor', is_active: true,
+      name: 'Munna', mobile: '+91 98765 01008', role: 'supervisor', is_active: true,
       auth_user_id: null, email: null, worker_type: 'labour', labour_daily_wage: 650,
       created_at: isoDaysAgo(30), updated_at: isoDaysAgo(1),
     },
@@ -197,30 +197,30 @@ export function createDemoSeed(now = new Date()) {
   ]
 
   const customers = [
-    { id: IDS.custNorthwind, org_id: IDS.org, name: 'Northwind Biofuel Co.', mobile: '+1-555-0140', address: '12 Harbor Ave, Sample Port', contact_person: 'Riley Chen', contact_phone: '+1-555-0141', gst_number: 'DEMOGST0001', email: 'ops@northwind.example', account_owner: 'Jordan Admin', notes: 'Contract customer — weekly 2 trucks', is_active: true },
-    { id: IDS.custCedar, org_id: IDS.org, name: 'Cedar Ridge Energy', mobile: '+1-555-0142', address: '88 Ridge Road, Cedar Demo', contact_person: 'Morgan Patel', contact_phone: '+1-555-0143', gst_number: 'DEMOGST0002', email: 'buying@cedarridge.example', account_owner: 'Sam Supervisor', notes: null, is_active: true },
-    { id: IDS.custGreenfield, org_id: IDS.org, name: 'Greenfield Mills Ltd.', mobile: '+1-555-0144', address: '5 Mill Lane, Greenfield Demo', contact_person: 'Casey Nguyen', contact_phone: '+1-555-0145', gst_number: 'DEMOGST0003', email: 'procurement@greenfield.example', account_owner: 'Jordan Admin', notes: 'Industrial Mix only', is_active: true },
+    { id: IDS.custNorthwind, org_id: IDS.org, name: 'Purvanchal Agro Energy Pvt Ltd', mobile: '+91 94152 22101', address: 'GIDA, Sahjanwa, Gorakhpur, Uttar Pradesh 273209', contact_person: 'Vikram Singh', contact_phone: '+91 94152 22111', gst_number: '09AABCD1234E1Z5', email: 'ops@purvanchal-agro.example', account_owner: 'Rohan Sharma', notes: 'Contract customer — weekly 2 trucks', is_active: true },
+    { id: IDS.custCedar, org_id: IDS.org, name: 'Kashi Steam Boilers', mobile: '+91 94152 22102', address: 'DLW Road, Varanasi, Uttar Pradesh 221004', contact_person: 'Meena Tiwari', contact_phone: '+91 94152 22112', gst_number: '09AABCE5678F1Z2', email: 'buying@kashi-boilers.example', account_owner: 'Sandeep Yadav', notes: null, is_active: true },
+    { id: IDS.custGreenfield, org_id: IDS.org, name: 'Awadh Paper Mills', mobile: '+91 94152 22103', address: 'Talkatora Industrial Estate, Lucknow, Uttar Pradesh 226011', contact_person: 'Arjun Mishra', contact_phone: '+91 94152 22113', gst_number: '09AABCF9012G1Z8', email: 'procurement@awadh-paper.example', account_owner: 'Rohan Sharma', notes: 'Industrial Mix only', is_active: true },
   ]
 
   const suppliers = [
-    { id: IDS.supOak, org_id: IDS.org, plant_id: IDS.plant, name: 'Oak Valley Timber', mobile: '+1-555-0160', raw_material_type: 'Wood Log', rate_offered: 4.2, sample_gcv: 3250, address: 'Oak Valley Demo', is_active: true },
-    { id: IDS.supPine, org_id: IDS.org, plant_id: IDS.plant, name: 'Pinecrest Biomass', mobile: '+1-555-0161', raw_material_type: 'Rice Husk', rate_offered: 3.1, sample_gcv: 3050, address: 'Pinecrest Demo', is_active: true },
-    { id: IDS.supRiver, org_id: IDS.org, plant_id: IDS.plant, name: 'Riverbend Sawmill', mobile: '+1-555-0162', raw_material_type: 'Saw Dust', rate_offered: 3.8, sample_gcv: 3380, address: 'Riverbend Demo', is_active: true },
+    { id: IDS.supOak, org_id: IDS.org, plant_id: IDS.plant, name: 'Maharajganj Timber Traders', mobile: '+91 94152 33101', raw_material_type: 'Wood Log', rate_offered: 4.2, sample_gcv: 3250, address: 'NH-27, Maharajganj, Uttar Pradesh 273303', is_active: true },
+    { id: IDS.supPine, org_id: IDS.org, plant_id: IDS.plant, name: 'Deoria Rice Mill Co-op', mobile: '+91 94152 33102', raw_material_type: 'Rice Husk', rate_offered: 3.1, sample_gcv: 3050, address: 'Industrial Estate, Deoria, Uttar Pradesh 274001', is_active: true },
+    { id: IDS.supRiver, org_id: IDS.org, plant_id: IDS.plant, name: 'Kushinagar Sawdust Yard', mobile: '+91 94152 33103', raw_material_type: 'Saw Dust', rate_offered: 3.8, sample_gcv: 3380, address: 'Kasia Road, Kushinagar, Uttar Pradesh 274403', is_active: true },
   ]
 
   const transporters = [
-    { id: IDS.trSummit, org_id: IDS.org, name: 'Summit Haulage', phone: '+1-555-0170', address: 'Summit Depot, Demo', is_active: true },
-    { id: IDS.trLakeside, org_id: IDS.org, name: 'Lakeside Logistics', phone: '+1-555-0171', address: 'Lakeside Yard, Demo', is_active: true },
+    { id: IDS.trSummit, org_id: IDS.org, name: 'Purvanchal Roadways', phone: '+91 94152 44101', address: 'Transport Nagar, Gorakhpur, Uttar Pradesh 273001', is_active: true },
+    { id: IDS.trLakeside, org_id: IDS.org, name: 'Ganga Freight', phone: '+91 94152 44102', address: 'DLW Road, Varanasi, Uttar Pradesh 221004', is_active: true },
   ]
 
   const vehicles = [
-    { id: IDS.vehAcme1, plant_id: IDS.plant, number: 'DEMO-101', type: 'company', vehicle_type: 'tractor', is_active: true },
-    { id: IDS.vehAcme2, plant_id: IDS.plant, number: 'DEMO-102', type: 'company', vehicle_type: 'tractor', is_active: true },
+    { id: IDS.vehAcme1, plant_id: IDS.plant, number: 'UP53 AB 1234', type: 'company', vehicle_type: 'tractor', is_active: true },
+    { id: IDS.vehAcme2, plant_id: IDS.plant, number: 'UP53 CD 5678', type: 'company', vehicle_type: 'tractor', is_active: true },
   ]
 
   const transporter_vehicles = [
-    { id: IDS.tvSummit1, transporter_id: IDS.trSummit, vehicle_number: 'SH-4401', is_active: true },
-    { id: IDS.tvLake1, transporter_id: IDS.trLakeside, vehicle_number: 'LL-2209', is_active: true },
+    { id: IDS.tvSummit1, transporter_id: IDS.trSummit, vehicle_number: 'UP53 EF 9012', is_active: true },
+    { id: IDS.tvLake1, transporter_id: IDS.trLakeside, vehicle_number: 'UP65 GH 3456', is_active: true },
   ]
 
   const storage_plots = [
@@ -398,11 +398,11 @@ export function createDemoSeed(now = new Date()) {
   })
 
   const dispatchSpecs = [
-    { n: 1, days: 0, customer: IDS.custNorthwind, truck: 'SH-4401', dest: 'Northwind Harbor Terminal', mt: 12, type: IDS.ptGradeA, transporter: IDS.trSummit, name: 'Summit Haulage', time: '14:20:00', serial: 'DS-1044', invoice: 'INV-8801', driver: 'Taylor Reed', phone: '+1-555-0180' },
-    { n: 2, days: -1, customer: IDS.custCedar, truck: 'LL-2209', dest: 'Cedar Ridge Plant Gate', mt: 10, type: IDS.ptGradeA, transporter: IDS.trLakeside, name: 'Lakeside Logistics', time: '11:05:00', serial: 'DS-1043', invoice: 'INV-8800', driver: 'Jamie Brooks', phone: '+1-555-0181' },
-    { n: 3, days: -1, customer: IDS.custGreenfield, truck: 'GF-1188', dest: 'Greenfield Mills siding', mt: 8, type: IDS.ptIndustrial, transporter: IDS.trSummit, name: 'Summit Haulage', time: '16:40:00', serial: 'DS-1042', invoice: 'INV-8799', driver: 'Quinn Alvarez', phone: '+1-555-0182' },
-    { n: 4, days: -3, customer: IDS.custNorthwind, truck: 'SH-4401', dest: 'Northwind Harbor Terminal', mt: 12, type: IDS.ptGradeA, transporter: IDS.trSummit, name: 'Summit Haulage', time: '13:10:00', serial: 'DS-1041', invoice: 'INV-8798', driver: 'Taylor Reed', phone: '+1-555-0180' },
-    { n: 5, days: -4, customer: IDS.custCedar, truck: 'LL-2209', dest: 'Cedar Ridge Plant Gate', mt: 9.5, type: IDS.ptGradeB, transporter: IDS.trLakeside, name: 'Lakeside Logistics', time: '10:30:00', serial: 'DS-1040', invoice: 'INV-8797', driver: 'Jamie Brooks', phone: '+1-555-0181' },
+    { n: 1, days: 0, customer: IDS.custNorthwind, truck: 'UP53 EF 9012', dest: 'GIDA, Sahjanwa, Gorakhpur', mt: 12, type: IDS.ptGradeA, transporter: IDS.trSummit, name: 'Purvanchal Roadways', time: '14:20:00', serial: 'DS-1044', invoice: 'INV-8801', driver: 'Manoj Yadav', phone: '+91 94152 66101' },
+    { n: 2, days: -1, customer: IDS.custCedar, truck: 'UP65 GH 3456', dest: 'DLW Colony Gate, Varanasi', mt: 10, type: IDS.ptGradeA, transporter: IDS.trLakeside, name: 'Ganga Freight', time: '11:05:00', serial: 'DS-1043', invoice: 'INV-8800', driver: 'Imran Ali', phone: '+91 94152 66102' },
+    { n: 3, days: -1, customer: IDS.custGreenfield, truck: 'UP32 JK 7788', dest: 'Talkatora Industrial Estate, Lucknow', mt: 8, type: IDS.ptIndustrial, transporter: IDS.trSummit, name: 'Purvanchal Roadways', time: '16:40:00', serial: 'DS-1042', invoice: 'INV-8799', driver: 'Santosh Gupta', phone: '+91 94152 66103' },
+    { n: 4, days: -3, customer: IDS.custNorthwind, truck: 'UP53 EF 9012', dest: 'GIDA, Sahjanwa, Gorakhpur', mt: 12, type: IDS.ptGradeA, transporter: IDS.trSummit, name: 'Purvanchal Roadways', time: '13:10:00', serial: 'DS-1041', invoice: 'INV-8798', driver: 'Manoj Yadav', phone: '+91 94152 66101' },
+    { n: 5, days: -4, customer: IDS.custCedar, truck: 'UP65 GH 3456', dest: 'DLW Colony Gate, Varanasi', mt: 9.5, type: IDS.ptGradeB, transporter: IDS.trLakeside, name: 'Ganga Freight', time: '10:30:00', serial: 'DS-1040', invoice: 'INV-8797', driver: 'Imran Ali', phone: '+91 94152 66102' },
   ]
 
   const vehicle_dispatches = dispatchSpecs.map(s => {
@@ -450,14 +450,14 @@ export function createDemoSeed(now = new Date()) {
   }))
 
   const purchaseSpecs = [
-    { n: 1, days: 0, sup: IDS.supOak, rm: IDS.rmWoodLog, rmName: 'Wood Log', kg: 12000, rate: 4.2, pay: 'Pending', rmPay: 'Pending', trPay: 'Paid', serial: 'RM-2401', vehicle: 'DEMO-101', owner: 'Company Owned' },
-    { n: 2, days: -1, sup: IDS.supPine, rm: IDS.rmRiceHusk, rmName: 'Rice Husk', kg: 6000, rate: 3.1, pay: 'Paid', rmPay: 'Paid', trPay: 'Paid', serial: 'RM-2400', vehicle: 'PB-3302', owner: 'Pinecrest Biomass' },
-    { n: 3, days: -2, sup: IDS.supRiver, rm: IDS.rmSawDust, rmName: 'Saw Dust', kg: 8000, rate: 3.8, pay: 'Pending', rmPay: 'Paid', trPay: 'Pending', serial: 'RM-2399', vehicle: 'LL-2209', owner: 'Lakeside Logistics' },
-    { n: 4, days: -3, sup: IDS.supOak, rm: IDS.rmWoodLog, rmName: 'Wood Log', kg: 14000, rate: 4.15, pay: 'Paid', rmPay: 'Paid', trPay: 'Paid', serial: 'RM-2398', vehicle: 'DEMO-102', owner: 'Company Owned' },
-    { n: 5, days: -5, sup: IDS.supPine, rm: IDS.rmRiceHusk, rmName: 'Rice Husk', kg: 5000, rate: 3.05, pay: 'Paid', rmPay: 'Paid', trPay: 'Paid', serial: 'RM-2397', vehicle: 'PB-3302', owner: 'Pinecrest Biomass' },
-    { n: 6, days: -6, sup: IDS.supOak, rm: IDS.rmBinder, rmName: 'Binder', kg: 400, rate: 18.5, pay: 'Pending', rmPay: 'Pending', trPay: 'Paid', serial: 'RM-2396', vehicle: 'DEMO-101', owner: 'Company Owned' },
-    { n: 7, days: -8, sup: IDS.supRiver, rm: IDS.rmSawDust, rmName: 'Saw Dust', kg: 7500, rate: 3.75, pay: 'Paid', rmPay: 'Paid', trPay: 'Paid', serial: 'RM-2395', vehicle: 'RB-1190', owner: 'Riverbend Sawmill' },
-    { n: 8, days: -10, sup: IDS.supOak, rm: IDS.rmWoodLog, rmName: 'Wood Log', kg: 11000, rate: 4.25, pay: 'Pending', rmPay: 'Pending', trPay: 'Pending', serial: 'RM-2394', vehicle: 'SH-4401', owner: 'Summit Haulage' },
+    { n: 1, days: 0, sup: IDS.supOak, rm: IDS.rmWoodLog, rmName: 'Wood Log', kg: 12000, rate: 4.2, pay: 'Pending', rmPay: 'Pending', trPay: 'Paid', serial: 'RM-2401', vehicle: 'UP53 AB 1234', owner: 'Company Owned' },
+    { n: 2, days: -1, sup: IDS.supPine, rm: IDS.rmRiceHusk, rmName: 'Rice Husk', kg: 6000, rate: 3.1, pay: 'Paid', rmPay: 'Paid', trPay: 'Paid', serial: 'RM-2400', vehicle: 'UP52 PQ 2211', owner: 'Deoria Rice Mill Co-op' },
+    { n: 3, days: -2, sup: IDS.supRiver, rm: IDS.rmSawDust, rmName: 'Saw Dust', kg: 8000, rate: 3.8, pay: 'Pending', rmPay: 'Paid', trPay: 'Pending', serial: 'RM-2399', vehicle: 'UP65 GH 3456', owner: 'Ganga Freight' },
+    { n: 4, days: -3, sup: IDS.supOak, rm: IDS.rmWoodLog, rmName: 'Wood Log', kg: 14000, rate: 4.15, pay: 'Paid', rmPay: 'Paid', trPay: 'Paid', serial: 'RM-2398', vehicle: 'UP53 CD 5678', owner: 'Company Owned' },
+    { n: 5, days: -5, sup: IDS.supPine, rm: IDS.rmRiceHusk, rmName: 'Rice Husk', kg: 5000, rate: 3.05, pay: 'Paid', rmPay: 'Paid', trPay: 'Paid', serial: 'RM-2397', vehicle: 'BR01 LM 3344', owner: 'Deoria Rice Mill Co-op' },
+    { n: 6, days: -6, sup: IDS.supOak, rm: IDS.rmBinder, rmName: 'Binder', kg: 400, rate: 18.5, pay: 'Pending', rmPay: 'Pending', trPay: 'Paid', serial: 'RM-2396', vehicle: 'UP53 AB 1234', owner: 'Company Owned' },
+    { n: 7, days: -8, sup: IDS.supRiver, rm: IDS.rmSawDust, rmName: 'Saw Dust', kg: 7500, rate: 3.75, pay: 'Paid', rmPay: 'Paid', trPay: 'Paid', serial: 'RM-2395', vehicle: 'UP57 RS 3344', owner: 'Kushinagar Sawdust Yard' },
+    { n: 8, days: -10, sup: IDS.supOak, rm: IDS.rmWoodLog, rmName: 'Wood Log', kg: 11000, rate: 4.25, pay: 'Pending', rmPay: 'Pending', trPay: 'Pending', serial: 'RM-2394', vehicle: 'UP53 EF 9012', owner: 'Purvanchal Roadways' },
   ]
 
   const raw_material_purchases = purchaseSpecs.map(s => {
@@ -476,7 +476,7 @@ export function createDemoSeed(now = new Date()) {
       supplier_name: suppliers.find(x => x.id === s.sup)?.name,
       vehicle_number: s.vehicle,
       tractor_owner: s.owner,
-      transporter_id: s.owner.includes('Summit') ? IDS.trSummit : s.owner.includes('Lakeside') ? IDS.trLakeside : null,
+      transporter_id: s.owner.includes('Purvanchal') ? IDS.trSummit : s.owner.includes('Ganga') ? IDS.trLakeside : null,
       raw_material_type: s.rmName,
       raw_material_type_id: s.rm,
       quantity_kg: qty,
@@ -529,41 +529,41 @@ export function createDemoSeed(now = new Date()) {
   ]
 
   const spare_parts_suppliers = [
-    { id: IDS.spSupMech, org_id: IDS.org, name: 'MechParts Demo Supply', contact_person: 'Drew Kline', phone: '+1-555-0190', is_active: true, is_repair_shop: false },
-    { id: IDS.spSupElec, org_id: IDS.org, name: 'Volt & Gear Distributors', contact_person: 'Avery Shah', phone: '+1-555-0191', is_active: true, is_repair_shop: false },
-    { id: IDS.spSupRepair, org_id: IDS.org, name: 'Acme Rewind Demo Shop', contact_person: 'Robin Hale', phone: '+1-555-0192', is_active: true, is_repair_shop: true },
+    { id: IDS.spSupMech, org_id: IDS.org, name: 'Gorakhpur Industrial Traders', contact_person: 'Rakesh Kumar', phone: '+91 94152 55101', is_active: true, is_repair_shop: false },
+    { id: IDS.spSupElec, org_id: IDS.org, name: 'Purvanchal Electricals', contact_person: 'Sunita Devi', phone: '+91 94152 55102', is_active: true, is_repair_shop: false },
+    { id: IDS.spSupRepair, org_id: IDS.org, name: 'Gorakhpur Motor Rewind Works', contact_person: 'Dinesh Yadav', phone: '+91 94152 55103', is_active: true, is_repair_shop: true },
   ]
 
   const spare_parts_purchases = [
-    { id: 'a0000001-d000-4000-8000-00000000c001', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBearing, supplier_id: IDS.spSupMech, quantity: 8, rate_per_unit: 1850, total_amount: 14800, purchase_date: d(-12), bill_number: 'BL-110', purchased_by: 'Jordan Admin', gst_percent: 18, gst_amount: 2664, grand_total: 17464 },
-    { id: 'a0000001-d000-4000-8000-00000000c002', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBelt, supplier_id: IDS.spSupMech, quantity: 3, rate_per_unit: 2400, total_amount: 7200, purchase_date: d(-20), bill_number: 'BL-108', purchased_by: 'Sam Supervisor', gst_percent: 18, gst_amount: 1296, grand_total: 8496 },
-    { id: 'a0000001-d000-4000-8000-00000000c003', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partFilter, supplier_id: IDS.spSupMech, quantity: 6, rate_per_unit: 420, total_amount: 2520, purchase_date: d(-8), bill_number: 'BL-112', purchased_by: 'Alex Operator', gst_percent: 18, gst_amount: 453.6, grand_total: 2973.6 },
-    { id: 'a0000001-d000-4000-8000-00000000c004', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partOil, supplier_id: IDS.spSupMech, quantity: 40, rate_per_unit: 310, total_amount: 12400, purchase_date: d(-15), bill_number: 'BL-109', purchased_by: 'Jordan Admin', gst_percent: 18, gst_amount: 2232, grand_total: 14632 },
-    { id: 'a0000001-d000-4000-8000-00000000c005', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partSensor, supplier_id: IDS.spSupElec, quantity: 4, rate_per_unit: 980, total_amount: 3920, purchase_date: d(0), bill_number: 'BL-115', purchased_by: 'Sam Supervisor', gst_percent: 18, gst_amount: 705.6, grand_total: 4625.6 },
-    { id: 'a0000001-d000-4000-8000-00000000c006', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partDie, supplier_id: IDS.spSupMech, quantity: 1, rate_per_unit: 18500, total_amount: 18500, purchase_date: d(-30), bill_number: 'BL-101', purchased_by: 'Jordan Admin', gst_percent: 18, gst_amount: 3330, grand_total: 21830 },
-    { id: 'a0000001-d000-4000-8000-00000000c007', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partMotor, supplier_id: IDS.spSupElec, quantity: 1, rate_per_unit: 22000, total_amount: 22000, purchase_date: d(-40), bill_number: 'BL-098', purchased_by: 'Jordan Admin', gst_percent: 18, gst_amount: 3960, grand_total: 25960 },
+    { id: 'a0000001-d000-4000-8000-00000000c001', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBearing, supplier_id: IDS.spSupMech, quantity: 8, rate_per_unit: 1850, total_amount: 14800, purchase_date: d(-12), bill_number: 'BL-110', purchased_by: 'Rohan Sharma', gst_percent: 18, gst_amount: 2664, grand_total: 17464 },
+    { id: 'a0000001-d000-4000-8000-00000000c002', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBelt, supplier_id: IDS.spSupMech, quantity: 3, rate_per_unit: 2400, total_amount: 7200, purchase_date: d(-20), bill_number: 'BL-108', purchased_by: 'Sandeep Yadav', gst_percent: 18, gst_amount: 1296, grand_total: 8496 },
+    { id: 'a0000001-d000-4000-8000-00000000c003', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partFilter, supplier_id: IDS.spSupMech, quantity: 6, rate_per_unit: 420, total_amount: 2520, purchase_date: d(-8), bill_number: 'BL-112', purchased_by: 'Amit Verma', gst_percent: 18, gst_amount: 453.6, grand_total: 2973.6 },
+    { id: 'a0000001-d000-4000-8000-00000000c004', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partOil, supplier_id: IDS.spSupMech, quantity: 40, rate_per_unit: 310, total_amount: 12400, purchase_date: d(-15), bill_number: 'BL-109', purchased_by: 'Rohan Sharma', gst_percent: 18, gst_amount: 2232, grand_total: 14632 },
+    { id: 'a0000001-d000-4000-8000-00000000c005', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partSensor, supplier_id: IDS.spSupElec, quantity: 4, rate_per_unit: 980, total_amount: 3920, purchase_date: d(0), bill_number: 'BL-115', purchased_by: 'Sandeep Yadav', gst_percent: 18, gst_amount: 705.6, grand_total: 4625.6 },
+    { id: 'a0000001-d000-4000-8000-00000000c006', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partDie, supplier_id: IDS.spSupMech, quantity: 1, rate_per_unit: 18500, total_amount: 18500, purchase_date: d(-30), bill_number: 'BL-101', purchased_by: 'Rohan Sharma', gst_percent: 18, gst_amount: 3330, grand_total: 21830 },
+    { id: 'a0000001-d000-4000-8000-00000000c007', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partMotor, supplier_id: IDS.spSupElec, quantity: 1, rate_per_unit: 22000, total_amount: 22000, purchase_date: d(-40), bill_number: 'BL-098', purchased_by: 'Rohan Sharma', gst_percent: 18, gst_amount: 3960, grand_total: 25960 },
   ]
 
   const spare_parts_usage = [
-    { id: 'a0000001-d000-4000-8000-00000000d001', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBearing, quantity: 2, usage_date: d(-6), used_by: 'Alex Operator', notes: 'Pellet Mill 1' },
-    { id: 'a0000001-d000-4000-8000-00000000d002', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBelt, quantity: 2, usage_date: d(-2), used_by: 'Sam Supervisor', notes: 'Dryer tracking' },
-    { id: 'a0000001-d000-4000-8000-00000000d003', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partFilter, quantity: 1, usage_date: d(0), used_by: 'Alex Operator', notes: 'Generator service' },
-    { id: 'a0000001-d000-4000-8000-00000000d004', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partOil, quantity: 8, usage_date: d(-4), used_by: 'Alex Operator', notes: 'Gearbox top-up' },
-    { id: 'a0000001-d000-4000-8000-00000000d005', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partSensor, quantity: 1, usage_date: d(-9), used_by: 'Sam Supervisor', notes: 'Dryer outlet' },
+    { id: 'a0000001-d000-4000-8000-00000000d001', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBearing, quantity: 2, usage_date: d(-6), used_by: 'Amit Verma', notes: 'Pellet Mill 1' },
+    { id: 'a0000001-d000-4000-8000-00000000d002', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBelt, quantity: 2, usage_date: d(-2), used_by: 'Sandeep Yadav', notes: 'Dryer tracking' },
+    { id: 'a0000001-d000-4000-8000-00000000d003', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partFilter, quantity: 1, usage_date: d(0), used_by: 'Amit Verma', notes: 'Generator service' },
+    { id: 'a0000001-d000-4000-8000-00000000d004', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partOil, quantity: 8, usage_date: d(-4), used_by: 'Amit Verma', notes: 'Gearbox top-up' },
+    { id: 'a0000001-d000-4000-8000-00000000d005', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partSensor, quantity: 1, usage_date: d(-9), used_by: 'Sandeep Yadav', notes: 'Dryer outlet' },
   ]
 
   const spare_parts_reorder_requests = [
-    { id: 'a0000001-d000-4000-8000-00000000e001', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBelt, status: 'pending', requested_by: 'Sam Supervisor', requested_at: isoDaysAgo(1, 9), notes: 'Second spare after dryer tracking issue' },
-    { id: 'a0000001-d000-4000-8000-00000000e002', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partOil, status: 'ordered', requested_by: 'Alex Operator', requested_at: isoDaysAgo(5, 11), ordered_by: 'Jordan Admin', ordered_at: isoDaysAgo(4, 15), expected_delivery_date: d(2), supplier_name: 'MechParts Demo Supply', notes: null },
+    { id: 'a0000001-d000-4000-8000-00000000e001', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partBelt, status: 'pending', requested_by: 'Sandeep Yadav', requested_at: isoDaysAgo(1, 9), notes: 'Second spare after dryer tracking issue' },
+    { id: 'a0000001-d000-4000-8000-00000000e002', org_id: IDS.org, plant_id: IDS.plant, part_id: IDS.partOil, status: 'ordered', requested_by: 'Amit Verma', requested_at: isoDaysAgo(5, 11), ordered_by: 'Rohan Sharma', ordered_at: isoDaysAgo(4, 15), expected_delivery_date: d(2), supplier_name: 'Gorakhpur Industrial Traders', notes: null },
   ]
 
   const tasks = [
     { id: taskId(1), org_id: IDS.org, plant_id: IDS.plant, title: 'Check dryer belt tension before Shift A', due_date: today, assigned_to_employee_id: IDS.empAlex, assigned_by_employee_id: IDS.empJordan, status: 'open', completion_note: null, created_at: isoDaysAgo(0, 7), done_at: null, closed_at: null },
     { id: taskId(2), org_id: IDS.org, plant_id: IDS.plant, title: 'Follow up loader hydraulic hose', due_date: d(1), assigned_to_employee_id: IDS.empSam, assigned_by_employee_id: IDS.empJordan, status: 'open', completion_note: null, created_at: isoDaysAgo(3, 8), done_at: null, closed_at: null },
-    { id: taskId(3), org_id: IDS.org, plant_id: IDS.plant, title: 'Reorder gearbox oil ISO 320', due_date: d(-1), assigned_to_employee_id: IDS.empAlex, assigned_by_employee_id: IDS.empSam, status: 'done', completion_note: 'PO sent to MechParts Demo Supply', created_at: isoDaysAgo(5, 10), done_at: isoDaysAgo(4, 16), closed_at: null },
+    { id: taskId(3), org_id: IDS.org, plant_id: IDS.plant, title: 'Reorder gearbox oil ISO 320', due_date: d(-1), assigned_to_employee_id: IDS.empAlex, assigned_by_employee_id: IDS.empSam, status: 'done', completion_note: 'PO sent to Gorakhpur Industrial Traders', created_at: isoDaysAgo(5, 10), done_at: isoDaysAgo(4, 16), closed_at: null },
     { id: taskId(4), org_id: IDS.org, plant_id: IDS.plant, title: 'Calibrate weighbridge weekly check', due_date: d(2), assigned_to_employee_id: IDS.empSam, assigned_by_employee_id: IDS.empJordan, status: 'open', completion_note: null, created_at: isoDaysAgo(1, 9), done_at: null, closed_at: null },
     { id: taskId(5), org_id: IDS.org, plant_id: IDS.plant, title: 'Update Grade A bag stencil count', due_date: d(-2), assigned_to_employee_id: IDS.empAlex, assigned_by_employee_id: IDS.empSam, status: 'closed', completion_note: 'Stencil inventory updated', created_at: isoDaysAgo(6, 12), done_at: isoDaysAgo(3, 11), closed_at: isoDaysAgo(2, 18) },
-    { id: taskId(6), org_id: IDS.org, plant_id: IDS.plant, title: 'Northwind weekly schedule confirm', due_date: d(3), assigned_to_employee_id: IDS.empSam, assigned_by_employee_id: IDS.empJordan, status: 'open', completion_note: null, created_at: isoDaysAgo(0, 8), done_at: null, closed_at: null },
+    { id: taskId(6), org_id: IDS.org, plant_id: IDS.plant, title: 'Purvanchal Agro weekly schedule confirm', due_date: d(3), assigned_to_employee_id: IDS.empSam, assigned_by_employee_id: IDS.empJordan, status: 'open', completion_note: null, created_at: isoDaysAgo(0, 8), done_at: null, closed_at: null },
     { id: taskId(7), org_id: IDS.org, plant_id: IDS.plant, title: 'Clean cyclone after rice husk fines', due_date: today, assigned_to_employee_id: IDS.empAlex, assigned_by_employee_id: IDS.empSam, status: 'open', completion_note: null, created_at: isoDaysAgo(1, 19), done_at: null, closed_at: null },
   ]
 
@@ -624,14 +624,14 @@ export function createDemoSeed(now = new Date()) {
       id: 'a0000001-d000-4000-8000-00000000h001', plant_id: IDS.plant, org_id: IDS.org,
       from_plot_id: IDS.plotCovered, to_plot_id: IDS.plotYard,
       raw_material_type_id: IDS.rmSawDust, raw_material_name: 'Saw Dust',
-      quantity_kg: 3500, transfer_date: d(-2), vehicle_number: 'DEMO-101',
+      quantity_kg: 3500, transfer_date: d(-2), vehicle_number: 'UP53 AB 1234',
       notes: 'Sample yard consolidation — fictional', created_by: IDS.empSam, is_deleted: false,
     },
     {
       id: 'a0000001-d000-4000-8000-00000000h002', plant_id: IDS.plant, org_id: IDS.org,
       from_plot_id: IDS.plotYard, to_plot_id: IDS.plotCovered,
       raw_material_type_id: IDS.rmRiceHusk, raw_material_name: 'Rice Husk',
-      quantity_kg: 2000, transfer_date: d(-5), vehicle_number: 'DEMO-102',
+      quantity_kg: 2000, transfer_date: d(-5), vehicle_number: 'UP53 CD 5678',
       notes: 'Covered shed before rain drill (sample)', created_by: IDS.empRiley, is_deleted: false,
     },
   ]
@@ -661,7 +661,7 @@ export function createDemoSeed(now = new Date()) {
     {
       id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, code: 'FAN-0001', asset_type: 'Fan',
       name: 'Dryer Exhaust Fan', make: 'Crompton', rating: '15 HP', serial_no: 'DEMO-FAN-009',
-      new_price: 28000, warranty_until: null, status: 'in_repair', current_location: 'Acme Rewind Demo Shop',
+      new_price: 28000, warranty_until: null, status: 'in_repair', current_location: 'Gorakhpur Motor Rewind Works',
       current_machine_id: null, is_active: true, notes: 'Sample — out for rewind', created_by: IDS.empRiley,
     },
     {
@@ -687,7 +687,7 @@ export function createDemoSeed(now = new Date()) {
     { id: 'a0000001-d000-4000-8000-00000000j006', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'installed', event_date: d(-190), cost: null, machine_id: IDS.mDryer, to_location: 'Rotary Dryer', note: 'Installed on dryer exhaust', recorded_by: IDS.empAlex, created_at: isoDaysAgo(190) },
     { id: 'a0000001-d000-4000-8000-00000000j007', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'removed', event_date: d(-20), cost: null, from_location: 'Rotary Dryer', to_location: 'Main Store', note: 'Bearing noise — pulled for rewind', recorded_by: IDS.empSam, created_at: isoDaysAgo(20) },
     { id: 'a0000001-d000-4000-8000-00000000j008', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'repaired', event_date: d(-18), cost: 16500, supplier_id: IDS.spSupRepair, from_location: 'Main Store', to_location: 'Main Store', note: 'In-house staging then vendor (sample cost)', recorded_by: IDS.empRiley, created_at: isoDaysAgo(18) },
-    { id: 'a0000001-d000-4000-8000-00000000j009', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'sent_vendor', event_date: d(-8), cost: null, supplier_id: IDS.spSupRepair, from_location: 'Main Store', to_location: 'Acme Rewind Demo Shop', note: 'Sent for rewind (sample)', recorded_by: IDS.empRiley, created_at: isoDaysAgo(8) },
+    { id: 'a0000001-d000-4000-8000-00000000j009', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'sent_vendor', event_date: d(-8), cost: null, supplier_id: IDS.spSupRepair, from_location: 'Main Store', to_location: 'Gorakhpur Motor Rewind Works', note: 'Sent for rewind (sample)', recorded_by: IDS.empRiley, created_at: isoDaysAgo(8) },
     { id: 'a0000001-d000-4000-8000-00000000j010', asset_id: IDS.assetDie, org_id: IDS.org, plant_id: IDS.plant, event_type: 'purchased', event_date: d(-30), cost: 18500, supplier_id: IDS.spSupMech, to_location: 'Main Store', note: 'Spare die on shelf (sample)', recorded_by: IDS.empJordan, created_at: isoDaysAgo(30) },
     { id: 'a0000001-d000-4000-8000-00000000j011', asset_id: IDS.assetPump, org_id: IDS.org, plant_id: IDS.plant, event_type: 'purchased', event_date: d(-14), cost: 24000, supplier_id: IDS.spSupMech, to_location: 'Main Store', note: 'New pump in store (sample)', recorded_by: IDS.empJordan, created_at: isoDaysAgo(14) },
   ]

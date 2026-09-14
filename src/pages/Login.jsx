@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { isDemoMode, DEMO_EMAIL, DEMO_ORG_NAME, DEMO_PLANT_NAME } from '../lib/demo/mode'
+import { isDemoMode, DEMO_EMAIL, DEMO_ORG_NAME, DEMO_PLANT_NAME, DEMO_ADMIN_NAME, DEMO_APP_NAME } from '../lib/demo/mode'
+import DemoMark from '../components/DemoMark'
 
 export default function Login() {
   const demo = isDemoMode()
@@ -92,15 +93,19 @@ export default function Login() {
             boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
             overflow: 'hidden',
           }}>
-            <img
-              src="/kanoz-logo.png"
-              alt="Kanoz Bio Energy"
-              style={{
-                width: 140,
-                height: 140,
-                objectFit: 'cover',
-              }}
-            />
+            {demo ? (
+              <DemoMark size={140} alt={DEMO_APP_NAME} />
+            ) : (
+              <img
+                src="/kanoz-logo.png"
+                alt="Kanoz Bio Energy"
+                style={{
+                  width: 140,
+                  height: 140,
+                  objectFit: 'cover',
+                }}
+              />
+            )}
           </div>
 
           <p style={{
@@ -264,7 +269,7 @@ export default function Login() {
 
               {demo && (
                 <p style={{ fontSize: 12, color: '#2d6a4f', lineHeight: 1.45, marginTop: -4 }}>
-                  Sign in as <strong>Jordan Admin</strong> with {DEMO_EMAIL}. Password is not checked in demo mode.
+                  Sign in as <strong>{DEMO_ADMIN_NAME}</strong> with {DEMO_EMAIL}. Password is not checked in demo mode.
                 </p>
               )}
 

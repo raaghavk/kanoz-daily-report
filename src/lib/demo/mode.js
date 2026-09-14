@@ -1,8 +1,9 @@
-/** Demo login used on the scrubbed prospect tour. Fictional only. */
-export const DEMO_EMAIL = 'demo@acme-biomass.example'
-
-export const DEMO_ORG_NAME = 'Acme Biomass Demo Co.'
-export const DEMO_PLANT_NAME = 'Demo Bio Pellets — Acme Plant'
+/** Demo login used on the scrubbed prospect tour. Fictional Indian SME only. */
+export const DEMO_EMAIL = 'demo@shree-biopellets.example'
+export const DEMO_ADMIN_NAME = 'Rohan Sharma'
+export const DEMO_APP_NAME = 'Demo Bio Pellets'
+export const DEMO_ORG_NAME = 'Shree Demo Bio Pellets Pvt Ltd'
+export const DEMO_PLANT_NAME = 'Riverside Demo Plant — Gorakhpur'
 
 /**
  * Fictional attendance geofence only — NOT a real plant.

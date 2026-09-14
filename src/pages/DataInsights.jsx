@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
-import { isDemoMode } from '../lib/demo/mode'
+import { isDemoMode, DEMO_APP_NAME } from '../lib/demo/mode'
 import PageHeader from '../components/PageHeader'
 import { showToast } from '../components/Toast'
 import { DemoSampleNote } from '../components/DemoBanner'
@@ -24,7 +24,7 @@ export default function DataInsights() {
   const { plant } = useAuth()
   const [messages, setMessages] = useState([
     { role: 'bot', text: isDemoMode()
-      ? "Hi — this is the sample-data assistant for Demo Bio Pellets. Ask about production, purchases, pending payments, dispatches, stock, and more. Figures are fictional tour numbers, not a live plant."
+      ? `Hi — this is the sample-data assistant for ${DEMO_APP_NAME}. Ask about production, purchases, pending payments, dispatches, stock, and more. Figures are fictional tour numbers, not a live plant.`
       : "Hi! I'm your AI plant assistant. Ask me anything about your plant data in Hindi or English.\n\nTry: purchases today, dispatch this week, pending payments, production this month, all stock, etc." },
   ])
   const [input, setInput] = useState('')
@@ -78,13 +78,13 @@ export default function DataInsights() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', background: '#fefae0' }}>
       <div style={{ flexShrink: 0 }}>
-        <PageHeader title="Data Assistant" subtitle={isDemoMode() ? 'Sample data only — Demo Bio Pellets' : 'Ask about your plant data'} backTo="/" />
+        <PageHeader title="Data Assistant" subtitle={isDemoMode() ? `Sample data only — ${DEMO_APP_NAME}` : 'Ask about your plant data'} backTo="/" />
       </div>
 
       {isDemoMode() && (
         <div style={{ flexShrink: 0, padding: '8px 16px 0' }}>
           <DemoSampleNote>
-            Answers are computed from the in-memory Demo Bio Pellets seed. Gemini / live edge analytics are not called.
+            Answers are computed from the in-memory {DEMO_APP_NAME} seed. Gemini / live edge analytics are not called.
           </DemoSampleNote>
         </div>
       )}

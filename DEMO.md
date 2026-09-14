@@ -2,7 +2,7 @@
 
 This branch is a **scrubbed prospect sales tour**. It must **never** be merged to `main`.
 
-It does not use a live database, live auth, live plant credentials, or paid AI APIs. All names, phones, customers, suppliers, trucks, GPS, and money figures are fictional **Demo Bio Pellets / Acme plant** sample data.
+It does not use a live database, live auth, live plant credentials, or paid AI APIs. All names, phones, customers, suppliers, trucks, GPS, and money figures are fictional **Shree Demo Bio Pellets Pvt Ltd / Riverside Demo Plant — Gorakhpur** sample data (Indian locale, INR).
 
 ## Run locally
 
@@ -18,9 +18,9 @@ npm run demo
 
 Then open the printed localhost URL.
 
-- Email: `demo@acme-biomass.example`
+- Email: `demo@shree-biopellets.example`
 - Password: any value (prefilled as `demo`)
-- User: **Jordan Admin** (admin) at **Acme Biomass Demo Co.** / **Demo Bio Pellets — Acme Plant**
+- User: **Rohan Sharma** (admin) at **Shree Demo Bio Pellets Pvt Ltd** / **Riverside Demo Plant — Gorakhpur**
 
 Missing or placeholder `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` also enables demo mode, so `npm run build` works without secrets.
 
@@ -29,20 +29,22 @@ Missing or placeholder `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` also enabl
 - Replaces the Supabase client with an in-memory adapter (`src/lib/demo/`) seeded with sample JSON-like rows.
 - Bypasses real Auth: only the demo email is accepted; password is not checked.
 - Shows a persistent banner on every screen: **DEMO — sample data only**.
+- Strips Kanoz branding in the demo UI (neutral pellet mark + fictional Indian org/plant names).
 - Uses a **fictional geofence** (`0.0123, 0.0456`) for attendance. Device GPS is mocked. Home weather is skipped so those coords are never sent to Open-Meteo.
 - Insights answers are keyword-matched over the in-memory seed. Gemini / `ai-query` / `plant-chat` are not called.
 - Stubs OCR / voice / invite / push / sheets with “not available in demo”.
-- Tally / accounting export is not available (finance is payments + cost overview UI only).
+- Tally voucher post is not available (finance is payments + cost overview UI only).
+- Admin dashboard on a phone shows a **Desktop only — open on desktop for full admin** card (the sidebar layout is not for mobile).
 
 ## Suggested tour order
 
-Insights → Dispatch → Shifts / Attendance → Stock / Spare Parts → Purchases → Assets → Finance → Admin.
+Insights → Dispatch → Shifts / Attendance → Stock / Spare Parts → Purchases → Assets → Finance → Admin (desktop).
 
 ## Clickable vs stubbed
 
 | Area | Status |
 |---|---|
-| Login (`demo@acme-biomass.example`) | Clickable |
+| Login (`demo@shree-biopellets.example`) | Clickable |
 | Home dashboard | Clickable (sample stats; weather off) |
 | Shifts `/shift/new`, `/shift/edit/:id`, report list/view | Clickable; child rows persist in memory via `replace_shift_report_children` |
 | Purchases + suppliers `/purchase*` | Clickable (OCR stubbed) |
@@ -52,7 +54,8 @@ Insights → Dispatch → Shifts / Attendance → Stock / Spare Parts → Purcha
 | Attendance `/attendance` | Clickable; fictional geofence only |
 | Spare parts `/spare-parts*` | Clickable |
 | Assets `/assets*` | Clickable (sample register + events) |
-| Admin `/dashboard`, settings, users/roles | Clickable; demo users only; invite/password stubbed |
+| Admin `/dashboard` | Desktop: clickable sample dashboard. Phone: desktop-only card |
+| Settings, users/roles | Clickable; demo users only; invite/password stubbed |
 | Finance `/finance` | Clickable overview/costs; no live Tally |
 | Insights `/insights` | Clickable sample-data answers; no Gemini |
 | Receipt OCR, voice entry | Stubbed |
@@ -72,6 +75,7 @@ Reload resets in-memory edits to the seed.
 - Storage uploads (placeholder URLs only)
 - Tally voucher post / live accounting
 - Gemini / live edge analytics
+- WhatsApp
 
 ## Build
 

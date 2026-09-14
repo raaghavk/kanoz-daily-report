@@ -1,4 +1,4 @@
-import { DEMO_EMAIL } from './mode.js'
+import { DEMO_EMAIL, DEMO_ADMIN_NAME } from './mode.js'
 import { IDS } from './ids.js'
 import { createDemoSeed } from './seed.js'
 import { parseSelect, resolveRelation } from './relations.js'
@@ -120,12 +120,19 @@ function purchaseSerialTaken(row, ignoreId) {
   )
 }
 
+const SOFT_DELETE_TABLES = new Set([
+  'finance_costs', 'stock_transfers', 'shift_reports', 'vehicle_dispatches', 'raw_material_purchases',
+])
+const ACTIVE_TABLES = new Set([
+  'assets', 'customers', 'suppliers', 'transporters', 'spare_parts', 'vehicles',
+  'employees', 'transporter_vehicles', 'spare_parts_suppliers', 'pellet_types',
+  'raw_material_types', 'machines', 'equipment', 'storage_plots',
+])
+
 function withInsertDefaults(table, r) {
   const row = { ...r, id: r.id || newId() }
-  if (row.is_deleted === undefined) {
-    const soft = ['finance_costs', 'stock_transfers', 'shift_reports', 'vehicle_dispatches', 'raw_material_purchases']
-    if (soft.includes(table)) row.is_deleted = false
-  }
+  if (row.is_deleted === undefined && SOFT_DELETE_TABLES.has(table)) row.is_deleted = false
+  if (row.is_active === undefined && ACTIVE_TABLES.has(table)) row.is_active = true
   if (row.created_at === undefined) row.created_at = new Date().toISOString()
   return row
 }
@@ -414,7 +421,7 @@ function demoUser() {
     aud: 'authenticated',
     role: 'authenticated',
     app_metadata: { provider: 'demo' },
-    user_metadata: { name: 'Jordan Admin', demo: true },
+    user_metadata: { name: DEMO_ADMIN_NAME, demo: true },
   }
 }
 

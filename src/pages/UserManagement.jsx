@@ -241,7 +241,7 @@ export default function UserManagement() {
 
       <div style={{ padding: '16px 16px 100px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <DemoSampleNote>
-          Demo users only (Jordan, Riley, Casey, Morgan, Sam, Alex). Inviting real emails, password reset, and user-delete are off on this tour.
+          Demo users only (Rohan Sharma, Priya Singh, Ankit Tiwari, Neha Gupta, Sandeep Yadav, Amit Verma). Inviting real emails, password reset, and user-delete are off on this tour.
         </DemoSampleNote>
 
         {/* Add button */}

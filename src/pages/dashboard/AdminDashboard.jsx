@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { can } from '../../lib/permissions'
 import { loadPeriod, loadDaily, loadAssets, loadSpares, latestReportDate, PERIOD_LABEL } from '../../lib/dashboardData'
-import { Loader2 } from 'lucide-react'
+import { Loader2, AlertCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import { isDemoMode } from '../../lib/demo/mode'
 
@@ -38,8 +38,15 @@ export default function AdminDashboard() {
   const [assets, setAssets] = useState(null), [spares, setSpares] = useState(null)
   const [realisation, setRealisation] = useState(11000)
   const [loadingP, setLoadingP] = useState(true), [loadingD, setLoadingD] = useState(true)
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 1024)
   const [rmSources, setRmSources] = useState([])
   const [machinesHp, setMachinesHp] = useState([])
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 1024)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   useEffect(() => { if (plant?.id) { latestReportDate(plant).then(setDate); loadAssets(plant).then(setAssets); loadSpares(plant).then(setSpares) } }, [plant]) // eslint-disable-line
   useEffect(() => { if (plant?.id) { supabase.from('raw_material_types').select('name, source').eq('plant_id', plant.id).eq('is_active', true).then(({ data }) => setRmSources(data || [])) } }, [plant]) // eslint-disable-line
@@ -49,13 +56,28 @@ export default function AdminDashboard() {
 
   if (!allowed) return <div style={S.full}><div style={{ textAlign: 'center' }}><div style={{ fontSize: 46 }}>🔒</div><h2>Admin only</h2><p style={{ color: '#8a8d7a', fontSize: 13 }}>The dashboard is for admins & managers.</p><button style={S.btn} onClick={() => navigate('/')}>Back to app</button></div></div>
 
+  if (isMobile) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#fefae0', padding: 32, textAlign: 'center' }}>
+        <AlertCircle size={48} color="#d97706" style={{ marginBottom: 16 }} />
+        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#2c2c2c', margin: '0 0 10px' }}>Desktop only</h2>
+        <p style={{ fontSize: 14, color: '#595c4a', margin: '0 0 28px', lineHeight: 1.6, maxWidth: 320 }}>
+          Open on desktop for full admin. This dashboard is built for a laptop or wider screen.
+        </p>
+        <button onClick={() => navigate('/')} style={{ padding: '13px 28px', background: '#2d6a4f', color: '#fff', borderRadius: 14, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
+          Back to app
+        </button>
+      </div>
+    )
+  }
+
   const spin = <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 size={28} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} /></div>
 
   return (
     <div style={S.app}>
       <style>{`.kdrow:hover{background:#fbf9f1}.kdnav:hover{background:rgba(255,255,255,.06)}`}</style>
       <aside style={S.side}>
-        <div style={S.brand}><div style={S.logo}>🌾</div><div><div style={{ color: '#fff', fontWeight: 800, fontSize: 15 }}>Kanoz Admin</div><div style={{ fontSize: 10, color: '#7fa890' }}>{plant?.name || 'Plant'}</div></div></div>
+        <div style={S.brand}><div style={S.logo}>🌾</div><div><div style={{ color: '#fff', fontWeight: 800, fontSize: 15 }}>{isDemoMode() ? 'Demo Admin' : 'Kanoz Admin'}</div><div style={{ fontSize: 10, color: '#7fa890' }}>{plant?.name || 'Plant'}</div></div></div>
         <nav style={{ padding: 10, flex: 1 }}>
           {NAV.map(([k, ic, label]) => <button key={k} className="kdnav" onClick={() => setSection(k)} style={{ ...S.navb, ...(section === k ? S.navOn : {}) }}><span style={{ width: 20 }}>{ic}</span> {label}</button>)}
         </nav>

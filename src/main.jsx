@@ -43,7 +43,7 @@ const updateSW = registerSW({
     updateSW(true)
   },
   onOfflineReady() {
-    console.log('Kanoz: App ready for offline use')
+    console.log('Demo Bio Pellets: App ready for offline use')
   },
   // Check for updates every 10 minutes
   onRegisteredSW(swUrl, registration) {
