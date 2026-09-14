@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import usePullToRefresh from '../hooks/usePullToRefresh'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
+import { isDemoMode } from '../lib/demo/mode'
 import { supabase } from '../lib/supabase'
 import { kgToMtStr } from '../lib/units'
 import { can } from '../lib/permissions'
@@ -22,6 +23,7 @@ export default function Home() {
   const [weather, setWeather] = useState(null)
 
   useEffect(() => {
+    if (isDemoMode()) return
     const lat = plant?.location_lat
     const lon = plant?.location_lng
     if (!lat || !lon) return

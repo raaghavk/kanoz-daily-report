@@ -5,6 +5,7 @@ import { can } from '../../lib/permissions'
 import { loadPeriod, loadDaily, loadAssets, loadSpares, latestReportDate, PERIOD_LABEL } from '../../lib/dashboardData'
 import { Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { isDemoMode } from '../../lib/demo/mode'
 
 const money = n => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN')
 const lakh = n => (Number(n) >= 100000 ? '₹' + (n / 100000).toFixed(1) + 'L' : money(n))
@@ -58,7 +59,7 @@ export default function AdminDashboard() {
         <nav style={{ padding: 10, flex: 1 }}>
           {NAV.map(([k, ic, label]) => <button key={k} className="kdnav" onClick={() => setSection(k)} style={{ ...S.navb, ...(section === k ? S.navOn : {}) }}><span style={{ width: 20 }}>{ic}</span> {label}</button>)}
         </nav>
-        <div style={{ padding: 16, fontSize: 11, color: '#6f9580', borderTop: '1px solid rgba(255,255,255,.08)', lineHeight: 1.5 }}>Admin-only · live data<br />Summaries only — detail in the sheet<button onClick={() => navigate('/')} style={{ ...S.navb, marginTop: 10, color: '#bcd4c4' }}>← Back to app</button></div>
+        <div style={{ padding: 16, fontSize: 11, color: '#6f9580', borderTop: '1px solid rgba(255,255,255,.08)', lineHeight: 1.5 }}>{isDemoMode() ? 'Admin-only · sample data' : 'Admin-only · live data'}<br />Summaries only — detail in the sheet<button onClick={() => navigate('/')} style={{ ...S.navb, marginTop: 10, color: '#bcd4c4' }}>← Back to app</button></div>
       </aside>
 
       <main style={S.main}>
@@ -124,7 +125,7 @@ function Overview({ d, assets, spares }) {
     <div style={S.kpis}><Kpi l="Production" n={mt(d.production)} /><Kpi l="Dispatched" n={mt(d.dispatched)} /><Kpi l="RM spend" n={lakh(d.rmSpend)} /><Kpi l="Cost / MT (RM+spares)" n={money(costMT)} /></div>
     <div style={S.g2}>
       <Card title="Production by day" sub="This period · MT"><Bars rows={d.prodByDay.map(x => ({ name: x.date, v: x.mt }))} fmt={mt} /></Card>
-      <Card title="Needs attention" sub="Live from assets & spares">
+      <Card title="Needs attention" sub={isDemoMode() ? 'Sample assets & spares' : 'Live from assets & spares'}>
         {assets?.flagged?.map(a => <div key={a.id} style={{ ...S.alert, background: '#fee2e2', color: '#b91c1c' }}>🛠️ <b>{a.code}</b> — repairs {Math.round(a.ratio * 100)}% of new. Replace.</div>)}
         {assets?.atRepair?.map(a => <div key={a.id} style={{ ...S.alert, background: '#fef3c7', color: '#b45309' }}>🚚 <b>{a.code}</b> at {a.current_location || 'vendor'}.</div>)}
         {spares?.low?.map((s, i) => <div key={i} style={{ ...S.alert, background: '#fef3c7', color: '#b45309' }}>📦 <b>{s.name}</b> — {s.stock} {s.unit} left (min {s.min}).</div>)}

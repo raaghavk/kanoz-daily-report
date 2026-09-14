@@ -2,6 +2,7 @@ import { DEMO_EMAIL } from './mode.js'
 import { IDS } from './ids.js'
 import { createDemoSeed } from './seed.js'
 import { parseSelect, resolveRelation } from './relations.js'
+import { answerDemoQuestion } from './answers.js'
 
 const SESSION_KEY = 'kanoz_demo_session'
 const STORE_VERSION = 1
@@ -9,8 +10,73 @@ const STORE_VERSION = 1
 let store = null
 const authListeners = new Set()
 
-function clone(v) {
-  return JSON.parse(JSON.stringify(v))
+function deleteWhere(table, pred) {
+  const db = getDemoStore()
+  db[table] = (db[table] || []).filter(r => !pred(r))
+}
+
+function pushRow(table, row) {
+  tableRows(table).push({ id: row.id || newId(), ...row })
+}
+
+function replaceShiftReportChildren(reportId, payload) {
+  if (!reportId) {
+    return { data: null, error: { message: 'shift report not found', name: 'DemoModeError' } }
+  }
+  const report = tableRows('shift_reports').find(r => r.id === reportId)
+  if (!report) {
+    return { data: null, error: { message: 'shift report not found', name: 'DemoModeError' } }
+  }
+  const body = payload || {}
+  const mixIds = tableRows('shift_mixes').filter(m => m.shift_report_id === reportId).map(m => m.id)
+  deleteWhere('machine_production', r => r.shift_report_id === reportId)
+  deleteWhere('shift_mix_machine_usage', r => r.shift_report_id === reportId || mixIds.includes(r.mix_id))
+  deleteWhere('shift_mix_compositions', r => mixIds.includes(r.mix_id))
+  deleteWhere('shift_mixes', r => r.shift_report_id === reportId)
+  deleteWhere('raw_material_usage', r => r.shift_report_id === reportId)
+  deleteWhere('processing_runs', r => r.shift_report_id === reportId)
+  deleteWhere('equipment_diesel_log', r => r.shift_report_id === reportId)
+  deleteWhere('pellet_stock', r => r.shift_report_id === reportId)
+  deleteWhere('issues', r => r.shift_report_id === reportId)
+  deleteWhere('diesel_purchases', r => r.shift_report_id === reportId)
+  deleteWhere('diesel_stock', r => r.shift_report_id === reportId)
+
+  for (const x of body.machine_production || []) {
+    pushRow('machine_production', { ...x, shift_report_id: reportId })
+  }
+  for (const x of body.raw_material_usage || []) {
+    pushRow('raw_material_usage', { ...x, shift_report_id: reportId })
+  }
+  for (const x of body.processing_runs || []) {
+    pushRow('processing_runs', { ...x, shift_report_id: reportId })
+  }
+  for (const x of body.equipment_diesel_log || []) {
+    pushRow('equipment_diesel_log', { ...x, shift_report_id: reportId })
+  }
+  for (const x of body.pellet_stock || []) {
+    pushRow('pellet_stock', { ...x, shift_report_id: reportId })
+  }
+  for (const x of body.issues || []) {
+    pushRow('issues', { ...x, shift_report_id: reportId, is_resolved: false })
+  }
+  if (body.diesel_stock && typeof body.diesel_stock === 'object' && !Array.isArray(body.diesel_stock)) {
+    pushRow('diesel_stock', { ...body.diesel_stock, shift_report_id: reportId })
+  }
+  for (const x of body.diesel_purchases || []) {
+    pushRow('diesel_purchases', { ...x, shift_report_id: reportId })
+  }
+  for (const mix of body.mixes || []) {
+    const { compositions, machine_usages, ...mixRow } = mix
+    const mixId = newId()
+    pushRow('shift_mixes', { ...mixRow, id: mixId, shift_report_id: reportId })
+    for (const c of compositions || []) {
+      pushRow('shift_mix_compositions', { ...c, mix_id: mixId })
+    }
+    for (const u of machine_usages || []) {
+      pushRow('shift_mix_machine_usage', { ...u, mix_id: mixId, shift_report_id: reportId })
+    }
+  }
+  return { data: null, error: null }
 }
 
 export function getDemoStore() {
@@ -32,6 +98,20 @@ function tableRows(name) {
 function newId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID()
   return `demo-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function clone(v) {
+  return JSON.parse(JSON.stringify(v))
+}
+
+function withInsertDefaults(table, r) {
+  const row = { ...r, id: r.id || newId() }
+  if (row.is_deleted === undefined) {
+    const soft = ['finance_costs', 'stock_transfers', 'shift_reports', 'vehicle_dispatches', 'raw_material_purchases']
+    if (soft.includes(table)) row.is_deleted = false
+  }
+  if (row.created_at === undefined) row.created_at = new Date().toISOString()
+  return row
 }
 
 function coerceEq(rowVal, filterVal) {
@@ -134,7 +214,7 @@ function execute(state) {
 
   if (state.action === 'insert') {
     const inserted = (state.insertRows || []).map(r => {
-      const row = { id: r.id || newId(), ...r }
+      const row = withInsertDefaults(state.table, r)
       rows.push(row)
       return row
     })
@@ -151,7 +231,7 @@ function execute(state) {
         rows[idx] = { ...rows[idx], ...r }
         result.push(rows[idx])
       } else {
-        const row = { id: r.id || newId(), ...r }
+        const row = withInsertDefaults(state.table, r)
         rows.push(row)
         result.push(row)
       }
@@ -405,12 +485,13 @@ export function createDemoClient() {
   }
 
   const functions = {
-    async invoke(name) {
+    async invoke(name, opts = {}) {
       const label = STUBBED_FUNCTIONS[name] || 'This feature'
       const message = `${label} is not available in demo`
       if (name === 'ai-query' || name === 'plant-chat') {
+        const question = opts?.body?.question || ''
         return {
-          data: { answer: `${message}. This tour uses sample data only.` },
+          data: { answer: answerDemoQuestion(question, { fn: name, db: getDemoStore() }) },
           error: null,
         }
       }
@@ -436,9 +517,9 @@ export function createDemoClient() {
     auth,
     functions,
     storage,
-    rpc: async (fn) => {
+    rpc: async (fn, args = {}) => {
       if (fn === 'replace_shift_report_children') {
-        return { data: null, error: null }
+        return replaceShiftReportChildren(args.p_report_id, args.p_payload)
       }
       return { data: null, error: { message: 'Not available in demo', name: 'DemoModeError' } }
     },

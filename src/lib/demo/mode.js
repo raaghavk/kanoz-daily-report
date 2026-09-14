@@ -2,7 +2,15 @@
 export const DEMO_EMAIL = 'demo@acme-biomass.example'
 
 export const DEMO_ORG_NAME = 'Acme Biomass Demo Co.'
-export const DEMO_PLANT_NAME = 'Demo Pellet Plant — Riverside'
+export const DEMO_PLANT_NAME = 'Demo Bio Pellets — Acme Plant'
+
+/**
+ * Fictional attendance geofence only — NOT a real plant.
+ * Offset from (0,0) so it is obviously sample GPS and never a live site.
+ * Home weather is disabled in demo so these coords are not sent to Open-Meteo.
+ */
+export const DEMO_GEOFENCE_LAT = 0.0123
+export const DEMO_GEOFENCE_LNG = 0.0456
 
 /**
  * Prospect-tour mode. This branch is DEMO ONLY and must never talk to a live backend.

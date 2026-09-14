@@ -67,9 +67,14 @@ export const RELATIONS = {
   },
   assets: {
     plants: { table: 'plants', local: 'plant_id', foreign: 'id', many: false },
+    asset_events: { table: 'asset_events', local: 'id', foreign: 'asset_id', many: true },
   },
   asset_events: {
     assets: { table: 'assets', local: 'asset_id', foreign: 'id', many: false },
+    spare_parts_suppliers: { table: 'spare_parts_suppliers', local: 'supplier_id', foreign: 'id', many: false },
+  },
+  stock_transfers: {
+    storage_plots: { table: 'storage_plots', local: 'from_plot_id', foreign: 'id', many: false },
   },
 }
 

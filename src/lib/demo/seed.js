@@ -1,5 +1,5 @@
 import { IDS } from './ids.js'
-import { DEMO_EMAIL, DEMO_ORG_NAME, DEMO_PLANT_NAME } from './mode.js'
+import { DEMO_EMAIL, DEMO_ORG_NAME, DEMO_PLANT_NAME, DEMO_GEOFENCE_LAT, DEMO_GEOFENCE_LNG } from './mode.js'
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -15,6 +15,13 @@ function isoDaysAgo(days, hours = 12) {
   const d = new Date()
   d.setDate(d.getDate() - days)
   d.setHours(hours, 0, 0, 0)
+  return d.toISOString()
+}
+
+function isoAt(days, hour, minute = 0) {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  d.setHours(hour, minute, 0, 0)
   return d.toISOString()
 }
 
@@ -90,10 +97,13 @@ export function createDemoSeed(now = new Date()) {
     is_active: true,
     financial_year_start: `${now.getFullYear()}-04-01`,
     stock_opening_date: openingDate,
-    // No GPS — weather widget stays hidden on purpose.
-    location_lat: null,
-    location_lng: null,
+    // Fictional geofence only — never a live plant. Home weather is skipped in demo.
+    location_lat: DEMO_GEOFENCE_LAT,
+    location_lng: DEMO_GEOFENCE_LNG,
     electricity_tariff: 8.5,
+    electricity_rate_day: 7.9,
+    electricity_rate_night: 6.4,
+    electricity_demand_charge: 85000,
     diesel_rate: 92,
     created_at: isoDaysAgo(120),
     updated_at: isoDaysAgo(1),
@@ -104,24 +114,54 @@ export function createDemoSeed(now = new Date()) {
       id: IDS.empJordan, org_id: IDS.org, plant_id: IDS.plant,
       name: 'Jordan Admin', mobile: '+1-555-0100', role: 'admin', is_active: true,
       auth_user_id: IDS.authJordan, email: DEMO_EMAIL,
-      created_at: isoDaysAgo(100), updated_at: isoDaysAgo(1),
+      worker_type: 'staff', created_at: isoDaysAgo(100), updated_at: isoDaysAgo(1),
     },
     {
       id: IDS.empSam, org_id: IDS.org, plant_id: IDS.plant,
       name: 'Sam Supervisor', mobile: '+1-555-0101', role: 'supervisor', is_active: true,
       auth_user_id: null, email: 'sam.supervisor@acme-biomass.example',
-      created_at: isoDaysAgo(90), updated_at: isoDaysAgo(2),
+      worker_type: 'staff', created_at: isoDaysAgo(90), updated_at: isoDaysAgo(2),
     },
     {
       id: IDS.empAlex, org_id: IDS.org, plant_id: IDS.plant,
       name: 'Alex Operator', mobile: '+1-555-0102', role: 'supervisor', is_active: true,
       auth_user_id: null, email: 'alex.operator@acme-biomass.example',
-      created_at: isoDaysAgo(80), updated_at: isoDaysAgo(3),
+      worker_type: 'staff', created_at: isoDaysAgo(80), updated_at: isoDaysAgo(3),
+    },
+    {
+      id: IDS.empRiley, org_id: IDS.org, plant_id: IDS.plant,
+      name: 'Riley Manager', mobile: '+1-555-0103', role: 'plant_manager', is_active: true,
+      auth_user_id: null, email: 'riley.manager@acme-biomass.example',
+      worker_type: 'staff', created_at: isoDaysAgo(70), updated_at: isoDaysAgo(4),
+    },
+    {
+      id: IDS.empCasey, org_id: IDS.org, plant_id: IDS.plant,
+      name: 'Casey Purchase', mobile: '+1-555-0104', role: 'purchase_manager', is_active: true,
+      auth_user_id: null, email: 'casey.purchase@acme-biomass.example',
+      worker_type: 'staff', created_at: isoDaysAgo(65), updated_at: isoDaysAgo(4),
+    },
+    {
+      id: IDS.empMorgan, org_id: IDS.org, plant_id: IDS.plant,
+      name: 'Morgan Accounts', mobile: '+1-555-0105', role: 'accountant', is_active: true,
+      auth_user_id: null, email: 'morgan.accounts@acme-biomass.example',
+      worker_type: 'staff', created_at: isoDaysAgo(60), updated_at: isoDaysAgo(5),
+    },
+    {
+      id: IDS.empLee, org_id: IDS.org, plant_id: IDS.plant,
+      name: 'Lee Driver', mobile: '+1-555-0106', role: 'supervisor', is_active: true,
+      auth_user_id: null, email: null, worker_type: 'driver', labour_daily_wage: 900,
+      created_at: isoDaysAgo(40), updated_at: isoDaysAgo(1),
+    },
+    {
+      id: IDS.empPat, org_id: IDS.org, plant_id: IDS.plant,
+      name: 'Pat Labour', mobile: '+1-555-0107', role: 'supervisor', is_active: true,
+      auth_user_id: null, email: null, worker_type: 'labour', labour_daily_wage: 650,
+      created_at: isoDaysAgo(30), updated_at: isoDaysAgo(1),
     },
   ]
 
   const roles = [
-    { id: IDS.roleAdmin, org_id: IDS.org, key: 'admin', name: 'Admin', description: 'Full access', permissions: ADMIN_PERMS, is_default: true, receive_tasks: false, track_attendance: false },
+    { id: IDS.roleAdmin, org_id: IDS.org, key: 'admin', name: 'Admin', description: 'Full access', permissions: ADMIN_PERMS, is_default: true, receive_tasks: false, track_attendance: true },
     { id: IDS.rolePlantManager, org_id: IDS.org, key: 'plant_manager', name: 'Plant Manager', description: 'Plant operations', permissions: PM_PERMS, is_default: true, receive_tasks: true, track_attendance: true },
     { id: IDS.roleSupervisor, org_id: IDS.org, key: 'supervisor', name: 'Supervisor', description: 'Shift operations', permissions: SUP_PERMS, is_default: true, receive_tasks: true, track_attendance: true },
     { id: IDS.rolePurchase, org_id: IDS.org, key: 'purchase_manager', name: 'Purchase Manager', description: 'Purchases', permissions: ['create_purchase', 'view_reports', 'view_purchases'], is_default: true, receive_tasks: true, track_attendance: true },
@@ -489,8 +529,9 @@ export function createDemoSeed(now = new Date()) {
   ]
 
   const spare_parts_suppliers = [
-    { id: IDS.spSupMech, org_id: IDS.org, name: 'MechParts Demo Supply', contact_person: 'Drew Kline', phone: '+1-555-0190', is_active: true },
-    { id: IDS.spSupElec, org_id: IDS.org, name: 'Volt & Gear Distributors', contact_person: 'Avery Shah', phone: '+1-555-0191', is_active: true },
+    { id: IDS.spSupMech, org_id: IDS.org, name: 'MechParts Demo Supply', contact_person: 'Drew Kline', phone: '+1-555-0190', is_active: true, is_repair_shop: false },
+    { id: IDS.spSupElec, org_id: IDS.org, name: 'Volt & Gear Distributors', contact_person: 'Avery Shah', phone: '+1-555-0191', is_active: true, is_repair_shop: false },
+    { id: IDS.spSupRepair, org_id: IDS.org, name: 'Acme Rewind Demo Shop', contact_person: 'Robin Hale', phone: '+1-555-0192', is_active: true, is_repair_shop: true },
   ]
 
   const spare_parts_purchases = [
@@ -527,19 +568,129 @@ export function createDemoSeed(now = new Date()) {
   ]
 
   const attendance = [
-    { id: 'a0000001-d000-4000-8000-00000000f001', plant_id: IDS.plant, employee_id: IDS.empSam, work_date: today, status: 'present', check_in: '07:50:00', check_out: null },
-    { id: 'a0000001-d000-4000-8000-00000000f002', plant_id: IDS.plant, employee_id: IDS.empAlex, work_date: today, status: 'present', check_in: '07:55:00', check_out: null },
-    { id: 'a0000001-d000-4000-8000-00000000f003', plant_id: IDS.plant, employee_id: IDS.empSam, work_date: d(-1), status: 'present', check_in: '07:48:00', check_out: '20:10:00' },
-    { id: 'a0000001-d000-4000-8000-00000000f004', plant_id: IDS.plant, employee_id: IDS.empAlex, work_date: d(-1), status: 'present', check_in: '19:40:00', check_out: '08:05:00' },
+    {
+      id: 'a0000001-d000-4000-8000-00000000f001', org_id: IDS.org, plant_id: IDS.plant, employee_id: IDS.empSam,
+      work_date: today, status: 'present', check_in_at: isoAt(0, 7, 50), check_out_at: null, hours: null,
+      check_in_lat: DEMO_GEOFENCE_LAT, check_in_lng: DEMO_GEOFENCE_LNG, marked_by: IDS.empSam,
+    },
+    {
+      id: 'a0000001-d000-4000-8000-00000000f002', org_id: IDS.org, plant_id: IDS.plant, employee_id: IDS.empAlex,
+      work_date: today, status: 'present', check_in_at: isoAt(0, 7, 55), check_out_at: null, hours: null,
+      check_in_lat: DEMO_GEOFENCE_LAT, check_in_lng: DEMO_GEOFENCE_LNG, marked_by: IDS.empAlex,
+    },
+    {
+      id: 'a0000001-d000-4000-8000-00000000f003', org_id: IDS.org, plant_id: IDS.plant, employee_id: IDS.empLee,
+      work_date: today, status: 'present', check_in_at: isoAt(0, 8, 5), check_out_at: null, hours: null,
+      check_in_lat: DEMO_GEOFENCE_LAT, check_in_lng: DEMO_GEOFENCE_LNG, marked_by: IDS.empSam,
+    },
+    {
+      id: 'a0000001-d000-4000-8000-00000000f004', org_id: IDS.org, plant_id: IDS.plant, employee_id: IDS.empPat,
+      work_date: today, status: 'present', check_in_at: isoAt(0, 8, 10), check_out_at: null, hours: null,
+      check_in_lat: DEMO_GEOFENCE_LAT, check_in_lng: DEMO_GEOFENCE_LNG, marked_by: IDS.empSam,
+    },
+    {
+      id: 'a0000001-d000-4000-8000-00000000f005', org_id: IDS.org, plant_id: IDS.plant, employee_id: IDS.empSam,
+      work_date: d(-1), status: 'present', check_in_at: isoAt(1, 7, 48), check_out_at: isoAt(1, 20, 10), hours: 12.4,
+      check_in_lat: DEMO_GEOFENCE_LAT, check_in_lng: DEMO_GEOFENCE_LNG, marked_by: IDS.empSam,
+    },
+    {
+      id: 'a0000001-d000-4000-8000-00000000f006', org_id: IDS.org, plant_id: IDS.plant, employee_id: IDS.empAlex,
+      work_date: d(-1), status: 'present', check_in_at: isoAt(1, 19, 40), check_out_at: isoAt(0, 8, 5), hours: 12.4,
+      check_in_lat: DEMO_GEOFENCE_LAT, check_in_lng: DEMO_GEOFENCE_LNG, marked_by: IDS.empAlex,
+    },
+    {
+      id: 'a0000001-d000-4000-8000-00000000f007', org_id: IDS.org, plant_id: IDS.plant, employee_id: IDS.empRiley,
+      work_date: d(-1), status: 'present', check_in_at: isoAt(1, 8, 0), check_out_at: isoAt(1, 18, 30), hours: 10.5,
+      check_in_lat: DEMO_GEOFENCE_LAT, check_in_lng: DEMO_GEOFENCE_LNG, marked_by: IDS.empRiley,
+    },
   ]
 
   const delete_requests = []
   const notification_preferences = []
   const push_subscriptions = []
-  const stock_transfers = []
-  const assets = []
-  const asset_events = []
   const shift_mix_machine_usage = []
+
+  const machine_type_options = [
+    ...['Log Eater', 'Hammer Mill', 'Pellet Machine', 'Mixer', 'Screener', 'Chipper', 'Dryer', 'Other'].map((name, i) => ({
+      id: `a0000001-d000-4000-8000-00000000g0${i + 1}`, org_id: IDS.org, kind: 'machine', name, sort_order: i + 1, is_active: true,
+    })),
+    ...['Generator', 'Vehicle', 'Loader', 'Weighbridge', 'Pump', 'Other'].map((name, i) => ({
+      id: `a0000001-d000-4000-8000-00000000g1${i + 1}`, org_id: IDS.org, kind: 'equipment', name, sort_order: i + 1, is_active: true,
+    })),
+  ]
+
+  const stock_transfers = [
+    {
+      id: 'a0000001-d000-4000-8000-00000000h001', plant_id: IDS.plant, org_id: IDS.org,
+      from_plot_id: IDS.plotCovered, to_plot_id: IDS.plotYard,
+      raw_material_type_id: IDS.rmSawDust, raw_material_name: 'Saw Dust',
+      quantity_kg: 3500, transfer_date: d(-2), vehicle_number: 'DEMO-101',
+      notes: 'Sample yard consolidation — fictional', created_by: IDS.empSam, is_deleted: false,
+    },
+    {
+      id: 'a0000001-d000-4000-8000-00000000h002', plant_id: IDS.plant, org_id: IDS.org,
+      from_plot_id: IDS.plotYard, to_plot_id: IDS.plotCovered,
+      raw_material_type_id: IDS.rmRiceHusk, raw_material_name: 'Rice Husk',
+      quantity_kg: 2000, transfer_date: d(-5), vehicle_number: 'DEMO-102',
+      notes: 'Covered shed before rain drill (sample)', created_by: IDS.empRiley, is_deleted: false,
+    },
+  ]
+
+  const finance_costs = [
+    { id: 'a0000001-d000-4000-8000-00000000i001', org_id: IDS.org, plant_id: IDS.plant, category: 'Electricity', description: 'Sample grid bill (fictional)', amount: 185000, frequency: 'monthly', cost_date: null, created_by: IDS.empMorgan, is_deleted: false, created_at: isoDaysAgo(20) },
+    { id: 'a0000001-d000-4000-8000-00000000i002', org_id: IDS.org, plant_id: IDS.plant, category: 'Labour & Wages', description: 'Yard + packing labour (sample)', amount: 96000, frequency: 'monthly', cost_date: null, created_by: IDS.empMorgan, is_deleted: false, created_at: isoDaysAgo(18) },
+    { id: 'a0000001-d000-4000-8000-00000000i003', org_id: IDS.org, plant_id: IDS.plant, category: 'Salaries', description: 'Staff salaries (sample)', amount: 220000, frequency: 'monthly', cost_date: null, created_by: IDS.empMorgan, is_deleted: false, created_at: isoDaysAgo(18) },
+    { id: 'a0000001-d000-4000-8000-00000000i004', org_id: IDS.org, plant_id: IDS.plant, category: 'Rent / Lease', description: 'Yard lease (sample)', amount: 75000, frequency: 'monthly', cost_date: null, created_by: IDS.empMorgan, is_deleted: false, created_at: isoDaysAgo(25) },
+    { id: 'a0000001-d000-4000-8000-00000000i005', org_id: IDS.org, plant_id: IDS.plant, category: 'Maintenance & Spares', description: 'Dryer fan rewind (sample one-time)', amount: 18500, frequency: 'one_time', cost_date: d(-6), created_by: IDS.empRiley, is_deleted: false, created_at: isoDaysAgo(6) },
+    { id: 'a0000001-d000-4000-8000-00000000i006', org_id: IDS.org, plant_id: IDS.plant, category: 'Admin / Office', description: 'Stationery & SIM (sample)', amount: 4500, frequency: 'monthly', cost_date: null, created_by: IDS.empJordan, is_deleted: false, created_at: isoDaysAgo(12) },
+  ]
+
+  const assets = [
+    {
+      id: IDS.assetMotor, org_id: IDS.org, plant_id: IDS.plant, code: 'MTR-0001', asset_type: 'Motor',
+      name: 'Pellet Mill 1 Main Motor', make: 'ABB', rating: '220 HP', serial_no: 'DEMO-MTR-441',
+      new_price: 185000, warranty_until: d(200), status: 'running', current_location: 'Pellet Mill 1',
+      current_machine_id: IDS.mPellet1, is_active: true, notes: 'Sample asset', created_by: IDS.empJordan,
+    },
+    {
+      id: IDS.assetGear, org_id: IDS.org, plant_id: IDS.plant, code: 'GBX-0001', asset_type: 'Gearbox',
+      name: 'Dryer Main Gearbox', make: 'Bonfiglioli', rating: '75 HP', serial_no: 'DEMO-GBX-118',
+      new_price: 92000, warranty_until: null, status: 'running', current_location: 'Rotary Dryer',
+      current_machine_id: IDS.mDryer, is_active: true, notes: 'Sample asset', created_by: IDS.empJordan,
+    },
+    {
+      id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, code: 'FAN-0001', asset_type: 'Fan',
+      name: 'Dryer Exhaust Fan', make: 'Crompton', rating: '15 HP', serial_no: 'DEMO-FAN-009',
+      new_price: 28000, warranty_until: null, status: 'in_repair', current_location: 'Acme Rewind Demo Shop',
+      current_machine_id: null, is_active: true, notes: 'Sample — out for rewind', created_by: IDS.empRiley,
+    },
+    {
+      id: IDS.assetDie, org_id: IDS.org, plant_id: IDS.plant, code: 'DIE-0001', asset_type: 'Die',
+      name: 'Pellet Die 6mm (installed spare)', make: 'CPM', rating: '6mm', serial_no: 'DEMO-DIE-6',
+      new_price: 18500, warranty_until: null, status: 'in_store', current_location: 'Main Store',
+      current_machine_id: null, is_active: true, notes: 'Sample asset', created_by: IDS.empSam,
+    },
+    {
+      id: IDS.assetPump, org_id: IDS.org, plant_id: IDS.plant, code: 'PMP-0001', asset_type: 'Pump',
+      name: 'Hydraulic Pack Pump', make: 'Bosch', rating: '5 HP', serial_no: 'DEMO-PMP-22',
+      new_price: 24000, warranty_until: d(80), status: 'in_store', current_location: 'Main Store',
+      current_machine_id: null, is_active: true, notes: 'Sample asset', created_by: IDS.empJordan,
+    },
+  ]
+
+  const asset_events = [
+    { id: 'a0000001-d000-4000-8000-00000000j001', asset_id: IDS.assetMotor, org_id: IDS.org, plant_id: IDS.plant, event_type: 'purchased', event_date: d(-400), cost: 185000, supplier_id: IDS.spSupElec, to_location: 'Main Store', note: 'New motor registered (sample)', recorded_by: IDS.empJordan, created_at: isoDaysAgo(400) },
+    { id: 'a0000001-d000-4000-8000-00000000j002', asset_id: IDS.assetMotor, org_id: IDS.org, plant_id: IDS.plant, event_type: 'installed', event_date: d(-390), cost: null, machine_id: IDS.mPellet1, to_location: 'Pellet Mill 1', note: 'Installed on mill 1', recorded_by: IDS.empSam, created_at: isoDaysAgo(390) },
+    { id: 'a0000001-d000-4000-8000-00000000j003', asset_id: IDS.assetGear, org_id: IDS.org, plant_id: IDS.plant, event_type: 'purchased', event_date: d(-360), cost: 92000, supplier_id: IDS.spSupMech, to_location: 'Main Store', note: 'Gearbox purchase (sample)', recorded_by: IDS.empJordan, created_at: isoDaysAgo(360) },
+    { id: 'a0000001-d000-4000-8000-00000000j004', asset_id: IDS.assetGear, org_id: IDS.org, plant_id: IDS.plant, event_type: 'installed', event_date: d(-350), cost: null, machine_id: IDS.mDryer, to_location: 'Rotary Dryer', note: 'Installed on dryer', recorded_by: IDS.empSam, created_at: isoDaysAgo(350) },
+    { id: 'a0000001-d000-4000-8000-00000000j005', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'purchased', event_date: d(-200), cost: 28000, supplier_id: IDS.spSupElec, to_location: 'Main Store', note: 'Fan purchase (sample)', recorded_by: IDS.empJordan, created_at: isoDaysAgo(200) },
+    { id: 'a0000001-d000-4000-8000-00000000j006', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'installed', event_date: d(-190), cost: null, machine_id: IDS.mDryer, to_location: 'Rotary Dryer', note: 'Installed on dryer exhaust', recorded_by: IDS.empAlex, created_at: isoDaysAgo(190) },
+    { id: 'a0000001-d000-4000-8000-00000000j007', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'removed', event_date: d(-20), cost: null, from_location: 'Rotary Dryer', to_location: 'Main Store', note: 'Bearing noise — pulled for rewind', recorded_by: IDS.empSam, created_at: isoDaysAgo(20) },
+    { id: 'a0000001-d000-4000-8000-00000000j008', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'repaired', event_date: d(-18), cost: 16500, supplier_id: IDS.spSupRepair, from_location: 'Main Store', to_location: 'Main Store', note: 'In-house staging then vendor (sample cost)', recorded_by: IDS.empRiley, created_at: isoDaysAgo(18) },
+    { id: 'a0000001-d000-4000-8000-00000000j009', asset_id: IDS.assetFan, org_id: IDS.org, plant_id: IDS.plant, event_type: 'sent_vendor', event_date: d(-8), cost: null, supplier_id: IDS.spSupRepair, from_location: 'Main Store', to_location: 'Acme Rewind Demo Shop', note: 'Sent for rewind (sample)', recorded_by: IDS.empRiley, created_at: isoDaysAgo(8) },
+    { id: 'a0000001-d000-4000-8000-00000000j010', asset_id: IDS.assetDie, org_id: IDS.org, plant_id: IDS.plant, event_type: 'purchased', event_date: d(-30), cost: 18500, supplier_id: IDS.spSupMech, to_location: 'Main Store', note: 'Spare die on shelf (sample)', recorded_by: IDS.empJordan, created_at: isoDaysAgo(30) },
+    { id: 'a0000001-d000-4000-8000-00000000j011', asset_id: IDS.assetPump, org_id: IDS.org, plant_id: IDS.plant, event_type: 'purchased', event_date: d(-14), cost: 24000, supplier_id: IDS.spSupMech, to_location: 'Main Store', note: 'New pump in store (sample)', recorded_by: IDS.empJordan, created_at: isoDaysAgo(14) },
+  ]
 
   return {
     organizations,
@@ -587,5 +738,7 @@ export function createDemoSeed(now = new Date()) {
     stock_transfers,
     assets,
     asset_events,
+    finance_costs,
+    machine_type_options,
   }
 }

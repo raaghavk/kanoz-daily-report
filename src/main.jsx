@@ -10,12 +10,15 @@ import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 import { supabase } from './lib/supabase'
 import { isDemoMode } from './lib/demo/mode'
+import { installDemoGeolocation } from './lib/demo/geolocation'
 
 // Silence debug logging in production builds (keep console.error — errors matter)
 if (import.meta.env.PROD) {
   console.log = () => {}
   console.debug = () => {}
 }
+
+if (isDemoMode()) installDemoGeolocation()
 
 // Warm up Supabase connection immediately on app load to avoid cold-start delay.
 // In demo mode this hits the in-memory adapter (no network).

@@ -5,6 +5,7 @@ import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { getLocalDate } from '../../lib/dateUtils'
 import { kgToMtStr } from '../../lib/units'
+import { DemoSampleNote } from '../../components/DemoBanner'
 import { balancesByPlot } from '../../lib/plotStock'
 import { Loader2 } from 'lucide-react'
 
@@ -122,6 +123,9 @@ export default function StockTransferPage() {
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       <PageHeader title="Stock transfer" subtitle="Move raw material between plots of this factory" backTo="/stock" />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <DemoSampleNote>
+          Sample plot balances and two fictional transfers for Demo Bio Pellets. Not live yard figures.
+        </DemoSampleNote>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Loader2 size={28} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} /></div>
         ) : (

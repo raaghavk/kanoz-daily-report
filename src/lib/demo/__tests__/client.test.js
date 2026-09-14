@@ -55,7 +55,7 @@ describe('demo supabase adapter', () => {
     expect(error).toBeNull()
     expect(data.name).toBe('Jordan Admin')
     expect(data.role).toBe('admin')
-    expect(data.plants.name).toContain('Riverside')
+    expect(data.plants.name).toMatch(/Demo Bio Pellets/i)
   })
 
   it('returns enough shift reports, dispatches, purchases, parts, and tasks', async () => {
@@ -95,12 +95,13 @@ describe('demo supabase adapter', () => {
     expect(data.length).toBe(getDemoStore().shift_reports.length)
   })
 
-  it('stubs paid AI/OCR edge functions', async () => {
-    const ocr = await supabase.functions.invoke('extract-receipt', { body: {} })
-    expect(ocr.error?.name).toBe('DemoModeError')
-    const ai = await supabase.functions.invoke('ai-query', { body: { question: 'hello' } })
+  it('answers insights from sample seed and never claims Gemini', async () => {
+    const ai = await supabase.functions.invoke('ai-query', { body: { question: 'Pending payments' } })
     expect(ai.error).toBeNull()
-    expect(ai.data.answer).toMatch(/not available in demo/i)
+    expect(ai.data.answer).toMatch(/sample data only/i)
+    expect(ai.data.answer).toMatch(/Pending/i)
+    const weather = await supabase.functions.invoke('plant-chat', { body: { question: 'will it rain tomorrow' } })
+    expect(weather.data.answer).toMatch(/weather is turned off/i)
   })
 
   it('persists in-memory updates (mark purchase paid)', async () => {
@@ -109,5 +110,75 @@ describe('demo supabase adapter', () => {
     await supabase.from('raw_material_purchases').update({ payment_status: 'Paid' }).eq('id', id)
     const { data } = await supabase.from('raw_material_purchases').select('payment_status').eq('id', id).single()
     expect(data.payment_status).toBe('Paid')
+  })
+
+  it('seeds attendance with check_in_at, fictional GPS, labour roster, assets, finance, and transfers', async () => {
+    const att = await supabase.from('attendance').select('check_in_at, check_out_at, status, hours, check_in_lat').eq('plant_id', IDS.plant)
+    expect(att.data.length).toBeGreaterThanOrEqual(5)
+    expect(att.data.every(r => r.check_in_at)).toBe(true)
+    expect(att.data[0].check_in_lat).toBeCloseTo(0.0123, 4)
+
+    const people = await supabase.from('employees').select('name, worker_type, labour_daily_wage, role')
+    expect(people.data.some(e => e.worker_type === 'labour')).toBe(true)
+    expect(people.data.some(e => e.worker_type === 'driver')).toBe(true)
+    expect(people.data.some(e => e.role === 'plant_manager')).toBe(true)
+
+    const assets = await supabase.from('assets').select('code, status')
+    expect(assets.data.length).toBeGreaterThanOrEqual(5)
+    expect(assets.data.some(a => a.code === 'MTR-0001')).toBe(true)
+    expect(assets.data.some(a => a.status === 'in_repair')).toBe(true)
+
+    const events = await supabase.from('asset_events').select('event_type')
+    expect(events.data.some(e => e.event_type === 'sent_vendor')).toBe(true)
+
+    const costs = await supabase.from('finance_costs').select('*').eq('is_deleted', false)
+    expect(costs.data.length).toBeGreaterThanOrEqual(5)
+
+    const transfers = await supabase.from('stock_transfers').select('*').eq('is_deleted', false)
+    expect(transfers.data.length).toBeGreaterThanOrEqual(2)
+
+    const plant = await supabase.from('plants').select('location_lat, electricity_rate_day').eq('id', IDS.plant).single()
+    expect(plant.data.location_lat).toBeCloseTo(0.0123, 4)
+    expect(plant.data.electricity_rate_day).toBe(7.9)
+  })
+
+  it('replaces shift report children via rpc so new/edit shift can persist', async () => {
+    const reportId = getDemoStore().shift_reports[0].id
+    const before = (await supabase.from('machine_production').select('id').eq('shift_report_id', reportId)).data.length
+    expect(before).toBeGreaterThan(0)
+    const { error } = await supabase.rpc('replace_shift_report_children', {
+      p_report_id: reportId,
+      p_payload: {
+        machine_production: [{ machine_id: IDS.mPellet1, hours_run: 3, production_mt: 1.5, pellet_type_name: 'Grade A 6mm' }],
+        mixes: [{
+          plant_id: IDS.plant, org_id: IDS.org, name: 'Mix Demo', type: 'A',
+          opening_kg: 0, prepared_kg: 100, used_kg: 80, closing_kg: 20,
+          compositions: [{ raw_material_type_id: IDS.rmSawDust, raw_material_name: 'Saw Dust', quantity_kg: 100 }],
+          machine_usages: [{ machine_id: IDS.mPellet1, quantity_kg: 80 }],
+        }],
+        raw_material_usage: [{ raw_material_type_id: IDS.rmSawDust, quantity_kg: 80, opening_kg: 18000, purchased_kg: 0, closing_kg: 17920 }],
+        processing_runs: [],
+        equipment_diesel_log: [],
+        pellet_stock: [{ pellet_type_id: IDS.ptGradeA, opening_mt: 10, production_mt: 1.5, dispatch_mt: 0, wastage_mt: 0 }],
+        issues: [{ issue_type: 'Mechanical', description: 'Sample issue from save', severity: 'low', photo_url: null, machine_id: IDS.mDryer }],
+        diesel_stock: { opening_litres: 400, purchased_litres: 0, purchase_cost: 0, used_litres: 10, closing_litres: 390 },
+        diesel_purchases: [],
+      },
+    })
+    expect(error).toBeNull()
+    const mp = await supabase.from('machine_production').select('*').eq('shift_report_id', reportId)
+    expect(mp.data.length).toBe(1)
+    expect(mp.data[0].production_mt).toBe(1.5)
+    const mixes = await supabase.from('shift_mixes').select('*').eq('shift_report_id', reportId)
+    expect(mixes.data.length).toBe(1)
+    const comps = await supabase.from('shift_mix_compositions').select('*').eq('mix_id', mixes.data[0].id)
+    expect(comps.data.length).toBe(1)
+    const issues = await supabase.from('issues').select('description, machine_id').eq('shift_report_id', reportId)
+    expect(issues.data[0].machine_id).toBe(IDS.mDryer)
+  })
+
+  it('stubs OCR and other paid edge functions', async () => {
+    const ocr = await supabase.functions.invoke('extract-receipt', { body: {} })
+    expect(ocr.error?.name).toBe('DemoModeError')
   })
 })

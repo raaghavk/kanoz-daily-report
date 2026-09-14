@@ -9,6 +9,7 @@ import ProcessRoutes from './settings/ProcessRoutes'
 import PlantPlots from './settings/PlantPlots'
 import { gradeForGcv } from '../lib/pelletGrading'
 import { kgToMt, kgToMtStr, mtToKg } from '../lib/units'
+import { isDemoMode } from '../lib/demo/mode'
 
 // Default type options seeded per org on first load when none exist.
 const DEFAULT_MACHINE_TYPES = ['Log Eater', 'Hammer Mill', 'Pellet Machine', 'Mixer', 'Screener', 'Other']
@@ -1294,7 +1295,11 @@ export default function AdminPanel() {
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Plant Location</div>
                 <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>
-                  {plant?.location_lat ? `${Number(plant.location_lat).toFixed(4)}, ${Number(plant.location_lng).toFixed(4)}` : 'Not set — needed for weather on home screen'}
+                  {isDemoMode()
+                    ? (plant?.location_lat != null
+                      ? `Demo geofence ${Number(plant.location_lat).toFixed(4)}, ${Number(plant.location_lng).toFixed(4)} (fictional — not a real plant)`
+                      : 'Demo geofence not set')
+                    : (plant?.location_lat ? `${Number(plant.location_lat).toFixed(4)}, ${Number(plant.location_lng).toFixed(4)}` : 'Not set — needed for weather on home screen')}
                 </div>
               </div>
             </div>
@@ -1316,6 +1321,11 @@ export default function AdminPanel() {
                     onChange={e => setLocationLng(e.target.value)}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
                 </div>
+              </div>
+              <div style={{ fontSize: 11, color: '#8a8d7a', lineHeight: 1.4 }}>
+                {isDemoMode()
+                  ? 'These coordinates are a fictional geofence for attendance check-in. They are not a real plant. Home weather is disabled in demo. “Use My Location” also returns the sample pin.'
+                  : 'Used for the weather widget on Home and for attendance check-in.'}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={captureLocation} disabled={gettingLocation}

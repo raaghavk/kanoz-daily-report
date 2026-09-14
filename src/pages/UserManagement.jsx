@@ -5,6 +5,7 @@ import { ROLE_OPTIONS, can } from '../lib/permissions'
 import { UserPlus, Edit2, Shield, ChevronLeft, Phone, MapPin, Check, X, Loader2, Mail, KeyRound, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
+import { DemoSampleNote } from '../components/DemoBanner'
 
 const ROLE_BADGE = {
   admin:            { bg: '#e8f0ec', text: '#2d6a4f',  label: 'Admin' },
@@ -237,6 +238,9 @@ export default function UserManagement() {
       </div>
 
       <div style={{ padding: '16px 16px 100px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <DemoSampleNote>
+          Demo users only (Jordan, Riley, Casey, Morgan, Sam, Alex). Invite / password / delete-user edge functions are stubbed in this tour.
+        </DemoSampleNote>
 
         {/* Add button */}
         <button onClick={openAddForm} style={{
