@@ -76,12 +76,14 @@ export default function Overview() {
   const { data: purchasesData } = useQuery({
     queryKey: ['adminOverviewPurchases', plant?.id],
     queryFn: async () => {
-      const { data } = await supabase.from('raw_material_purchases')
-        .select('purchase_datetime, quantity_kg')
+      const { data, error } = await supabase.from('raw_material_purchases')
+        .select('date, purchase_time, quantity_kg')
         .eq('plant_id', plant.id)
         .eq('is_deleted', false)
-        .gte('purchase_datetime', thirtyDaysAgo + 'T00:00:00')
-        .order('purchase_datetime')
+        .gte('date', thirtyDaysAgo)
+        .lte('date', today)
+        .order('date')
+      if (error) throw error
       return data || []
     },
     enabled: !!plant?.id,
@@ -146,7 +148,7 @@ export default function Overview() {
 
   const { labels: purchLabels, map: purchMap } = buildDailyMap(14)
   ;(purchasesData || []).forEach(p => {
-    const dateKey = p.purchase_datetime ? p.purchase_datetime.split('T')[0] : null
+    const dateKey = p.date || null
     if (dateKey && purchMap[dateKey] !== undefined) purchMap[dateKey] += (parseFloat(p.quantity_kg) || 0) / 1000
   })
   const purchChart = purchLabels.map(l => ({ label: l.label, value: purchMap[l.key] }))

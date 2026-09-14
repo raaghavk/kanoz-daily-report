@@ -30,7 +30,7 @@ export default function PurchasesTable() {
         : null
       let q = supabase
         .from('raw_material_purchases')
-        .select('id, purchase_datetime, quantity_kg, rate_per_kg, total_rm_amount, payment_status, suppliers(name), raw_material_types(name)')
+        .select('id, date, purchase_time, quantity_kg, rate_per_kg, total_rm_amount, payment_status, suppliers(name), raw_material_types(name)')
         .eq('plant_id', plant.id)
         .eq('is_deleted', false)
         .order('date', { ascending: false })
@@ -90,9 +90,12 @@ export default function PurchasesTable() {
               ) : purchases.length === 0 ? (
                 <tr><td colSpan={8} style={{ padding: 40, textAlign: 'center', color: '#8a8d7a' }}>No purchases in this range</td></tr>
               ) : purchases.map(p => {
-                const dt = p.purchase_datetime ? new Date(p.purchase_datetime) : null
-                const dateStr = dt ? `${dt.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()]}` : '—'
-                const timeStr = dt ? dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+                const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                const dateParts = p.date ? String(p.date).split('-') : []
+                const dateStr = dateParts.length >= 3
+                  ? `${Number(dateParts[2])} ${months[Number(dateParts[1]) - 1] || ''}`
+                  : '—'
+                const timeStr = p.purchase_time ? String(p.purchase_time).slice(0, 5) : ''
                 const ps = PAYMENT_STYLE[p.payment_status] || { bg: '#f3f4f6', color: '#6b7280', label: p.payment_status || '—' }
                 return (
                   <tr key={p.id} style={{ borderBottom: '1px solid #f0ebe0' }}
