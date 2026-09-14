@@ -578,7 +578,7 @@ export default function Home() {
         <button onClick={() => setShowIssuesModal(false)} style={{ width: '100%', marginTop: 16, padding: '10px 0', borderRadius: 12, fontSize: 14, fontWeight: 500, background: '#fefae0', border: '1px solid #e5ddd0', cursor: 'pointer' }}>Close</button>
       </Modal>
 
-      <VoiceFAB />
+      {!isDemoMode() && <VoiceFAB />}
     </div>
   )
 }
