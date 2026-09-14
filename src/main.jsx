@@ -4,10 +4,12 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider } from './context/AuthContext'
 import { ToastProvider } from './components/Toast'
+import { DemoShell } from './components/DemoBanner'
 import App from './App'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
 import { supabase } from './lib/supabase'
+import { isDemoMode } from './lib/demo/mode'
 
 // Silence debug logging in production builds (keep console.error — errors matter)
 if (import.meta.env.PROD) {
@@ -15,9 +17,11 @@ if (import.meta.env.PROD) {
   console.debug = () => {}
 }
 
-// Warm up Supabase connection immediately on app load to avoid cold-start delay
-// This lightweight ping fires before any UI renders
-supabase.from('plants').select('id').limit(1).then(() => {})
+// Warm up Supabase connection immediately on app load to avoid cold-start delay.
+// In demo mode this hits the in-memory adapter (no network).
+if (!isDemoMode()) {
+  supabase.from('plants').select('id').limit(1).then(() => {})
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,7 +62,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
           <AuthProvider>
-            <App />
+            <DemoShell>
+              <App />
+            </DemoShell>
           </AuthProvider>
         </ToastProvider>
       </QueryClientProvider>

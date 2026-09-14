@@ -1,0 +1,42 @@
+/** Demo login used on the scrubbed prospect tour. Fictional only. */
+export const DEMO_EMAIL = 'demo@acme-biomass.example'
+
+export const DEMO_ORG_NAME = 'Acme Biomass Demo Co.'
+export const DEMO_PLANT_NAME = 'Demo Pellet Plant — Riverside'
+
+/**
+ * Prospect-tour mode. This branch is DEMO ONLY and must never talk to a live backend.
+ *
+ * True when:
+ * - VITE_DEMO_MODE is true/1/yes (documented local run: VITE_DEMO_MODE=true npm run dev)
+ * - VITE_DEMO_MODE is unset (this branch defaults ON so Vercel previews with inherited
+ *   host env still never call a live database)
+ * - Supabase URL/key are missing, empty, or still the .env.example placeholders
+ *
+ * The only way to turn it off is VITE_DEMO_MODE=false *and* a non-placeholder Supabase
+ * env — do not do that on this branch.
+ */
+export function isDemoMode() {
+  const flag = readDemoFlag()
+  if (flag === true) return true
+  if (flag === false) return !hasUsableSupabaseEnv()
+  if (!hasUsableSupabaseEnv()) return true
+  return true
+}
+
+export function readDemoFlag() {
+  const raw = import.meta.env?.VITE_DEMO_MODE
+  const flag = String(raw ?? '').trim().toLowerCase()
+  if (flag === 'true' || flag === '1' || flag === 'yes') return true
+  if (flag === 'false' || flag === '0' || flag === 'no') return false
+  return null
+}
+
+export function hasUsableSupabaseEnv() {
+  const url = String(import.meta.env?.VITE_SUPABASE_URL || '').trim()
+  const key = String(import.meta.env?.VITE_SUPABASE_ANON_KEY || '').trim()
+  if (!url || !key) return false
+  if (/your-project|placeholder|example\.supabase/i.test(url)) return false
+  if (/your-anon-key-here|placeholder/i.test(key)) return false
+  return true
+}

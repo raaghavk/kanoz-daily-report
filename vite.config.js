@@ -3,6 +3,8 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // Scrubbed-prospect branch: keep demo mode the default for local + preview builds.
+  envPrefix: 'VITE_',
   plugins: [
     react(),    VitePWA({
       registerType: 'autoUpdate',
