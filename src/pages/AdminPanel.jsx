@@ -1313,20 +1313,23 @@ export default function AdminPanel() {
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Latitude</label>
                   <input type="number" step="0.000001" placeholder="e.g. 25.4358" value={locationLat}
                     onChange={e => setLocationLat(e.target.value)}
+                    readOnly={isDemoMode()}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Longitude</label>
                   <input type="number" step="0.000001" placeholder="e.g. 81.8463" value={locationLng}
                     onChange={e => setLocationLng(e.target.value)}
+                    readOnly={isDemoMode()}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div style={{ fontSize: 11, color: '#8a8d7a', lineHeight: 1.4 }}>
                 {isDemoMode()
-                  ? 'These coordinates are a fictional geofence for attendance check-in. They are not a real plant. Home weather is disabled in demo. “Use My Location” also returns the sample pin.'
+                  ? 'Read-only fictional geofence for attendance check-in. Not a real plant. Home weather is off. Live GPS capture is disabled on this tour.'
                   : 'Used for the weather widget on Home and for attendance check-in.'}
               </div>
+              {!isDemoMode() && (
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={captureLocation} disabled={gettingLocation}
                   style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 12, fontWeight: 600, color: '#2d6a4f', cursor: 'pointer' }}>
@@ -1337,6 +1340,7 @@ export default function AdminPanel() {
                   {savingLocation ? 'Saving...' : 'Save'}
                 </button>
               </div>
+              )}
             </div>
           )}
         </div>

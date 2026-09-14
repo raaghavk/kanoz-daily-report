@@ -181,4 +181,20 @@ describe('demo supabase adapter', () => {
     const ocr = await supabase.functions.invoke('extract-receipt', { body: {} })
     expect(ocr.error?.name).toBe('DemoModeError')
   })
+
+  it('rejects duplicate purchase serials after stripping leading zeros', async () => {
+    const row = {
+      plant_id: IDS.plant,
+      date: '2026-09-01',
+      serial_no: '025194',
+      supplier_name: 'Oak Valley Timber',
+      quantity_kg: 1000,
+      rate_per_kg: 4,
+      payment_status: 'Pending',
+    }
+    const first = await supabase.from('raw_material_purchases').insert(row).select().single()
+    expect(first.error).toBeNull()
+    const dup = await supabase.from('raw_material_purchases').insert({ ...row, serial_no: '25194' })
+    expect(dup.error?.code).toBe('23505')
+  })
 })

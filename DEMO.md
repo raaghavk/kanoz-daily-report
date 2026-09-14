@@ -62,6 +62,17 @@ Insights → Dispatch → Shifts / Attendance → Stock / Spare Parts → Purcha
 
 Reload resets in-memory edits to the seed.
 
+## Kept out of the prospect tour
+
+- Live plant GPS capture / save (fictional geofence is read-only)
+- Push notifications / VAPID
+- Role-matrix edits
+- Delete-request approve/reject
+- Inviting real emails, password reset, delete-user
+- Storage uploads (placeholder URLs only)
+- Tally voucher post / live accounting
+- Gemini / live edge analytics
+
 ## Build
 
 ```bash

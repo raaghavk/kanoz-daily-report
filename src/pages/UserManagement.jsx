@@ -6,6 +6,7 @@ import { UserPlus, Edit2, Shield, ChevronLeft, Phone, MapPin, Check, X, Loader2,
 import { useNavigate } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
 import { DemoSampleNote } from '../components/DemoBanner'
+import { isDemoMode } from '../lib/demo/mode'
 
 const ROLE_BADGE = {
   admin:            { bg: '#e8f0ec', text: '#2d6a4f',  label: 'Admin' },
@@ -219,6 +220,7 @@ export default function UserManagement() {
     </div>
   )
 
+  const liveUserActions = !isDemoMode()
   const active = employees.filter(e => e.is_active)
   const inactive = employees.filter(e => !e.is_active)
 
@@ -239,7 +241,7 @@ export default function UserManagement() {
 
       <div style={{ padding: '16px 16px 100px', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <DemoSampleNote>
-          Demo users only (Jordan, Riley, Casey, Morgan, Sam, Alex). Invite / password / delete-user edge functions are stubbed in this tour.
+          Demo users only (Jordan, Riley, Casey, Morgan, Sam, Alex). Inviting real emails, password reset, and user-delete are off on this tour.
         </DemoSampleNote>
 
         {/* Add button */}
@@ -264,7 +266,7 @@ export default function UserManagement() {
 
           const adminCards = admins.length > 0 ? [
             <div key="_admin_header" style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, paddingLeft: 4 }}>Admins</div>,
-            ...admins.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} onSetPwd={() => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) }} onDelete={() => setShowDelete(emp)} />)
+            ...admins.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={liveUserActions ? () => { setShowAccess(emp); setAccessEmail('') } : undefined} onSetPwd={liveUserActions ? () => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) } : undefined} onDelete={liveUserActions ? () => setShowDelete(emp) : undefined} />)
           ] : []
 
           let lastPlant = null
@@ -277,7 +279,7 @@ export default function UserManagement() {
                 {showHeader && (
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, paddingLeft: 4 }}>{plantName}</div>
                 )}
-                <EmployeeCard emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} onSetPwd={() => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) }} onDelete={() => setShowDelete(emp)} />
+                <EmployeeCard emp={emp} onEdit={openEditForm} onAccess={liveUserActions ? () => { setShowAccess(emp); setAccessEmail('') } : undefined} onSetPwd={liveUserActions ? () => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) } : undefined} onDelete={liveUserActions ? () => setShowDelete(emp) : undefined} />
               </div>
             )
           })
@@ -289,7 +291,7 @@ export default function UserManagement() {
         {inactive.length > 0 && (
           <>
             <div style={{ fontSize: 11, fontWeight: 700, color: '#8a8d7a', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, paddingLeft: 4 }}>Inactive</div>
-            {inactive.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={() => { setShowAccess(emp); setAccessEmail('') }} onSetPwd={() => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) }} onDelete={() => setShowDelete(emp)} />)}
+            {inactive.map(emp => <EmployeeCard key={emp.id} emp={emp} onEdit={openEditForm} onAccess={liveUserActions ? () => { setShowAccess(emp); setAccessEmail('') } : undefined} onSetPwd={liveUserActions ? () => { setShowSetPwd(emp); setPwdForm({ email: '', password: '' }); setShowPwd(false) } : undefined} onDelete={liveUserActions ? () => setShowDelete(emp) : undefined} />)}
           </>
         )}
       </div>
@@ -484,20 +486,24 @@ function EmployeeCard({ emp, onEdit, onAccess, onSetPwd, onDelete }) {
             style={{ width: 34, height: 34, borderRadius: 10, border: '1.5px solid #e5ddd0', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <Edit2 size={14} color="#595c4a" />
           </button>
+          {onSetPwd && (
           <button onClick={onSetPwd} title={emp.auth_user_id ? 'Change password' : 'Set password'}
             style={{ width: 34, height: 34, borderRadius: 10, border: '1.5px solid #e5ddd0', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <KeyRound size={14} color="#595c4a" />
           </button>
-          {!emp.auth_user_id && (
+          )}
+          {onAccess && !emp.auth_user_id && (
             <button onClick={onAccess}
               style={{ height: 34, padding: '0 12px', borderRadius: 10, border: 'none', background: '#2d6a4f', color: 'white', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}>
               <Mail size={13} /> Invite
             </button>
           )}
+          {onDelete && (
           <button onClick={onDelete} title="Delete permanently"
             style={{ width: 34, height: 34, borderRadius: 10, border: '1.5px solid #f5c6c6', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <Trash2 size={14} color="#d32f2f" />
           </button>
+          )}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { IDS } from './ids.js'
 import { createDemoSeed } from './seed.js'
 import { parseSelect, resolveRelation } from './relations.js'
 import { answerDemoQuestion } from './answers.js'
+import { normalizePurchaseSerial } from '../purchaseSerial.js'
 
 const SESSION_KEY = 'kanoz_demo_session'
 const STORE_VERSION = 1
@@ -102,6 +103,21 @@ function newId() {
 
 function clone(v) {
   return JSON.parse(JSON.stringify(v))
+}
+
+function uniqueViolation(message) {
+  return { data: null, error: { message, code: '23505', details: 'serial_no' }, count: 0, status: 409, statusText: 'Conflict' }
+}
+
+function purchaseSerialTaken(row, ignoreId) {
+  const serial = normalizePurchaseSerial(row?.serial_no)
+  if (!serial || !row?.plant_id) return false
+  return tableRows('raw_material_purchases').some(existing =>
+    existing.id !== ignoreId
+    && !existing.is_deleted
+    && coerceEq(existing.plant_id, row.plant_id)
+    && normalizePurchaseSerial(existing.serial_no) === serial
+  )
 }
 
 function withInsertDefaults(table, r) {
@@ -213,6 +229,11 @@ function execute(state) {
   const parsed = parseSelect(state.selectArg)
 
   if (state.action === 'insert') {
+    for (const r of state.insertRows || []) {
+      if (state.table === 'raw_material_purchases' && purchaseSerialTaken(r)) {
+        return Promise.resolve(uniqueViolation('A purchase with this serial already exists for this plant'))
+      }
+    }
     const inserted = (state.insertRows || []).map(r => {
       const row = withInsertDefaults(state.table, r)
       rows.push(row)
@@ -227,6 +248,9 @@ function execute(state) {
     const result = []
     for (const r of incoming) {
       const idx = rows.findIndex(existing => keys.every(k => coerceEq(existing[k], r[k])))
+      if (state.table === 'raw_material_purchases' && purchaseSerialTaken(r, idx >= 0 ? rows[idx].id : null)) {
+        return Promise.resolve(uniqueViolation('A purchase with this serial already exists for this plant'))
+      }
       if (idx >= 0) {
         rows[idx] = { ...rows[idx], ...r }
         result.push(rows[idx])
