@@ -5,7 +5,7 @@
 
 // Handle incoming push notifications
 self.addEventListener('push', (event) => {
-  let data = { title: 'Kanoz Daily Report', body: 'New notification' }
+  let data = { title: 'Demo Bio Pellets', body: 'New notification' }
 
   if (event.data) {
     try {
@@ -17,9 +17,9 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/kanoz-icon.svg',
-    badge: '/kanoz-icon.svg',
-    tag: data.tag || 'kanoz-notification',
+    icon: '/demo-mark.svg',
+    badge: '/demo-mark.svg',
+    tag: data.tag || 'demo-notification',
     data: {
       url: data.url || '/',
     },

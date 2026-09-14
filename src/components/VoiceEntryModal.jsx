@@ -146,12 +146,20 @@ export default function VoiceEntryModal({ onClose }) {
           context: { suppliers, customers, transporters, rawMaterials, pelletTypes },
         }
       })
-      if (error || !data?.success) throw new Error(error?.message || 'Parse failed')
+      if (error || !data?.success) {
+        if (error?.name === 'DemoModeError') {
+          setErrorMsg(error.message)
+        } else {
+          setErrorMsg('Could not understand. Please try again.')
+        }
+        setPhase('error')
+        return
+      }
       setResult(data.result)
       setPhase('review')
     } catch (err) {
       console.error('Voice parse error:', err)
-      setErrorMsg('Could not understand. Please try again.')
+      setErrorMsg(err?.name === 'DemoModeError' ? err.message : 'Could not understand. Please try again.')
       setPhase('error')
     }
   }

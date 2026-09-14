@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { isDemoMode, DEMO_APP_NAME } from '../lib/demo/mode'
 import PageHeader from '../components/PageHeader'
+import { showToast } from '../components/Toast'
+import { DemoSampleNote } from '../components/DemoBanner'
 import { Loader2, Send } from 'lucide-react'
 
 const SUGGESTIONS = [
@@ -20,13 +23,15 @@ const SUGGESTIONS = [
 export default function DataInsights() {
   const { plant } = useAuth()
   const [messages, setMessages] = useState([
-    { role: 'bot', text: "Hi! I'm your AI plant assistant. Ask me anything about your plant data in Hindi or English.\n\nTry: purchases today, dispatch this week, pending payments, production this month, all stock, etc." },
+    { role: 'bot', text: isDemoMode()
+      ? `Hi — this is the sample-data assistant for ${DEMO_APP_NAME}. Ask about production, purchases, pending payments, dispatches, stock, and more. Figures are fictional tour numbers, not a live plant.`
+      : "Hi! I'm your AI plant assistant. Ask me anything about your plant data in Hindi or English.\n\nTry: purchases today, dispatch this week, pending payments, production this month, all stock, etc." },
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef(null)
 
-  const location = (plant?.location_lat && plant?.location_lng)
+  const location = (!isDemoMode() && plant?.location_lat && plant?.location_lng)
     ? { lat: plant.location_lat, lon: plant.location_lng }
     : undefined
 
@@ -59,7 +64,12 @@ export default function DataInsights() {
       setMessages(prev => [...prev, { role: 'bot', text: answer }])
     } catch (err) {
       console.error('Chat error:', err)
-      setMessages(prev => [...prev, { role: 'bot', text: 'Could not connect to AI. Please try again.' }])
+      if (isDemoMode()) {
+        showToast('Insights stays on sample data in demo — Gemini is not called.', 'info')
+        setMessages(prev => [...prev, { role: 'bot', text: 'Could not load a sample answer. Try “production this month” or “pending payments”.' }])
+      } else {
+        setMessages(prev => [...prev, { role: 'bot', text: 'Could not connect to AI. Please try again.' }])
+      }
     } finally {
       setLoading(false)
     }
@@ -68,8 +78,16 @@ export default function DataInsights() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)', background: '#fefae0' }}>
       <div style={{ flexShrink: 0 }}>
-        <PageHeader title="Data Assistant" subtitle="Ask about your plant data" backTo="/" />
+        <PageHeader title="Data Assistant" subtitle={isDemoMode() ? `Sample data only — ${DEMO_APP_NAME}` : 'Ask about your plant data'} backTo="/" />
       </div>
+
+      {isDemoMode() && (
+        <div style={{ flexShrink: 0, padding: '8px 16px 0' }}>
+          <DemoSampleNote>
+            Answers are computed from the in-memory {DEMO_APP_NAME} seed. Gemini / live edge analytics are not called.
+          </DemoSampleNote>
+        </div>
+      )}
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
         {messages.map((msg, idx) => (
