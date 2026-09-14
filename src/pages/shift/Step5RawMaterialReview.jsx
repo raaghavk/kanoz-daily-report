@@ -176,10 +176,10 @@ function Step5RawMaterialReview({ data, updateData }) {
                           {cell.editable ? (
                             <input
                               type="number"
-                              value={cell.value}
+                              value={kgToMt(cell.value) || ''}
                               onChange={(e) => updateMixUsed(idx, e.target.value)}
-                              step="1"
-                              inputMode="numeric"
+                              step="0.01"
+                              aria-label={`${mix.name || 'Mix'} used (MT)`}
                               style={{
                                 width: '100%', maxWidth: 70, padding: '3px 4px',
                                 borderRadius: 6, border: `1.5px solid ${C.border}`,
