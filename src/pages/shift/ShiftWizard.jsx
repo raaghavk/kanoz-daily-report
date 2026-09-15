@@ -11,7 +11,7 @@ import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
 import { canonicalReportDate, isDispatchInShiftWindow } from '../../lib/shiftReportDate'
-import { buildShiftChildrenPayload } from '../../lib/shiftSavePayload'
+import { buildShiftChildrenPayload, mapDieselPurchasesFromRows } from '../../lib/shiftSavePayload'
 import { cascadeResyncFrom } from '../../lib/cascadeResync'
 import { getValidationErrors, getValidationWarnings } from './validation'
 import Step1Header from './Step1Header'
@@ -395,6 +395,8 @@ export default function ShiftWizard() {
           if (diesel.error) throw diesel.error
           if (pStock.error) throw pStock.error
           if (issuesData.error) throw issuesData.error
+          if (dStock.error) throw dStock.error
+          if (dPurchases.error) throw dPurchases.error
           if (mixesRes.error) throw mixesRes.error
           if (processingRes?.error) throw processingRes.error
 
@@ -597,11 +599,7 @@ export default function ShiftWizard() {
 
           // Merge diesel stock
           if (dStock.data) {
-            const purchases = (dPurchases.data || []).map(dp => ({
-              litres: parseFloat(dp.litres) || 0,
-              cost_per_litre: parseFloat(dp.cost_per_litre) || 0,
-              receipt_url: dp.receipt_url || null,
-            }))
+            const purchases = mapDieselPurchasesFromRows(dPurchases.data)
             freshReportData.diesel_stock = {
               opening: parseFloat(dStock.data.opening_litres) || 0,
               purchases,
