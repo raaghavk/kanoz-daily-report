@@ -6,6 +6,7 @@ import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { Loader2, AlertTriangle } from 'lucide-react'
 import { getLocalDate } from '../../lib/dateUtils'
+import { plantMinByPartId, shouldNotifyLowStock } from '../../lib/sparePartsStock'
 
 export default function IssuePartPage() {
   const { plant } = useAuth()
@@ -62,12 +63,19 @@ export default function IssuePartPage() {
       purchasesQuery = purchasesQuery.eq('plant_id', plantId)
       usageQuery = usageQuery.eq('plant_id', plantId)
     }
-    const [purchasesRes, usageRes] = await Promise.all([purchasesQuery, usageQuery])
+    let configQuery = supabase.from('spare_parts_plant_config').select('part_id, min_stock_level').in('part_id', partIds)
+    if (plantId) configQuery = configQuery.eq('plant_id', plantId)
+    const [purchasesRes, usageRes, configRes] = await Promise.all([purchasesQuery, usageQuery, configQuery])
     const purchaseMap = {}
     for (const row of (purchasesRes.data || [])) purchaseMap[row.part_id] = (purchaseMap[row.part_id] || 0) + Number(row.quantity)
     const usageMap = {}
     for (const row of (usageRes.data || [])) usageMap[row.part_id] = (usageMap[row.part_id] || 0) + Number(row.quantity)
-    setParts((partsData || []).map(p => ({ ...p, current_stock: (purchaseMap[p.id] || 0) - (usageMap[p.id] || 0) })))
+    const configMap = plantMinByPartId(configRes.data)
+    setParts((partsData || []).map(p => ({
+      ...p,
+      current_stock: (purchaseMap[p.id] || 0) - (usageMap[p.id] || 0),
+      plant_min: configMap[p.id] ?? null,
+    })))
   }
 
   async function handleSubmit() {
@@ -94,15 +102,15 @@ export default function IssuePartPage() {
       }])
       if (error) throw error
       showToast('Usage recorded', 'success')
-      // Check if stock fell below min level
-      if (selectedPart && selectedPart.min_stock_level != null) {
+      // Min lives on spare_parts_plant_config (plant_min), not spare_parts.min_stock_level.
+      if (selectedPart) {
         const newStock = selectedPart.current_stock - parseFloat(formData.quantity)
-        if (newStock < selectedPart.min_stock_level) {
+        if (shouldNotifyLowStock(newStock, selectedPart.plant_min)) {
           import('../../lib/notifications').then(({ sendNotification }) => {
             sendNotification('spare_part_low_stock', {
               part_name: selectedPart.name,
               current_stock: Math.round(newStock * 100) / 100,
-              min_stock_level: selectedPart.min_stock_level,
+              min_stock_level: selectedPart.plant_min,
               unit: selectedPart.unit,
               plant: plant?.name || '',
             })
