@@ -252,12 +252,12 @@ serve(async (req) => {
       case 'purchase_added':
         title = `RM Purchase: ${payload.material}`
         body = `${payload.quantity_kg} kg from ${payload.supplier} at ${payload.plant}`
-        url = '/purchase'
+        url = payload.purchase_id ? `/purchase/${payload.purchase_id}` : '/purchase'
         break
       case 'dispatch_created':
         title = `Dispatch: ${payload.truck_number}`
         body = `${payload.quantity_mt} MT to ${payload.customer} from ${payload.plant}`
-        url = '/dispatch'
+        url = payload.dispatch_id ? `/dispatch/${payload.dispatch_id}` : '/dispatch'
         break
       case 'issue_reported': {
         const sevLabel = payload.severity === 'critical' ? '🚨 Critical' : payload.severity === 'high' ? '⚠ High' : '📋'
