@@ -11,7 +11,7 @@ import Modal from '../../components/Modal'
 import PhotoUpload from '../../components/PhotoUpload'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import AddTransporterModal from '../../components/AddTransporterModal'
-import { getLocalDate } from '../../lib/dateUtils'
+import { getLocalDate, timeToInputValue } from '../../lib/dateUtils'
 import { normalizePurchaseSerial, isPurchaseSerialUniqueViolation } from '../../lib/purchaseSerial'
 import { cascadeResyncFrom, earlierCascadePoint } from '../../lib/cascadeResync'
 
@@ -161,7 +161,7 @@ export default function PurchaseForm() {
     if (!purchaseData) return
     setFormData({
       date: purchaseData.date || getLocalDate(),
-      purchase_time: purchaseData.purchase_time || '',
+      purchase_time: timeToInputValue(purchaseData.purchase_time),
       serial_no: purchaseData.serial_no || '',
       supplier_id: purchaseData.supplier_id || '',
       raw_material_type_id: purchaseData.raw_material_type_id || '',
@@ -238,7 +238,7 @@ export default function PurchaseForm() {
           if (imageUrl && !updated.katta_parchi_photo) updated.katta_parchi_photo = imageUrl
           if (result.data?.vehicle_number) updated.vehicle_number = result.data.vehicle_number
           if (result.data?.net_weight) updated.net_weight = result.data.net_weight
-          if (result.data?.time) updated.purchase_time = result.data.time
+          if (result.data?.time) updated.purchase_time = timeToInputValue(result.data.time)
           if (result.data?.serial_no) updated.serial_no = normalizePurchaseSerial(result.data.serial_no) || String(result.data.serial_no)
           if (result.data?.date) {
             const parsed = new Date(result.data.date)
