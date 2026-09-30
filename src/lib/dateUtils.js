@@ -29,3 +29,15 @@ export function localDateOffset(days) {
   d.setDate(d.getDate() + days)
   return d
 }
+
+/**
+ * HH:MM for `<input type="time">`.
+ * Postgres `time` comes back as HH:MM:SS; the default minute-step time input
+ * treats a value with seconds as invalid and shows empty, so an edit-save
+ * would write purchase_time/loading_time back as null.
+ */
+export function timeToInputValue(t) {
+  if (t == null || t === '') return ''
+  const s = String(t).trim()
+  return s.length >= 5 ? s.slice(0, 5) : s
+}
