@@ -13,6 +13,7 @@ import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import AddTransporterModal from '../../components/AddTransporterModal'
 import { getLocalDate } from '../../lib/dateUtils'
 import { normalizePurchaseSerial, isPurchaseSerialUniqueViolation } from '../../lib/purchaseSerial'
+import { inactiveMasterOption, purchaseMasterName } from '../../lib/purchaseMasterRetain'
 import { cascadeResyncFrom, earlierCascadePoint } from '../../lib/cascadeResync'
 
 export default function PurchaseForm() {
@@ -460,9 +461,19 @@ export default function PurchaseForm() {
         remarksText = remarksText + (remarksText ? ' ' : '') + '[Added retroactively]'
       }
 
-      // Get names for text columns (DB has both uuid FK + text columns)
-      const rmTypeName = rawMaterials.find(m => m.id === formData.raw_material_type_id)?.name || ''
-      const supplierName = suppliers.find(s => s.id === formData.supplier_id)?.name || ''
+      // Text columns (DB has both uuid FK + denormalized names). If the type or
+      // supplier was deactivated it is missing from the active lists — keep the
+      // saved name instead of writing ''.
+      const rmTypeName = purchaseMasterName(
+        formData.raw_material_type_id,
+        rawMaterials,
+        purchaseData?.raw_material_type,
+      )
+      const supplierName = purchaseMasterName(
+        formData.supplier_id,
+        suppliers,
+        purchaseData?.supplier_name,
+      )
 
       // On edit, cascade from the earlier of old vs new datetime so moving a purchase
       // backward still repairs every affected shift. Capture before the write payload
@@ -601,6 +612,13 @@ export default function PurchaseForm() {
       </div>
     )
   }
+
+  const inactiveSupplierOpt = inactiveMasterOption(
+    formData.supplier_id, suppliers, purchaseData?.supplier_name, 'supplier',
+  )
+  const inactiveRmOpt = inactiveMasterOption(
+    formData.raw_material_type_id, rawMaterials, purchaseData?.raw_material_type, 'type',
+  )
 
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
@@ -741,6 +759,9 @@ export default function PurchaseForm() {
               style={{ flex: 1, padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
             >
               <option value="">Select supplier...</option>
+              {inactiveSupplierOpt && (
+                <option value={inactiveSupplierOpt.id}>{inactiveSupplierOpt.label}</option>
+              )}
               {suppliers.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -764,6 +785,9 @@ export default function PurchaseForm() {
             style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, color: '#2c2c2c', outline: 'none', background: '#fefae0' }}
           >
             <option value="">Select type...</option>
+            {inactiveRmOpt && (
+              <option value={inactiveRmOpt.id}>{inactiveRmOpt.label}</option>
+            )}
             {rawMaterials.map(m => (
               <option key={m.id} value={m.id}>{m.name}</option>
             ))}
