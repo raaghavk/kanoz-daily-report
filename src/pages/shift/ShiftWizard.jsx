@@ -10,6 +10,7 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import PageHeader from '../../components/PageHeader'
 import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
+import { hydrateShiftTimesFromReport, hydrateMachineTimesFromProd } from '../../lib/shiftTimeHydrate'
 import { canonicalReportDate, isDispatchInShiftWindow } from '../../lib/shiftReportDate'
 import { buildShiftChildrenPayload } from '../../lib/shiftSavePayload'
 import { cascadeResyncFrom } from '../../lib/cascadeResync'
@@ -368,8 +369,9 @@ export default function ShiftWizard() {
           setReportId(editId)
           freshReportData.date = report.date
           freshReportData.shift = report.shift
-          freshReportData.start_time = report.start_time || '08:00'
-          freshReportData.end_time = report.end_time || '20:00'
+          const shiftTimes = hydrateShiftTimesFromReport(report)
+          freshReportData.start_time = shiftTimes.start_time
+          freshReportData.end_time = shiftTimes.end_time
           freshReportData.shift_start_date = report.shift_start_date || report.date
           freshReportData.shift_end_date = report.shift_end_date || report.date
           freshReportData.start_power_reading = report.start_power_reading || 0
@@ -440,8 +442,7 @@ export default function ShiftWizard() {
                 did_not_run: prod.did_not_run || false,
                 production_hours: parseFloat(prod.hours_run) || 0,
                 total_hours: parseFloat(prod.total_hours) || parseFloat(prod.hours_run) || 0,
-                from_time: prod.from_time || '',
-                to_time: prod.to_time || '',
+                ...hydrateMachineTimesFromProd(prod),
                 breakdown_hrs: parseFloat(prod.breakdown_hours) || 0,
                 remarks: prod.remarks || '',
               }
