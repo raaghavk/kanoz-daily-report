@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../../components/PageHeader'
 import { Loader2, ChevronRight, Download } from 'lucide-react'
+import { sparePurchaseTotal, sumSparePurchaseTotals } from '../../lib/sparePurchase'
 export default function SparePartsPurchaseHistoryPage() {
   const { plant } = useAuth()
     const [records, setRecords] = useState([])
@@ -24,7 +25,7 @@ export default function SparePartsPurchaseHistoryPage() {
 
       const { data, error } = await supabase
         .from('spare_parts_purchases')
-        .select('id, purchase_date, quantity, rate_per_unit, total_amount, gst_percent, bill_number, warranty_months, warranty_expiry_date, part_id, supplier_id, purchased_by, spare_parts(name, unit, brand, category), spare_parts_suppliers(name)')
+        .select('id, purchase_date, quantity, rate_per_unit, total_amount, grand_total, gst_percent, bill_number, warranty_months, warranty_expiry_date, part_id, supplier_id, purchased_by, spare_parts(name, unit, brand, category), spare_parts_suppliers(name)')
         .eq('plant_id', plant.id)
         .gte('purchase_date', from)
         .lte('purchase_date', to)
@@ -49,7 +50,7 @@ export default function SparePartsPurchaseHistoryPage() {
       r.spare_parts?.unit || '',
       r.rate_per_unit,
       r.gst_percent,
-      r.total_amount,
+      sparePurchaseTotal(r),
       r.spare_parts_suppliers?.name || '',
       r.bill_number || '',
       r.warranty_months ? `${r.warranty_months} months` : (r.warranty_expiry_date ? `until ${r.warranty_expiry_date}` : 'No Warranty'),
@@ -65,7 +66,7 @@ export default function SparePartsPurchaseHistoryPage() {
     URL.revokeObjectURL(url)
   }
 
-  const totalSpend = records.reduce((s, r) => s + (Number(r.total_amount) || 0), 0)
+  const totalSpend = sumSparePurchaseTotals(records)
 
   const fmtDate = d => new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   const fmtAmt = n => `₹${Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
@@ -135,7 +136,7 @@ export default function SparePartsPurchaseHistoryPage() {
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>{fmtAmt(r.total_amount)}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2d6a4f' }}>{fmtAmt(sparePurchaseTotal(r))}</div>
                   <div style={{ fontSize: 10, color: '#8a8d7a' }}>GST {r.gst_percent}%</div>
                 </div>
               </div>
