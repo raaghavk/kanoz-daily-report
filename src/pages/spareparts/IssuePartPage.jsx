@@ -100,6 +100,7 @@ export default function IssuePartPage() {
         if (newStock < selectedPart.min_stock_level) {
           import('../../lib/notifications').then(({ sendNotification }) => {
             sendNotification('spare_part_low_stock', {
+              part_id: selectedPart.id,
               part_name: selectedPart.name,
               current_stock: Math.round(newStock * 100) / 100,
               min_stock_level: selectedPart.min_stock_level,
