@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { vehicleSummary, normalizePhone, VEHICLE_TYPES } from '../vehicleTypes'
+import { vehicleSummary, normalizePhone, isValidIndianMobile, normalizeIndianMobile, VEHICLE_TYPES } from '../vehicleTypes'
 
 describe('vehicleSummary', () => {
   it('returns empty string when there are no vehicles', () => {
@@ -31,6 +31,24 @@ describe('normalizePhone', () => {
   it('prefixes +91 and strips junk', () => {
     expect(normalizePhone('8858092006')).toBe('+918858092006')
     expect(normalizePhone('+91 88580 92006')).toBe('+918858092006')
+  })
+})
+
+describe('isValidIndianMobile', () => {
+  it('accepts 10 digits with optional +91 and rejects 12-digit numbers', () => {
+    expect(isValidIndianMobile('9876543210')).toBe(true)
+    expect(isValidIndianMobile('+91 98765 43210')).toBe(true)
+    expect(isValidIndianMobile('919876543210')).toBe(true)
+    expect(isValidIndianMobile('987654321012')).toBe(false)
+    expect(isValidIndianMobile('12345')).toBe(false)
+    expect(isValidIndianMobile('')).toBe(false)
+  })
+})
+
+describe('normalizeIndianMobile', () => {
+  it('stores valid numbers as +91XXXXXXXXXX', () => {
+    expect(normalizeIndianMobile('+91 9876543210')).toBe('+919876543210')
+    expect(normalizeIndianMobile('987654321012')).toBe('')
   })
 })
 

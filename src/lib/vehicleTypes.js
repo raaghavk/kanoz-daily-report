@@ -15,3 +15,20 @@ export function normalizePhone(raw) {
   if (!digits) return ''
   return '+91' + digits
 }
+
+/** Digits of an Indian mobile: optional +91 / 91 prefix, then 10 digits. */
+export function indianMobileDigits(raw) {
+  let digits = String(raw || '').replace(/\D/g, '')
+  if (digits.startsWith('91') && digits.length === 12) digits = digits.slice(2)
+  return digits
+}
+
+export function isValidIndianMobile(raw) {
+  return /^\d{10}$/.test(indianMobileDigits(raw))
+}
+
+export function normalizeIndianMobile(raw) {
+  const digits = indianMobileDigits(raw)
+  if (!/^\d{10}$/.test(digits)) return ''
+  return '+91' + digits
+}

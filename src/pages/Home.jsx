@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { kgToMtStr } from '../lib/units'
+import { pluralize } from '../lib/pluralize'
 import { can } from '../lib/permissions'
 import Modal from '../components/Modal'
 import { ChevronRight, AlertTriangle, Wrench, CheckSquare, Circle, Boxes, UserCheck } from 'lucide-react'
@@ -408,7 +409,7 @@ export default function Home() {
               <div style={{ fontSize: 13, fontWeight: 600, color: sp.lowStock > 0 ? '#b91c1c' : '#2c2c2c' }}>
                 Spare Parts {sp.lowStock > 0 && <span style={{ fontSize: 10, fontWeight: 700, background: '#fee2e2', color: '#b91c1c', borderRadius: 5, padding: '1px 5px', marginLeft: 4 }}>{sp.lowStock} low</span>}
               </div>
-              <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>{sp.totalParts} parts · +{sp.purchasedToday} purchased · {sp.issuedToday} used today</div>
+              <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>{pluralize(sp.totalParts, 'part')} · +{sp.purchasedToday} purchased · {sp.issuedToday} used today</div>
             </div>
             <ChevronRight size={15} color="#b5b8a8" />
           </button>
@@ -500,7 +501,7 @@ export default function Home() {
                     <div style={{ fontSize: 16, fontWeight: 800, color: '#595c4a', marginTop: 2 }}>
                       ₹{Math.round(yesterday.purchaseAmt).toLocaleString('en-IN')}
                       <span style={{ fontSize: 11, fontWeight: 500, color: '#8a8d7a', marginLeft: 6 }}>
-                        ({yesterday.purchaseCount} entries, {kgToMtStr(yesterday.purchaseKg)} MT)
+                        ({pluralize(yesterday.purchaseCount, 'entry', 'entries')}, {kgToMtStr(yesterday.purchaseKg)} MT)
                       </span>
                     </div>
                   </div>

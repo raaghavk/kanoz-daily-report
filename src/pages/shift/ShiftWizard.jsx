@@ -294,13 +294,29 @@ export default function ShiftWizard() {
         setLoadingData(true)
         setInitError(null)
 
-        // 1. Fetch active configurations (reference lists) in parallel
-        const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, routesRes] = await Promise.all([
+        // 1. Fetch active configurations (reference lists) in parallel.
+        // For a new report, also start the previous-shift lookup in the same round
+        // — it does not depend on the config rows.
+        const prevReportPromise = !editId
+          ? supabase
+              .from('shift_reports')
+              .select('id, date, shift_start_date, start_time')
+              .eq('plant_id', plant.id)
+              .eq('is_deleted', false)
+              .order('shift_start_date', { ascending: false, nullsFirst: false })
+              .order('start_time', { ascending: false, nullsFirst: false })
+              .order('date', { ascending: false })
+              .limit(1)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null })
+
+        const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, routesRes, prevReportRes] = await Promise.all([
           supabase.from('machines').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
           supabase.from('raw_material_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
           supabase.from('pellet_types').select('*').eq('plant_id', plant.id).eq('is_active', true),
           supabase.from('equipment').select('*').eq('plant_id', plant.id).eq('is_active', true).order('sort_order'),
           supabase.from('process_routes').select('*, process_route_stages(*)').eq('plant_id', plant.id).eq('is_active', true),
+          prevReportPromise,
         ])
 
         if (machinesRes.error) throw machinesRes.error
@@ -610,17 +626,8 @@ export default function ShiftWizard() {
           }
         } else {
           // ================= NEW REPORT PATH =================
-          // Fetch previous shift report for carry-forward values
-          const { data: prevReport } = await supabase
-            .from('shift_reports')
-            .select('id, date, shift_start_date, start_time')
-            .eq('plant_id', plant.id)
-            .eq('is_deleted', false)
-            .order('shift_start_date', { ascending: false, nullsFirst: false })
-            .order('start_time', { ascending: false, nullsFirst: false })
-            .order('date', { ascending: false })
-            .limit(1)
-            .maybeSingle()
+          // Previous shift (already fetched in parallel with config lists)
+          const prevReport = prevReportRes?.data || null
 
           let prevPelletStock = []
           let prevDieselLog = []
@@ -1004,6 +1011,7 @@ export default function ShiftWizard() {
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 40, height: 40, border: '4px solid #2d6a4f', borderTopColor: 'transparent', borderRadius: '50%', margin: '0 auto 12px', animation: 'spin 1s linear infinite' }} />
           <p style={{ fontSize: 14, color: '#595c4a', fontWeight: 600 }}>Loading shift report data...</p>
+          <p style={{ fontSize: 12, color: '#8a8d7a', marginTop: 6 }}>Machines, materials, and previous shift</p>
         </div>
       </div>
     )
