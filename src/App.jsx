@@ -63,7 +63,7 @@ function LoadingFallback() {
 }
 
 function ProtectedRoute({ children }) {
-  const { user, loading, noEmployeeRecord, signOut } = useAuth()
+  const { user, loading, noEmployeeRecord, accountInactive, signOut } = useAuth()
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>
@@ -75,6 +75,25 @@ function ProtectedRoute({ children }) {
     )
   }
   if (!user) return <Navigate to="/login" replace />
+  if (accountInactive) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>
+        <div style={{ textAlign: 'center', padding: 32, maxWidth: 360 }}>
+          <div style={{ fontSize: 40, marginBottom: 16 }}>🔒</div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2c2c2c', marginBottom: 8 }}>Account deactivated</h2>
+          <p style={{ fontSize: 14, color: '#595c4a', marginBottom: 20, lineHeight: 1.5 }}>
+            Your account is inactive. You cannot use the app until an admin turns access back on.
+          </p>
+          <button
+            onClick={signOut}
+            style={{ padding: '12px 32px', background: '#d32f2f', color: 'white', borderRadius: 12, fontSize: 14, fontWeight: 600, border: 'none', cursor: 'pointer' }}
+          >
+            Sign Out
+          </button>
+        </div>
+      </div>
+    )
+  }
   if (noEmployeeRecord) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>

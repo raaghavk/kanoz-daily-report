@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { setDynamicRoles, can } from '../lib/permissions'
+import { isEmployeeActive } from '../lib/employeeAccess'
 
 const AuthContext = createContext({})
 
@@ -10,13 +11,17 @@ export function AuthProvider({ children }) {
   const [plant, setPlant] = useState(null)
   const [loading, setLoading] = useState(true)
   const [noEmployeeRecord, setNoEmployeeRecord] = useState(false)
+  const [accountInactive, setAccountInactive] = useState(false)
 
   useEffect(() => {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) fetchEmployee(session.user.id)
-      else setLoading(false)
+      else {
+        setAccountInactive(false)
+        setLoading(false)
+      }
     })
 
     // Listen for auth changes
@@ -26,6 +31,8 @@ export function AuthProvider({ children }) {
       else {
         setEmployee(null)
         setPlant(null)
+        setNoEmployeeRecord(false)
+        setAccountInactive(false)
         setLoading(false)
       }
     })
@@ -41,13 +48,20 @@ export function AuthProvider({ children }) {
         .eq('auth_user_id', authUserId)
         .single()
 
-      if (data) {
+      if (data && !isEmployeeActive(data)) {
+        setEmployee(null)
+        setPlant(null)
+        setNoEmployeeRecord(false)
+        setAccountInactive(true)
+      } else if (data) {
         setEmployee(data)
         setPlant(data.plants)
         setNoEmployeeRecord(false)
+        setAccountInactive(false)
         loadRoles(data.org_id ?? data.plants?.org_id)
       } else {
         setNoEmployeeRecord(true)
+        setAccountInactive(false)
       }
     } catch (err) {
       console.error('Error fetching employee:', err)
@@ -97,10 +111,31 @@ export function AuthProvider({ children }) {
       // Check for a session once before showing an error, so the user isn't
       // told "timed out" while actually being logged in.
       const { data: { session } } = await supabase.auth.getSession()
-      if (session) return { session, user: session.user }
+      if (session) {
+        await rejectIfInactive(session.user.id)
+        return { session, user: session.user }
+      }
       throw new Error('Connection timed out. Supabase may be blocked by your ISP in India. Try using a VPN.')
     }
+    const userId = result?.user?.id || result?.session?.user?.id
+    if (userId) await rejectIfInactive(userId)
     return result
+  }
+
+  async function rejectIfInactive(authUserId) {
+    const { data } = await supabase
+      .from('employees')
+      .select('is_active')
+      .eq('auth_user_id', authUserId)
+      .maybeSingle()
+    if (data && !isEmployeeActive(data)) {
+      await supabase.auth.signOut()
+      setUser(null)
+      setEmployee(null)
+      setPlant(null)
+      setAccountInactive(false)
+      throw new Error('Your account has been deactivated. Contact an admin.')
+    }
   }
 
   async function switchPlant(newPlantId) {
@@ -142,10 +177,12 @@ export function AuthProvider({ children }) {
     setUser(null)
     setEmployee(null)
     setPlant(null)
+    setNoEmployeeRecord(false)
+    setAccountInactive(false)
   }
 
   return (
-    <AuthContext.Provider value={{ user, employee, plant, loading, noEmployeeRecord, signIn, signOut, switchPlant, refreshPlant }}>
+    <AuthContext.Provider value={{ user, employee, plant, loading, noEmployeeRecord, accountInactive, signIn, signOut, switchPlant, refreshPlant }}>
       {children}
     </AuthContext.Provider>
   )
