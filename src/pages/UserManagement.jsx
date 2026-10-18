@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { ROLE_OPTIONS, can } from '../lib/permissions'
+import { appAccessLabel } from '../lib/employeeAccess'
 import { UserPlus, Edit2, Shield, ChevronLeft, Phone, MapPin, Check, X, Loader2, Mail, KeyRound, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -337,6 +338,11 @@ export default function UserManagement() {
                   </button>
                 </div>
               )}
+              {editingId && (
+                <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: -6, lineHeight: 1.4 }}>
+                  Inactive people cannot sign in or use the app. Their history stays on file.
+                </div>
+              )}
               <button onClick={saveEmployee} disabled={saving}
                 style={{ width: '100%', padding: '13px 0', background: '#2d6a4f', color: 'white', borderRadius: 12, fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', opacity: saving ? 0.7 : 1, marginTop: 4 }}>
                 {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Add Employee'}
@@ -467,10 +473,16 @@ function EmployeeCard({ emp, onEdit, onAccess, onSetPwd, onDelete }) {
             )}
           </div>
           <div style={{ marginTop: 5, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
-            {emp.auth_user_id
-              ? <span style={{ color: '#2d6a4f', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><Check size={11} /> App access active</span>
-              : <span style={{ color: '#d97706', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}><X size={11} /> No app access yet</span>
-            }
+            {(() => {
+              const access = appAccessLabel(emp)
+              const color = access.kind === 'active' ? '#2d6a4f' : access.kind === 'blocked' ? '#d32f2f' : '#d97706'
+              const Icon = access.kind === 'active' ? Check : X
+              return (
+                <span style={{ color, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Icon size={11} /> {access.text}
+                </span>
+              )
+            })()}
           </div>
         </div>
 

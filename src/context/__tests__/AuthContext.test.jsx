@@ -19,8 +19,9 @@ vi.mock('../../lib/supabase', () => {
 import { supabase } from '../../lib/supabase'
 
 function TestConsumer() {
-  const { user, employee, plant, loading, noEmployeeRecord } = useAuth()
+  const { user, employee, plant, loading, noEmployeeRecord, accountInactive } = useAuth()
   if (loading) return <div>Loading...</div>
+  if (accountInactive) return <div>Account deactivated</div>
   if (noEmployeeRecord) return <div>No employee record</div>
   if (user) return <div>User: {employee?.name || 'unknown'}, Plant: {plant?.name || 'none'}</div>
   return <div>Not authenticated</div>
@@ -63,6 +64,28 @@ describe('AuthProvider', () => {
     await waitFor(() => {
       expect(screen.getByText('User: John, Plant: Plant A')).toBeInTheDocument()
     })
+  })
+
+  it('treats an inactive employee as blocked, not signed in', async () => {
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'u1' } } },
+    })
+
+    const mockChain = {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: { id: 'e1', name: 'Inactive Pat', role: 'supervisor', is_active: false, plants: { id: 'p1', name: 'Plant A' } },
+      }),
+    }
+    supabase.from.mockReturnValue(mockChain)
+
+    render(<AuthProvider><TestConsumer /></AuthProvider>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Account deactivated')).toBeInTheDocument()
+    })
+    expect(screen.queryByText(/User: Inactive Pat/)).not.toBeInTheDocument()
   })
 
   it('sets noEmployeeRecord when employee lookup returns null', async () => {
