@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { inactiveCallerResponse } from '../_shared/authBan.js'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -55,9 +56,17 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, supabaseServiceKey)
     const { data: callerEmployee } = await adminClient
       .from('employees')
-      .select('role, org_id')
+      .select('role, org_id, is_active')
       .eq('auth_user_id', callerUser.id)
-      .single()
+      .maybeSingle()
+
+    const inactiveCaller = inactiveCallerResponse(callerEmployee)
+    if (inactiveCaller) {
+      return new Response(JSON.stringify({ error: inactiveCaller.error }), {
+        status: inactiveCaller.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     let callerAllowed = callerEmployee?.role === 'admin'
     if (callerEmployee && !callerAllowed) {

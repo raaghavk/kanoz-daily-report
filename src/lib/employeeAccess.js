@@ -6,8 +6,8 @@
  *   auth_user_id  — whether a Supabase Auth login is linked
  *
  * The Team card used to show "App access active" whenever auth_user_id was set,
- * even for people in the Inactive section. Inactive users can still obtain a
- * JWT until Auth is banned; the app gate + (pending) RLS must treat them as blocked.
+ * even for people in the Inactive section. Deactivate now also bans Auth via
+ * set-employee-active; leftover JWTs are still blocked by RLS.
  */
 
 export function isEmployeeActive(emp) {
@@ -27,4 +27,13 @@ export function appAccessLabel(emp) {
     return { kind: 'active', text: 'App access active' }
   }
   return { kind: 'pending', text: 'No app access yet' }
+}
+
+/** Body for the set-employee-active edge function (ban/unban Auth). */
+export function setEmployeeActiveBody(employeeId, isActive) {
+  return { employee_id: employeeId, is_active: isActive === true }
+}
+
+export function activeStatusChanged(previous, next) {
+  return Boolean(previous) !== Boolean(next)
 }

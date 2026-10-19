@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { ROLE_OPTIONS, can } from '../lib/permissions'
-import { appAccessLabel } from '../lib/employeeAccess'
+import { appAccessLabel, setEmployeeActiveBody, activeStatusChanged } from '../lib/employeeAccess'
 import { UserPlus, Edit2, Shield, ChevronLeft, Phone, MapPin, Check, X, Loader2, Mail, KeyRound, Eye, EyeOff, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import ConfirmDialog from '../components/ConfirmDialog'
@@ -100,29 +100,38 @@ export default function UserManagement() {
     setSaving(true)
     try {
       if (editingId) {
-        const { data: existing } = await supabase.from('employees').select('email').eq('id', editingId).single()
+        const { data: existing } = await supabase.from('employees').select('email, is_active').eq('id', editingId).single()
         const emailChanged = form.email.trim() && form.email.trim() !== (existing?.email || '')
+        const accessChanged = activeStatusChanged(existing?.is_active, form.is_active)
         const { error } = await supabase.from('employees').update({
           name: form.name.trim(), mobile: form.mobile.trim() || null,
           email: form.email.trim() || null,
           role: form.role, plant_id: form.plant_id,
-          is_active: form.is_active, updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString()
         }).eq('id', editingId)
         if (error) throw error
 
+        let warning = null
+        if (accessChanged) {
+          const { data: activeData, error: activeErr } = await supabase.functions.invoke('set-employee-active', {
+            body: setEmployeeActiveBody(editingId, form.is_active)
+          })
+          if (activeErr || activeData?.error) {
+            warning = 'Profile saved but access change failed — try again'
+          }
+        }
+
         // If email changed and they have an auth account, update it in auth too
-        if (emailChanged && editingAuthId) {
+        if (!warning && emailChanged && editingAuthId) {
           const { data: fnData, error: fnError } = await supabase.functions.invoke('set-user-password', {
             body: { employee_id: editingId, new_email: form.email.trim() }
           })
           if (fnError || fnData?.error) {
-            showToast('Profile saved but email update in auth failed — try again', 'error')
-          } else {
-            showToast('Employee updated')
+            warning = 'Profile saved but email update in auth failed — try again'
           }
-        } else {
-          showToast('Employee updated')
         }
+
+        showToast(warning || 'Employee updated', warning ? 'error' : 'success')
       } else {
         const { error } = await supabase.from('employees').insert({
           name: form.name.trim(), mobile: form.mobile.trim() || null,
