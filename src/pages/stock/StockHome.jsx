@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import { kgToMtStr } from '../../lib/units'
+import { pelletStockNotes, rawMaterialStockNotes, isNegativeStock } from '../../lib/stockDisplay'
 import PageHeader from '../../components/PageHeader'
 import { Package, Boxes, FlaskConical, Loader2, AlertCircle, Plus, Info } from 'lucide-react'
 
@@ -18,84 +19,68 @@ const live = q => q.or('is_deleted.is.null,is_deleted.eq.false')
 //           + SUM(processing_runs.output_kg where output is this material)
 //           - SUM(raw_material_usage.quantity_kg)   // already folds mix + processing input
 async function loadStock(plant) {
-  // Latest non-deleted shift report for this plant (most recent date, then shift)
-  const latestRes = await live(
-    supabase
-      .from('shift_reports')
-      .select('id, date, shift')
-      .eq('plant_id', plant.id)
-      .order('date', { ascending: false })
-      .order('shift', { ascending: false })
-      .limit(1)
-  )
-  const latest = (latestRes.data && latestRes.data[0]) || null
-
-  // Raw material types (names + opening stock + gcv)
-  const rmTypesRes = await supabase
-    .from('raw_material_types')
-    .select('id, name, unit, opening_stock_kg, gcv_kcal_kg, is_active, source')
+  // Latest live shift: chronological (same order as ShiftWizard carry-forward),
+  // not date+letter which can pick Shift B over a later same-calendar Shift A.
+  // Soft-deleted reports are excluded; a stale as-of date means no newer live report exists.
+  let pq = supabase
+    .from('raw_material_purchases')
+    .select('raw_material_type_id, raw_material_type, quantity_kg')
     .eq('plant_id', plant.id)
-    .eq('is_active', true)
-  const rmTypes = rmTypesRes.data || []
+    .eq('is_deleted', false)
+  if (plant?.stock_opening_date) pq = pq.gte('date', plant.stock_opening_date)
 
-  // All non-deleted shift report ids for this plant (to scope usage + processing runs).
-  let shiftIds = []
-  try {
-    const srRes = await live(
-      supabase.from('shift_reports').select('id').eq('plant_id', plant.id)
-    )
-    shiftIds = (srRes.data || []).map(r => r.id)
-  } catch { shiftIds = [] }
-
-  // Purchases for this plant (live only). Match to material by type id, else by name.
-  let purchases = []
-  try {
-    // Only count non-deleted purchases dated on/after the stock opening (as-of) date —
-    // purchases before it are already inside the opening_stock figure.
-    let pq = supabase
-      .from('raw_material_purchases')
-      .select('raw_material_type_id, raw_material_type, quantity_kg')
+  const [latestRes, rmTypesRes, srRes, pRes, rtRes, mixRes] = await Promise.all([
+    live(
+      supabase
+        .from('shift_reports')
+        .select('id, date, shift, shift_start_date, start_time')
+        .eq('plant_id', plant.id)
+        .order('shift_start_date', { ascending: false, nullsFirst: false })
+        .order('start_time', { ascending: false, nullsFirst: false })
+        .order('date', { ascending: false })
+        .limit(1)
+    ),
+    supabase
+      .from('raw_material_types')
+      .select('id, name, unit, opening_stock_kg, gcv_kcal_kg, is_active, source')
       .eq('plant_id', plant.id)
-      .eq('is_deleted', false)
-    if (plant?.stock_opening_date) pq = pq.gte('date', plant.stock_opening_date)
-    const pRes = await live(pq)
-    purchases = pRes.data || []
-  } catch { purchases = [] }
-
-  // Raw material usage across this plant's non-deleted shift reports.
-  // quantity_kg already includes mix consumption AND in-house processing input.
-  let usageRows = []
-  try {
-    if (shiftIds.length) {
-      const uRes = await supabase
-        .from('raw_material_usage')
-        .select('raw_material_type_id, quantity_kg')
-        .in('shift_report_id', shiftIds)
-      usageRows = uRes.data || []
-    }
-  } catch { usageRows = [] }
-
-  // Processing runs across this plant's non-deleted shift reports (adds output only).
-  let procRuns = []
-  try {
-    if (shiftIds.length) {
-      const prRes = await supabase
-        .from('processing_runs')
-        .select('output_material, output_kg')
-        .in('shift_report_id', shiftIds)
-      procRuns = prRes.data || []
-    }
-  } catch { procRuns = [] }
-
-  // Active process routes for this plant (to flag "made in-house" materials).
-  let routes = []
-  try {
-    const rtRes = await supabase
+      .eq('is_active', true),
+    live(supabase.from('shift_reports').select('id').eq('plant_id', plant.id)),
+    live(pq),
+    supabase
       .from('process_routes')
       .select('output_material_type_id, output_material_name, is_active')
+      .eq('plant_id', plant.id),
+    supabase
+      .from('shift_mixes')
+      .select('id, name, type, derived_pellet_name, derived_gcv, derived_grade, created_at, shift_mix_compositions(raw_material_name, quantity_kg)')
       .eq('plant_id', plant.id)
-    routes = (rtRes.data || []).filter(r => r.is_active !== false)
-  } catch { routes = [] }
+      .order('created_at', { ascending: false }),
+  ])
+
+  const latest = (latestRes.data && latestRes.data[0]) || null
+  const rmTypes = rmTypesRes.data || []
+  const shiftIds = (srRes.data || []).map(r => r.id)
+  const purchases = pRes.data || []
+  const routes = (rtRes.data || []).filter(r => r.is_active !== false)
+  const allMixes = mixRes.data || []
+
+  const [uRes, prRes, psRes] = await Promise.all([
+    shiftIds.length
+      ? supabase.from('raw_material_usage').select('raw_material_type_id, quantity_kg').in('shift_report_id', shiftIds)
+      : Promise.resolve({ data: [] }),
+    shiftIds.length
+      ? supabase.from('processing_runs').select('output_material, output_kg').in('shift_report_id', shiftIds)
+      : Promise.resolve({ data: [] }),
+    latest
+      ? supabase
+          .from('pellet_stock')
+          .select('pellet_type_id, closing_mt, pellet_types(name, grade, gcv_kcal_kg)')
+          .eq('shift_report_id', latest.id)
+      : Promise.resolve({ data: [] }),
+  ])
+  const usageRows = uRes.data || []
+  const procRuns = prRes.data || []
 
   // --- Index helpers ---
   const normName = n => (n || '').toString().trim().toLowerCase()
@@ -176,34 +161,22 @@ async function loadStock(plant) {
     }
   })
 
-  // Pellet stock from the latest shift report
+  // Pellet stock from the latest live shift report (snapshot — not live like RM).
   let pellets = []
   let pelletAsOf = null
-  if (latest) {
-    const psRes = await supabase
-      .from('pellet_stock')
-      .select('pellet_type_id, closing_mt, pellet_types(name, grade, gcv_kcal_kg)')
-      .eq('shift_report_id', latest.id)
-    const ps = psRes.data || []
-    if (ps.length) {
-      pelletAsOf = { date: latest.date, shift: latest.shift }
-      pellets = ps.map(p => ({
-        id: p.pellet_type_id,
-        name: p.pellet_types?.name || 'Unknown type',
-        mt: num(p.closing_mt),
-        grade: p.pellet_types?.grade || null,
-        gcv: p.pellet_types?.gcv_kcal_kg != null ? num(p.pellet_types.gcv_kcal_kg) : null,
-      }))
-    }
+  const ps = psRes.data || []
+  if (latest && ps.length) {
+    pelletAsOf = { date: latest.date, shift: latest.shift }
+    pellets = ps.map(p => ({
+      id: p.pellet_type_id,
+      name: p.pellet_types?.name || 'Unknown type',
+      mt: num(p.closing_mt),
+      grade: p.pellet_types?.grade || null,
+      gcv: p.pellet_types?.gcv_kcal_kg != null ? num(p.pellet_types.gcv_kcal_kg) : null,
+    }))
   }
 
   // Recipes / mixes: most recent shift_mix per derived_pellet_name for this plant
-  const mixRes = await supabase
-    .from('shift_mixes')
-    .select('id, name, type, derived_pellet_name, derived_gcv, derived_grade, created_at, shift_mix_compositions(raw_material_name, quantity_kg)')
-    .eq('plant_id', plant.id)
-    .order('created_at', { ascending: false })
-  const allMixes = mixRes.data || []
   const seen = new Set()
   const recipes = []
   for (const m of allMixes) {
@@ -270,8 +243,9 @@ export default function StockHome() {
         </div>
 
         {isLoading && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 }}>
             <Loader2 size={28} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
+            <p style={{ fontSize: 13, color: '#595c4a', fontWeight: 600, margin: 0 }}>Loading stock & recipes...</p>
           </div>
         )}
 
@@ -312,16 +286,25 @@ export default function StockHome() {
                           {group.label}
                         </div>
                         <div style={cardStyle}>
-                          {items.map((m, idx) => (
-                            <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>{m.name}</div>
+                          {items.map((m, idx) => {
+                            const notes = rawMaterialStockNotes(m)
+                            const neg = isNegativeStock(m.kg)
+                            return (
+                            <div key={m.id} style={{ padding: '11px 14px', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <div style={{ minWidth: 0 }}>
+                                  <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>{m.name}</div>
+                                </div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: neg ? '#b91c1c' : '#1b4332', flexShrink: 0, marginLeft: 12 }}>
+                                  {kgToMtStr(m.kg)} <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>MT</span>
+                                </div>
                               </div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: '#1b4332', flexShrink: 0, marginLeft: 12 }}>
-                                {kgToMtStr(m.kg)} <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>MT</span>
-                              </div>
+                              {notes.map((note, i) => (
+                                <div key={i} style={{ fontSize: 11, color: '#b91c1c', marginTop: 4, lineHeight: 1.4 }}>{note}</div>
+                              ))}
                             </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )
@@ -332,28 +315,42 @@ export default function StockHome() {
 
             {/* Pellet stock */}
             <div>
-              <div style={sectionTitle}><Boxes size={13} /> Current Pellet Stock</div>
+              <div style={{ ...sectionTitle, marginBottom: 2 }}><Boxes size={13} /> Current Pellet Stock</div>
+              {data.pelletAsOf && (
+                <div style={{ fontSize: 11, color: '#8a8d7a', marginBottom: 8, lineHeight: 1.4 }}>
+                  Snapshot from the latest live shift report · <AsOf info={data.pelletAsOf} />. Deleted reports are ignored; later dispatches after this shift are not applied.
+                </div>
+              )}
               {data.pellets.length === 0 ? (
                 <div style={{ ...cardStyle, padding: '16px', fontSize: 13, color: '#8a8d7a' }}>
                   No pellet stock recorded yet. It appears here once a shift report logs closing stock.
                 </div>
               ) : (
                 <div style={cardStyle}>
-                  {data.pellets.map((p, idx) => (
-                    <div key={p.id || idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 14px', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>{p.name}</div>
-                        <div style={{ fontSize: 11, color: '#8a8d7a', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {p.grade && <span>{p.grade}</span>}
-                          {p.gcv != null && <span>GCV {fmtKg(p.gcv)}</span>}
-                          <AsOf info={data.pelletAsOf} />
+                  {data.pellets.map((p, idx) => {
+                    const mixLabels = (data.recipes || []).map(r => r.label)
+                    const notes = pelletStockNotes(p, mixLabels)
+                    const neg = isNegativeStock(p.mt)
+                    return (
+                    <div key={p.id || idx} style={{ padding: '11px 14px', borderTop: idx > 0 ? '1px solid #f0ebe0' : 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#2c2c2c' }}>{p.name}</div>
+                          <div style={{ fontSize: 11, color: '#8a8d7a', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                            {p.grade && <span>{p.grade}</span>}
+                            {p.gcv != null && <span>GCV {fmtKg(p.gcv)}</span>}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: neg ? '#b91c1c' : '#1b4332', flexShrink: 0, marginLeft: 12 }}>
+                          {p.mt.toLocaleString('en-IN', { maximumFractionDigits: 3 })} <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>MT</span>
                         </div>
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: '#1b4332', flexShrink: 0, marginLeft: 12 }}>
-                        {p.mt.toLocaleString('en-IN', { maximumFractionDigits: 3 })} <span style={{ fontSize: 11, fontWeight: 600, color: '#8a8d7a' }}>MT</span>
-                      </div>
+                      {notes.map((note, i) => (
+                        <div key={i} style={{ fontSize: 11, color: '#b91c1c', marginTop: 4, lineHeight: 1.4 }}>{note}</div>
+                      ))}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
