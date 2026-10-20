@@ -1,4 +1,18 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "kanoz-daily-report.vercel.app" }],
+      "destination": "https://app.kanoz.in/",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "kanoz-daily-report.vercel.app" }],
+      "destination": "https://app.kanoz.in/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/supabase/:path*", "destination": "https://coguzmhpfmjkxmuasuoj.supabase.co/:path*" },
     { "source": "/((?!supabase).*)", "destination": "/" }

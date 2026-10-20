@@ -1,0 +1,30 @@
+-- Template for NEW tables in public (copy into supabase/migrations/YYYYMMDD_*.sql).
+-- Do not apply this file; it is not a numbered migration.
+--
+-- From 30 Oct 2026, new public-schema tables are NOT granted to
+-- anon / authenticated / service_role automatically, so PostgREST will return
+-- 42501 until you GRANT. Existing tables keep whatever grants they already have.
+--
+-- Never GRANT to anon unless the table is genuinely public (this app has none
+-- of those for plant data). service_role is for edge functions only.
+
+-- CREATE TABLE public.example (
+--   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+--   org_id uuid NOT NULL REFERENCES public.organizations(id),
+--   ...
+-- );
+--
+-- ALTER TABLE public.example ENABLE ROW LEVEL SECURITY;
+--
+-- CREATE POLICY org_isolation ON public.example
+--   FOR ALL TO authenticated
+--   USING (org_id = get_user_org_id())
+--   WITH CHECK (org_id = get_user_org_id());
+--
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON public.example TO authenticated, service_role;
+-- GRANT USAGE, SELECT ON SEQUENCE public.example_id_seq TO authenticated, service_role; -- if serial/identity
+--
+-- -- If you add a SQL function the app calls via supabase.rpc():
+-- -- GRANT EXECUTE ON FUNCTION public.example_fn() TO authenticated, service_role;
+-- -- REVOKE EXECUTE ON FUNCTION public.example_fn() FROM PUBLIC, anon;
+-- -- ALTER FUNCTION public.example_fn() SET search_path = public, pg_temp;
