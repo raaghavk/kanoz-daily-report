@@ -26,6 +26,7 @@ import Step8Issues from './Step8Issues'
 import Step9Submit from './Step9Submit'
 import StepProcessing from './StepProcessing'
 import { computeProcessingDeltas } from '../../lib/processingDeltas'
+import { hydrateRawMaterialsForEdit } from '../../lib/retainInactiveRawMaterials'
 import { SHIFT_STEP_TITLES } from '../../lib/shiftWizardSteps'
 
 const STEPS = [
@@ -449,25 +450,15 @@ export default function ShiftWizard() {
             return m
           })
 
-          // Merge raw material usage. Saved quantity_kg is TOTAL consumed
-          // (mix + in-house processing input). Recover mix-only `used` by
-          // subtracting this shift's processing input so the fold below is
-          // idempotent (closing recomputes to the saved value).
-          {
-            const procDeltas = computeProcessingDeltas(freshReportData.processing, activeRawMaterials)
-            freshReportData.rawMaterials = activeRawMaterials.map(m => {
-              const rmData = (rmUsage.data || []).find(r => r.raw_material_type_id === m.id)
-              const totalUsed = rmData ? parseFloat(rmData.quantity_kg) || 0 : 0
-              const procUsed = (procDeltas[m.id] || {}).procUsed || 0
-              return {
-                ...m,
-                opening: rmData ? parseFloat(rmData.opening_kg) || 0 : 0,
-                purchased: rmData ? parseFloat(rmData.purchased_kg) || 0 : 0,
-                used: Math.max(0, totalUsed - procUsed),
-                closing: rmData ? parseFloat(rmData.closing_kg) || 0 : 0,
-              }
-            })
-          }
+          // Merge raw material usage onto active types, then retain unmatched
+          // saved rows (deactivated RM) so Update Report cannot wipe them.
+          // Saved quantity_kg is TOTAL consumed (mix + processing input);
+          // hydrate recovers mix-only `used` so the fold below is idempotent.
+          freshReportData.rawMaterials = hydrateRawMaterialsForEdit(
+            activeRawMaterials,
+            rmUsage.data,
+            freshReportData.processing,
+          )
 
           // Merge pellet stock
           freshReportData.pelletStock = activePellets.map(p => {
