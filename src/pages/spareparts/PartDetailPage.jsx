@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { Loader2, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Building2, Pencil, Check, X } from 'lucide-react'
+import { currentPlantMin, formatMinLevel } from '../../lib/sparePartMin'
 
 export default function PartDetailPage() {
   const { plant, employee } = useAuth()
@@ -149,7 +150,7 @@ export default function PartDetailPage() {
               <div style={{ fontSize: 10, color: '#595c4a' }}>Total Used</div>
             </div>
             <div style={{ flex: 1, background: '#f0f0f0', borderRadius: 10, padding: '8px 12px', textAlign: 'center' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#595c4a' }}>{part.min_stock_level}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#595c4a' }}>{formatMinLevel(currentPlantMin(plantStock, plant?.id))}</div>
               <div style={{ fontSize: 10, color: '#595c4a' }}>Min Level</div>
             </div>
           </div>
