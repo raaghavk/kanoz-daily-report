@@ -3,19 +3,21 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // Scrubbed-prospect branch: keep demo mode the default for local + preview builds.
+  envPrefix: 'VITE_',
   plugins: [
     react(),    VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['kanoz-icon.svg', 'kanoz-logo.png'],
+      includeAssets: ['demo-mark.svg'],
       manifest: {
-        name: 'Kanoz Daily Report',
-        short_name: 'Kanoz',
+        name: 'Demo Bio Pellets',
+        short_name: 'Demo Plant',
         start_url: '/',
         display: 'standalone',
         background_color: '#fefae0',
         theme_color: '#2d6a4f',
         icons: [
-          { src: '/kanoz-icon.svg', sizes: 'any', type: 'image/svg+xml' },
+          { src: '/demo-mark.svg', sizes: 'any', type: 'image/svg+xml' },
         ],
       },
       workbox: {

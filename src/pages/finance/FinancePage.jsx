@@ -6,6 +6,8 @@ import { can } from '../../lib/permissions'
 import PageHeader from '../../components/PageHeader'
 import { showToast } from '../../components/Toast'
 import { getLocalDate } from '../../lib/dateUtils'
+import { DemoSampleNote } from '../../components/DemoBanner'
+import { DEMO_ORG_NAME, DEMO_PLANT_NAME } from '../../lib/demo/mode'
 import { Plus, Trash2, Loader2, IndianRupee } from 'lucide-react'
 
 const GREEN = '#2d6a4f', DARK = '#1b4332', MUTED = '#8a8d7a', TEXT = '#2c2c2c', BORDER = '#e5ddd0'
@@ -138,6 +140,9 @@ export default function FinancePage() {
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       <PageHeader title="Finance" subtitle={plant?.name || 'Plant'} backTo="/" />
       <div style={{ padding: '16px 20px 40px' }}>
+        <DemoSampleNote>
+          Sample numbers only for {DEMO_ORG_NAME} / {DEMO_PLANT_NAME}. Payments and cost overview are tour data. Tally voucher post is not available in this demo.
+        </DemoSampleNote>
         {/* Summary */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 18 }}>
           <div style={{ ...card, flex: 1, padding: '14px 12px' }}>

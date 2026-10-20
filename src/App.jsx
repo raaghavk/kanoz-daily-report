@@ -4,6 +4,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 import { useAuth } from './context/AuthContext'
 import { can } from './lib/permissions'
 import Layout from './components/Layout'
+import { isDemoMode } from './lib/demo/mode'
 
 const Login = lazy(() => import('./pages/Login'))
 const AssetsHome = lazy(() => import('./pages/assets/AssetsHome'))
@@ -200,7 +201,7 @@ export default function App() {
         }
       />
     </Routes>
-    <SpeedInsights />
+    {!isDemoMode() && <SpeedInsights />}
     </Suspense>
   )
 }

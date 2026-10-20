@@ -8,6 +8,8 @@ import PageHeader from '../components/PageHeader'
 import { CheckCircle, XCircle, Clock } from 'lucide-react'
 import { DELETE_TABLE_MAP, alreadyDeletedLabel, deactivateFields } from '../lib/deleteRequests'
 import { cascadeResyncFrom } from '../lib/cascadeResync'
+import { isDemoMode } from '../lib/demo/mode'
+import { DemoSampleNote } from '../components/DemoBanner'
 
 const ENTITY_BADGES = {
   purchase: { bg: '#2d6a4f', label: 'Purchase' },
@@ -156,6 +158,10 @@ export default function DeleteRequests() {
   }, [fetchRequests, plant?.org_id])
 
   const handleApprove = async (request) => {
+    if (isDemoMode()) {
+      showToast('Delete-request approval is off in this demo', 'info')
+      return
+    }
     if (!can(employee.role, 'manage_users')) {
       showToast('Only admins can approve delete requests', 'error')
       return
@@ -221,6 +227,10 @@ export default function DeleteRequests() {
   }
 
   const handleReject = async (request) => {
+    if (isDemoMode()) {
+      showToast('Delete-request review is off in this demo', 'info')
+      return
+    }
     if (!can(employee.role, 'manage_users')) {
       showToast('Only admins can reject delete requests', 'error')
       return
@@ -246,6 +256,9 @@ export default function DeleteRequests() {
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       <PageHeader title="Delete Requests" backTo="/settings" />
       <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+        <DemoSampleNote>
+          Approve/reject is disabled on the prospect tour so sample records cannot be wiped.
+        </DemoSampleNote>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: '#2c2c2c', margin: 0 }}>
             {showResolved ? 'Resolved Requests' : 'Pending Requests'}

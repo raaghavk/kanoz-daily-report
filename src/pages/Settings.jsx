@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can } from '../lib/permissions'
+import { isDemoMode } from '../lib/demo/mode'
+import { DemoSampleNote } from '../components/DemoBanner'
 
 function MiniToggle({ on, onToggle, disabled }) {
   return (
@@ -217,6 +219,9 @@ export default function SettingsPage() {
         </div>
       </div>
       <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <DemoSampleNote>
+        Demo Bio Pellets tour: push notifications, live plant GPS, VAPID, and delete-request approvals are off. Team/roles are sample users only.
+      </DemoSampleNote>
       {/* Profile card */}
       <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ fontSize: 14 }}><span style={{ color: '#595c4a' }}>Name:</span> {employee?.name}</div>
@@ -285,7 +290,7 @@ export default function SettingsPage() {
                 Plant Settings
               </button>
             )}
-            {can(employee?.role, 'manage_users') && (
+            {can(employee?.role, 'manage_users') && !isDemoMode() && (
               <button onClick={() => nav('/delete-requests')} style={{ flex: 1, padding: '12px 6px', background: '#DC2626', color: 'white', borderRadius: 12, fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
                 Deletions
               </button>
@@ -294,7 +299,7 @@ export default function SettingsPage() {
         </>
       )}
       {/* ── Notifications — only for admin, plant_manager, supervisor ── */}
-      {['admin', 'plant_manager', 'supervisor'].includes(employee?.role) && (
+      {!isDemoMode() && ['admin', 'plant_manager', 'supervisor'].includes(employee?.role) && (
         <NotificationsSection
           pushEnabled={pushEnabled}
           pushLoading={pushLoading}

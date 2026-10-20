@@ -6,6 +6,9 @@ import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { getLocalDate } from '../../lib/dateUtils'
 import { CHECK_IN_GEOFENCE_RADIUS_M, gpsErrorMessage, prepareSelfCheckIn } from '../../lib/geofence'
+import { isDemoMode } from '../../lib/demo/mode'
+import { demoDeviceCoords } from '../../lib/demo/geolocation'
+import { DemoSampleNote } from '../../components/DemoBanner'
 import { Loader2, LogIn, LogOut, MapPin, CheckCircle2, Circle, Clock, CalendarDays, UserPlus, X, ChevronDown, ChevronUp, Trash2, UserCheck } from 'lucide-react'
 
 const GREEN = '#2d6a4f'
@@ -40,6 +43,9 @@ function combineDateTime(dateStr, timeStr) {
 
 // GPS: required=true rejects with a user-facing error; otherwise resolves null on failure.
 function getCoords({ required = false } = {}) {
+  if (isDemoMode()) {
+    return Promise.resolve(demoDeviceCoords())
+  }
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       if (required) reject(new Error('This device does not support GPS. Check-in requires location.'))
@@ -527,6 +533,9 @@ export default function AttendancePage() {
       <PageHeader title="Attendance" subtitle={plant?.name || 'Plant'} backTo="/" />
 
       <div style={{ padding: '16px 20px 32px' }}>
+        <DemoSampleNote>
+          Fictional Demo Bio Pellets geofence only — not a real plant GPS. Check-in uses sample coordinates so the tour works without device location.
+        </DemoSampleNote>
         {/* My status / check-in-out */}
         <div style={sectionLabel}>My Attendance · Today</div>
         {!myTracksAttendance ? (
@@ -591,7 +600,9 @@ export default function AttendancePage() {
                 </button>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 10, fontSize: 11, color: MUTED }}>
-                <MapPin size={12} /> Must be within {CHECK_IN_GEOFENCE_RADIUS_M} m of the plant. Location is required.
+                <MapPin size={12} /> {isDemoMode()
+                  ? 'Demo geofence (fictional coords). Device GPS is not used.'
+                  : `Must be within ${CHECK_IN_GEOFENCE_RADIUS_M} m of the plant. Location is required.`}
               </div>
             </>
           )}

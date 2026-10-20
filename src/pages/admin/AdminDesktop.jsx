@@ -69,7 +69,7 @@ export default function AdminDesktop() {
         <AlertCircle size={48} color="#d97706" style={{ marginBottom: 16 }} />
         <h2 style={{ fontSize: 20, fontWeight: 800, color: '#2c2c2c', margin: '0 0 10px' }}>Desktop Only</h2>
         <p style={{ fontSize: 14, color: '#595c4a', margin: '0 0 28px', lineHeight: 1.6, maxWidth: 300 }}>
-          The admin dashboard is designed for wider screens. Please open it on a laptop or desktop.
+          The admin dashboard is designed for wider screens. Open on desktop for full admin.
         </p>
         <button onClick={() => navigate('/')} style={{ padding: '13px 28px', background: '#2d6a4f', color: '#fff', borderRadius: 14, border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>
           Back to App
@@ -90,7 +90,7 @@ export default function AdminDesktop() {
       }}>
         {/* Branding */}
         <div style={{ padding: '22px 18px 18px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: -0.5 }}>Kanoz Admin</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', letterSpacing: -0.5 }}>Demo Admin</div>
           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>{employee?.name} · {plant?.name}</div>
         </div>
 

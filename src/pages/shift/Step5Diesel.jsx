@@ -101,7 +101,7 @@ export default memo(function Step5Diesel({ data, updateData, plant }) {
       })
 
       if (error) {
-        showToast('Could not extract data from receipt', 'error')
+        showToast(error.name === 'DemoModeError' ? error.message : 'Could not extract data from receipt', error.name === 'DemoModeError' ? 'info' : 'error')
         return
       }
 

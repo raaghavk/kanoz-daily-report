@@ -9,6 +9,7 @@ import ProcessRoutes from './settings/ProcessRoutes'
 import PlantPlots from './settings/PlantPlots'
 import { gradeForGcv } from '../lib/pelletGrading'
 import { kgToMt, kgToMtStr, mtToKg } from '../lib/units'
+import { isDemoMode } from '../lib/demo/mode'
 
 // Default type options seeded per org on first load when none exist.
 const DEFAULT_MACHINE_TYPES = ['Log Eater', 'Hammer Mill', 'Pellet Machine', 'Mixer', 'Screener', 'Other']
@@ -1294,7 +1295,11 @@ export default function AdminPanel() {
               <div style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c' }}>Plant Location</div>
                 <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 1 }}>
-                  {plant?.location_lat ? `${Number(plant.location_lat).toFixed(4)}, ${Number(plant.location_lng).toFixed(4)}` : 'Not set — needed for weather on home screen'}
+                  {isDemoMode()
+                    ? (plant?.location_lat != null
+                      ? `Demo geofence ${Number(plant.location_lat).toFixed(4)}, ${Number(plant.location_lng).toFixed(4)} (fictional — not a real plant)`
+                      : 'Demo geofence not set')
+                    : (plant?.location_lat ? `${Number(plant.location_lat).toFixed(4)}, ${Number(plant.location_lng).toFixed(4)}` : 'Not set — needed for weather on home screen')}
                 </div>
               </div>
             </div>
@@ -1308,15 +1313,23 @@ export default function AdminPanel() {
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Latitude</label>
                   <input type="number" step="0.000001" placeholder="e.g. 25.4358" value={locationLat}
                     onChange={e => setLocationLat(e.target.value)}
+                    readOnly={isDemoMode()}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Longitude</label>
                   <input type="number" step="0.000001" placeholder="e.g. 81.8463" value={locationLng}
                     onChange={e => setLocationLng(e.target.value)}
+                    readOnly={isDemoMode()}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }} />
                 </div>
               </div>
+              <div style={{ fontSize: 11, color: '#8a8d7a', lineHeight: 1.4 }}>
+                {isDemoMode()
+                  ? 'Read-only fictional geofence for attendance check-in. Not a real plant. Home weather is off. Live GPS capture is disabled on this tour.'
+                  : 'Used for the weather widget on Home and for attendance check-in.'}
+              </div>
+              {!isDemoMode() && (
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={captureLocation} disabled={gettingLocation}
                   style={{ flex: 1, padding: '9px 0', borderRadius: 10, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 12, fontWeight: 600, color: '#2d6a4f', cursor: 'pointer' }}>
@@ -1327,6 +1340,7 @@ export default function AdminPanel() {
                   {savingLocation ? 'Saving...' : 'Save'}
                 </button>
               </div>
+              )}
             </div>
           )}
         </div>

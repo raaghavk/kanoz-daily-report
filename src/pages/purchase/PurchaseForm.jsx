@@ -225,7 +225,7 @@ export default function PurchaseForm() {
       })
 
       if (error) {
-        showToast('Could not extract data from photo', 'error')
+        showToast(error.name === 'DemoModeError' ? error.message : (error.message || 'Could not extract data from photo'), error.name === 'DemoModeError' ? 'info' : 'error')
         return
       }
 

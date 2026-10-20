@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { can, PERMISSION_CATALOG } from '../lib/permissions'
 import { showToast } from '../components/Toast'
+import { isDemoMode } from '../lib/demo/mode'
+import { DemoSampleNote } from '../components/DemoBanner'
 
 const CREAM = '#fefae0'
 const GREEN = '#2d6a4f'
@@ -169,6 +171,10 @@ export default function RolesPage() {
   }, [allowed, fetchRoles])
 
   async function handleSave(payload) {
+    if (isDemoMode()) {
+      showToast('Role matrix edits are read-only in this demo', 'info')
+      return
+    }
     setSaving(true)
     try {
       if (modal?.mode === 'edit' && modal.role) {
@@ -196,6 +202,10 @@ export default function RolesPage() {
   }
 
   async function handleDelete(role) {
+    if (isDemoMode()) {
+      showToast('Role deletes are disabled in this demo', 'info')
+      return
+    }
     if (!window.confirm('Delete this role? Employees with it will lose its permissions until reassigned.')) return
     try {
       const { error } = await supabase.from('roles').delete().eq('id', role.id)
@@ -230,12 +240,19 @@ export default function RolesPage() {
             <div style={{ fontSize: 12, color: MUTED }}>Manage roles & permissions</div>
           </div>
         </div>
+        {!isDemoMode() && (
         <button
           onClick={() => setModal({ mode: 'add' })}
           style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', background: GREEN, color: '#fff', borderRadius: 12, fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer' }}
         >
           <Plus size={16} /> Add
         </button>
+        )}
+      </div>
+      <div style={{ padding: '0 16px' }}>
+        <DemoSampleNote>
+          Sample roles for Demo Bio Pellets. Permission-matrix edits are read-only on this tour.
+        </DemoSampleNote>
       </div>
 
       <div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -262,6 +279,7 @@ export default function RolesPage() {
                     <div style={{ fontSize: 12, color: '#595c4a', marginTop: 6 }}>{permsSummary(role.permissions)}</div>
                   </div>
                 </div>
+                {!isDemoMode() && (
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                   <button onClick={() => setModal({ mode: 'edit', role })} style={{ padding: 8, background: '#f5f2e8', border: `1px solid ${BORDER}`, borderRadius: 9, cursor: 'pointer' }}>
                     <Pencil size={15} color={GREEN} />
@@ -270,6 +288,7 @@ export default function RolesPage() {
                     <Trash2 size={15} color="#DC2626" />
                   </button>
                 </div>
+                )}
               </div>
             </div>
           ))
