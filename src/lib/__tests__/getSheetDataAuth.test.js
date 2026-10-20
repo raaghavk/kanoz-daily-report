@@ -39,11 +39,26 @@ describe('get-sheet-data auth', () => {
     }
   })
 
-  it('documents the Apps Script header and deploy order', () => {
+  it('adds a secret-gated GET-only PostgREST proxy for mode=rest', () => {
+    expect(src).toMatch(/mode['"]?\) === 'rest'/)
+    expect(src).toMatch(/REST proxy is GET only/)
+    expect(src).toMatch(/table is not allowed/)
+    expect(src).toMatch(/Content-Range/)
+    const restIdx = src.indexOf("searchParams.get('mode') === 'rest'")
+    expect(restIdx).toBeGreaterThan(0)
+    expect(src.slice(restIdx, restIdx + 900)).not.toMatch(/requireCaller/)
+    expect(src).toMatch(/proxyRest\(/)
+  })
+
+  it('documents the Daily Report Import REST URL, headers, and cnt_* wipe', () => {
+    expect(readme).toMatch(/mode=rest&table=/)
+    expect(readme).toMatch(/needsSync/)
+    expect(readme).toMatch(/supabaseFetch/)
     expect(readme).toMatch(/x-sheet-sync-secret/)
-    expect(readme).toMatch(/SHEET_SYNC_SECRET/)
+    expect(readme).toMatch(/PropertiesService\.getScriptProperties\(\)\.getProperty\('SHEET_SYNC_SECRET'\)/)
+    expect(readme).toMatch(/Do \*\*not\*\* send `Authorization: Bearer <anon>`/)
+    expect(readme).toMatch(/cnt_\*/)
     expect(readme).toMatch(/20261020_drop_anon_read_policies/)
     expect(readme).toMatch(/UrlFetchApp\.fetch/)
-    expect(readme).toMatch(/Stop calling/)
   })
 })
