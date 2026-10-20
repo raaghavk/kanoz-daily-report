@@ -172,3 +172,20 @@ export function buildShiftChildrenPayload(reportData, plant) {
     })),
   }
 }
+
+/** HH:MM for <input type="time">. Postgres `time` comes back as HH:MM:SS. */
+export function timeToInputValue(t) {
+  if (t == null || t === '') return ''
+  const s = String(t).trim()
+  return s.length >= 5 ? s.slice(0, 5) : s
+}
+
+/** Hydrate wizard diesel_stock.purchases from diesel_purchases rows. */
+export function mapDieselPurchasesFromRows(rows) {
+  return (rows || []).map(dp => ({
+    litres: parseFloat(dp.litres) || 0,
+    cost_per_litre: parseFloat(dp.cost_per_litre) || 0,
+    receipt_url: dp.receipt_url || null,
+    purchase_time: timeToInputValue(dp.purchase_time),
+  }))
+}
