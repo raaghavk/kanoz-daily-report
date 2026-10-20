@@ -1,27 +1,34 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { jsonResponse, requireCaller } from '../_shared/callerAuth.ts'
+import {
+  isAllowedRestProxyTable,
+  restProxyForwardHeaders,
+  restProxyUpstreamUrl,
+} from './restProxy.js'
 
 /**
- * Sheet / MIS pull. Live Apps Script and IMPORTDATA used this function with
- * verify_jwt=false and NO auth, via the service role — anyone who knew the
- * URL could dump every plant. Auth is now:
+ * Sheet / MIS pull. Auth:
  *
  *   1. Header `x-sheet-sync-secret` matching secret SHEET_SYNC_SECRET, or
- *   2. A logged-in employee JWT (scoped to that employee's org).
+ *   2. A logged-in employee JWT (CSV/json only; scoped to that employee's org).
  *
  * Keep verify_jwt=false so the gateway does not demand a user JWT; this
  * function enforces the secret itself. The anon key may still be sent as
  * `apikey` (Supabase gateway) but it is not sufficient on its own.
  *
- * Query params (unchanged from the live CSV contract):
+ * CSV/json query params (unchanged):
  *   plant, date, format=json|csv, section=kpis|production|raw_material|dispatch|raw_stock|pellet_stock
+ *
+ * REST proxy (Daily Report Import Apps Script) — secret required, GET only:
+ *   ?mode=rest&table=<allowlisted table>&<original PostgREST qs>
  */
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-sheet-sync-secret',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-sheet-sync-secret, prefer, range',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Expose-Headers': 'Content-Range',
 }
 
 type NumMap = Record<string, number>
@@ -87,8 +94,8 @@ function providedSheetSecret(req: Request): string {
   return m?.[1]?.trim() || ''
 }
 
-async function authorize(req: Request): Promise<
-  { admin: AdminClient; orgId: string | null } | Response
+async function requireSheetSecret(req: Request): Promise<
+  { supabaseUrl: string; serviceKey: string } | Response
 > {
   const expected = Deno.env.get('SHEET_SYNC_SECRET') || ''
   if (!expected) {
@@ -97,20 +104,77 @@ async function authorize(req: Request): Promise<
 
   if (await secretHeaderMatches(providedSheetSecret(req), expected)) {
     return {
-      admin: createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!),
-      orgId: null,
+      supabaseUrl: Deno.env.get('SUPABASE_URL')!,
+      serviceKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     }
   }
+  return jsonResponse({ error: 'Unauthorized' }, 401)
+}
+
+async function authorize(req: Request): Promise<
+  { admin: AdminClient; orgId: string | null } | Response
+> {
+  const secret = await requireSheetSecret(req)
+  if (!(secret instanceof Response)) {
+    return { admin: createClient(secret.supabaseUrl, secret.serviceKey), orgId: null }
+  }
+  if (secret.status === 503) return secret
 
   const caller = await requireCaller(req)
   if (caller instanceof Response) return caller
   return { admin: caller.admin, orgId: caller.employee.org_id }
 }
 
+function withFnCors(res: Response): Response {
+  const headers = new Headers(res.headers)
+  for (const [k, v] of Object.entries(corsHeaders)) {
+    if (!headers.has(k)) headers.set(k, v)
+  }
+  return new Response(res.body, { status: res.status, headers })
+}
+
+async function proxyRest(req: Request, url: URL): Promise<Response> {
+  if (req.method !== 'GET') {
+    return jsonResponse({ error: 'REST proxy is GET only' }, 405)
+  }
+
+  const secret = await requireSheetSecret(req)
+  if (secret instanceof Response) return secret
+
+  const table = url.searchParams.get('table')?.trim() || ''
+  if (!isAllowedRestProxyTable(table)) {
+    return jsonResponse({ error: 'table is not allowed' }, 400)
+  }
+
+  const restUrl = restProxyUpstreamUrl(secret.supabaseUrl, table, url.search)
+  if (!restUrl) return jsonResponse({ error: 'table is not allowed' }, 400)
+
+  const headers: Record<string, string> = {
+    apikey: secret.serviceKey,
+    Authorization: `Bearer ${secret.serviceKey}`,
+    ...restProxyForwardHeaders((name) => req.headers.get(name)),
+  }
+
+  const upstream = await fetch(restUrl, { method: 'GET', headers })
+  const body = await upstream.arrayBuffer()
+  const out = new Headers(corsHeaders)
+  const contentType = upstream.headers.get('Content-Type')
+  if (contentType) out.set('Content-Type', contentType)
+  const contentRange = upstream.headers.get('Content-Range')
+  if (contentRange) out.set('Content-Range', contentRange)
+  out.set('Access-Control-Expose-Headers', 'Content-Range')
+  return new Response(body, { status: upstream.status, headers: out })
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
   try {
+    const reqUrl = new URL(req.url)
+    if (reqUrl.searchParams.get('mode') === 'rest') {
+      return withFnCors(await proxyRest(req, reqUrl))
+    }
+
     const auth = await authorize(req)
     if (auth instanceof Response) {
       const body = await auth.text()
