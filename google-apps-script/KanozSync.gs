@@ -5,9 +5,15 @@
  * ── HOW TO INSTALL ────────────────────────────────────────────────────────────
  *  1. Open your Google Sheet → Extensions → Apps Script
  *  2. Delete all existing code and paste this entire file
- *  3. Save (Ctrl+S)
- *  4. Run "setupTriggers" once from the Run menu (it will ask for permissions — allow)
- *  5. Close Apps Script. Reload your Google Sheet — data syncs automatically on open.
+ *  3. Project Settings → Script properties → add SHEET_SYNC_SECRET
+ *     (same value as the get-sheet-data edge-function secret). Do not commit it.
+ *  4. Save (Ctrl+S)
+ *  5. Run "setupTriggers" once from the Run menu (it will ask for permissions — allow)
+ *  6. Close Apps Script. Reload your Google Sheet — data syncs automatically on open.
+ *
+ * After #76, anon PostgREST table reads are denied. This script must go through
+ * get-sheet-data?mode=rest with x-sheet-sync-secret. Do not send
+ * Authorization: Bearer <anon>.
  *
  * ── SHEETS WRITTEN ────────────────────────────────────────────────────────────
  *   Purchases     · Dispatches     · Shift Reports
@@ -77,20 +83,25 @@ function syncAll() {
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 
 function supabaseFetch(table, queryString) {
-  var url = SUPABASE_URL + '/rest/v1/' + table + '?' + queryString;
+  var secret = PropertiesService.getScriptProperties().getProperty('SHEET_SYNC_SECRET');
+  if (!secret) {
+    throw new Error('Set SHEET_SYNC_SECRET in Apps Script → Project Settings → Script properties (same value as the get-sheet-data function secret).');
+  }
+  var qs = String(queryString || '').replace(/^\?/, '');
+  var url = SUPABASE_URL + '/functions/v1/get-sheet-data?mode=rest&table=' + encodeURIComponent(table) + '&' + qs;
   var opts = {
     method: 'get',
     headers: {
-      'apikey':        SUPABASE_KEY,
-      'Authorization': 'Bearer ' + SUPABASE_KEY,
-      'Accept':        'application/json'
+      'apikey': SUPABASE_KEY,
+      'x-sheet-sync-secret': secret,
+      'Accept': 'application/json'
     },
     muteHttpExceptions: true
   };
   var resp = UrlFetchApp.fetch(url, opts);
   var code = resp.getResponseCode();
   if (code !== 200) {
-    throw new Error('Supabase ' + code + ' on ' + table + ': ' + resp.getContentText().slice(0, 300));
+    throw new Error('Sheet sync ' + code + ' on ' + table + ': ' + resp.getContentText().slice(0, 300));
   }
   return JSON.parse(resp.getContentText());
 }
@@ -210,7 +221,7 @@ function syncDispatches() {
   var sh = sheet(ss, 'Dispatches');
 
   var qs = [
-    'select=date,dispatch_time,invoice_number,truck_number,transport_charges,total_amount,remarks',
+    'select=date,dispatch_time,invoice_no,truck_number,transport_charges,total_amount,remarks',
     ',customers(name)',
     ',dispatch_pellets(pellet_type_name,quantity_mt)',
     '&plant_id=eq.' + PLANT_ID,
@@ -228,11 +239,11 @@ function syncDispatches() {
   data.forEach(function(r) {
     var pellets = r.dispatch_pellets || [];
     if (pellets.length === 0) {
-      rows.push([r.date||'', (r.dispatch_time||'').slice(0,5), r.invoice_number||'', r.truck_number||'',
+      rows.push([r.date||'', (r.dispatch_time||'').slice(0,5), r.invoice_no||'', r.truck_number||'',
                  (r.customers&&r.customers.name)||'', '', 0, n(r.transport_charges), n(r.total_amount), r.remarks||'']);
     } else {
       pellets.forEach(function(p) {
-        rows.push([r.date||'', (r.dispatch_time||'').slice(0,5), r.invoice_number||'', r.truck_number||'',
+        rows.push([r.date||'', (r.dispatch_time||'').slice(0,5), r.invoice_no||'', r.truck_number||'',
                    (r.customers&&r.customers.name)||'', p.pellet_type_name||'', n(p.quantity_mt),
                    n(r.transport_charges), n(r.total_amount), r.remarks||'']);
       });
