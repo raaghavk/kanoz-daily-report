@@ -50,6 +50,7 @@ const SettingsPage = lazy(() => import('./pages/Settings'))
 const RolesPage = lazy(() => import('./pages/RolesPage'))
 const StockHome = lazy(() => import('./pages/stock/StockHome'))
 const StockTransferPage = lazy(() => import('./pages/stock/StockTransferPage'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 function LoadingFallback() {
   return (
@@ -178,6 +179,7 @@ export default function App() {
         <Route path="roles" element={<PermissionGuard action="manage_users"><RolesPage /></PermissionGuard>} />
         <Route path="admin" element={<PermissionGuard action="plant_settings"><AdminPanel /></PermissionGuard>} />
         <Route path="delete-requests" element={<PermissionGuard action="manage_users"><DeleteRequests /></PermissionGuard>} />
+        <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="/dashboard" element={<ProtectedRoute><PermissionGuard action="view_dashboard"><AdminDashboard /></PermissionGuard></ProtectedRoute>} />
       <Route path="/admin/desktop" element={<Navigate to="/dashboard" replace />} />
