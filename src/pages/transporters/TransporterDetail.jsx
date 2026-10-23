@@ -7,7 +7,7 @@ import { showToast } from '../../components/Toast'
 import Modal from '../../components/Modal'
 import { MapPin, Phone, Edit2, Loader2, AlertCircle, Calendar } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
-import { VEHICLE_TYPES } from '../../lib/vehicleTypes'
+import { VEHICLE_TYPES, isValidIndianMobile, normalizeIndianMobile } from '../../lib/vehicleTypes'
 
 export default function TransporterDetail() {
   const { id: transporterId } = useParams()
@@ -48,6 +48,9 @@ export default function TransporterDetail() {
 
   async function addVehicle() {
     if (!newVehicle.vehicle_number.trim()) { showToast('Vehicle number required', 'error'); return }
+    if (newVehicle.driver_phone.trim() && !isValidIndianMobile(newVehicle.driver_phone)) {
+      showToast('Driver phone must be a 10-digit Indian mobile number', 'error'); return
+    }
     setAddingVehicle(true)
     try {
       const { error } = await supabase.from('transporter_vehicles').insert([{
@@ -55,7 +58,7 @@ export default function TransporterDetail() {
         vehicle_number: newVehicle.vehicle_number.trim().toUpperCase(),
         vehicle_type: newVehicle.vehicle_type || 'Tractor',
         driver_name: newVehicle.driver_name.trim() || null,
-        driver_phone: newVehicle.driver_phone.trim() ? '+91' + newVehicle.driver_phone.trim().replace(/^\+91/, '') : null,
+        driver_phone: newVehicle.driver_phone.trim() ? normalizeIndianMobile(newVehicle.driver_phone) : null,
       }])
       if (error) throw error
       refetchVehicles()
@@ -125,18 +128,28 @@ export default function TransporterDetail() {
       showToast('Please fill in required fields', 'error')
       return
     }
+    if (!isValidIndianMobile(editData.phone)) {
+      showToast('Enter a 10-digit Indian mobile number', 'error')
+      return
+    }
+    if (editData.driver_phone.trim() && !isValidIndianMobile(editData.driver_phone)) {
+      showToast('Driver phone must be a 10-digit Indian mobile number', 'error')
+      return
+    }
 
     try {
+      const phone = normalizeIndianMobile(editData.phone)
+      const driverPhone = editData.driver_phone.trim() ? normalizeIndianMobile(editData.driver_phone) : null
       const { error } = await supabase
         .from('transporters')
         .update({
           name: editData.name,
-          phone: editData.phone,
+          phone,
           address: editData.address || null,
           category: editData.category || null,
           vehicle_number: editData.vehicle_number.trim() || null,
           driver_name: editData.driver_name.trim() || null,
-          driver_phone: editData.driver_phone.trim() ? '+91' + editData.driver_phone.replace(/^\+91/, '').trim() : null,
+          driver_phone: driverPhone,
         })
         .eq('id', id)
 
@@ -145,12 +158,12 @@ export default function TransporterDetail() {
       setTransporter({
         ...transporter,
         name: editData.name,
-        phone: editData.phone,
+        phone,
         address: editData.address || null,
         category: editData.category || null,
         vehicle_number: editData.vehicle_number.trim() || null,
         driver_name: editData.driver_name.trim() || null,
-        driver_phone: editData.driver_phone.trim() ? '+91' + editData.driver_phone.replace(/^\+91/, '').trim() : null,
+        driver_phone: driverPhone,
       })
 
       setShowEditModal(false)
@@ -422,6 +435,8 @@ export default function TransporterDetail() {
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }}>Phone Number *</label>
             <input
               type="tel"
+              inputMode="numeric"
+              placeholder="10-digit mobile, optional +91"
               value={editData.phone}
               onChange={e => setEditData({ ...editData, phone: e.target.value })}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, outline: 'none' }}

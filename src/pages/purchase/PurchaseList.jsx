@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { getLocalDate } from '../../lib/dateUtils'
 import { kgToMtStr } from '../../lib/units'
+import { pluralize } from '../../lib/pluralize'
 
 export default function PurchaseList() {
   const navigate = useNavigate()
@@ -302,7 +303,7 @@ export default function PurchaseList() {
                       </span>
                     </div>
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#2d6a4f' }}>
-                      {formatCurrency(dateTotal)} · {purchases.length} entries
+                      {formatCurrency(dateTotal)} · {pluralize(purchases.length, 'entry', 'entries')}
                     </span>
                   </button>
 

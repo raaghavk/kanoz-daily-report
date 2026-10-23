@@ -2,7 +2,7 @@ import { useState } from 'react'
 import Modal from './Modal'
 import { supabase } from '../lib/supabase'
 import { showToast } from './Toast'
-import { VEHICLE_TYPES, normalizePhone } from '../lib/vehicleTypes'
+import { VEHICLE_TYPES, isValidIndianMobile, normalizeIndianMobile } from '../lib/vehicleTypes'
 
 const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', background: '#fefae0', fontSize: 14, color: '#2c2c2c', outline: 'none', boxSizing: 'border-box' }
 const labelStyle = { display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }
@@ -21,10 +21,12 @@ export default function AddTransporterModal({ isOpen, onClose, orgId, onAdded })
     if (!orgId) { showToast('Organization context missing. Please reload.', 'error'); return }
     if (!form.name.trim()) { showToast('Transporter name is required', 'error'); return }
     if (!form.phone.trim()) { showToast('Phone number is required', 'error'); return }
+    if (!isValidIndianMobile(form.phone)) { showToast('Enter a 10-digit Indian mobile number', 'error'); return }
+    if (form.driver_phone.trim() && !isValidIndianMobile(form.driver_phone)) { showToast('Driver phone must be a 10-digit Indian mobile number', 'error'); return }
     if (submitting) return
     setSubmitting(true)
     try {
-      const phone = normalizePhone(form.phone)
+      const phone = normalizeIndianMobile(form.phone)
       const { data: existing } = await supabase
         .from('transporters')
         .select('id, name')
@@ -56,7 +58,7 @@ export default function AddTransporterModal({ isOpen, onClose, orgId, onAdded })
           vehicle_type: form.vehicle_type,
           approx_capacity_kg: form.approx_capacity_kg ? parseFloat(form.approx_capacity_kg) : null,
           driver_name: form.driver_name.trim() || null,
-          driver_phone: form.driver_phone.trim() ? '+91' + form.driver_phone.replace(/^\+91/, '').trim() : null,
+          driver_phone: form.driver_phone.trim() ? normalizeIndianMobile(form.driver_phone) : null,
           is_active: true,
         }
         const { error: vErr } = await supabase.from('transporter_vehicles').insert([vehicle])
@@ -84,7 +86,7 @@ export default function AddTransporterModal({ isOpen, onClose, orgId, onAdded })
         </div>
         <div>
           <label style={labelStyle}>Phone Number <span style={{ color: '#d32f2f' }}>*</span></label>
-          <input type="tel" placeholder="e.g., 9876543210" value={form.phone} onChange={e => set('phone', e.target.value)} style={inputStyle} />
+          <input type="tel" inputMode="numeric" placeholder="10-digit mobile, optional +91" value={form.phone} onChange={e => set('phone', e.target.value)} style={inputStyle} />
         </div>
         <div>
           <label style={labelStyle}>Address</label>

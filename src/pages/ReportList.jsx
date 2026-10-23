@@ -242,8 +242,9 @@ export default function ReportList() {
       {/* Scrollable Content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px 0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', gap: 10 }}>
             <Loader2 size={32} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} />
+            <p style={{ fontSize: 13, color: '#595c4a', fontWeight: 600, margin: 0 }}>Loading reports...</p>
           </div>
         ) : dateKeys.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', textAlign: 'center' }}>

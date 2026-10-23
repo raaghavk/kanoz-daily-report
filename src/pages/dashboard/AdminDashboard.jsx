@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { can } from '../../lib/permissions'
-import { loadPeriod, loadDaily, loadAssets, loadSpares, latestReportDate, PERIOD_LABEL } from '../../lib/dashboardData'
+import { loadPeriod, loadDaily, loadAssets, loadSpares, PERIOD_LABEL } from '../../lib/dashboardData'
+import { getLocalDate } from '../../lib/dateUtils'
 import { Loader2 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
@@ -32,7 +33,7 @@ export default function AdminDashboard() {
   const allowed = can(employee?.role, 'view_dashboard')
   const [section, setSection] = useState('daily')
   const [period, setPeriod] = useState('mtd')
-  const [date, setDate] = useState('')
+  const [date, setDate] = useState(() => getLocalDate())
   const [pd, setPd] = useState(null), [daily, setDaily] = useState(null)
   const [assets, setAssets] = useState(null), [spares, setSpares] = useState(null)
   const [realisation, setRealisation] = useState(11000)
@@ -40,7 +41,7 @@ export default function AdminDashboard() {
   const [rmSources, setRmSources] = useState([])
   const [machinesHp, setMachinesHp] = useState([])
 
-  useEffect(() => { if (plant?.id) { latestReportDate(plant).then(setDate); loadAssets(plant).then(setAssets); loadSpares(plant).then(setSpares) } }, [plant]) // eslint-disable-line
+  useEffect(() => { if (plant?.id) { loadAssets(plant).then(setAssets); loadSpares(plant).then(setSpares) } }, [plant]) // eslint-disable-line
   useEffect(() => { if (plant?.id) { supabase.from('raw_material_types').select('name, source').eq('plant_id', plant.id).eq('is_active', true).then(({ data }) => setRmSources(data || [])) } }, [plant]) // eslint-disable-line
   useEffect(() => { if (plant?.id) { supabase.from('machines').select('name, motor_hp').eq('plant_id', plant.id).then(({ data }) => setMachinesHp(data || [])) } }, [plant]) // eslint-disable-line
   useEffect(() => { if (plant?.id) { setLoadingP(true); loadPeriod(plant, period).then(d => { setPd(d); setLoadingP(false) }) } }, [plant, period]) // eslint-disable-line
