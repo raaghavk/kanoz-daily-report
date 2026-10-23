@@ -12,6 +12,7 @@ import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
 import { canonicalReportDate, isDispatchInShiftWindow } from '../../lib/shiftReportDate'
 import { buildShiftChildrenPayload } from '../../lib/shiftSavePayload'
+import { pickIssueReportedPayload } from '../../lib/issueNotify'
 import { cascadeResyncFrom } from '../../lib/cascadeResync'
 import { getValidationErrors, getValidationWarnings } from './validation'
 import Step1Header from './Step1Header'
@@ -114,6 +115,9 @@ export default function ShiftWizard() {
   const [loadingData, setLoadingData] = useState(true)
   const [initError, setInitError] = useState(null)
   const [processRoutes, setProcessRoutes] = useState([])
+  // Issue ids that were already on the report when opened for edit. Used so
+  // Update Report does not re-fire issue_reported for the same issues.
+  const loadedIssueIdsRef = useRef([])
 
   // Report data state — shared across all steps
   const [reportData, setReportData] = useState({
@@ -293,6 +297,7 @@ export default function ShiftWizard() {
       try {
         setLoadingData(true)
         setInitError(null)
+        loadedIssueIdsRef.current = []
 
         // 1. Fetch active configurations (reference lists) in parallel
         const [machinesRes, materialsRes, pelletTypesRes, equipmentRes, routesRes] = await Promise.all([
@@ -585,6 +590,7 @@ export default function ShiftWizard() {
 
           // Merge issues
           if (issuesData.data?.length) {
+            loadedIssueIdsRef.current = issuesData.data.map(i => i.id).filter(Boolean)
             freshReportData.issues = issuesData.data.map(i => ({
               id: i.id,
               type: i.issue_type,
@@ -919,17 +925,11 @@ export default function ShiftWizard() {
             report_id: report.id,
           })
         }
-        // Issue reported — fire once for the most severe issue
-        const issues = (reportData.issues || []).filter(i => i.description?.trim())
-        if (issues.length > 0) {
-          const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
-          const sorted = [...issues].sort((a, b) => (severityOrder[a.severity] || 3) - (severityOrder[b.severity] || 3))
-          const top = sorted[0]
+        // Issue reported — only for newly logged issues (not every Update)
+        const issuePayload = pickIssueReportedPayload(reportData.issues, loadedIssueIdsRef.current)
+        if (issuePayload) {
           sendNotification('issue_reported', {
-            type: top.type,
-            description: (top.description || '').slice(0, 60),
-            severity: top.severity,
-            count: issues.length,
+            ...issuePayload,
             plant: plant?.name || '',
             report_id: report.id,
           })
