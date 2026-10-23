@@ -909,6 +909,7 @@ export default function ShiftWizard() {
             production_mt: totalMT.toFixed(1),
             plant: plant?.name,
             date: reportData.date,
+            report_id: report.id,
           })
         } else {
           // Existing report edited
