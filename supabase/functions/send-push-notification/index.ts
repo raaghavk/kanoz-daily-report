@@ -274,7 +274,7 @@ serve(async (req) => {
       case 'spare_part_low_stock':
         title = `⚠ Low Stock: ${payload.part_name}`
         body = `${payload.current_stock} ${payload.unit} left (min: ${payload.min_stock_level}) at ${payload.plant}`
-        url = '/spare-parts/parts'
+        url = payload.part_id ? `/spare-parts/parts/${payload.part_id}` : '/spare-parts/parts'
         break
       case 'task_assigned':
         title = `New Task Assigned`
