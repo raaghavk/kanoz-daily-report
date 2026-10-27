@@ -236,6 +236,9 @@ export default function SettingsPage() {
             {orgPlants.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           {switching && <div style={{ fontSize: 12, color: '#8a8d7a', marginTop: 4 }}>Switching...</div>}
+          <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 8, lineHeight: 1.4 }}>
+            You will choose a plant each time you open the app. This switch lasts until you close it.
+          </div>
         </div>
       )}
       {/* Directory Links */}

@@ -4,6 +4,7 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 import { useAuth } from './context/AuthContext'
 import { can } from './lib/permissions'
 import Layout from './components/Layout'
+import PlantPicker from './pages/PlantPicker'
 
 const Login = lazy(() => import('./pages/Login'))
 const AssetsHome = lazy(() => import('./pages/assets/AssetsHome'))
@@ -63,7 +64,7 @@ function LoadingFallback() {
 }
 
 function ProtectedRoute({ children }) {
-  const { user, loading, noEmployeeRecord, accountInactive, signOut } = useAuth()
+  const { user, loading, noEmployeeRecord, accountInactive, signOut, employee, plant } = useAuth()
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>
@@ -112,6 +113,9 @@ function ProtectedRoute({ children }) {
         </div>
       </div>
     )
+  }
+  if (can(employee?.role, 'switch_plant') && !plant) {
+    return <PlantPicker />
   }
   return children
 }

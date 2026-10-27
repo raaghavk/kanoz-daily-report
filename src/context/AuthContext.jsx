@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { setDynamicRoles, can } from '../lib/permissions'
 import { isEmployeeActive } from '../lib/employeeAccess'
@@ -12,6 +12,20 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [noEmployeeRecord, setNoEmployeeRecord] = useState(false)
   const [accountInactive, setAccountInactive] = useState(false)
+  // Survives token-refresh re-fetches so admins are not asked to re-pick mid-session.
+  const plantRef = useRef(null)
+
+  function applyPlant(next) {
+    plantRef.current = next
+    setPlant(next)
+  }
+
+  function clearSessionState() {
+    setEmployee(null)
+    applyPlant(null)
+    setNoEmployeeRecord(false)
+    setAccountInactive(false)
+  }
 
   useEffect(() => {
     // Check active session
@@ -29,16 +43,39 @@ export function AuthProvider({ children }) {
       setUser(session?.user ?? null)
       if (session?.user) fetchEmployee(session.user.id)
       else {
-        setEmployee(null)
-        setPlant(null)
-        setNoEmployeeRecord(false)
-        setAccountInactive(false)
+        clearSessionState()
         setLoading(false)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
+
+  async function resolveSwitchablePlant(employeeRow) {
+    const orgId = employeeRow.org_id ?? employeeRow.plants?.org_id
+    const keptId = plantRef.current?.id
+    if (keptId && orgId) {
+      const { data: kept, error } = await supabase
+        .from('plants')
+        .select('*')
+        .eq('id', keptId)
+        .eq('org_id', orgId)
+        .single()
+      if (!error && kept && kept.is_active !== false) return kept
+    }
+    if (!orgId) return null
+    const { data: plants, error } = await supabase
+      .from('plants')
+      .select('*')
+      .eq('org_id', orgId)
+      .eq('is_active', true)
+      .order('name')
+    if (error) throw error
+    const list = plants || []
+    // Only skip the picker when there is nothing to choose between.
+    if (list.length === 1) return list[0]
+    return null
+  }
 
   async function fetchEmployee(authUserId) {
     try {
@@ -50,15 +87,24 @@ export function AuthProvider({ children }) {
 
       if (data && !isEmployeeActive(data)) {
         setEmployee(null)
-        setPlant(null)
+        applyPlant(null)
         setNoEmployeeRecord(false)
         setAccountInactive(true)
       } else if (data) {
         setEmployee(data)
-        setPlant(data.plants)
         setNoEmployeeRecord(false)
         setAccountInactive(false)
-        loadRoles(data.org_id ?? data.plants?.org_id)
+        await loadRoles(data.org_id ?? data.plants?.org_id)
+        if (can(data.role, 'switch_plant')) {
+          try {
+            applyPlant(await resolveSwitchablePlant(data))
+          } catch (plantErr) {
+            console.error('Error loading plants for switch:', plantErr)
+            applyPlant(null)
+          }
+        } else {
+          applyPlant(data.plants)
+        }
       } else {
         setNoEmployeeRecord(true)
         setAccountInactive(false)
@@ -132,7 +178,7 @@ export function AuthProvider({ children }) {
       await supabase.auth.signOut()
       setUser(null)
       setEmployee(null)
-      setPlant(null)
+      applyPlant(null)
       setAccountInactive(false)
       throw new Error('Your account has been deactivated. Contact an admin.')
     }
@@ -149,7 +195,7 @@ export function AuthProvider({ children }) {
         .single()
       if (error) throw error
       if (newPlant) {
-        setPlant(newPlant)
+        applyPlant(newPlant)
         loadRoles(newPlant.org_id)
       }
     } catch (err) {
@@ -159,14 +205,16 @@ export function AuthProvider({ children }) {
   }
 
   async function refreshPlant() {
-    if (!user) return
+    const currentId = plantRef.current?.id
+    if (!currentId) return
     try {
-      const { data } = await supabase
-        .from('employees')
-        .select('*, plants(*)')
-        .eq('auth_user_id', user.id)
+      const { data, error } = await supabase
+        .from('plants')
+        .select('*')
+        .eq('id', currentId)
         .single()
-      if (data?.plants) setPlant(data.plants)
+      if (error) throw error
+      if (data) applyPlant(data)
     } catch (err) {
       console.error('refreshPlant error:', err)
     }
@@ -175,10 +223,7 @@ export function AuthProvider({ children }) {
   async function signOut() {
     await supabase.auth.signOut()
     setUser(null)
-    setEmployee(null)
-    setPlant(null)
-    setNoEmployeeRecord(false)
-    setAccountInactive(false)
+    clearSessionState()
   }
 
   return (
