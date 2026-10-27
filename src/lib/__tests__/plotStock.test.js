@@ -11,20 +11,26 @@ describe('plotLabel', () => {
   it('appends (Main) for the primary plot and leaves others as the name', () => {
     expect(plotLabel({ name: 'Main factory land plot A', is_primary: true })).toBe('Main factory land plot A (Main)')
     expect(plotLabel({ name: 'Ravindra singh plot B', is_primary: false })).toBe('Ravindra singh plot B')
+    expect(plotLabel({ name: 'plot C', is_primary: false })).toBe('plot C')
   })
 })
 
 describe('plotsWithSaved', () => {
   const main = { id: 'main', name: 'Main factory land plot A', is_primary: true, is_active: true }
   const plotB = { id: 'b', name: 'Ravindra singh plot B', is_primary: false, is_active: true }
+  const plotC = { id: 'c', name: 'plot C', is_primary: false, is_active: true }
   const archived = { id: 'old', name: 'Plot A', is_primary: false, is_active: false }
 
+  it('keeps every active plot including Plot C', () => {
+    expect(plotsWithSaved([main, plotB, plotC], null).map(p => p.id)).toEqual(['main', 'b', 'c'])
+  })
+
   it('keeps the saved plot in the list when it is no longer active', () => {
-    expect(plotsWithSaved([main, plotB], archived).map(p => p.id)).toEqual(['main', 'b', 'old'])
+    expect(plotsWithSaved([main, plotB, plotC], archived).map(p => p.id)).toEqual(['main', 'b', 'c', 'old'])
   })
 
   it('does not duplicate a saved plot that is already in the active list', () => {
-    expect(plotsWithSaved([main, plotB], plotB).map(p => p.id)).toEqual(['main', 'b'])
+    expect(plotsWithSaved([main, plotB, plotC], plotC).map(p => p.id)).toEqual(['main', 'b', 'c'])
   })
 
   it('ignores a missing saved plot', () => {

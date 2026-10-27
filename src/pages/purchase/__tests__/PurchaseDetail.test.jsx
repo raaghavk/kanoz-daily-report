@@ -90,6 +90,19 @@ describe('PurchaseDetail unload plot', () => {
     expect(screen.queryByText('Main')).not.toBeInTheDocument()
   })
 
+  it('shows Unloaded at Plot C without a Main badge', async () => {
+    mockPurchase({
+      ...basePurchase,
+      storage_plots: { id: 'c', name: 'plot C', is_primary: false },
+    })
+    renderDetail()
+    await waitFor(() => {
+      expect(screen.getByText('Unloaded at')).toBeInTheDocument()
+    })
+    expect(screen.getByText('plot C')).toBeInTheDocument()
+    expect(screen.queryByText('Main')).not.toBeInTheDocument()
+  })
+
   it('shows Unloaded at the primary plot with a Main badge', async () => {
     mockPurchase({
       ...basePurchase,
