@@ -5,24 +5,61 @@ import { isEmployeeActive } from '../lib/employeeAccess'
 
 const AuthContext = createContext({})
 
+export function activePlantStorageKey(userId) {
+  return `kanoz:activePlantId:${userId}`
+}
+
+function readSavedPlantId(userId) {
+  if (!userId) return null
+  try {
+    return localStorage.getItem(activePlantStorageKey(userId))
+  } catch {
+    return null
+  }
+}
+
+function writeSavedPlantId(userId, plantId) {
+  if (!userId) return
+  try {
+    const key = activePlantStorageKey(userId)
+    if (plantId) localStorage.setItem(key, plantId)
+    else localStorage.removeItem(key)
+  } catch { /* private mode / storage blocked */ }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [employee, setEmployee] = useState(null)
   const [plant, setPlant] = useState(null)
+  const [plantConfirmed, setPlantConfirmed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [noEmployeeRecord, setNoEmployeeRecord] = useState(false)
   const [accountInactive, setAccountInactive] = useState(false)
-  // Survives token-refresh re-fetches so admins are not asked to re-pick mid-session.
+  // Survives token-refresh re-fetches so admins are not asked to re-confirm mid-session.
   const plantRef = useRef(null)
+  const plantConfirmedRef = useRef(false)
+  const userIdRef = useRef(null)
 
   function applyPlant(next) {
     plantRef.current = next
     setPlant(next)
   }
 
+  function markPlantConfirmed(value) {
+    plantConfirmedRef.current = value
+    setPlantConfirmed(value)
+  }
+
+  function persistAndConfirm(next, authUserId) {
+    applyPlant(next)
+    if (next?.id) writeSavedPlantId(authUserId || userIdRef.current, next.id)
+    markPlantConfirmed(true)
+  }
+
   function clearSessionState() {
     setEmployee(null)
     applyPlant(null)
+    markPlantConfirmed(false)
     setNoEmployeeRecord(false)
     setAccountInactive(false)
   }
@@ -31,6 +68,7 @@ export function AuthProvider({ children }) {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
+      userIdRef.current = session?.user?.id ?? null
       if (session?.user) fetchEmployee(session.user.id)
       else {
         setAccountInactive(false)
@@ -41,6 +79,7 @@ export function AuthProvider({ children }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      userIdRef.current = session?.user?.id ?? null
       if (session?.user) fetchEmployee(session.user.id)
       else {
         clearSessionState()
@@ -51,7 +90,7 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function resolveSwitchablePlant(employeeRow) {
+  async function resolveSwitchablePlant(employeeRow, authUserId) {
     const orgId = employeeRow.org_id ?? employeeRow.plants?.org_id
     const keptId = plantRef.current?.id
     if (keptId && orgId) {
@@ -61,9 +100,11 @@ export function AuthProvider({ children }) {
         .eq('id', keptId)
         .eq('org_id', orgId)
         .single()
-      if (!error && kept && kept.is_active !== false) return kept
+      if (!error && kept && kept.is_active !== false) {
+        return { plant: kept, autoConfirm: plantConfirmedRef.current }
+      }
     }
-    if (!orgId) return null
+    if (!orgId) return { plant: employeeRow.plants || null, autoConfirm: true }
     const { data: plants, error } = await supabase
       .from('plants')
       .select('*')
@@ -72,9 +113,14 @@ export function AuthProvider({ children }) {
       .order('name')
     if (error) throw error
     const list = plants || []
-    // Only skip the picker when there is nothing to choose between.
-    if (list.length === 1) return list[0]
-    return null
+    if (list.length <= 1) {
+      return { plant: list[0] || employeeRow.plants || null, autoConfirm: true }
+    }
+    const savedId = readSavedPlantId(authUserId)
+    const saved = savedId ? list.find(p => p.id === savedId) : null
+    if (saved) return { plant: saved, autoConfirm: false }
+    const home = list.find(p => p.id === employeeRow.plants?.id) || employeeRow.plants || list[0]
+    return { plant: home || null, autoConfirm: false }
   }
 
   async function fetchEmployee(authUserId) {
@@ -88,6 +134,7 @@ export function AuthProvider({ children }) {
       if (data && !isEmployeeActive(data)) {
         setEmployee(null)
         applyPlant(null)
+        markPlantConfirmed(false)
         setNoEmployeeRecord(false)
         setAccountInactive(true)
       } else if (data) {
@@ -97,13 +144,17 @@ export function AuthProvider({ children }) {
         await loadRoles(data.org_id ?? data.plants?.org_id)
         if (can(data.role, 'switch_plant')) {
           try {
-            applyPlant(await resolveSwitchablePlant(data))
+            const { plant: next, autoConfirm } = await resolveSwitchablePlant(data, authUserId)
+            applyPlant(next)
+            if (autoConfirm) markPlantConfirmed(true)
           } catch (plantErr) {
             console.error('Error loading plants for switch:', plantErr)
-            applyPlant(null)
+            applyPlant(data.plants)
+            markPlantConfirmed(false)
           }
         } else {
           applyPlant(data.plants)
+          markPlantConfirmed(true)
         }
       } else {
         setNoEmployeeRecord(true)
@@ -177,8 +228,10 @@ export function AuthProvider({ children }) {
     if (data && !isEmployeeActive(data)) {
       await supabase.auth.signOut()
       setUser(null)
+      userIdRef.current = null
       setEmployee(null)
       applyPlant(null)
+      markPlantConfirmed(false)
       setAccountInactive(false)
       throw new Error('Your account has been deactivated. Contact an admin.')
     }
@@ -195,7 +248,7 @@ export function AuthProvider({ children }) {
         .single()
       if (error) throw error
       if (newPlant) {
-        applyPlant(newPlant)
+        persistAndConfirm(newPlant)
         loadRoles(newPlant.org_id)
       }
     } catch (err) {
@@ -220,14 +273,20 @@ export function AuthProvider({ children }) {
     }
   }
 
+  function confirmPlant() {
+    if (!plantRef.current) return
+    persistAndConfirm(plantRef.current)
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     setUser(null)
+    userIdRef.current = null
     clearSessionState()
   }
 
   return (
-    <AuthContext.Provider value={{ user, employee, plant, loading, noEmployeeRecord, accountInactive, signIn, signOut, switchPlant, refreshPlant }}>
+    <AuthContext.Provider value={{ user, employee, plant, plantConfirmed, loading, noEmployeeRecord, accountInactive, signIn, signOut, switchPlant, refreshPlant, confirmPlant }}>
       {children}
     </AuthContext.Provider>
   )

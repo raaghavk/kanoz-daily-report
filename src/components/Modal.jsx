@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
 
-export default function Modal({ isOpen, onClose, title, children }) {
+export default function Modal({ isOpen, onClose, title, children, dismissible = true }) {
   const modalRef = useRef()
   const onCloseRef = useRef(onClose)
+  const dismissibleRef = useRef(dismissible)
 
   useEffect(() => {
     onCloseRef.current = onClose
+    dismissibleRef.current = dismissible
   })
 
   useEffect(() => {
@@ -16,7 +18,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
 
     function handleKeyDown(e) {
       if (e.key === 'Escape') {
-        onCloseRef.current()
+        if (dismissibleRef.current) onCloseRef.current()
         return
       }
 
@@ -54,7 +56,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      onClick={onClose}
+      onClick={dismissible ? onClose : undefined}
       style={{
         position: 'fixed',
         inset: 0,

@@ -64,7 +64,7 @@ function LoadingFallback() {
 }
 
 function ProtectedRoute({ children }) {
-  const { user, loading, noEmployeeRecord, accountInactive, signOut, employee, plant } = useAuth()
+  const { user, loading, noEmployeeRecord, accountInactive, signOut, employee, plantConfirmed } = useAuth()
   if (loading) {
     return (
       <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fefae0' }}>
@@ -114,7 +114,7 @@ function ProtectedRoute({ children }) {
       </div>
     )
   }
-  if (can(employee?.role, 'switch_plant') && !plant) {
+  if (can(employee?.role, 'switch_plant') && !plantConfirmed) {
     return <PlantPicker />
   }
   return children

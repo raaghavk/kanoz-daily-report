@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, act } from '@testing-library/react'
-import { AuthProvider, useAuth } from '../AuthContext'
+import { AuthProvider, useAuth, activePlantStorageKey } from '../AuthContext'
 
 // Mock supabase module
 vi.mock('../../lib/supabase', () => {
@@ -22,26 +22,37 @@ const PLANT_A = { id: 'p1', name: 'Plant A', org_id: 'o1', is_active: true }
 const PLANT_B = { id: 'p2', name: 'Plant B', org_id: 'o1', is_active: true }
 
 function TestConsumer() {
-  const { user, employee, plant, loading, noEmployeeRecord, accountInactive } = useAuth()
+  const { user, employee, plant, plantConfirmed, loading, noEmployeeRecord, accountInactive } = useAuth()
   if (loading) return <div>Loading...</div>
   if (accountInactive) return <div>Account deactivated</div>
   if (noEmployeeRecord) return <div>No employee record</div>
-  if (user) return <div>User: {employee?.name || 'unknown'}, Plant: {plant?.name || 'none'}</div>
+  if (user) {
+    return (
+      <div>
+        User: {employee?.name || 'unknown'}, Plant: {plant?.name || 'none'}, Confirmed: {plantConfirmed ? 'yes' : 'no'}
+      </div>
+    )
+  }
   return <div>Not authenticated</div>
 }
 
 function mockTables({ employee, plants = [] }) {
   supabase.from.mockImplementation((table) => {
     if (table === 'plants') {
-      return {
+      let lastId = null
+      const chain = {
         select: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockImplementation((col, val) => {
+          if (col === 'id') lastId = val
+          return chain
+        }),
         order: vi.fn().mockResolvedValue({ data: plants }),
         single: vi.fn().mockImplementation(async () => {
-          const row = plants[0] || null
+          const row = plants.find(p => p.id === lastId) || plants[0] || null
           return { data: row, error: row ? null : { message: 'not found' } }
         }),
       }
+      return chain
     }
     if (table === 'roles') {
       return {
@@ -61,6 +72,7 @@ function mockTables({ employee, plants = [] }) {
 describe('AuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
     supabase.auth.onAuthStateChange.mockReturnValue({
       data: { subscription: { unsubscribe: vi.fn() } },
     })
@@ -88,11 +100,11 @@ describe('AuthProvider', () => {
     render(<AuthProvider><TestConsumer /></AuthProvider>)
 
     await waitFor(() => {
-      expect(screen.getByText('User: John, Plant: Plant A')).toBeInTheDocument()
+      expect(screen.getByText('User: John, Plant: Plant A, Confirmed: yes')).toBeInTheDocument()
     })
   })
 
-  it('does not auto-select a plant for admins with more than one plant', async () => {
+  it('suggests the home plant for admins but does not confirm it', async () => {
     supabase.auth.getSession.mockResolvedValue({
       data: { session: { user: { id: 'u1' } } },
     })
@@ -105,7 +117,25 @@ describe('AuthProvider', () => {
     render(<AuthProvider><TestConsumer /></AuthProvider>)
 
     await waitFor(() => {
-      expect(screen.getByText('User: Admin, Plant: none')).toBeInTheDocument()
+      expect(screen.getByText('User: Admin, Plant: Plant A, Confirmed: no')).toBeInTheDocument()
+    })
+  })
+
+  it('restores the last selected plant as the reminder, still unconfirmed', async () => {
+    localStorage.setItem(activePlantStorageKey('u1'), 'p2')
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'u1' } } },
+    })
+
+    mockTables({
+      employee: { id: 'e1', name: 'Admin', role: 'admin', org_id: 'o1', plants: PLANT_A },
+      plants: [PLANT_A, PLANT_B],
+    })
+
+    render(<AuthProvider><TestConsumer /></AuthProvider>)
+
+    await waitFor(() => {
+      expect(screen.getByText('User: Admin, Plant: Plant B, Confirmed: no')).toBeInTheDocument()
     })
   })
 
@@ -122,7 +152,7 @@ describe('AuthProvider', () => {
     render(<AuthProvider><TestConsumer /></AuthProvider>)
 
     await waitFor(() => {
-      expect(screen.getByText('User: Admin, Plant: Plant A')).toBeInTheDocument()
+      expect(screen.getByText('User: Admin, Plant: Plant A, Confirmed: yes')).toBeInTheDocument()
     })
   })
 
@@ -230,7 +260,7 @@ describe('AuthProvider', () => {
     render(<AuthProvider><SwitchConsumer /></AuthProvider>)
 
     await waitFor(() => {
-      expect(screen.getByText('Plant: none')).toBeInTheDocument()
+      expect(screen.getByText('Plant: Plant A')).toBeInTheDocument()
     })
 
     supabase.from.mockImplementation((table) => {
@@ -264,6 +294,7 @@ describe('AuthProvider', () => {
     await waitFor(() => {
       expect(screen.getByText('Plant: Plant B')).toBeInTheDocument()
     })
+    expect(localStorage.getItem(activePlantStorageKey('u1'))).toBe('p2')
   })
 
   it('refreshPlant reloads the chosen plant and does not snap back when none is chosen', async () => {
@@ -291,14 +322,14 @@ describe('AuthProvider', () => {
     render(<AuthProvider><RefreshConsumer /></AuthProvider>)
 
     await waitFor(() => {
-      expect(screen.getByText('Plant: none')).toBeInTheDocument()
+      expect(screen.getByText('Plant: Plant A')).toBeInTheDocument()
     })
 
     supabase.from.mockClear()
     await act(async () => {
       screen.getByText('Refresh').click()
     })
-    expect(supabase.from).not.toHaveBeenCalled()
+    expect(supabase.from).toHaveBeenCalled()
 
     supabase.from.mockImplementation((table) => {
       if (table === 'plants') {
@@ -370,7 +401,7 @@ describe('AuthProvider', () => {
 
     render(<AuthProvider><SwitchConsumer /></AuthProvider>)
     await waitFor(() => {
-      expect(screen.getByText('Plant: none')).toBeInTheDocument()
+      expect(screen.getByText('Plant: Plant A')).toBeInTheDocument()
     })
 
     supabase.from.mockImplementation((table) => {

@@ -43,6 +43,14 @@ describe('Modal', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('does not dismiss when dismissible is false', () => {
+    const onClose = vi.fn()
+    render(<Modal isOpen={true} onClose={onClose} dismissible={false}><p>content</p></Modal>)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent.click(screen.getByRole('dialog'))
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('does NOT call onClose when inner content is clicked', () => {
     const onClose = vi.fn()
     render(<Modal isOpen={true} onClose={onClose}><p>inner text</p></Modal>)
