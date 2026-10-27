@@ -26,7 +26,7 @@ export default function PurchaseDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('raw_material_purchases')
-        .select(`*, suppliers(id, name, mobile), raw_material_types(id, name), transporters(id, name)`)
+        .select(`*, suppliers(id, name, mobile), raw_material_types(id, name), transporters(id, name), storage_plots(id, name, is_primary)`)
         .eq('id', id)
         .eq('is_deleted', false)
         .single()
@@ -270,6 +270,17 @@ export default function PurchaseDetail() {
               <div style={labelStyle}>Serial / Parchi No</div>
               <div style={valueStyle}>{purchase.serial_no || 'N/A'}</div>
             </div>
+            {purchase.storage_plots?.name && (
+              <div>
+                <div style={labelStyle}>Unloaded at</div>
+                <div style={{ ...valueStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {purchase.storage_plots.name}
+                  {purchase.storage_plots.is_primary && (
+                    <span style={{ fontSize: 10, background: '#e8f0ec', color: '#2d6a4f', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>Main</span>
+                  )}
+                </div>
+              </div>
+            )}
             {(purchase.transporters?.name) && (
               <div>
                 <div style={labelStyle}>Transporter</div>

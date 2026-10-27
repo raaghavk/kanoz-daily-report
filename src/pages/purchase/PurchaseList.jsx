@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { getLocalDate } from '../../lib/dateUtils'
 import { kgToMtStr } from '../../lib/units'
+import { plotLabel } from '../../lib/plotStock'
 
 export default function PurchaseList() {
   const navigate = useNavigate()
@@ -58,7 +59,8 @@ export default function PurchaseList() {
         .select(`
           *,
           suppliers (id, name, mobile),
-          raw_material_types (id, name)
+          raw_material_types (id, name),
+          storage_plots (id, name, is_primary)
         `)
         .eq('plant_id', plant?.id)
         .eq('is_deleted', false)
@@ -326,7 +328,11 @@ export default function PurchaseList() {
                               {purchase.suppliers?.name || 'Unknown'}
                             </div>
                             <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
-                              {purchase.raw_material_types?.name || 'N/A'} · {Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg ({kgToMtStr(purchase.quantity_kg)} MT)
+                              {[
+                                purchase.raw_material_types?.name || 'N/A',
+                                `${Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg (${kgToMtStr(purchase.quantity_kg)} MT)`,
+                                plotLabel(purchase.storage_plots),
+                              ].filter(Boolean).join(' · ')}
                             </div>
                           </div>
                           {/* Amount + Status */}

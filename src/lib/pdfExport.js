@@ -1,5 +1,7 @@
 // pdfExport.js — Kanoz Biomass · Template-matched PDF reports
 
+import { plotLabel } from './plotStock'
+
 let jsPDFLoaded = null
 async function loadJsPDF() {
   if (jsPDFLoaded) return jsPDFLoaded
@@ -335,6 +337,12 @@ export async function exportPurchasePDF(purchase, createdByName) {
     { label: 'VEHICLE NO.',   value: purchase.vehicle_number || '—' },
     { label: 'PAYMENT',       value: payment, vs: 8 },
   ])
+  const unloadedAt = plotLabel(purchase.storage_plots)
+  if (unloadedAt) {
+    y = infoRow(doc, y, [
+      { label: 'UNLOADED AT', value: unloadedAt },
+    ])
+  }
 
   y = kpiRow(doc, y, [
     { label: 'QUANTITY',      main: ((purchase.quantity_kg||0)/1000).toFixed(2),      unit: 'MT' },
