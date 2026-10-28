@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, act } from '@testing-library/react'
-import { AuthProvider, useAuth, activePlantStorageKey } from '../AuthContext'
+import { AuthProvider, useAuth } from '../AuthContext'
+import { activePlantStorageKey } from '../../lib/plantStorage'
 
 // Mock supabase module
 vi.mock('../../lib/supabase', () => {

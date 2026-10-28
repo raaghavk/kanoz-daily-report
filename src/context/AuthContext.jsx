@@ -2,28 +2,9 @@ import { createContext, useContext, useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { setDynamicRoles, can } from '../lib/permissions'
 import { isEmployeeActive } from '../lib/employeeAccess'
+import { readSavedPlantId, writeSavedPlantId } from '../lib/plantStorage'
 
 const AuthContext = createContext({})
-
-export function activePlantStorageKey(userId) {
-  return `kanoz:activePlantId:${userId}`
-}
-
-function readSavedPlantId(userId) {
-  if (!userId) return null
-  try {
-    return localStorage.getItem(activePlantStorageKey(userId))
-  } catch {
-    return null
-  }
-}
-
-function writeSavedPlantId(userId, plantId) {
-  if (!userId || !plantId) return
-  try {
-    localStorage.setItem(activePlantStorageKey(userId), plantId)
-  } catch { /* private mode / storage blocked */ }
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -107,15 +88,19 @@ export function AuthProvider({ children }) {
         setEmployee(data)
         setNoEmployeeRecord(false)
         setAccountInactive(false)
+        // Decide switch permission from the hardcoded matrix first. loadRoles
+        // overwrites DYNAMIC_ROLES; if the DB copy omitted switch_plant, a
+        // later can() would skip restore and snap back to the home plant.
+        const maySwitch = can(data.role, 'switch_plant')
         await loadRoles(data.org_id ?? data.plants?.org_id)
-        if (can(data.role, 'switch_plant')) {
+        if (maySwitch || can(data.role, 'switch_plant')) {
           try {
             applyPlant(await resolvePersistedPlant(data, authUserId))
           } catch (plantErr) {
             console.error('Error restoring saved plant:', plantErr)
-            applyPlant(data.plants)
+            if (!plantRef.current) applyPlant(data.plants)
           }
-        } else {
+        } else if (!plantRef.current) {
           applyPlant(data.plants)
         }
       } else {
@@ -210,7 +195,8 @@ export function AuthProvider({ children }) {
       if (error) throw error
       if (newPlant) {
         applyPlant(newPlant)
-        writeSavedPlantId(userIdRef.current, newPlant.id)
+        const storageId = userIdRef.current || user?.id || employee.auth_user_id
+        writeSavedPlantId(storageId, newPlant.id)
         loadRoles(newPlant.org_id)
       }
     } catch (err) {
