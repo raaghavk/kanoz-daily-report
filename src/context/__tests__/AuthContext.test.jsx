@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, act } from '@testing-library/react'
 import { AuthProvider, useAuth } from '../AuthContext'
+import { activePlantStorageKey } from '../../lib/plantStorage'
 
 // Mock supabase module
 vi.mock('../../lib/supabase', () => {
@@ -18,6 +19,10 @@ vi.mock('../../lib/supabase', () => {
 
 import { supabase } from '../../lib/supabase'
 
+const PLANT_A = { id: 'p1', name: 'Plant A', org_id: 'o1', is_active: true }
+const PLANT_B = { id: 'p2', name: 'Plant B', org_id: 'o1', is_active: true }
+const FOREIGN_PLANT = { id: 'p9', name: 'Other Org', org_id: 'o2', is_active: true }
+
 function TestConsumer() {
   const { user, employee, plant, loading, noEmployeeRecord, accountInactive } = useAuth()
   if (loading) return <div>Loading...</div>
@@ -27,9 +32,47 @@ function TestConsumer() {
   return <div>Not authenticated</div>
 }
 
+function mockTables({ employee, plants = [] }) {
+  supabase.from.mockImplementation((table) => {
+    if (table === 'plants') {
+      let lastId = null
+      let lastOrgId = null
+      const chain = {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockImplementation((col, val) => {
+          if (col === 'id') lastId = val
+          if (col === 'org_id') lastOrgId = val
+          return chain
+        }),
+        order: vi.fn().mockResolvedValue({ data: plants }),
+        single: vi.fn().mockImplementation(async () => {
+          const row = plants.find(p =>
+            (!lastId || p.id === lastId) && (!lastOrgId || p.org_id === lastOrgId)
+          )
+          return { data: row || null, error: row ? null : { message: 'not found' } }
+        }),
+      }
+      return chain
+    }
+    if (table === 'roles') {
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockResolvedValue({ data: [] }),
+      }
+    }
+    return {
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      maybeSingle: vi.fn().mockResolvedValue({ data: employee }),
+      single: vi.fn().mockResolvedValue({ data: employee }),
+    }
+  })
+}
+
 describe('AuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
     supabase.auth.onAuthStateChange.mockReturnValue({
       data: { subscription: { unsubscribe: vi.fn() } },
     })
@@ -39,7 +82,6 @@ describe('AuthProvider', () => {
     supabase.auth.getSession.mockResolvedValue({ data: { session: null } })
 
     render(<AuthProvider><TestConsumer /></AuthProvider>)
-    // After session resolves, loading should end
     await waitFor(() => {
       expect(screen.getByText('Not authenticated')).toBeInTheDocument()
     })
@@ -50,19 +92,86 @@ describe('AuthProvider', () => {
       data: { session: { user: { id: 'u1' } } },
     })
 
-    const mockChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({
-        data: { id: 'e1', name: 'John', role: 'admin', plants: { id: 'p1', name: 'Plant A' } },
-      }),
-    }
-    supabase.from.mockReturnValue(mockChain)
+    mockTables({
+      employee: { id: 'e1', name: 'John', role: 'supervisor', org_id: 'o1', plants: PLANT_A },
+    })
 
     render(<AuthProvider><TestConsumer /></AuthProvider>)
 
     await waitFor(() => {
       expect(screen.getByText('User: John, Plant: Plant A')).toBeInTheDocument()
+    })
+  })
+
+  it('restores the last selected plant for an admin instead of the home plant', async () => {
+    localStorage.setItem(activePlantStorageKey('u1'), 'p2')
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'u1' } } },
+    })
+
+    mockTables({
+      employee: { id: 'e1', name: 'Admin', role: 'admin', org_id: 'o1', plants: PLANT_A },
+      plants: [PLANT_A, PLANT_B],
+    })
+
+    render(<AuthProvider><TestConsumer /></AuthProvider>)
+
+    await waitFor(() => {
+      expect(screen.getByText('User: Admin, Plant: Plant B')).toBeInTheDocument()
+    })
+  })
+
+  it('falls back to the home plant when the saved plant id is invalid', async () => {
+    localStorage.setItem(activePlantStorageKey('u1'), 'p-missing')
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'u1' } } },
+    })
+
+    mockTables({
+      employee: { id: 'e1', name: 'Admin', role: 'admin', org_id: 'o1', plants: PLANT_A },
+      plants: [PLANT_A, PLANT_B],
+    })
+
+    render(<AuthProvider><TestConsumer /></AuthProvider>)
+
+    await waitFor(() => {
+      expect(screen.getByText('User: Admin, Plant: Plant A')).toBeInTheDocument()
+    })
+  })
+
+  it('falls back to the home plant when the saved plant belongs to another org', async () => {
+    localStorage.setItem(activePlantStorageKey('u1'), 'p9')
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'u1' } } },
+    })
+
+    mockTables({
+      employee: { id: 'e1', name: 'Admin', role: 'admin', org_id: 'o1', plants: PLANT_A },
+      plants: [PLANT_A, PLANT_B, FOREIGN_PLANT],
+    })
+
+    render(<AuthProvider><TestConsumer /></AuthProvider>)
+
+    await waitFor(() => {
+      expect(screen.getByText('User: Admin, Plant: Plant A')).toBeInTheDocument()
+    })
+  })
+
+  it('ignores a saved plant id for non-admin users', async () => {
+    localStorage.setItem(activePlantStorageKey('u1'), 'p2')
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'u1' } } },
+    })
+
+    mockTables({
+      employee: { id: 'e1', name: 'Jane', role: 'supervisor', org_id: 'o1', plants: PLANT_A },
+      plants: [PLANT_A, PLANT_B],
+    })
+
+    render(<AuthProvider><TestConsumer /></AuthProvider>)
+
+    await waitFor(() => {
+      expect(screen.getByText('User: Jane, Plant: Plant A')).toBeInTheDocument()
     })
   })
 
@@ -146,26 +255,22 @@ describe('AuthProvider', () => {
     expect(screen.getByText('Logged out')).toBeInTheDocument()
   })
 
-  it('switchPlant only works for admin role', async () => {
+  it('switchPlant writes the plant id to localStorage keyed by user', async () => {
     supabase.auth.getSession.mockResolvedValue({
       data: { session: { user: { id: 'u1' } } },
     })
 
-    const mockChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({
-        data: { id: 'e1', name: 'Admin', role: 'admin', plants: { id: 'p1', name: 'Plant A' } },
-      }),
-    }
-    supabase.from.mockReturnValue(mockChain)
+    mockTables({
+      employee: { id: 'e1', name: 'Admin', role: 'admin', org_id: 'o1', plants: PLANT_A },
+      plants: [PLANT_A, PLANT_B],
+    })
 
     function SwitchConsumer() {
       const { plant, switchPlant, loading } = useAuth()
       if (loading) return <div>Loading...</div>
       return (
         <div>
-          <span>Plant: {plant?.name}</span>
+          <span>Plant: {plant?.name || 'none'}</span>
           <button onClick={() => switchPlant('p2')}>Switch</button>
         </div>
       )
@@ -177,21 +282,105 @@ describe('AuthProvider', () => {
       expect(screen.getByText('Plant: Plant A')).toBeInTheDocument()
     })
 
-    // Mock the plant fetch for switchPlant
-    const switchChain = {
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({
-        data: { id: 'p2', name: 'Plant B' },
-        error: null,
-      }),
-    }
-    supabase.from.mockReturnValue(switchChain)
+    supabase.from.mockImplementation((table) => {
+      if (table === 'plants') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [PLANT_A, PLANT_B] }),
+          single: vi.fn().mockResolvedValue({ data: PLANT_B, error: null }),
+        }
+      }
+      if (table === 'roles') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: [] }),
+        }
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { id: 'e1', name: 'Admin', role: 'admin', org_id: 'o1', plants: PLANT_A },
+        }),
+      }
+    })
 
     await act(async () => {
       screen.getByText('Switch').click()
     })
 
+    await waitFor(() => {
+      expect(screen.getByText('Plant: Plant B')).toBeInTheDocument()
+    })
+    expect(localStorage.getItem(activePlantStorageKey('u1'))).toBe('p2')
+  })
+
+  it('refreshPlant after a switch reloads the switched plant, not the home plant', async () => {
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { user: { id: 'u1' } } },
+    })
+
+    mockTables({
+      employee: { id: 'e1', name: 'Admin', role: 'admin', org_id: 'o1', plants: PLANT_A },
+      plants: [PLANT_A, PLANT_B],
+    })
+
+    function RefreshConsumer() {
+      const { plant, switchPlant, refreshPlant, loading } = useAuth()
+      if (loading) return <div>Loading...</div>
+      return (
+        <div>
+          <span>Plant: {plant?.name || 'none'}</span>
+          <button onClick={() => switchPlant('p2')}>Switch</button>
+          <button onClick={() => refreshPlant()}>Refresh</button>
+        </div>
+      )
+    }
+
+    render(<AuthProvider><RefreshConsumer /></AuthProvider>)
+
+    await waitFor(() => {
+      expect(screen.getByText('Plant: Plant A')).toBeInTheDocument()
+    })
+
+    supabase.from.mockImplementation((table) => {
+      if (table === 'plants') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          order: vi.fn().mockResolvedValue({ data: [PLANT_A, PLANT_B] }),
+          single: vi.fn().mockResolvedValue({
+            data: { ...PLANT_B, location_lat: 26.1 },
+            error: null,
+          }),
+        }
+      }
+      if (table === 'roles') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ data: [] }),
+        }
+      }
+      return {
+        select: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: { id: 'e1', name: 'Admin', role: 'admin', org_id: 'o1', plants: PLANT_A },
+        }),
+      }
+    })
+
+    await act(async () => {
+      screen.getByText('Switch').click()
+    })
+    await waitFor(() => {
+      expect(screen.getByText('Plant: Plant B')).toBeInTheDocument()
+    })
+
+    await act(async () => {
+      screen.getByText('Refresh').click()
+    })
     await waitFor(() => {
       expect(screen.getByText('Plant: Plant B')).toBeInTheDocument()
     })
