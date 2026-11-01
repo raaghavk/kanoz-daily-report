@@ -12,6 +12,7 @@ import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
 import { canonicalReportDate, isDispatchInShiftWindow } from '../../lib/shiftReportDate'
 import { buildShiftChildrenPayload } from '../../lib/shiftSavePayload'
+import { hydrateDieselForEdit } from '../../lib/retainInactiveDiesel'
 import { cascadeResyncFrom } from '../../lib/cascadeResync'
 import { getValidationErrors, getValidationWarnings } from './validation'
 import Step1Header from './Step1Header'
@@ -502,29 +503,9 @@ export default function ShiftWizard() {
             }
           }
 
-          // Merge equipment diesel. If a saved row is untouched (all zero) — e.g.
-          // the equipment's tank opening was set in settings AFTER this report was
-          // first created — seed the opening from the settings opening-stock (the
-          // as-of tank snapshot) and balance the closing, matching the carry-forward
-          // path. Rows the user actually filled are left exactly as saved.
-          freshReportData.diesel = activeDiesel.map(eq => {
-            const dieselData = (diesel.data || []).find(d => (d.equipment_id && eq.id && d.equipment_id === eq.id) || (!d.equipment_id && d.equipment_name === eq.equipment_name))
-            const sOpen  = dieselData ? parseFloat(dieselData.opening_litres) || 0 : 0
-            const sAdded = dieselData ? parseFloat(dieselData.added_litres) || 0 : 0
-            const sClose = dieselData ? parseFloat(dieselData.closing_litres) || 0 : 0
-            const sHours = dieselData ? parseFloat(dieselData.hours_worked) || 0 : 0
-            const untouched = sOpen === 0 && sAdded === 0 && sClose === 0
-            const opening = untouched ? (parseFloat(eq.opening_stock_litres) || 0) : sOpen
-            const closing = untouched ? opening : sClose
-            return {
-              ...eq,
-              opening,
-              added: sAdded,
-              used: opening + sAdded - closing,
-              closing,
-              hours: sHours,
-            }
-          })
+          // Merge equipment diesel (active units + retain deactivated ones so
+          // replace_shift_report_children cannot wipe their logs on edit-save).
+          freshReportData.diesel = hydrateDieselForEdit(activeDiesel, diesel.data)
 
           // Merge mixes
           if (mixesRes.data?.length) {
