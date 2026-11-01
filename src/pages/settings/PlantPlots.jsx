@@ -6,20 +6,71 @@ import { MapPin, Plus, Loader2, Pencil, Check, X } from 'lucide-react'
 const inp = { width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', boxSizing: 'border-box', background: '#fff' }
 const lbl = { display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 6 }
 
-const emptyForm = { name: '', address: '', distance_km: '', location_lat: '', location_lng: '' }
+function blankForm() {
+  return { name: '', address: '', distance_km: '', location_lat: '', location_lng: '' }
+}
+
+function distanceKm(p) {
+  if (p.distance_km != null && p.distance_km !== '') return Number(p.distance_km)
+  if (p.distance_m != null) return Number(p.distance_m) / 1000
+  return null
+}
+
+function formFromPlot(p) {
+  const km = distanceKm(p)
+  return {
+    name: p.name || '',
+    address: p.address || '',
+    distance_km: km == null ? '' : String(km),
+    location_lat: p.location_lat == null ? '' : String(p.location_lat),
+    location_lng: p.location_lng == null ? '' : String(p.location_lng),
+  }
+}
+
+/** Stable component identity — must live outside PlantPlots so inputs are not remounted on every keystroke. */
+function FormFields({ value, onChange, idPrefix }) {
+  const field = (name) => `${idPrefix}-${name}`
+  const set = (key) => (e) => onChange(v => ({ ...v, [key]: e.target.value }))
+  return (
+    <>
+      <div>
+        <label style={lbl} htmlFor={field('name')}>Name *</label>
+        <input id={field('name')} name={field('name')} autoComplete="off" value={value.name} onChange={set('name')} placeholder="e.g. North yard" style={inp} />
+      </div>
+      <div>
+        <label style={lbl} htmlFor={field('distance_km')}>Distance from factory (km)</label>
+        <input id={field('distance_km')} name={field('distance_km')} autoComplete="off" type="number" step="0.01" value={value.distance_km} onChange={set('distance_km')} placeholder="0.5" style={inp} />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <div>
+          <label style={lbl} htmlFor={field('location_lat')}>Latitude</label>
+          <input id={field('location_lat')} name={field('location_lat')} autoComplete="off" type="number" step="any" value={value.location_lat} onChange={set('location_lat')} placeholder="25.4358" style={inp} />
+        </div>
+        <div>
+          <label style={lbl} htmlFor={field('location_lng')}>Longitude</label>
+          <input id={field('location_lng')} name={field('location_lng')} autoComplete="off" type="number" step="any" value={value.location_lng} onChange={set('location_lng')} placeholder="81.8463" style={inp} />
+        </div>
+      </div>
+      <div>
+        <label style={lbl} htmlFor={field('address')}>Address / landmark</label>
+        <input id={field('address')} name={field('address')} autoComplete="off" value={value.address} onChange={set('address')} placeholder="Optional" style={inp} />
+      </div>
+    </>
+  )
+}
 
 /** Manage storage plots for one plant — used inside Plant Settings. */
 export default function PlantPlots({ plantId }) {
   const [plots, setPlots] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState(emptyForm)
+  const [form, setForm] = useState(blankForm)
   const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState(emptyForm)
+  const [editForm, setEditForm] = useState(blankForm)
 
-  async function load() {
+  async function load({ silent = false } = {}) {
     if (!plantId) return
-    setLoading(true)
+    if (!silent) setLoading(true)
     try {
       const { data, error } = await supabase
         .from('storage_plots')
@@ -35,12 +86,16 @@ export default function PlantPlots({ plantId }) {
     } finally { setLoading(false) }
   }
 
-  useEffect(() => { load() }, [plantId]) // eslint-disable-line
+  useEffect(() => {
+    setEditingId(null)
+    setEditForm(blankForm())
+    setForm(blankForm())
+    load()
+  }, [plantId]) // eslint-disable-line
 
-  function distanceKm(p) {
-    if (p.distance_km != null && p.distance_km !== '') return Number(p.distance_km)
-    if (p.distance_m != null) return Number(p.distance_m) / 1000
-    return null
+  function closeEdit() {
+    setEditingId(null)
+    setEditForm(blankForm())
   }
 
   async function addPlot() {
@@ -63,26 +118,22 @@ export default function PlantPlots({ plantId }) {
       })
       if (error) throw error
       showToast('Plot added', 'success')
-      setForm(emptyForm)
-      load()
+      setForm(blankForm())
+      await load({ silent: true })
     } catch (err) {
       showToast(err.message || 'Failed to add plot', 'error')
     } finally { setSaving(false) }
   }
 
-  function startEdit(p) {
+  function startEdit(plotId) {
+    const p = plots.find(x => x.id === plotId)
+    if (!p) return
     setEditingId(p.id)
-    const km = distanceKm(p)
-    setEditForm({
-      name: p.name || '',
-      address: p.address || '',
-      distance_km: km == null ? '' : String(km),
-      location_lat: p.location_lat == null ? '' : String(p.location_lat),
-      location_lng: p.location_lng == null ? '' : String(p.location_lng),
-    })
+    setEditForm(formFromPlot(p))
   }
 
-  async function saveEdit() {
+  async function saveEdit(plotId) {
+    if (!plotId) return
     if (!editForm.name.trim()) { showToast('Plot name is required', 'error'); return }
     setSaving(true)
     try {
@@ -94,11 +145,11 @@ export default function PlantPlots({ plantId }) {
         distance_m: km == null ? null : km * 1000,
         location_lat: editForm.location_lat === '' ? null : Number(editForm.location_lat),
         location_lng: editForm.location_lng === '' ? null : Number(editForm.location_lng),
-      }).eq('id', editingId)
+      }).eq('id', plotId)
       if (error) throw error
       showToast('Plot updated', 'success')
-      setEditingId(null)
-      load()
+      closeEdit()
+      await load({ silent: true })
     } catch (err) {
       showToast(err.message || 'Failed to update', 'error')
     } finally { setSaving(false) }
@@ -111,37 +162,9 @@ export default function PlantPlots({ plantId }) {
       const { error } = await supabase.from('storage_plots').update({ is_active: false }).eq('id', id)
       if (error) throw error
       showToast('Plot removed', 'success')
-      load()
+      if (editingId === id) closeEdit()
+      await load({ silent: true })
     } catch (err) { showToast(err.message || 'Failed', 'error') }
-  }
-
-  function FormFields({ value, onChange }) {
-    return (
-      <>
-        <div>
-          <label style={lbl}>Name *</label>
-          <input value={value.name} onChange={e => onChange({ ...value, name: e.target.value })} placeholder="e.g. North yard" style={inp} />
-        </div>
-        <div>
-          <label style={lbl}>Distance from factory (km)</label>
-          <input type="number" step="0.01" value={value.distance_km} onChange={e => onChange({ ...value, distance_km: e.target.value })} placeholder="0.5" style={inp} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <div>
-            <label style={lbl}>Latitude</label>
-            <input type="number" step="any" value={value.location_lat} onChange={e => onChange({ ...value, location_lat: e.target.value })} placeholder="25.4358" style={inp} />
-          </div>
-          <div>
-            <label style={lbl}>Longitude</label>
-            <input type="number" step="any" value={value.location_lng} onChange={e => onChange({ ...value, location_lng: e.target.value })} placeholder="81.8463" style={inp} />
-          </div>
-        </div>
-        <div>
-          <label style={lbl}>Address / landmark</label>
-          <input value={value.address} onChange={e => onChange({ ...value, address: e.target.value })} placeholder="Optional" style={inp} />
-        </div>
-      </>
-    )
   }
 
   return (
@@ -162,12 +185,12 @@ export default function PlantPlots({ plantId }) {
             if (editingId === p.id) {
               return (
                 <div key={p.id} style={{ padding: 14, borderTop: '1px solid #f0ebe0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <FormFields value={editForm} onChange={setEditForm} />
+                  <FormFields key={p.id} idPrefix={`plot-edit-${p.id}`} value={editForm} onChange={setEditForm} />
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={saveEdit} disabled={saving} style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>
+                    <button type="button" onClick={() => saveEdit(p.id)} disabled={saving} style={{ flex: 1, padding: '10px 0', background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>
                       <Check size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Save
                     </button>
-                    <button onClick={() => setEditingId(null)} style={{ padding: '10px 14px', background: '#fefae0', border: '1px solid #e5ddd0', borderRadius: 10, cursor: 'pointer' }}>
+                    <button type="button" onClick={closeEdit} aria-label="Cancel edit" style={{ padding: '10px 14px', background: '#fefae0', border: '1px solid #e5ddd0', borderRadius: 10, cursor: 'pointer' }}>
                       <X size={14} />
                     </button>
                   </div>
@@ -188,9 +211,9 @@ export default function PlantPlots({ plantId }) {
                   {p.address && <div style={{ fontSize: 12, color: '#595c4a', marginTop: 2 }}>{p.address}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                  <button onClick={() => startEdit(p)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2d6a4f', padding: 4 }}><Pencil size={14} /></button>
+                  <button type="button" onClick={() => startEdit(p.id)} aria-label={`Edit ${p.name}`} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2d6a4f', padding: 4 }}><Pencil size={14} /></button>
                   {!p.is_primary && (
-                    <button onClick={() => archivePlot(p.id, p.is_primary)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d32f2f', fontSize: 11, padding: 4 }}>Remove</button>
+                    <button type="button" onClick={() => archivePlot(p.id, p.is_primary)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d32f2f', fontSize: 11, padding: 4 }}>Remove</button>
                   )}
                 </div>
               </div>
@@ -199,13 +222,15 @@ export default function PlantPlots({ plantId }) {
         </div>
       )}
 
-      <div style={{ padding: 14, borderTop: '1px solid #f0ebe0', display: 'flex', flexDirection: 'column', gap: 8, background: '#faf8f2' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c' }}>Add storage plot</div>
-        <FormFields value={form} onChange={setForm} />
-        <button onClick={addPlot} disabled={saving} style={{ padding: '11px 0', background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
-          <Plus size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />{saving ? 'Adding…' : 'Add plot'}
-        </button>
-      </div>
+      {editingId ? null : (
+        <div style={{ padding: 14, borderTop: '1px solid #f0ebe0', display: 'flex', flexDirection: 'column', gap: 8, background: '#faf8f2' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#2c2c2c' }}>Add storage plot</div>
+          <FormFields idPrefix="plot-add" value={form} onChange={setForm} />
+          <button type="button" onClick={addPlot} disabled={saving} style={{ padding: '11px 0', background: '#2d6a4f', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+            <Plus size={14} style={{ verticalAlign: 'middle', marginRight: 6 }} />{saving ? 'Adding…' : 'Add plot'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
