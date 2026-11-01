@@ -14,6 +14,7 @@ import AddTransporterModal from '../../components/AddTransporterModal'
 import { getLocalDate } from '../../lib/dateUtils'
 import { normalizePurchaseSerial, isPurchaseSerialUniqueViolation } from '../../lib/purchaseSerial'
 import { cascadeResyncFrom, earlierCascadePoint } from '../../lib/cascadeResync'
+import { plotLabel, plotsWithSaved } from '../../lib/plotStock'
 
 export default function PurchaseForm() {
   const navigate = useNavigate()
@@ -150,7 +151,7 @@ export default function PurchaseForm() {
   const { data: purchaseData, isLoading: loading, isError } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('raw_material_purchases').select('*').eq('id', id).eq('is_deleted', false).single()
+      const { data, error } = await supabase.from('raw_material_purchases').select('*, storage_plots(id, name, is_primary, is_active)').eq('id', id).eq('is_deleted', false).single()
       if (error) throw error
       return data
     },
@@ -602,6 +603,8 @@ export default function PurchaseForm() {
     )
   }
 
+  const plotOptions = plotsWithSaved(storagePlots, purchaseData?.storage_plots)
+
   return (
     <div style={{ minHeight: '100%', background: '#fefae0', paddingBottom: 80 }}>
       <div style={{ position: 'sticky', top: 0, zIndex: 10 }}>
@@ -673,18 +676,18 @@ export default function PurchaseForm() {
           </div>
         </div>
 
-        {storagePlots.length > 0 && (
+        {plotOptions.length > 0 && (
           <div style={{ background: '#fff', borderRadius: 14, padding: 16, border: '1.5px solid #e5ddd0' }}>
             <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#8a8d7a', marginBottom: 8 }}>
               Unload at plot
             </label>
             <select
-              value={formData.plot_id || storagePlots.find(p => p.is_primary)?.id || ''}
+              value={formData.plot_id || plotOptions.find(p => p.is_primary)?.id || ''}
               onChange={e => handleFieldChange('plot_id', e.target.value)}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid #e5ddd0', fontSize: 14, outline: 'none', background: '#fefae0' }}
             >
-              {storagePlots.map(p => (
-                <option key={p.id} value={p.id}>{p.name}{p.is_primary ? ' (factory)' : ''}</option>
+              {plotOptions.map(p => (
+                <option key={p.id} value={p.id}>{plotLabel(p)}{p.is_active === false ? ' (inactive)' : ''}</option>
               ))}
             </select>
             <div style={{ fontSize: 11, color: '#8a8d7a', marginTop: 6 }}>

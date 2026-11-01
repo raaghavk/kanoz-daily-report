@@ -36,6 +36,20 @@ export default function PurchaseDetail() {
     enabled: !!id,
   })
 
+  const { data: unloadPlot } = useQuery({
+    queryKey: ['storagePlot', purchase?.plot_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('storage_plots')
+        .select('id, name, is_primary')
+        .eq('id', purchase.plot_id)
+        .maybeSingle()
+      if (error) throw error
+      return data
+    },
+    enabled: !!purchase?.plot_id,
+  })
+
   const plantId = purchase?.plant_id || plant?.id
   const adj = useAdjacentRecord({
     table: 'raw_material_purchases',
@@ -246,6 +260,17 @@ export default function PurchaseDetail() {
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>Purchase Info</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {unloadPlot?.name && (
+              <div style={{ gridColumn: '1 / -1', background: '#e8f0ec', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={labelStyle}>Unloaded at</div>
+                <div style={{ ...valueStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {unloadPlot.name}
+                  {unloadPlot.is_primary && (
+                    <span style={{ fontSize: 10, background: '#d8e8df', color: '#2d6a4f', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>Main</span>
+                  )}
+                </div>
+              </div>
+            )}
             <div>
               <div style={labelStyle}>Supplier</div>
               <div style={valueStyle}>{purchase.suppliers?.name || 'N/A'}</div>
@@ -421,7 +446,7 @@ export default function PurchaseDetail() {
         {/* PDF + Request Delete row */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={async () => { const { exportPurchasePDF } = await import('../../lib/pdfExport'); exportPurchasePDF(purchase, createdByName); }}
+            onClick={async () => { const { exportPurchasePDF } = await import('../../lib/pdfExport'); exportPurchasePDF({ ...purchase, storage_plots: unloadPlot }, createdByName); }}
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               padding: '14px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,

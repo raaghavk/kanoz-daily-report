@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { getLocalDate } from '../../lib/dateUtils'
 import { kgToMtStr } from '../../lib/units'
+import { plotLabel } from '../../lib/plotStock'
 
 export default function PurchaseList() {
   const navigate = useNavigate()
@@ -87,10 +88,18 @@ export default function PurchaseList() {
         query = query.eq('payment_status', filterPaymentStatus)
       }
 
-      const { data, error } = await query
+      const [{ data, error }, plotsRes] = await Promise.all([
+        query,
+        supabase.from('storage_plots').select('id, name, is_primary').eq('plant_id', plant.id),
+      ])
       if (error) throw error
+      if (plotsRes.error) console.error('Failed to load plots:', plotsRes.error)
 
-      groupPurchasesByDate(data || [])
+      const plotsById = Object.fromEntries((plotsRes.data || []).map(p => [p.id, p]))
+      groupPurchasesByDate((data || []).map(p => ({
+        ...p,
+        storage_plots: plotsById[p.plot_id] || null,
+      })))
     } catch (err) {
       console.error('Error fetching purchases:', err)
       showToast('Failed to load purchases', 'error')
@@ -326,7 +335,11 @@ export default function PurchaseList() {
                               {purchase.suppliers?.name || 'Unknown'}
                             </div>
                             <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
-                              {purchase.raw_material_types?.name || 'N/A'} · {Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg ({kgToMtStr(purchase.quantity_kg)} MT)
+                              {[
+                                purchase.raw_material_types?.name || 'N/A',
+                                `${Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg (${kgToMtStr(purchase.quantity_kg)} MT)`,
+                                plotLabel(purchase.storage_plots),
+                              ].filter(Boolean).join(' · ')}
                             </div>
                           </div>
                           {/* Amount + Status */}

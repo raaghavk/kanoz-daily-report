@@ -1,5 +1,18 @@
 const num = v => Number(v) || 0
 
+/** Display name for a storage plot. Primary plots get a "(Main)" suffix. */
+export function plotLabel(plot) {
+  if (!plot?.name) return ''
+  return plot.is_primary ? `${plot.name} (Main)` : plot.name
+}
+
+/** Active plots plus a saved plot that may have been archived since the purchase. */
+export function plotsWithSaved(activePlots, savedPlot) {
+  const plots = [...(activePlots || [])]
+  if (savedPlot?.id && !plots.some(p => p.id === savedPlot.id)) plots.push(savedPlot)
+  return plots
+}
+
 export function plotMaterialBalance({
   opening = 0,
   purchased = 0,
