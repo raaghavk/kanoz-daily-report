@@ -52,13 +52,9 @@ const basePurchase = {
   transporters: null,
 }
 
-function mockPurchase(purchase, plot) {
-  const plotId = purchase.plot_id || plot?.id || null
-  const row = { ...purchase, plot_id: plotId }
-  delete row.storage_plots
+function mockPurchase(purchase) {
   supabase.from.mockImplementation((table) => {
-    if (table === 'raw_material_purchases') return chain({ data: row, error: null })
-    if (table === 'storage_plots') return chain({ data: plot || null, error: null })
+    if (table === 'raw_material_purchases') return chain({ data: purchase, error: null })
     if (table === 'employees') return chain({ data: { name: 'Pat' }, error: null })
     return chain({ data: null, error: null })
   })
@@ -82,45 +78,55 @@ describe('PurchaseDetail unload plot', () => {
     vi.clearAllMocks()
   })
 
-  it('shows Unloaded at Plot B without a Main badge', async () => {
-    mockPurchase(basePurchase, { id: 'b', name: 'Ravindra singh plot B', is_primary: false })
+  it('shows Unload at plot on the summary card and in Purchase Info for Plot B', async () => {
+    mockPurchase({
+      ...basePurchase,
+      storage_plots: { id: 'b', name: 'Ravindra singh plot B', is_primary: false },
+    })
     renderDetail()
     await waitFor(() => {
-      expect(screen.getByText('Ravindra singh plot B')).toBeInTheDocument()
+      expect(screen.getAllByText('Ravindra singh plot B').length).toBeGreaterThanOrEqual(2)
     })
-    expect(screen.getByText('Unloaded at')).toBeInTheDocument()
+    expect(screen.getAllByText('Unload at plot').length).toBeGreaterThanOrEqual(2)
     expect(screen.queryByText('Main')).not.toBeInTheDocument()
   })
 
-  it('shows Unloaded at Plot C when plot_id is set (Himanshu Patel case)', async () => {
-    mockPurchase(
-      { ...basePurchase, plot_id: '0be5287a-e923-4fdd-ba1e-c8f2681a7383', serial_no: '32005' },
-      { id: '0be5287a-e923-4fdd-ba1e-c8f2681a7383', name: 'plot C', is_primary: false },
-    )
+  it('shows plot C on the Himanshu Patel 32005 purchase', async () => {
+    mockPurchase({
+      ...basePurchase,
+      plot_id: '0be5287a-e923-4fdd-ba1e-c8f2681a7383',
+      serial_no: '32005',
+      suppliers: { id: 's1', name: 'Himanshu Patel', mobile: '999' },
+      storage_plots: { id: '0be5287a-e923-4fdd-ba1e-c8f2681a7383', name: 'plot C', is_primary: false },
+    })
     renderDetail()
     await waitFor(() => {
-      expect(screen.getByText('plot C')).toBeInTheDocument()
+      expect(screen.getAllByText('plot C').length).toBeGreaterThanOrEqual(2)
     })
-    expect(screen.getByText('Unloaded at')).toBeInTheDocument()
+    expect(screen.getAllByText('Himanshu Patel').length).toBeGreaterThanOrEqual(1)
+    expect(screen.getByText('32005')).toBeInTheDocument()
     expect(screen.queryByText('Main')).not.toBeInTheDocument()
   })
 
-  it('shows Unloaded at the primary plot with a Main badge', async () => {
-    mockPurchase(basePurchase, { id: 'main', name: 'Main factory land plot A', is_primary: true })
+  it('shows the primary plot with a Main badge', async () => {
+    mockPurchase({
+      ...basePurchase,
+      storage_plots: { id: 'main', name: 'Main factory land plot A', is_primary: true },
+    })
     renderDetail()
     await waitFor(() => {
-      expect(screen.getByText('Main factory land plot A')).toBeInTheDocument()
+      expect(screen.getAllByText('Main factory land plot A').length).toBeGreaterThanOrEqual(2)
     })
-    expect(screen.getByText('Unloaded at')).toBeInTheDocument()
-    expect(screen.getByText('Main')).toBeInTheDocument()
+    expect(screen.getAllByText('Main').length).toBeGreaterThanOrEqual(1)
   })
 
-  it('shows Unloaded at as N/A when the purchase has no plot', async () => {
-    mockPurchase({ ...basePurchase, plot_id: null }, null)
+  it('shows Unload at plot as N/A when the purchase has no plot', async () => {
+    mockPurchase({ ...basePurchase, plot_id: null, storage_plots: null })
     renderDetail()
     await waitFor(() => {
-      expect(screen.getByText('Unloaded at')).toBeInTheDocument()
+      expect(screen.getAllByText('Unload at plot').length).toBeGreaterThanOrEqual(2)
     })
-    expect(screen.getByText('Unloaded at').nextSibling).toHaveTextContent('N/A')
+    const labels = screen.getAllByText('Unload at plot')
+    expect(labels.every(label => label.nextSibling?.textContent === 'N/A')).toBe(true)
   })
 })

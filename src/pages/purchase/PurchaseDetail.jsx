@@ -26,7 +26,7 @@ export default function PurchaseDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('raw_material_purchases')
-        .select(`*, suppliers(id, name, mobile), raw_material_types(id, name), transporters(id, name)`)
+        .select(`*, suppliers(id, name, mobile), raw_material_types(id, name), transporters(id, name), storage_plots(id, name, is_primary, is_active)`)
         .eq('id', id)
         .eq('is_deleted', false)
         .single()
@@ -34,20 +34,7 @@ export default function PurchaseDetail() {
       return data
     },
     enabled: !!id,
-  })
-
-  const { data: unloadPlot } = useQuery({
-    queryKey: ['storagePlot', purchase?.plot_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('storage_plots')
-        .select('id, name, is_primary')
-        .eq('id', purchase.plot_id)
-        .maybeSingle()
-      if (error) throw error
-      return data
-    },
-    enabled: !!purchase?.plot_id,
+    refetchOnMount: 'always',
   })
 
   const plantId = purchase?.plant_id || plant?.id
@@ -162,6 +149,7 @@ export default function PurchaseDetail() {
   const overallPaid = (!rmApplicable || rmPaid) && (!transportApplicable || transportPaid)
   const transportPayee = purchase.transporters?.name || (purchase.tractor_owner && purchase.tractor_owner !== 'Company Owned' && purchase.tractor_owner !== 'Other owner' ? purchase.tractor_owner : 'Transporter')
   const canPay = can(employee?.role, 'mark_purchase_paid')
+  const unloadPlot = purchase.storage_plots
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, background: '#fefae0' }}>
@@ -215,6 +203,22 @@ export default function PurchaseDetail() {
             <div>
               <div style={{ fontSize: 10, opacity: 0.6 }}>Avg Cost/kg</div>
               <div style={{ fontSize: 16, fontWeight: 700 }}>{'\u20B9'}{avgRatePerKg.toFixed(2)}/kg</div>
+            </div>
+          </div>
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.18)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MapPin size={16} style={{ flexShrink: 0, opacity: 0.9 }} />
+            <div>
+              <div style={{ fontSize: 10, opacity: 0.65 }}>Unload at plot</div>
+              <div style={{ fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                {unloadPlot?.name ? (
+                  <>
+                    <span>{unloadPlot.name}</span>
+                    {unloadPlot.is_primary && (
+                      <span style={{ fontSize: 10, background: 'rgba(255,255,255,0.22)', color: 'white', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>Main</span>
+                    )}
+                  </>
+                ) : 'N/A'}
+              </div>
             </div>
           </div>
         </div>
@@ -284,8 +288,8 @@ export default function PurchaseDetail() {
               <div style={labelStyle}>Serial / Parchi No</div>
               <div style={valueStyle}>{purchase.serial_no || 'N/A'}</div>
             </div>
-            <div>
-              <div style={labelStyle}>Unloaded at</div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={labelStyle}>Unload at plot</div>
               <div style={{ ...valueStyle, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                 {unloadPlot?.name ? (
                   <>
@@ -449,7 +453,7 @@ export default function PurchaseDetail() {
         {/* PDF + Request Delete row */}
         <div style={{ display: 'flex', gap: 10 }}>
           <button
-            onClick={async () => { const { exportPurchasePDF } = await import('../../lib/pdfExport'); exportPurchasePDF({ ...purchase, storage_plots: unloadPlot }, createdByName); }}
+            onClick={async () => { const { exportPurchasePDF } = await import('../../lib/pdfExport'); exportPurchasePDF(purchase, createdByName); }}
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               padding: '14px 0', borderRadius: 12, fontSize: 13, fontWeight: 600,
