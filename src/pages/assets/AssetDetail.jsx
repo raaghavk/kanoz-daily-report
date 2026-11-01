@@ -64,6 +64,15 @@ export default function AssetDetail() {
       if (editEv.event_type === 'sent_vendor') patch.expected_return = ef.expected_return || null
       const { error } = await supabase.from('asset_events').update(patch).eq('id', editEv.id)
       if (error) throw error
+      const remaining = events
+        .map(x => x.id === editEv.id ? { ...x, ...patch } : x)
+        .sort((a, b) => {
+          const d = String(a.event_date || '').localeCompare(String(b.event_date || ''))
+          if (d) return d
+          return String(a.created_at || '').localeCompare(String(b.created_at || ''))
+        })
+      const cache = deriveCacheFromLatest(remaining)
+      await supabase.from('assets').update(cache).eq('id', id)
       setEditEv(null); showToast('Event updated', 'success'); await load()
     } catch { showToast('Update failed', 'error') } finally { setBusy(false) }
   }
