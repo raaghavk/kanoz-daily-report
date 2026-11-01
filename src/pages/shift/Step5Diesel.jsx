@@ -4,6 +4,7 @@ import PhotoUpload from '../../components/PhotoUpload'
 import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import { equipCode } from '../../lib/units'
+import { applyDieselReceiptOcr } from '../../lib/dieselReceiptOcr'
 
 // Helper: format number for display, strip leading zeros, allow empty
 function numVal(v) {
@@ -15,6 +16,10 @@ function numVal(v) {
 export default memo(function Step5Diesel({ data, updateData, plant }) {
   const [scanningIdx, setScanningIdx] = useState(null)
   const [collapsedCats, setCollapsedCats] = useState({})
+  const dieselStockRef = useRef(data.diesel_stock)
+  dieselStockRef.current = data.diesel_stock
+  const dieselRef = useRef(data.diesel)
+  dieselRef.current = data.diesel
 
   // Initialize diesel_stock if not exists (via useEffect, not during render)
   useEffect(() => {
@@ -107,24 +112,13 @@ export default memo(function Step5Diesel({ data, updateData, plant }) {
 
       if (result?.success) {
         if (result.data?.litres || result.data?.cost_per_litre || result.data?.time) {
-          const stock = { ...data.diesel_stock }
-          const purchases = [...(stock.purchases || [])]
-          if (result.data?.litres) {
-            purchases[idx] = { ...purchases[idx], litres: result.data.litres }
-          }
-          if (result.data?.cost_per_litre) {
-            purchases[idx] = { ...purchases[idx], cost_per_litre: result.data.cost_per_litre }
-          }
-          if (result.data?.time) {
-            purchases[idx] = { ...purchases[idx], purchase_time: result.data.time }
-          }
-          stock.purchases = purchases
-          // Recalculate totals
-          const tp = purchases.reduce((sum, p) => sum + (parseFloat(p.litres) || 0), 0)
-          stock.purchased = tp
-          const totalUsed = (data.diesel || []).reduce((sum, eq) => sum + (parseFloat(eq.used) || 0), 0)
-          stock.closing = (parseFloat(stock.opening) || 0) + tp - totalUsed
-          updateData('diesel_stock', stock)
+          // Functional merge: auto-scan fires from PhotoUpload onChange before
+          // React re-renders with receipt_url. Spreading stale diesel_stock here
+          // used to wipe the photo after scanning.
+          updateData(
+            'diesel_stock',
+            applyDieselReceiptOcr(dieselStockRef.current, idx, result.data, receiptUrl, dieselRef.current),
+          )
           showToast('Fields auto-filled from receipt', 'success')
         }
       } else {
