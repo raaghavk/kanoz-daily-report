@@ -12,6 +12,7 @@ import { sanitizeText, sanitizeNumber } from '../../lib/sanitize'
 import { getLocalDate } from '../../lib/dateUtils'
 import { canonicalReportDate, isDispatchInShiftWindow } from '../../lib/shiftReportDate'
 import { buildShiftChildrenPayload } from '../../lib/shiftSavePayload'
+import { appendInactiveMachines } from '../../lib/retainInactiveMachines'
 import { cascadeResyncFrom } from '../../lib/cascadeResync'
 import { getValidationErrors, getValidationWarnings } from './validation'
 import Step1Header from './Step1Header'
@@ -431,23 +432,28 @@ export default function ShiftWizard() {
             }
           })
 
-          // Merge machines production
-          freshReportData.machines = activeMachines.map(m => {
-            const prod = (machProd.data || []).find(mp => mp.machine_id === m.id)
-            if (prod) {
-              return {
-                ...m,
-                did_not_run: prod.did_not_run || false,
-                production_hours: parseFloat(prod.hours_run) || 0,
-                total_hours: parseFloat(prod.total_hours) || parseFloat(prod.hours_run) || 0,
-                from_time: prod.from_time || '',
-                to_time: prod.to_time || '',
-                breakdown_hrs: parseFloat(prod.breakdown_hours) || 0,
-                remarks: prod.remarks || '',
+          // Merge machines production. Unmatched saved rows (deactivated
+          // machines) are appended so replace_shift_report_children cannot
+          // wipe their hours / timings — same retain as inactive pellet types.
+          freshReportData.machines = appendInactiveMachines(
+            activeMachines.map(m => {
+              const prod = (machProd.data || []).find(mp => mp.machine_id === m.id)
+              if (prod) {
+                return {
+                  ...m,
+                  did_not_run: prod.did_not_run || false,
+                  production_hours: parseFloat(prod.hours_run) || 0,
+                  total_hours: parseFloat(prod.total_hours) || parseFloat(prod.hours_run) || 0,
+                  from_time: prod.from_time || '',
+                  to_time: prod.to_time || '',
+                  breakdown_hrs: parseFloat(prod.breakdown_hours) || 0,
+                  remarks: prod.remarks || '',
+                }
               }
-            }
-            return m
-          })
+              return m
+            }),
+            machProd.data || [],
+          )
 
           // Merge raw material usage. Saved quantity_kg is TOTAL consumed
           // (mix + in-house processing input). Recover mix-only `used` by
