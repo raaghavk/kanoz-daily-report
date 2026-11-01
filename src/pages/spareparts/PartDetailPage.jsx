@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { showToast } from '../../components/Toast'
 import PageHeader from '../../components/PageHeader'
 import { Loader2, Package, AlertTriangle, ArrowDownCircle, ArrowUpCircle, Building2, Pencil, Check, X } from 'lucide-react'
+import { sparePurchaseTotal } from '../../lib/sparePurchase'
 
 export default function PartDetailPage() {
   const { plant, employee } = useAuth()
@@ -112,7 +113,7 @@ export default function PartDetailPage() {
 
   // Merge purchases + usages into a single timeline
   const timeline = [
-    ...purchases.map(p => ({ type: 'in', date: p.purchase_date, qty: p.quantity, label: p.spare_parts_suppliers?.name || 'Unknown supplier', sub: [p.plants?.name, p.bill_number ? `Bill: ${p.bill_number}` : ''].filter(Boolean).join(' · '), amount: p.total_amount, id: p.id })),
+    ...purchases.map(p => ({ type: 'in', date: p.purchase_date, qty: p.quantity, label: p.spare_parts_suppliers?.name || 'Unknown supplier', sub: [p.plants?.name, p.bill_number ? `Bill: ${p.bill_number}` : ''].filter(Boolean).join(' · '), amount: sparePurchaseTotal(p), id: p.id })),
     ...usages.map(u => ({ type: 'out', date: u.usage_date, qty: u.quantity, label: u.machine_name || 'General use', sub: [u.plants?.name, u.purpose].filter(Boolean).join(' · '), issued: u.issued_to, id: u.id })),
   ].sort((a, b) => new Date(b.date) - new Date(a.date))
 
