@@ -29,6 +29,7 @@ function chain(result) {
     eq: vi.fn(() => c),
     order: vi.fn(() => c),
     single: vi.fn(() => Promise.resolve(result)),
+    maybeSingle: vi.fn(() => Promise.resolve(result)),
     then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),
   }
   return c
@@ -51,9 +52,13 @@ const basePurchase = {
   transporters: null,
 }
 
-function mockPurchase(purchase) {
+function mockPurchase(purchase, plot) {
+  const plotId = purchase.plot_id || plot?.id || null
+  const row = { ...purchase, plot_id: plotId }
+  delete row.storage_plots
   supabase.from.mockImplementation((table) => {
-    if (table === 'raw_material_purchases') return chain({ data: purchase, error: null })
+    if (table === 'raw_material_purchases') return chain({ data: row, error: null })
+    if (table === 'storage_plots') return chain({ data: plot || null, error: null })
     if (table === 'employees') return chain({ data: { name: 'Pat' }, error: null })
     return chain({ data: null, error: null })
   })
@@ -78,10 +83,7 @@ describe('PurchaseDetail unload plot', () => {
   })
 
   it('shows Unloaded at Plot B without a Main badge', async () => {
-    mockPurchase({
-      ...basePurchase,
-      storage_plots: { id: 'b', name: 'Ravindra singh plot B', is_primary: false },
-    })
+    mockPurchase(basePurchase, { id: 'b', name: 'Ravindra singh plot B', is_primary: false })
     renderDetail()
     await waitFor(() => {
       expect(screen.getByText('Unloaded at')).toBeInTheDocument()
@@ -90,11 +92,11 @@ describe('PurchaseDetail unload plot', () => {
     expect(screen.queryByText('Main')).not.toBeInTheDocument()
   })
 
-  it('shows Unloaded at Plot C without a Main badge', async () => {
-    mockPurchase({
-      ...basePurchase,
-      storage_plots: { id: 'c', name: 'plot C', is_primary: false },
-    })
+  it('shows Unloaded at Plot C when plot_id is set (Himanshu Patel case)', async () => {
+    mockPurchase(
+      { ...basePurchase, plot_id: '0be5287a-e923-4fdd-ba1e-c8f2681a7383', serial_no: '32005' },
+      { id: '0be5287a-e923-4fdd-ba1e-c8f2681a7383', name: 'plot C', is_primary: false },
+    )
     renderDetail()
     await waitFor(() => {
       expect(screen.getByText('Unloaded at')).toBeInTheDocument()
@@ -104,10 +106,7 @@ describe('PurchaseDetail unload plot', () => {
   })
 
   it('shows Unloaded at the primary plot with a Main badge', async () => {
-    mockPurchase({
-      ...basePurchase,
-      storage_plots: { id: 'main', name: 'Main factory land plot A', is_primary: true },
-    })
+    mockPurchase(basePurchase, { id: 'main', name: 'Main factory land plot A', is_primary: true })
     renderDetail()
     await waitFor(() => {
       expect(screen.getByText('Unloaded at')).toBeInTheDocument()
@@ -117,7 +116,7 @@ describe('PurchaseDetail unload plot', () => {
   })
 
   it('hides Unloaded at when the purchase has no plot', async () => {
-    mockPurchase({ ...basePurchase, storage_plots: null })
+    mockPurchase({ ...basePurchase, plot_id: null }, null)
     renderDetail()
     await waitFor(() => {
       expect(screen.getByText('Purchase Info')).toBeInTheDocument()

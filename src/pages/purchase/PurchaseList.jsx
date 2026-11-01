@@ -59,8 +59,7 @@ export default function PurchaseList() {
         .select(`
           *,
           suppliers (id, name, mobile),
-          raw_material_types (id, name),
-          storage_plots (id, name, is_primary)
+          raw_material_types (id, name)
         `)
         .eq('plant_id', plant?.id)
         .eq('is_deleted', false)
@@ -89,10 +88,18 @@ export default function PurchaseList() {
         query = query.eq('payment_status', filterPaymentStatus)
       }
 
-      const { data, error } = await query
+      const [{ data, error }, plotsRes] = await Promise.all([
+        query,
+        supabase.from('storage_plots').select('id, name, is_primary').eq('plant_id', plant.id),
+      ])
       if (error) throw error
+      if (plotsRes.error) console.error('Failed to load plots:', plotsRes.error)
 
-      groupPurchasesByDate(data || [])
+      const plotsById = Object.fromEntries((plotsRes.data || []).map(p => [p.id, p]))
+      groupPurchasesByDate((data || []).map(p => ({
+        ...p,
+        storage_plots: plotsById[p.plot_id] || null,
+      })))
     } catch (err) {
       console.error('Error fetching purchases:', err)
       showToast('Failed to load purchases', 'error')
