@@ -516,9 +516,11 @@ export default function PurchaseForm() {
           throw error
         }
       } else {
-        const { error } = await supabase
+        const { data: inserted, error } = await supabase
           .from('raw_material_purchases')
           .insert([purchasePayload])
+          .select('id')
+          .single()
 
         if (error) {
           if (isPurchaseSerialUniqueViolation(error)) {
@@ -536,6 +538,7 @@ export default function PurchaseForm() {
             quantity_kg: formData.quantity_kg || formData.net_weight || '?',
             supplier: supName,
             plant: plant?.name || '',
+            purchase_id: inserted?.id,
           })
         }).catch(() => {})
       }

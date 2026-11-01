@@ -528,6 +528,7 @@ export default function DispatchForm() {
             customer: customerName,
             quantity_mt: totalQty.toFixed(1),
             plant: plant?.name,
+            dispatch_id: dispatch[0].id,
           })
         }).catch(() => {})
         setForm({
