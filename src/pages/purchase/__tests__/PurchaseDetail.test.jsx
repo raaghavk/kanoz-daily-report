@@ -86,9 +86,9 @@ describe('PurchaseDetail unload plot', () => {
     mockPurchase(basePurchase, { id: 'b', name: 'Ravindra singh plot B', is_primary: false })
     renderDetail()
     await waitFor(() => {
-      expect(screen.getByText('Unloaded at')).toBeInTheDocument()
+      expect(screen.getByText('Ravindra singh plot B')).toBeInTheDocument()
     })
-    expect(screen.getByText('Ravindra singh plot B')).toBeInTheDocument()
+    expect(screen.getByText('Unloaded at')).toBeInTheDocument()
     expect(screen.queryByText('Main')).not.toBeInTheDocument()
   })
 
@@ -99,9 +99,9 @@ describe('PurchaseDetail unload plot', () => {
     )
     renderDetail()
     await waitFor(() => {
-      expect(screen.getByText('Unloaded at')).toBeInTheDocument()
+      expect(screen.getByText('plot C')).toBeInTheDocument()
     })
-    expect(screen.getByText('plot C')).toBeInTheDocument()
+    expect(screen.getByText('Unloaded at')).toBeInTheDocument()
     expect(screen.queryByText('Main')).not.toBeInTheDocument()
   })
 
@@ -109,18 +109,18 @@ describe('PurchaseDetail unload plot', () => {
     mockPurchase(basePurchase, { id: 'main', name: 'Main factory land plot A', is_primary: true })
     renderDetail()
     await waitFor(() => {
-      expect(screen.getByText('Unloaded at')).toBeInTheDocument()
+      expect(screen.getByText('Main factory land plot A')).toBeInTheDocument()
     })
-    expect(screen.getByText('Main factory land plot A')).toBeInTheDocument()
+    expect(screen.getByText('Unloaded at')).toBeInTheDocument()
     expect(screen.getByText('Main')).toBeInTheDocument()
   })
 
-  it('hides Unloaded at when the purchase has no plot', async () => {
+  it('shows Unloaded at as N/A when the purchase has no plot', async () => {
     mockPurchase({ ...basePurchase, plot_id: null }, null)
     renderDetail()
     await waitFor(() => {
-      expect(screen.getByText('Purchase Info')).toBeInTheDocument()
+      expect(screen.getByText('Unloaded at')).toBeInTheDocument()
     })
-    expect(screen.queryByText('Unloaded at')).not.toBeInTheDocument()
+    expect(screen.getByText('Unloaded at').nextSibling).toHaveTextContent('N/A')
   })
 })
