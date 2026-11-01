@@ -10,6 +10,7 @@ import PageHeader from '../../components/PageHeader'
 import RecordNav from '../../components/RecordNav'
 import { useAdjacentRecord } from '../../hooks/useAdjacentRecord'
 import { getLocalDate } from '../../lib/dateUtils'
+import { applyCustomerToDispatchEdit, buildDispatchEditForm, buildDispatchEditPayload } from '../../lib/dispatchEdit'
 
 export default function DispatchDetail() {
   const { id } = useParams()
@@ -104,7 +105,7 @@ export default function DispatchDetail() {
 
   useEffect(() => {
     if (!plant?.org_id) return
-    supabase.from('customers').select('id, name').eq('org_id', plant.org_id).eq('is_active', true).order('name')
+    supabase.from('customers').select('id, name, address').eq('org_id', plant.org_id).eq('is_active', true).order('name')
       .then(({ data }) => { if (data) setCustomers(data) })
   }, [plant?.org_id])
 
@@ -149,20 +150,7 @@ export default function DispatchDetail() {
   }
 
   function startEdit() {
-    setEditForm({
-      truck_number: dispatch.truck_number || '',
-      customer_id: dispatch.customer_id || '',
-      driver_name: dispatch.driver_name || '',
-      driver_phone: dispatch.driver_phone || '',
-      transporter: dispatch.transporter || '',
-      serial_no: dispatch.serial_no || '',
-      invoice_no: dispatch.invoice_no || '',
-      loading_date: dispatch.loading_date || '',
-      loading_time: dispatch.loading_time?.slice(0, 5) || '',
-      dispatch_date: dispatch.dispatch_date || '',
-      dispatch_time: dispatch.dispatch_time?.slice(0, 5) || '',
-      remarks: dispatch.remarks || '',
-    })
+    setEditForm(buildDispatchEditForm(dispatch))
     setEditPellets((dispatch.dispatch_pellets || []).map(p => ({
       id: p.id,
       pellet_type_id: p.pellet_type_id || '',
@@ -180,24 +168,11 @@ export default function DispatchDetail() {
         const dispatchDT = new Date(`${editForm.dispatch_date}T${editForm.dispatch_time}`)
         if (!(dispatchDT > loadingDT)) { showToast('Dispatch date & time must be later than the loading date & time', 'error'); return }
       }
+      if (!(editForm.destination || '').trim()) { showToast('Destination is required', 'error'); return }
       setSaving(true)
 
       // Update main dispatch record. Keep `date` (history grouping key) in sync with dispatch_date.
-      const dispatchPayload = {
-        truck_number: editForm.truck_number || dispatch.truck_number,
-        driver_name: editForm.driver_name,
-        driver_phone: editForm.driver_phone,
-        transporter: editForm.transporter,
-        serial_no: editForm.serial_no || null,
-        invoice_no: editForm.invoice_no,
-        loading_date: editForm.loading_date || null,
-        loading_time: editForm.loading_time || null,
-        dispatch_date: editForm.dispatch_date || null,
-        dispatch_time: editForm.dispatch_time || null,
-        date: editForm.dispatch_date || dispatch.date || null,
-        remarks: editForm.remarks || null,
-      }
-      if (editForm.customer_id) dispatchPayload.customer_id = editForm.customer_id
+      const dispatchPayload = buildDispatchEditPayload(editForm, dispatch)
 
       const { error: dispErr } = await supabase
         .from('vehicle_dispatches').update(dispatchPayload).eq('id', id)
@@ -343,13 +318,17 @@ export default function DispatchDetail() {
                 <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#8a8d7a', marginBottom: 4 }}>Customer</label>
                 <select
                   value={editForm.customer_id}
-                  onChange={e => setEditForm({ ...editForm, customer_id: e.target.value })}
+                  onChange={e => {
+                    const selected = customers.find(c => c.id === e.target.value)
+                    setEditForm(applyCustomerToDispatchEdit(editForm, selected || { id: e.target.value }))
+                  }}
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 10, border: '1.5px solid #e5ddd0', fontSize: 13, outline: 'none', background: '#fefae0', boxSizing: 'border-box' }}
                 >
                   <option value="">Select customer...</option>
                   {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
+              <EditField label="Destination" value={editForm.destination} onChange={v => setEditForm({ ...editForm, destination: v })} />
               <EditField label="Transporter" value={editForm.transporter} onChange={v => setEditForm({ ...editForm, transporter: v })} />
               <EditField label="Serial No" value={editForm.serial_no} onChange={v => setEditForm({ ...editForm, serial_no: v })} />
               <EditField label="Invoice No" value={editForm.invoice_no} onChange={v => setEditForm({ ...editForm, invoice_no: v })} />
