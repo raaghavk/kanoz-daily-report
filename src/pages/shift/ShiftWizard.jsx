@@ -950,13 +950,15 @@ export default function ShiftWizard() {
       if (!reportId && err?.code === '23505' && (String(err?.message || '').includes('shift_reports_plant_date_shift_active_idx') || String(err?.message || '').includes('shift_reports_plant_id_date_shift_key'))) {
         showToast('A shift report for this plant/date/shift already exists. Opening it in edit mode.', 'error')
         try {
-          const { data: existing } = await supabase
+          const { data: existing, error: existingErr } = await supabase
             .from('shift_reports')
             .select('id')
             .eq('plant_id', plant.id)
             .eq('date', canonicalReportDate(reportData))
             .eq('shift', reportData.shift)
+            .eq('is_deleted', false)
             .maybeSingle()
+          if (existingErr) throw existingErr
           if (existing?.id) {
             navigate(`/shift/edit/${existing.id}`)
             return
