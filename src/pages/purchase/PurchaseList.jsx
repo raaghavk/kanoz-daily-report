@@ -331,14 +331,20 @@ export default function PurchaseList() {
                         >
                           {/* Supplier + Material + Qty */}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {purchase.suppliers?.name || 'Unknown'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#2c2c2c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {purchase.suppliers?.name || 'Unknown'}
+                              </div>
+                              {plotLabel(purchase.storage_plots) ? (
+                                <span style={{ flexShrink: 0, fontSize: 10, background: '#e8f0ec', color: '#2d6a4f', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>
+                                  {plotLabel(purchase.storage_plots)}
+                                </span>
+                              ) : null}
                             </div>
                             <div style={{ fontSize: 10, color: '#8a8d7a', marginTop: 1 }}>
                               {[
                                 purchase.raw_material_types?.name || 'N/A',
                                 `${Math.round(purchase.quantity_kg || 0).toLocaleString('en-IN')} kg (${kgToMtStr(purchase.quantity_kg)} MT)`,
-                                plotLabel(purchase.storage_plots),
                               ].filter(Boolean).join(' · ')}
                             </div>
                           </div>

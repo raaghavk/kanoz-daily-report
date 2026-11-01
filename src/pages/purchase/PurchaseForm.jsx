@@ -151,7 +151,7 @@ export default function PurchaseForm() {
   const { data: purchaseData, isLoading: loading, isError } = useQuery({
     queryKey: ['purchase', id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('raw_material_purchases').select('*, storage_plots(id, name, is_primary, is_active)').eq('id', id).eq('is_deleted', false).single()
+      const { data, error } = await supabase.from('raw_material_purchases').select('*, suppliers(id, name, mobile), raw_material_types(id, name), transporters(id, name), storage_plots(id, name, is_primary, is_active)').eq('id', id).eq('is_deleted', false).single()
       if (error) throw error
       return data
     },

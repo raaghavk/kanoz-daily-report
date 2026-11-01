@@ -29,7 +29,18 @@ const queryClient = new QueryClient({
   },
 })
 
-// PWA auto-update: register SW and auto-reload when new version is available
+// PWA auto-update: register SW and auto-reload when new version is available.
+// skipWaiting + clientsClaim can take control without swapping the running
+// document, so also reload on controllerchange (phone home-screen app).
+let swRefreshing = false
+if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (swRefreshing) return
+    swRefreshing = true
+    window.location.reload()
+  })
+}
+
 const updateSW = registerSW({
   onNeedRefresh() {
     // New content available — update immediately without prompting
