@@ -10,7 +10,7 @@ import PageHeader from '../../components/PageHeader'
 import RecordNav from '../../components/RecordNav'
 import DeleteRequestButton from '../../components/DeleteRequestButton'
 import { useAdjacentRecord } from '../../hooks/useAdjacentRecord'
-import { Loader2, Edit3, X, CheckCircle, Download, Trash2 } from 'lucide-react'
+import { Loader2, Edit3, X, CheckCircle, Download, Trash2, MapPin } from 'lucide-react'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
@@ -260,17 +260,6 @@ export default function PurchaseDetail() {
         <div style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #e5ddd0', padding: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: '#2d6a4f', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>Purchase Info</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {unloadPlot?.name && (
-              <div style={{ gridColumn: '1 / -1', background: '#e8f0ec', borderRadius: 10, padding: '10px 12px' }}>
-                <div style={labelStyle}>Unloaded at</div>
-                <div style={{ ...valueStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {unloadPlot.name}
-                  {unloadPlot.is_primary && (
-                    <span style={{ fontSize: 10, background: '#d8e8df', color: '#2d6a4f', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>Main</span>
-                  )}
-                </div>
-              </div>
-            )}
             <div>
               <div style={labelStyle}>Supplier</div>
               <div style={valueStyle}>{purchase.suppliers?.name || 'N/A'}</div>
@@ -294,6 +283,20 @@ export default function PurchaseDetail() {
             <div>
               <div style={labelStyle}>Serial / Parchi No</div>
               <div style={valueStyle}>{purchase.serial_no || 'N/A'}</div>
+            </div>
+            <div>
+              <div style={labelStyle}>Unloaded at</div>
+              <div style={{ ...valueStyle, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                {unloadPlot?.name ? (
+                  <>
+                    <MapPin size={13} style={{ color: '#2d6a4f', flexShrink: 0 }} />
+                    <span>{unloadPlot.name}</span>
+                    {unloadPlot.is_primary && (
+                      <span style={{ fontSize: 10, background: '#e8f0ec', color: '#2d6a4f', padding: '2px 6px', borderRadius: 6, fontWeight: 700 }}>Main</span>
+                    )}
+                  </>
+                ) : 'N/A'}
+              </div>
             </div>
             {(purchase.transporters?.name) && (
               <div>
