@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { isDemoMode, DEMO_EMAIL, DEMO_ORG_NAME, DEMO_PLANT_NAME, DEMO_ADMIN_NAME, DEMO_APP_NAME } from '../lib/demo/mode'
+import DemoMark from '../components/DemoMark'
 
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const demo = isDemoMode()
+  const [email, setEmail] = useState(demo ? DEMO_EMAIL : '')
+  const [password, setPassword] = useState(demo ? 'demo' : '')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -90,15 +93,19 @@ export default function Login() {
             boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
             overflow: 'hidden',
           }}>
-            <img
-              src="/kanoz-logo.png"
-              alt="Kanoz Bio Energy"
-              style={{
-                width: 140,
-                height: 140,
-                objectFit: 'cover',
-              }}
-            />
+            {demo ? (
+              <DemoMark size={140} alt={DEMO_APP_NAME} />
+            ) : (
+              <img
+                src="/kanoz-logo.png"
+                alt="Kanoz Bio Energy"
+                style={{
+                  width: 140,
+                  height: 140,
+                  objectFit: 'cover',
+                }}
+              />
+            )}
           </div>
 
           <p style={{
@@ -132,10 +139,12 @@ export default function Login() {
             {/* Welcome text */}
             <div style={{ marginBottom: 22 }}>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2c2c2c', marginBottom: 4 }}>
-                Welcome back
+                {demo ? 'Prospect demo' : 'Welcome back'}
               </h2>
               <p style={{ fontSize: 13, color: '#8a8d7a' }}>
-                Sign in to continue to your dashboard
+                {demo
+                  ? `${DEMO_PLANT_NAME}. Sample data only — any password works.`
+                  : 'Sign in to continue to your dashboard'}
               </p>
             </div>
 
@@ -174,7 +183,7 @@ export default function Login() {
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  placeholder="supervisor@kanoz.in"
+                  placeholder={demo ? DEMO_EMAIL : 'supervisor@kanoz.in'}
                   style={{
                     width: '100%',
                     padding: '13px 14px',
@@ -211,7 +220,7 @@ export default function Login() {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder={demo ? 'Any password' : 'Enter your password'}
                     style={{
                       width: '100%',
                       padding: '13px 44px 13px 14px',
@@ -258,7 +267,13 @@ export default function Login() {
                 </div>
               </div>
 
-              {/* Forgot password link */}
+              {demo && (
+                <p style={{ fontSize: 12, color: '#2d6a4f', lineHeight: 1.45, marginTop: -4 }}>
+                  Sign in as <strong>{DEMO_ADMIN_NAME}</strong> with {DEMO_EMAIL}. Password is not checked in demo mode.
+                </p>
+              )}
+
+              {!demo && (
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -4 }}>
                 <span style={{
                   fontSize: 12,
@@ -269,6 +284,7 @@ export default function Login() {
                   Forgot password?
                 </span>
               </div>
+              )}
 
               {/* Sign In Button */}
               <button
@@ -303,7 +319,7 @@ export default function Login() {
                     </svg>
                     Signing in...
                   </>
-                ) : 'Sign In'}
+                ) : (demo ? 'Enter demo' : 'Sign In')}
               </button>
             </form>
           </div>
@@ -346,7 +362,7 @@ export default function Login() {
                 color: '#b5b8a8',
                 fontWeight: 500,
               }}>
-                Kanoz Bio Energy Pvt. Ltd.
+                {demo ? DEMO_ORG_NAME : 'Kanoz Bio Energy Pvt. Ltd.'}
               </p>
               <div style={{
                 width: 6,

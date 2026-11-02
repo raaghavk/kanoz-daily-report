@@ -1,20 +1,27 @@
 import { createClient } from '@supabase/supabase-js'
+import { isDemoMode } from './demo/mode'
+import { createDemoClient } from './demo/client'
 
-// Use Vercel proxy to bypass Supabase ISP block in India
-// Requests go: Browser → Vercel (not blocked) → Supabase (server-side)
-const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+function createLiveClient() {
+  // Use Vercel proxy to bypass Supabase ISP block in India
+  // Requests go: Browser → Vercel (not blocked) → Supabase (server-side)
+  const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
 
-const supabaseUrl = isProduction
-  ? (window.location.origin + '/supabase')  // Vercel proxy
-  : import.meta.env.VITE_SUPABASE_URL
+  const supabaseUrl = isProduction
+    ? (window.location.origin + '/supabase')  // Vercel proxy
+    : import.meta.env.VITE_SUPABASE_URL
 
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl) {
-  throw new Error('Missing VITE_SUPABASE_URL environment variable. See .env.example for required variables.')
+  if (!supabaseUrl) {
+    throw new Error('Missing VITE_SUPABASE_URL environment variable. See .env.example for required variables.')
+  }
+  if (!supabaseAnonKey) {
+    throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable. See .env.example for required variables.')
+  }
+
+  return createClient(supabaseUrl, supabaseAnonKey)
 }
-if (!supabaseAnonKey) {
-  throw new Error('Missing VITE_SUPABASE_ANON_KEY environment variable. See .env.example for required variables.')
-}
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = isDemoMode() ? createDemoClient() : createLiveClient()
+export const DEMO_MODE = isDemoMode()

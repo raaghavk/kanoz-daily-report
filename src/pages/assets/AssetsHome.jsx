@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabase'
 import PageHeader from '../../components/PageHeader'
+import { DemoSampleNote } from '../../components/DemoBanner'
 import { Loader2 } from 'lucide-react'
 
 export default function AssetsHome() {
@@ -46,6 +47,9 @@ export default function AssetsHome() {
     <div style={{ minHeight: '100%', background: '#fefae0' }}>
       <PageHeader title="Assets" subtitle={`${plant?.name || 'Plant'} · Equipment lifecycle tracking`} />
       <div style={{ padding: '16px 20px', paddingBottom: 100, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <DemoSampleNote>
+          Sample asset register for Demo Bio Pellets (MTR/GBX/FAN/DIE/PMP). Codes and events are fictional.
+        </DemoSampleNote>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 24 }}><Loader2 size={28} style={{ color: '#2d6a4f', animation: 'spin 1s linear infinite' }} /></div>
         ) : (

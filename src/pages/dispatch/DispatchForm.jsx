@@ -577,7 +577,7 @@ export default function DispatchForm() {
         body: { imageUrl, type: 'katta_parchi' }
       })
       if (error || !result?.success) {
-        showToast('Could not extract data from photo', 'error')
+        showToast(error?.name === 'DemoModeError' ? error.message : 'Could not extract data from photo', error?.name === 'DemoModeError' ? 'info' : 'error')
         return
       }
       const updates = kattaParchiToDispatchUpdates(result.data)
