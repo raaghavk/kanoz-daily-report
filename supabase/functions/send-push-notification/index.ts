@@ -242,7 +242,8 @@ serve(async (req) => {
       case 'report_submitted':
         title = `Shift ${payload.shift} Report Submitted`
         body = `${payload.supervisor} — ${payload.production_mt} MT produced at ${payload.plant}`
-        url = '/reports'
+        // Same rule as src/lib/pushDeepLink.js reportPushPath
+        url = payload.report_id ? `/reports/${payload.report_id}` : '/reports'
         break
       case 'report_edited':
         title = `Shift ${payload.shift} Report Updated`
