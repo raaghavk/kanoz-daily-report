@@ -15,9 +15,10 @@ if (import.meta.env.PROD) {
   console.debug = () => {}
 }
 
-// Warm up Supabase connection immediately on app load to avoid cold-start delay
-// This lightweight ping fires before any UI renders
-supabase.from('plants').select('id').limit(1).then(() => {})
+// Warm the /supabase proxy before React paints. Table reads as anon were
+// revoked (#76), so ping Auth instead of `plants` — that still works
+// without a session and no longer 401s on every login-page load.
+supabase.auth.getSession().then(() => {})
 
 const queryClient = new QueryClient({
   defaultOptions: {
